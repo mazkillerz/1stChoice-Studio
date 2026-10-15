@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Collage · 1st Choice Studio</title>
+<link rel="icon" href="../assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
+<link rel="stylesheet" href="../assets/studio.css">
+</head>
+<body>
+<nav class="top"><a class="home" href="../index.html"><img src="../assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
+<main class="wrap" id="app"></main>
+<script src="../assets/studio.js"></script>
+<script>
+Studio.tool({
+  id:'collage', title:'Collage', fileName:'collage', noZoom:true,
+  photos:{min:2,max:4}, samples:['beans','foam','passion','window'], sampleNote:'Example photos. Every photo shows whole, never cropped.',
+  styles:[{id:'black',label:'Black'},{id:'white',label:'White'}],
+  fields:[
+    {id:'lay2',type:'seg',when:{count:2},label:'Layout',options:[{v:'stack',l:'Stacked'},{v:'diag',l:'Diagonal'}]},
+    {id:'lay3',type:'seg',when:{count:3},label:'Layout',options:[{v:'framed',l:'Framed'},{v:'stagger',l:'Stagger'},{v:'big',l:'Big + 2'}]},
+    {id:'lay4',type:'seg',when:{count:4},label:'Layout',options:[{v:'wide',l:'Wide / 2 / wide'},{v:'zigzag',l:'Zigzag'}]},
+    {id:'logo',type:'toggle',label:'Show the logo',default:true}
+  ],
+  draw(h,o){
+    const {ctx,W,H,C}=h; const dark=o.style!=='white'; ctx.fillStyle=dark?C.black:C.white; ctx.fillRect(0,0,W,H);
+    const n=o.count, a=i=>h.photoAspect(i); let R=[];
+    const col=(list,gap)=>{let y=0;const out=[];list.forEach(([i,w,x])=>{const hh=w/a(i);out.push({i,x,y,w,h:hh});y+=hh+gap;});return out;};
+    if(n===2){ R=o.value('lay2')==='diag'?col([[0,920,0],[1,920,W-920]],40):col([[0,W,0],[1,W,0]],20); }
+    else if(n===3){ const L=o.value('lay3');
+      if(L==='stagger') R=col([[0,860,0],[1,860,W-860],[2,860,0]],24);
+      else if(L==='big'){ const g=16,sw=(W-g)/2, bh=W/a(0), s1=sw/a(1), s2=sw/a(2), sh=Math.max(s1,s2); R=[{i:0,x:0,y:0,w:W,h:bh},{i:1,x:0,y:bh+g+(sh-s1)/2,w:sw,h:s1},{i:2,x:W-sw,y:bh+g+(sh-s2)/2,w:sw,h:s2}]; }
+      else R=col([[0,840,(W-840)/2],[1,840,(W-840)/2],[2,840,(W-840)/2]],18);
+    } else { const L=o.value('lay4');
+      if(L==='zigzag') R=col([[0,690,0],[1,690,W-690],[2,690,0],[3,690,W-690]],12);
+      else { const g=14,sw=(W-g)/2, t=W/a(0), s1=sw/a(1), s2=sw/a(2), sh=Math.max(s1,s2), b=W/a(3);
+        R=[{i:0,x:0,y:0,w:W,h:t},{i:1,x:0,y:t+g+(sh-s1)/2,w:sw,h:s1},{i:2,x:W-sw,y:t+g+(sh-s2)/2,w:sw,h:s2},{i:3,x:0,y:t+g+sh+g,w:W,h:b}]; }
+    }
+    // fit the group into the story, leaving room for the logo
+    const showLogo=!!o.value('logo'); const room=H-(showLogo?260:120);
+    let gh=Math.max(...R.map(r=>r.y+r.h)); let k=Math.min(1,room/gh);
+    const gw=W*k, ox=(W-gw)/2; gh*=k; const oy=(H-gh)/2-(showLogo?50:0);
+    R.forEach(r=>h.photo(r.i,ox+r.x*k,oy+r.y*k,r.w*k,r.h*k,{mode:'contain'}));
+    if(showLogo){ const lw=170; const lh=h.logoH(lw); const by=oy+gh; h.logo((W-lw)/2,by+Math.max(40,((H-by)-lh)/2-20),lw,dark?'white':'black'); }
+  }
+});
+</script>
+</body>
+</html>

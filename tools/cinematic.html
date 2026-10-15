@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cinematic bars · 1st Choice Studio</title>
+<link rel="icon" href="../assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
+<link rel="stylesheet" href="../assets/studio.css">
+</head>
+<body>
+<nav class="top"><a class="home" href="../index.html"><img src="../assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
+<main class="wrap" id="app"></main>
+<script src="../assets/studio.js"></script>
+<script>
+const P=Studio.PHRASES;
+Studio.tool({
+  id:'cinematic', title:'Cinematic bars', fileName:'story', fileWords:['head'],
+  photos:{count:1}, samples:['pair'], sampleNote:'Example photo. Made for wide photos: the whole photo shows, no crop.',
+  fields:[
+    {id:'head',type:'chips',label:'Headline',options:P.headlines.slice(0,14)},
+    {id:'small',type:'chips',label:'Small line',options:P.small,none:true,default:'كلاسيك / باشن فروت'},
+    {id:'pill',type:'text',label:'Show a button',toggle:true,default:'الرابط في البايو',on:false}
+  ],
+  draw(h,o){
+    const {ctx,W,H,C}=h; ctx.fillStyle=C.black; ctx.fillRect(0,0,W,H);
+    const ar=h.photoAspect(0); let ph=Math.round(W/ar); const maxH=1000; const mode=ph>maxH?'cover':'contain'; ph=Math.min(ph,maxH);
+    const py=Math.round(870-ph/2);
+    h.photo(0,0,py,W,ph,{mode});
+    h.logo((W-230)/2,Math.max(250,py-130),230,'white');
+    let y=Math.min(py+ph+110,1400);
+    const head=o.value('head')||'هذا ولا هذا؟';
+    y+=h.text(head,W/2,y,{family:'Lalezar',size:130,color:C.white,maxW:936})+26;
+    const small=o.value('small'); if(small) y+=h.text(small,W/2,y,{weight:'600',size:38,color:'rgba(255,255,255,.78)',maxW:900})+30;
+    const pill=o.value('pill'); if(pill) h.pill(pill,W/2,y,{bg:C.white,fg:C.black});
+  }
+});
+</script>
+</body>
+</html>

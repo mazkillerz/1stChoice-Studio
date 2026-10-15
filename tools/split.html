@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Two-photo split · 1st Choice Studio</title>
+<link rel="icon" href="../assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
+<link rel="stylesheet" href="../assets/studio.css">
+</head>
+<body>
+<nav class="top"><a class="home" href="../index.html"><img src="../assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
+<main class="wrap" id="app"></main>
+<script src="../assets/studio.js"></script>
+<script>
+const P=Studio.PHRASES;
+Studio.tool({
+  id:'split', title:'Two-photo split', fileName:'split', fileWords:['head'],
+  photos:{count:2}, samples:['closeup','shelf'], sampleNote:'Example photos. Close-up on top, wide below. Drag each photo to move it.',
+  fields:[
+    {id:'head',type:'chips',label:'Words on the cut',options:['وين تلقانا؟','يسرسح ثلج','صبر شوي...','لا تعدّي قبل لا تشوف هذا','ياخذ وقته...','هذا ولا هذا؟','ترا فنان','أنت أي واحد؟','تعرف ويش؟','خذلك كولد برو']}
+  ],
+  draw(h,o){
+    const {ctx,W,H,C}=h; const half=H/2;
+    h.photo(0,0,0,W,half,{mode:'cover'}); h.photo(1,0,half,W,half,{mode:'cover'});
+    h.shade(0,300,.35,0); h.shade(H,H-300,.35,0);
+    const head=o.value('head')||'وين تلقانا؟';
+    // white pill on the cut: words · line · logo
+    ctx.save(); ctx.direction='rtl';
+    let fs=72; ctx.font=fs+'px Lalezar'; let tw=ctx.measureText(head).width; const lw=190, lh=h.logoH(lw);
+    while(tw+28+3+28+lw+100>1000&&fs>44){fs-=4;ctx.font=fs+'px Lalezar';tw=ctx.measureText(head).width;}
+    const pw=tw+28+3+28+lw+100, ph=110, px=(W-pw)/2, py=half-ph/2;
+    ctx.fillStyle=C.white; ctx.beginPath(); h.rr(ctx,px,py,pw,ph,ph/2); ctx.fill();
+    // RTL order: words on the right, logo on the left
+    const m=ctx.measureText(head), a=m.actualBoundingBoxAscent||fs*.7, d=m.actualBoundingBoxDescent||fs*.3;
+    ctx.fillStyle=C.ink; ctx.textAlign='right'; ctx.textBaseline='alphabetic'; ctx.fillText(head,px+pw-52,py+ph/2+(a-d)/2);
+    const lineX=px+pw-52-tw-28; ctx.fillStyle='#d9d8d4'; ctx.fillRect(lineX-3,py+ph/2-27,3,54);
+    ctx.restore();
+    h.logo(lineX-3-28-lw,py+(ph-lh)/2,lw,'black');
+  }
+});
+</script>
+</body>
+</html>
