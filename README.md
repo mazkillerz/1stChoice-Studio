@@ -1,20 +1,42 @@
-# 1st Choice Studio
+# Studio
 
-Small on-brand story makers for the 1st Choice team. Open `index.html`, pick a tool, add a photo, pick the words, save.
+A small set of story makers: pick a tool, add photos, choose the words, save a sharp 2160×3840 image.
+Built so any brand can plug in. The first brand kit is **1st Choice**.
 
 ## Tools
-- **New place**: new sale point photo, place name with a pin, white / black / photo-on-top.
-- **Photo story**: tall photo full screen, headline + small line + logo.
-- **Cinematic bars**: wide photo shown whole, black bars, text below.
-- **Collage**: 2, 3 or 4 whole photos, several layouts, no text.
-- **Two-photo split**: close-up on top, wide below, words on the cut.
+| Tool | What it makes |
+| --- | --- |
+| New place | A new sale point: photo in a window, place name with a pin, button. White / black / photo-on-top. |
+| Photo story | One tall photo full screen, headline, small line, logo. |
+| Cinematic bars | A wide photo shown whole (no crop), logo and words on black bars. |
+| Collage | 2, 3 or 4 whole photos in 7 layouts. No text. |
+| Two-photo split | Close-up on top, wide below, words + logo on a label across the cut. |
+
+## Editing on the preview
+- Tap any text, button or logo to select it: edit the words, change size and colour, centre, reset or hide it.
+- Drag to move (it snaps to the centre line), pinch or scroll to resize. Arrow keys nudge the selected item.
+- **+ Add text** puts your own text on the story. **Reset layout** puts everything back.
+- Photos: drag to move, pinch / slider to zoom.
 
 ## How it is built
-- `assets/studio.js`: the shared engine (steps, preview, dragging, saving) plus the approved phrase lists from the Omani phrasebook. Change a phrase or colour here and every tool updates.
-- `assets/studio.css`: the look of the site.
-- `tools/*.html`: one file per tool; each only says how its story is drawn.
-- `assets/logo.png`, `assets/samples/`, `assets/thumbs/`: logo, example photos, home-page pictures.
+```
+index.html                 home page with the tool cards
+assets/studio.js           the engine: steps, live preview, layers, photo handling, saving (no brand inside)
+assets/studio.css          the look of the site
+tools/<tool>.html + .js    one tool each; the .js only describes how its story is laid out
+brands/brands.js           the list of brand kits (first = default)
+brands/<brand>/brand.js    logo, fonts, colours, writing direction, approved wording, example photos
+brands/<brand>/samples/    example photos the tools open with
+assets/thumbs/<brand>/     home page pictures for that brand
+```
 
-Fonts (Lalezar, Cairo) load from Google Fonts, so the site needs internet.
-Saved stories are 2160×3840 (double size) so they stay sharp; Instagram scales them down cleanly.
-Hosting: GitHub Pages (Settings > Pages > Deploy from branch > main / root).
+### Add a brand
+1. Copy `brands/1stchoice` to `brands/<new-id>` and change `brand.js` (logo file, fonts, colours, `dir`, phrases, samples).
+2. Add `'<new-id>'` to `brands/brands.js`.
+Tools never name a brand: they ask the kit for `phrases.headlines`, `colors.ink`, the logo, and so on.
+
+### Add a tool
+Copy a tool's `.html` and `.js`, give it a new `id`, and write its `draw(h, o)`:
+`h.photo()`, `h.text(id,label,…)`, `h.pill()`, `h.pin()`, `h.logo()` each create a layer people can move and edit.
+
+Fonts load from Google Fonts, so the site needs internet. Hosted with GitHub Pages (main branch, root).

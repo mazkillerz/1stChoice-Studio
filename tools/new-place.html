@@ -3,47 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>New place · 1st Choice Studio</title>
+<title>New place · Studio</title>
 <link rel="icon" href="../assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
 <link rel="stylesheet" href="../assets/studio.css">
 </head>
 <body>
-<nav class="top"><a class="home" href="../index.html"><img src="../assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
+<nav class="top"><a class="home" href="../index.html"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
 <main class="wrap" id="app"></main>
 <script src="../assets/studio.js"></script>
-<script>
-const P=Studio.PHRASES;
-Studio.tool({
-  id:'new-place', title:'New place', fileName:'new place', fileWords:['place'], frameOnly:true,
-  photos:{count:1}, samples:['shelf'],
-  styles:[
-    {id:'A',label:'White',swatch:'<span style="width:30px;height:46px;border-radius:5px;border:1px solid var(--line);background:#fff;display:block;position:relative"><i style="position:absolute;left:4px;right:4px;top:12px;height:16px;border-radius:3px;background:#b8a58f"></i></span>'},
-    {id:'B',label:'Black',swatch:'<span style="width:30px;height:46px;border-radius:5px;background:#000;display:block;position:relative"><i style="position:absolute;left:4px;right:4px;top:12px;height:16px;border-radius:3px;background:#b8a58f"></i></span>'},
-    {id:'C',label:'Photo on top',swatch:'<span style="width:30px;height:46px;border-radius:5px;border:1px solid var(--line);background:#fff;display:block;position:relative;overflow:hidden"><i style="position:absolute;left:0;right:0;top:0;height:28px;border-radius:0 0 4px 4px;background:#b8a58f"></i></span>'}
-  ],
-  fields:[
-    {id:'head',type:'chips',label:'Headline',options:['نقطة بيع جديدة','وين تلقانا؟ هنا','صرنا متوفرين هنا']},
-    {id:'place',type:'text',label:'Place name',placeholder:'اسم المكان'},
-    {id:'pill',type:'text',label:'Show the button under it',toggle:true,default:'الرابط في البايو'}
-  ],
-  draw(h,o){
-    const {ctx,W,H,C}=h, ar=h.photoAspect(0), dark=o.style==='B';
-    let win,textTop,logoTop;
-    if(o.style==='C'){ const wh=Math.round(Math.max(760,Math.min(1200,W/ar))); win={x:0,y:0,w:W,h:wh,r:[0,0,56,56]}; textTop=wh+60; }
-    else { const ww=960; let wh=Math.round(ww/ar); wh=Math.max(540,Math.min(900,wh)); const lh=h.logoH(260); const total=lh+44+wh+44+300; logoTop=Math.max(230,Math.round(250+(1300-total)/2)); win={x:60,y:Math.round(logoTop+lh+44),w:ww,h:wh,r:44}; textTop=win.y+wh+44; }
-    h.photo(0,win.x,win.y,win.w,win.h,{r:win.r,mode:'cover'});
-    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); h.rr(ctx,win.x,win.y,win.w,win.h,win.r); ctx.fillStyle=dark?C.black:C.white; ctx.fill('evenodd'); ctx.restore();
-    const ink=dark?C.white:C.ink, muted=dark?C.mutedDark:C.muted; let y=textTop;
-    if(o.style==='C'){ y+=h.logo((W-220)/2,y,220,'black')+34; } else h.logo((W-260)/2,logoTop,260,dark?'white':'black');
-    const head=o.value('head')||'نقطة بيع جديدة';
-    y+=h.text(head,W/2,y,{family:'Lalezar',size:o.style==='C'?108:116,color:ink})+24;
-    const place=o.value('place'); if(place) y+=h.pinLine(place,W/2,y,{color:muted})+30;
-    const pill=o.value('pill'); if(pill) h.pill(pill,W/2,y,{bg:dark?C.white:C.ink,fg:dark?C.black:C.white});
-  }
-});
-</script>
+<script src="../brands/brands.js"></script>
+<script src="new-place.js"></script>
 </body>
 </html>

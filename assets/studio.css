@@ -13,7 +13,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-
 a{color:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1040px;margin:0 auto;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .top a.home{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:800}
-.top img{height:22px;width:auto;display:block}
+.top img{height:22px;width:auto;display:block;max-width:160px}
 :root[data-theme="dark"] .top img{filter:invert(1)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .top img{filter:invert(1)}}
 .top .studio{font:800 13px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -71,10 +71,29 @@ input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
 .grid{max-width:1040px;margin:0 auto;padding-block:18px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .card{display:flex;flex-direction:column;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;transition:transform .15s ease,box-shadow .15s ease}
 .card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.10)}
-.card .thumb{aspect-ratio:9/12;background:#000;overflow:hidden}
-.card .thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.card .thumb{aspect-ratio:9/16;background:#000;overflow:hidden}
+.card .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .card .txt{padding:12px 14px 14px;display:flex;flex-direction:column;gap:2px}
 .card b{font:800 17px var(--sans)}
 .card span{color:var(--muted);font-size:14px}
 .foot{max-width:1040px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion: reduce){.card{transition:none}.card:hover{transform:none}}
+
+/* layer inspector (appears under the preview when a text, button or logo is selected) */
+.inspector{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.insp-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.insp-head b{font:800 15px var(--sans)}
+.insp-head .x{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font:800 14px var(--sans);cursor:pointer}
+.insp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.insp-row .lbl{min-width:44px}
+.insp-row input[type=range]{flex:1;min-width:120px}
+.insp-row.btns .mini{flex:1 1 70px}
+.mini.danger{color:#b3261e;border-color:#e6b7b2}
+.sw-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--fg);font:800 13px var(--sans);cursor:pointer;box-shadow:0 0 0 2px transparent}
+.sw-btn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
+.view:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.chip[dir=rtl]{font-family:var(--sans)}
+.swatch{width:30px;height:46px;border-radius:5px;border:1px solid var(--line);display:block;position:relative;overflow:hidden}
+.swatch i{position:absolute;background:#b8a58f}
+.chips .chip.extra{display:none}
+.chips.open .chip.extra,.chips .chip.extra[aria-pressed="true"]{display:inline-block}

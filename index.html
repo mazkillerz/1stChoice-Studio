@@ -3,29 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>1st Choice Studio</title>
+<title>Studio</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
-<meta name="apple-mobile-web-app-title" content="1st Choice Studio">
+<meta name="apple-mobile-web-app-title" content="Studio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
 <link rel="stylesheet" href="assets/studio.css">
 </head>
 <body>
-<nav class="top"><a class="home" href="index.html"><img src="assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a></nav>
+<nav class="top"><a class="home" href="index.html"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a></nav>
 <header class="hero">
   <h1>Make a story in a minute</h1>
-  <p>Pick a tool, add your photo, choose the words, save. Fonts, logo and wording are already on-brand.</p>
+  <p>Pick a tool, add your photo, choose the words, save. Tap any text in the preview to move, resize or rewrite it. Logo, fonts and wording come from the <b data-brand-name>brand</b> kit.</p>
 </header>
 <main class="grid">
-  <a class="card" href="tools/new-place.html"><div class="thumb"><img src="assets/thumbs/new-place.jpg" alt=""></div><div class="txt"><b>New place</b><span>We're at a new sale point: photo, place name, pin.</span></div></a>
-  <a class="card" href="tools/photo-story.html"><div class="thumb"><img src="assets/thumbs/photo-story.jpg" alt=""></div><div class="txt"><b>Photo story</b><span>A tall photo, full screen, with a headline and the logo.</span></div></a>
-  <a class="card" href="tools/cinematic.html"><div class="thumb"><img src="assets/thumbs/cinematic.jpg" alt=""></div><div class="txt"><b>Cinematic bars</b><span>A wide photo shown whole, black bars, text below.</span></div></a>
-  <a class="card" href="tools/collage.html"><div class="thumb"><img src="assets/thumbs/collage.jpg" alt=""></div><div class="txt"><b>Collage</b><span>2, 3 or 4 whole photos in different layouts. No text.</span></div></a>
-  <a class="card" href="tools/split.html"><div class="thumb"><img src="assets/thumbs/split.jpg" alt=""></div><div class="txt"><b>Two-photo split</b><span>Close-up on top, wide below, words on the cut.</span></div></a>
+  <a class="card" href="tools/new-place.html"><div class="thumb"><img data-thumb="new-place" alt=""></div><div class="txt"><b>New place</b><span>A new sale point: photo, place name, pin.</span></div></a>
+  <a class="card" href="tools/photo-story.html"><div class="thumb"><img data-thumb="photo-story" alt=""></div><div class="txt"><b>Photo story</b><span>A tall photo, full screen, headline and logo.</span></div></a>
+  <a class="card" href="tools/cinematic.html"><div class="thumb"><img data-thumb="cinematic" alt=""></div><div class="txt"><b>Cinematic bars</b><span>A wide photo shown whole, text on black bars.</span></div></a>
+  <a class="card" href="tools/collage.html"><div class="thumb"><img data-thumb="collage" alt=""></div><div class="txt"><b>Collage</b><span>2, 3 or 4 whole photos in different layouts.</span></div></a>
+  <a class="card" href="tools/split.html"><div class="thumb"><img data-thumb="split" alt=""></div><div class="txt"><b>Two-photo split</b><span>Close-up on top, wide below, words on the cut.</span></div></a>
 </main>
-<p class="foot">Tip: on iPhone, open this page in Safari, tap Share, then “Add to Home Screen” to use it like an app.</p>
+<p class="foot">On iPhone: open in Safari, tap Share, then “Add to Home Screen” to use it like an app.</p>
+<script src="assets/studio.js"></script>
+<script src="brands/brands.js"></script>
+<script>Studio.home();</script>
 </body>
 </html>

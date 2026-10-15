@@ -3,43 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Photo story · 1st Choice Studio</title>
+<title>Photo story · Studio</title>
 <link rel="icon" href="../assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Lalezar&display=swap">
 <link rel="stylesheet" href="../assets/studio.css">
 </head>
 <body>
-<nav class="top"><a class="home" href="../index.html"><img src="../assets/logo.png" alt="1st Choice"><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
+<nav class="top"><a class="home" href="../index.html"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a><a class="back" href="../index.html">← All tools</a></nav>
 <main class="wrap" id="app"></main>
 <script src="../assets/studio.js"></script>
-<script>
-const P=Studio.PHRASES;
-Studio.tool({
-  id:'photo-story', title:'Photo story', fileName:'story', fileWords:['head'],
-  photos:{count:1}, samples:['tall'], sampleNote:'Example photo. Tall photos work best here; for wide photos use Cinematic bars.',
-  fields:[
-    {id:'head',type:'chips',label:'Headline',options:P.headlines.slice(0,14)},
-    {id:'small',type:'chips',label:'Small line',options:P.small,none:true,default:'خذلك كولد برو'},
-    {id:'pos',type:'seg',label:'Text place',options:[{v:'bottom',l:'Bottom'},{v:'top',l:'Top'}]}
-  ],
-  draw(h,o){
-    const {ctx,W,H,C}=h;
-    h.photo(0,0,0,W,H,{mode:'cover'});
-    const top=o.value('pos')==='top';
-    // soft dark at the text side and a little at the edges, no blur
-    if(top){ h.shade(0,900,.62,0); h.shade(H-360,H,0,.35); } else { h.shade(H,H-980,.68,0); h.shade(0,360,.35,0); }
-    const head=o.value('head')||'جربته؟', small=o.value('small');
-    const hs=h.measure(head,{family:'Lalezar',size:140,maxW:936});
-    const rowH=Math.max(small?h.measure(small,{weight:'800',size:38,maxW:700}).h:0,h.logoH(170));
-    const blockH=hs.h+22+rowH;
-    let y=top?300:Math.min(1550,H-210)-blockH;
-    h.text(head,W-72,y,{family:'Lalezar',size:140,color:C.white,align:'right',shadow:true,maxW:936}); y+=hs.h+22;
-    const lh=h.logoH(170); h.logo(72,y+(rowH-lh)/2,170,'white');
-    if(small){ const sh=h.measure(small,{weight:'800',size:38,maxW:700}).h; h.text(small,W-72,y+(rowH-sh)/2,{weight:'800',size:38,color:'rgba(255,255,255,.92)',align:'right',shadow:true,maxW:700}); }
-  }
-});
-</script>
+<script src="../brands/brands.js"></script>
+<script src="photo-story.js"></script>
 </body>
 </html>
