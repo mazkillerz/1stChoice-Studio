@@ -16,4 +16,5 @@ Small on-brand story makers for the 1st Choice team. Open `index.html`, pick a t
 - `assets/logo.png`, `assets/samples/`, `assets/thumbs/`: logo, example photos, home-page pictures.
 
 Fonts (Lalezar, Cairo) load from Google Fonts, so the site needs internet.
+Saved stories are 2160×3840 (double size) so they stay sharp; Instagram scales them down cleanly.
 Hosting: GitHub Pages (Settings > Pages > Deploy from branch > main / root).

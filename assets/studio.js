@@ -3,6 +3,7 @@
    the live preview, dragging/zooming photos, and saving. The tool only says how to draw. */
 (function(){
 const W=1080,H=1920;
+const EXPORT_SCALE=2; // saved stories are 2160×3840: Instagram still takes them, and they stay sharp when zoomed
 const C={ink:'#161210',white:'#FFFFFF',black:'#000000',muted:'#5f5c57',mutedDark:'#cfcdc8',gold:'#D6B078',cream:'#F3EADC'};
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
@@ -32,8 +33,20 @@ async function brandReady(){
   try{ await Promise.all([document.fonts.load('120px Lalezar','نقطة بيع'),document.fonts.load('800 40px Cairo','اسم المكان'),document.fonts.load('600 40px Cairo','كولد برو')]); }catch(_){}
 }
 
+/* Halve a big photo step by step down to the size it is drawn at, so saved stories stay sharp (no jagged pixels). */
+const SHARP=new WeakMap();
+function sharp(im,tw,th){
+  tw=Math.round(tw); th=Math.round(th);
+  if(im.width<=tw*1.02||im.height<=th*1.02) return im;
+  let cache=SHARP.get(im); if(!cache){cache={};SHARP.set(im,cache);} const key=tw+'x'+th; if(cache[key]) return cache[key];
+  let cur=im, cw=im.width, ch=im.height;
+  while(cw/2>=tw){ const c=document.createElement('canvas'); c.width=Math.round(cw/2); c.height=Math.round(ch/2); const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,c.width,c.height); cur=c; cw=c.width; ch=c.height; }
+  const out=document.createElement('canvas'); out.width=tw; out.height=th; const o=out.getContext('2d'); o.imageSmoothingEnabled=true; o.imageSmoothingQuality='high'; o.drawImage(cur,0,0,tw,th);
+  cache[key]=out; return out;
+}
+
 /* ---------- drawing helpers handed to each tool ---------- */
-function makeHelpers(ctx,S,preview,hits){
+function makeHelpers(ctx,S,preview,hits,scale){
   const h={W,H,C,ctx,rr,
     roundRect(x,y,w,hh,r,fill){ctx.beginPath();rr(ctx,x,y,w,hh,r);ctx.fillStyle=fill;ctx.fill();},
     photoAspect(i){const p=S.photos[i];return p&&p.img?p.img.width/p.img.height:1.5;},
@@ -48,8 +61,9 @@ function makeHelpers(ctx,S,preview,hits){
         const sc=base*(mode==='contain'?1:p.zoom); const dw=im.width*sc, dh=im.height*sc;
         const mx=Math.max(0,(dw-w)/2), my=Math.max(0,(dh-hh)/2);
         p.ox=Math.max(-mx,Math.min(mx,p.ox)); p.oy=Math.max(-my,Math.min(my,p.oy));
-        ctx.imageSmoothingQuality='high';
-        ctx.drawImage(im,x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
+        ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        const src=preview?im:sharp(im,dw*scale,dh*scale);
+        ctx.drawImage(src,x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh);
         ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px Cairo'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.direction='rtl';
@@ -226,7 +240,7 @@ async function tool(cfg){
 
   // render
   let hits=[]; let raf=0;
-  function draw(ctx,preview){ const hs=[]; ctx.save(); ctx.clearRect(0,0,W,H); cfg.draw(makeHelpers(ctx,S,preview,hs),{style:S.style,count:S.count,value,preview}); ctx.restore(); if(preview) hits=hs; }
+  function draw(ctx,preview,scale){ const hs=[]; ctx.save(); if(scale) ctx.scale(scale,scale); ctx.clearRect(0,0,W,H); cfg.draw(makeHelpers(ctx,S,preview,hs,scale||1),{style:S.style,count:S.count,value,preview}); ctx.restore(); if(preview) hits=hs; }
   function render(){ if(raf)return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); }
 
   // drag / pinch / wheel on the preview
@@ -258,11 +272,14 @@ async function tool(cfg){
   if(inClaude){ window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{}); }
   function fname(ext,kind){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return '1st-Choice-'+String(kind||cfg.fileName||'story').replace(/\s+/g,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+'.'+ext; }
   async function save(withPhotos){
-    const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
-    if(withPhotos){ ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); }
-    draw(ctx,false);
+    let K=EXPORT_SCALE, c, ctx;
+    for(;;){ c=document.createElement('canvas'); c.width=W*K; c.height=H*K; ctx=c.getContext('2d'); if(ctx||K===1) break; K=1; }
+    $('status').textContent='Making a sharp copy…';
+    await new Promise(r=>setTimeout(r,30));
+    if(withPhotos){ ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); }
+    draw(ctx,false,K);
     const type=withPhotos?'image/jpeg':'image/png', ext=withPhotos?'jpg':'png';
-    const blob=await new Promise(r=>c.toBlob(r,type,.95)); const name=fname(ext,withPhotos?null:'frame');
+    let blob=await new Promise(r=>c.toBlob(r,type,.97)); if(!blob&&K>1){ c.width=W;c.height=H;ctx=c.getContext('2d'); if(withPhotos){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);} draw(ctx,false,1); blob=await new Promise(r=>c.toBlob(r,type,.97)); } const name=fname(ext,withPhotos?null:'frame');
     $('status').textContent='';
     if(downloads){ try{ await downloads.save({filename:name,data:blob}); $('status').textContent='Saved.'; return; }catch(err){ if(err&&err.code==='declined'){ $('status').textContent='Not saved.'; return; } } }
     const file=new File([blob],name,{type});
