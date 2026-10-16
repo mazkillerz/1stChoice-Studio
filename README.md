@@ -1,6 +1,6 @@
 # Studio
 
-A small set of story makers: pick a tool, add photos, choose the words, save a sharp 2160×3840 image.
+A small set of story makers: pick a tool, add photos, choose the words, save a full-quality 2160×3840 PNG (lossless, same on iPhone and Android).
 Built so any brand can plug in. The first brand kit is **1st Choice**.
 
 ## Tools

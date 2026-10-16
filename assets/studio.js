@@ -7,6 +7,8 @@
 const W=1080,H=1920;
 const MANY=8;          // word lists longer than this show a "More…" button
 const EXPORT_SCALE=2;   // saved stories are 2160×3840 so they stay sharp when zoomed; Instagram scales them down cleanly
+const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels (every iPhone/Android main camera photo);
+                         // bigger ones (48/50/200 MP modes) are shrunk once, carefully, so phones never run out of memory
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
@@ -15,7 +17,24 @@ let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 /* ---------- small utilities ---------- */
 function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
-async function loadFile(file){ try{ return await createImageBitmap(file,{imageOrientation:'from-image'}); }catch(_){ return await load(URL.createObjectURL(file)); } }
+async function loadFile(file){
+  let src;
+  try{ src=await createImageBitmap(file,{imageOrientation:'from-image'}); }catch(_){ src=await load(URL.createObjectURL(file)); }
+  const px=src.width*src.height;
+  if(px<=PHOTO_MAX_PX) return src;                       // normal photos: untouched, full quality
+  const k=Math.sqrt(PHOTO_MAX_PX/px), tw=Math.floor(src.width*k), th=Math.floor(src.height*k);
+  const out=stepDown(src,tw,th);                         // huge photos: one careful high-quality shrink
+  if(src.close) src.close();
+  return out;
+}
+/* High-quality shrink: halve step by step, then one final resize. Avoids the jagged/blurry result of a single big jump. */
+function stepDown(im,tw,th){
+  let cur=im, cw=im.width, ch=im.height;
+  while(cw/2>=tw&&ch/2>=th){ const c=document.createElement('canvas'); c.width=Math.round(cw/2); c.height=Math.round(ch/2); const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,c.width,c.height); if(cur!==im) cur.width=cur.height=0; cur=c; cw=c.width; ch=c.height; }
+  const out=document.createElement('canvas'); out.width=tw; out.height=th; const o=out.getContext('2d'); o.imageSmoothingEnabled=true; o.imageSmoothingQuality='high'; o.drawImage(cur,0,0,tw,th);
+  if(cur!==im) cur.width=cur.height=0;
+  return out;
+}
 function rr(ctx,x,y,w,h,r){r=typeof r==='number'?[r,r,r,r]:(r||[0,0,0,0]);const [a,b,c,d]=r.map(v=>Math.max(0,Math.min(v,w/2,h/2)));ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath();}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; }}
@@ -43,16 +62,15 @@ async function useBrand(id){
 }
 
 /* Halve a big photo step by step down to the size it is drawn at, so saved stories stay sharp. */
-const SHARP=new WeakMap();
+/* Only used while saving; emptied right after so phones get their memory back. */
+let SHARP=new Map();
 function sharp(im,tw,th){
   tw=Math.round(tw); th=Math.round(th);
-  if(im.width<=tw*1.02||im.height<=th*1.02) return im;
-  let cache=SHARP.get(im); if(!cache){cache={};SHARP.set(im,cache);} const key=tw+'x'+th; if(cache[key]) return cache[key];
-  let cur=im, cw=im.width, ch=im.height;
-  while(cw/2>=tw){ const c=document.createElement('canvas'); c.width=Math.round(cw/2); c.height=Math.round(ch/2); const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,c.width,c.height); cur=c; cw=c.width; ch=c.height; }
-  const out=document.createElement('canvas'); out.width=tw; out.height=th; const o=out.getContext('2d'); o.imageSmoothingEnabled=true; o.imageSmoothingQuality='high'; o.drawImage(cur,0,0,tw,th);
-  cache[key]=out; return out;
+  if(im.width<=tw*1.02||im.height<=th*1.02) return im;   // never enlarge: the photo is drawn from its own pixels
+  const key=tw+'x'+th; let cache=SHARP.get(im); if(!cache){cache={};SHARP.set(im,cache);} if(cache[key]) return cache[key];
+  return cache[key]=stepDown(im,tw,th);
 }
+function freeSharp(){ SHARP.forEach(c=>Object.values(c).forEach(cv=>{cv.width=cv.height=0;})); SHARP=new Map(); }
 
 /* ---------- drawing helpers handed to each tool ----------
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
@@ -385,13 +403,27 @@ async function tool(cfg){
   function fname(ext,kind){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+'.'+ext; }
   async function save(withPhotos){
     const sel=S.sel; S.sel=null;
-    status('Making a sharp copy…'); await new Promise(r=>setTimeout(r,30));
-    const type=withPhotos?'image/jpeg':'image/png', ext=withPhotos?'jpg':'png';
-    async function renderAt(K){ const c=document.createElement('canvas'); c.width=W*K; c.height=H*K; const ctx=c.getContext('2d'); if(!ctx) return null; if(withPhotos){ ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); } draw(ctx,false,K); return await new Promise(r=>c.toBlob(r,type,.97)); }
-    let blob=await renderAt(EXPORT_SCALE); if(!blob) blob=await renderAt(1);
+    status('Making a full-quality copy…'); await new Promise(r=>setTimeout(r,30));
+    /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
+    const type='image/png', ext='png';
+    async function renderAt(K){
+      const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
+      const ctx=c.getContext('2d'); if(!ctx) return null;
+      try{
+        draw(ctx,false,K);
+        if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
+        const b=await new Promise(r=>c.toBlob(r,type));
+        return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
+      }catch(_){ return null; }
+      finally{ freeSharp(); c.width=c.height=0; }
+    }
+    /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
+    let blob=null, used=0;
+    for(const K of [EXPORT_SCALE,1.5,1]){ blob=await renderAt(K); if(blob){ used=K; break; } }
     S.sel=sel; render();
-    if(!blob){ status('Your phone could not make the image. Try again.'); return; }
-    const name=fname(ext,withPhotos?null:'frame'); status('');
+    if(!blob){ status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
+    const name=fname(ext,withPhotos?null:'frame');
+    status(used<EXPORT_SCALE?'Saved a slightly smaller copy ('+Math.round(W*used)+'×'+Math.round(H*used)+'): this phone was low on memory. Close other tabs for full size.':'');
     if(downloads){ try{ await downloads.save({filename:name,data:blob}); status('Saved.'); return; }catch(err){ if(err&&err.code==='declined'){ status('Not saved.'); return; } } }
     const file=new File([blob],name,{type}), touch=matchMedia('(pointer:coarse)').matches;
     if(!inClaude&&touch&&navigator.canShare&&navigator.canShare({files:[file]})){
