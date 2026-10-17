@@ -105,9 +105,9 @@ input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
 .hub-sec h2{margin:0;font:400 28px/1.1 var(--display)}
 .hub-sec .grid{padding:0 0 30px;margin:0;max-width:none}
 .sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-input[type=search],input[type=email],.sel{font:600 16px var(--sans);padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:46px}
+input[type=search],input[type=email],input[type=password],.sel{font:600 16px var(--sans);padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:46px}
 input[type=search]{flex:1 1 220px;max-width:360px}
-input[type=email]{border-radius:12px;width:100%;text-align:left}
+input[type=email],input[type=password]{border-radius:12px;width:100%;text-align:left}
 .sel{border-radius:12px;flex:1;min-width:160px;min-height:42px;padding:6px 10px;font-size:15px}
 .chip i{font-style:normal;opacity:.6;font-size:12px;margin-inline-start:4px}
 .col-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:-6px}

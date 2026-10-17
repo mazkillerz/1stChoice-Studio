@@ -85,29 +85,29 @@ function dialog(html,cls){ const d=document.createElement('dialog'); d.className
 async function ensureMember(reason){
   const C=await cloud();
   if(await C.session()){ if(await C.isMember()) return true; }
+  /* one shared team login: only the team password is asked, once per phone; it then stays signed in */
   return new Promise(resolve=>{
-    const d=dialog(`<form method="dialog" class="dlg-body">
-      <h3>Sign in to the team</h3><p class="small">${esc(reason||'Saved designs are shared with the team.')}</p>
-      <div class="field" id="siEmailRow"><label class="lbl" for="siEmail">Your email</label><input type="email" id="siEmail" autocomplete="email" inputmode="email" required></div>
-      <div class="field" id="siCodeRow" hidden><label class="lbl" for="siCode">The code from the email</label><input type="text" id="siCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="text-align:center;letter-spacing:.3em"><span class="small">No code in the email? Tap the link in it on this phone instead.</span></div>
+    const d=dialog(`<form method="dialog" class="dlg-body" action="#">
+      <h3>Team sign in</h3><p class="small">${esc(reason||'Saved designs are shared with the team.')}</p>
+      <input type="email" name="username" autocomplete="username" value="${esc(C.teamEmail||'')}" hidden readonly>
+      <div class="field"><label class="lbl" for="siPass">Team password</label>
+        <div class="inline"><input type="password" id="siPass" name="password" autocomplete="current-password" required><button type="button" class="mini" id="siShow" aria-pressed="false">Show</button></div></div>
+      <span class="small">You stay signed in on this phone. Tip: add Studio to your home screen so it never forgets.</span>
       <div class="status" id="siStatus" role="status"></div>
-      <div class="dlg-actions"><button type="button" class="mini" value="cancel" id="siCancel">Not now</button><button type="submit" class="btn" id="siGo">Send me a code</button></div>
+      <div class="dlg-actions"><button type="button" class="mini" id="siCancel">Not now</button><button type="submit" class="btn" id="siGo">Sign in</button></div>
     </form>`);
-    const $=id=>d.querySelector('#'+id); let sent=false;
+    const $=id=>d.querySelector('#'+id);
     $('siCancel').onclick=()=>{ d.close(); resolve(false); };
+    $('siShow').onclick=()=>{ const p=$('siPass'), on=p.type==='password'; p.type=on?'text':'password'; $('siShow').textContent=on?'Hide':'Show'; $('siShow').setAttribute('aria-pressed',String(on)); };
     d.addEventListener('cancel',()=>resolve(false));
     d.querySelector('form').addEventListener('submit',async e=>{
-      e.preventDefault(); const email=$('siEmail').value.trim(); $('siGo').disabled=true;
-      try{
-        if(!sent){ $('siStatus').textContent='Sending…'; await C.sendCode(email); sent=true; $('siCodeRow').hidden=false; $('siEmail').disabled=true; $('siGo').textContent='Sign in'; $('siStatus').textContent='Check your email.'; $('siCode').focus(); }
-        else { $('siStatus').textContent='Checking…'; await C.verifyCode(email,$('siCode').value);
-          if(await C.isMember()){ d.close(); resolve(true); }
-          else { $('siStatus').textContent='This email is not on the team yet. Ask the owner to add it in Team.'; await C.signOut(); }
-        }
+      e.preventDefault(); $('siGo').disabled=true; $('siStatus').textContent='Checking…';
+      try{ await C.signInTeam($('siPass').value);
+        if(await C.isMember()){ d.close(); resolve(true); } else { $('siStatus').textContent='This login is not on the team list.'; await C.signOut(); }
       }catch(err){ $('siStatus').textContent=err.message; }
       $('siGo').disabled=false;
     });
-    setTimeout(()=>$('siEmail').focus(),50);
+    setTimeout(()=>$('siPass').focus(),50);
   });
 }
 async function canvasBlob(c,type,q){ return await new Promise(r=>c.toBlob(r,type,q)); }
@@ -492,7 +492,7 @@ async function tool(cfg){
       d.querySelectorAll('button').forEach(b=>b.disabled=true); $d('dsStatus').textContent='Saving…';
       try{
         const keep=$d('dsKeep').checked&&hasPhotos, r=recipe();
-        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(i>=S.count||!p.img||p.sample) return null; if(p.path&&!p.changed) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
+        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(i>=S.count||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
         const id=await C.saveDesign({id:asNew?null:(design&&design.id),brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:[...picked]});
         const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
         design={id,name,kind:keep?'design':'template',collections:[...picked]}; showDesignBar(); clearDraft();
@@ -703,7 +703,7 @@ async function home(){
   let all=[], cols=[], active='all', me=null, owner=false;
   async function refreshAccount(){
     const s=await C.session(); me=s&&s.user; const member=me&&await C.isMember();
-    $('acct').textContent=me?(me.email||'Account'):'Sign in'; $('acct').classList.toggle('on',!!me);
+    $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
     owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
     return member;
   }
@@ -764,17 +764,26 @@ async function home(){
           P.querySelector('#ncAdd').onclick=()=>{ const v=P.querySelector('#nc').value.trim(); if(v){ picked.add(v); draw(); } };
           P.querySelector('#colsGo').onclick=async()=>{ try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); loadSaved(); }catch(err){ st(err.message); } }; };
         draw(); }
-      if(act==='del'){ if(b.dataset.armed){ st('Deleting…'); try{ await C.deleteDesign(dsg.id); d.close(); loadSaved(); }catch(err){ st(err.message); } } else { b.dataset.armed='1'; b.textContent='Tap again to delete'; } }
+      if(act==='del'){
+        const cf=dialog(`<div class="dlg-body"><h3 dir="auto">Delete “${esc(dsg.name)}”?</h3>
+          <p class="small">This removes the design and all its images from Studio for the whole team. It can't be undone.</p>
+          <div class="status" id="cfSt" role="status"></div>
+          <div class="dlg-actions"><button type="button" class="mini" id="cfNo">Cancel</button><button type="button" class="btn danger" id="cfYes">Delete</button></div></div>`);
+        cf.querySelector('#cfNo').onclick=()=>cf.close();
+        cf.querySelector('#cfYes').onclick=async()=>{ cf.querySelectorAll('button').forEach(x=>x.disabled=true); cf.querySelector('#cfSt').textContent='Deleting the design and its images…';
+          try{ await C.deleteDesign(dsg.id); cf.close(); d.close(); loadSaved(); }
+          catch(err){ cf.querySelector('#cfSt').textContent=err.message; cf.querySelectorAll('button').forEach(x=>x.disabled=false); } };
+      }
     });
   });
 
   /* account menu: who's signed in, team (owner), sign out */
   $('acct').addEventListener('click',async()=>{
     if(!me){ if(await ensureMember()) loadSaved(); else loadSaved(); return; }
-    const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">Signed in as<br><b>${esc(me.email||'')}</b></p>
+    const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">${me.email===C.teamEmail?'Signed in with the team login. You stay signed in on this phone until you sign out.':'Signed in as<br><b>'+esc(me.email||'')+'</b>'}</p>
       <div id="teamBox"></div><div class="dlg-actions"><button type="button" class="mini" id="acSignOut">Sign out</button><button type="button" class="btn" id="acClose">Done</button></div></div>`);
     d.querySelector('#acClose').onclick=()=>d.close();
-    d.querySelector('#acSignOut').onclick=async()=>{ await C.signOut(); d.close(); loadSaved(); };
+    d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(); };
     if(owner){ const box=d.querySelector('#teamBox');
       const drawTeam=async()=>{ const m=await C.members(); box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
         <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
