@@ -37,7 +37,80 @@ function stepDown(im,tw,th){
 }
 function rr(ctx,x,y,w,h,r){r=typeof r==='number'?[r,r,r,r]:(r||[0,0,0,0]);const [a,b,c,d]=r.map(v=>Math.max(0,Math.min(v,w/2,h/2)));ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath();}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; }}
+function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; }}
+
+/* ---------- tools (for the hub and for opening saved designs) ---------- */
+const TOOLS={
+  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.'},
+  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.'},
+  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
+  'collage':{title:'Collage',blurb:'2, 3 or 4 whole photos in different layouts.'},
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'}
+};
+const toolPage=id=>ROOT+'tools/'+id+'.html';
+
+/* ---------- fonts: the brand's fonts first (used by default), then a hand-picked list ---------- */
+const MORE_FONTS=[
+  {family:'Tajawal',wt:'800',w:'500;800'},{family:'Almarai',wt:'800',w:'400;800'},{family:'Changa',wt:'800',w:'500;800'},
+  {family:'El Messiri',wt:'700',w:'600;700'},{family:'Reem Kufi',wt:'700',w:'500;700'},{family:'Noto Kufi Arabic',wt:'800',w:'600;800'},
+  {family:'Readex Pro',wt:'700',w:'500;700'},{family:'Marhey',wt:'700',w:'500;700'},{family:'Lemonada',wt:'700',w:'500;700'},{family:'Amiri',wt:'700',w:'400;700'}
+];
+function brandFonts(){ const f=BRAND.fonts; return f.choices||[{family:f.display,wt:''},{family:f.body,wt:'800'}]; }
+function fontInfo(fam){ return brandFonts().find(x=>x.family===fam)||MORE_FONTS.find(x=>x.family===fam)||null; }
+const FONT_READY=new Set();
+async function ensureFont(fam){
+  if(!fam||FONT_READY.has(fam)) return; const f=MORE_FONTS.find(x=>x.family===fam);
+  if(f&&!document.querySelector(`link[data-font="${fam}"]`)){ const l=document.createElement('link'); l.rel='stylesheet'; l.dataset.font=fam; l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(fam).replace(/%20/g,'+')+':wght@'+f.w+'&display=swap'; document.head.appendChild(l); }
+  const info=fontInfo(fam)||{wt:''}, sample=BRAND&&BRAND.lang==='ar'?'نص عربي':'Text';
+  try{ await Promise.race([document.fonts.load((info.wt?info.wt+' ':'')+'64px "'+fam+'"',sample),new Promise(r=>setTimeout(r,5000))]); }catch(_){}
+  FONT_READY.add(fam);
+}
+
+/* ---------- small IndexedDB store for draft photos (they're too big for localStorage) ---------- */
+const idb={
+  db:null,
+  open(){ if(this.db) return this.db; this.db=new Promise((res,rej)=>{ const r=indexedDB.open('studio',1); r.onupgradeneeded=()=>r.result.createObjectStore('files'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); return this.db; },
+  async tx(mode,fn){ try{ const db=await this.open(); return await new Promise((res,rej)=>{ const t=db.transaction('files',mode), s=t.objectStore('files'); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); }catch(_){ return null; } },
+  get(k){ return this.tx('readonly',s=>s.get(k)); }, put(k,v){ return this.tx('readwrite',s=>s.put(v,k)); }, del(k){ return this.tx('readwrite',s=>s.delete(k)); }
+};
+
+/* ---------- cloud (team saved designs) ---------- */
+async function cloud(){
+  if(!window.STUDIO_CONFIG) await loadScript(ROOT+'assets/config.js');
+  if(!window.StudioCloud) await loadScript(ROOT+'assets/cloud.js');
+  return window.StudioCloud;
+}
+/* One sign-in dialog for every page. Resolves true once the person is signed in AND on the team. */
+function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>setTimeout(()=>d.remove(),50)); d.showModal(); return d; }
+async function ensureMember(reason){
+  const C=await cloud();
+  if(await C.session()){ if(await C.isMember()) return true; }
+  return new Promise(resolve=>{
+    const d=dialog(`<form method="dialog" class="dlg-body">
+      <h3>Sign in to the team</h3><p class="small">${esc(reason||'Saved designs are shared with the team.')}</p>
+      <div class="field" id="siEmailRow"><label class="lbl" for="siEmail">Your email</label><input type="email" id="siEmail" autocomplete="email" inputmode="email" required></div>
+      <div class="field" id="siCodeRow" hidden><label class="lbl" for="siCode">The code from the email</label><input type="text" id="siCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="text-align:center;letter-spacing:.3em"><span class="small">No code in the email? Tap the link in it on this phone instead.</span></div>
+      <div class="status" id="siStatus" role="status"></div>
+      <div class="dlg-actions"><button type="button" class="mini" value="cancel" id="siCancel">Not now</button><button type="submit" class="btn" id="siGo">Send me a code</button></div>
+    </form>`);
+    const $=id=>d.querySelector('#'+id); let sent=false;
+    $('siCancel').onclick=()=>{ d.close(); resolve(false); };
+    d.addEventListener('cancel',()=>resolve(false));
+    d.querySelector('form').addEventListener('submit',async e=>{
+      e.preventDefault(); const email=$('siEmail').value.trim(); $('siGo').disabled=true;
+      try{
+        if(!sent){ $('siStatus').textContent='Sending…'; await C.sendCode(email); sent=true; $('siCodeRow').hidden=false; $('siEmail').disabled=true; $('siGo').textContent='Sign in'; $('siStatus').textContent='Check your email.'; $('siCode').focus(); }
+        else { $('siStatus').textContent='Checking…'; await C.verifyCode(email,$('siCode').value);
+          if(await C.isMember()){ d.close(); resolve(true); }
+          else { $('siStatus').textContent='This email is not on the team yet. Ask the owner to add it in Team.'; await C.signOut(); }
+        }
+      }catch(err){ $('siStatus').textContent=err.message; }
+      $('siGo').disabled=false;
+    });
+    setTimeout(()=>$('siEmail').focus(),50);
+  });
+}
+async function canvasBlob(c,type,q){ return await new Promise(r=>c.toBlob(r,type,q)); }
 
 /* ---------- brands ---------- */
 function registerBrand(b){ BRANDS[b.id]=b; }
@@ -118,7 +191,8 @@ function makeHelpers(ctx,S,preview,reg,scale){
     /* text layer; align 'center' | 'start' | 'end' relative to x (start = right side in Arabic) */
     text(id,label,str,x,y,o){
       o=o||{}; if(!str) { reg.push({id,label,empty:true}); return 0; }
-      const fam=o.font==='display'?B.fonts.display:B.fonts.body, wt=o.weight||'';
+      const ff=L(id).font&&fontInfo(L(id).font);
+      const fam=ff?ff.family:(o.font==='display'?B.fonts.display:B.fonts.body), wt=ff?ff.wt:(o.weight||'');
       const size=fitSize(str,o.size||40,wt,fam,o.maxW||936), m=ctx.measureText(str), b=box(m,size), tw=Math.ceil(m.width), th=Math.ceil(b.a+b.d);
       const al=o.align||'center'; const rightish=(al==='start'&&dir==='rtl')||(al==='end'&&dir!=='rtl');
       const bx=al==='center'?x-tw/2:(rightish?x-tw:x);
@@ -132,20 +206,22 @@ function makeHelpers(ctx,S,preview,reg,scale){
     /* rounded button layer */
     pill(id,label,str,cx,y,o){
       o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; }
-      ctx.font='800 '+(o.size||36)+'px "'+B.fonts.body+'"'; const m=ctx.measureText(str), ph=o.h||76, pw=Math.ceil(m.width)+(o.pad||88), b=box(m,o.size||36);
+      const ff=L(id).font&&fontInfo(L(id).font), pf=ff?((ff.wt?ff.wt+' ':'')+(o.size||36)+'px "'+ff.family+'"'):('800 '+(o.size||36)+'px "'+B.fonts.body+'"');
+      ctx.font=pf; const m=ctx.measureText(str), ph=o.h||76, pw=Math.ceil(m.width)+(o.pad||88), b=box(m,o.size||36);
       layer(id,label,{x:cx-pw/2,y,w:pw,h:ph},color=>{
         const bg=color||o.bg||C.ink; ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,pw,ph,ph/2); ctx.fill();
-        ctx.font='800 '+(o.size||36)+'px "'+B.fonts.body+'"'; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color?(isLight(color)?C.ink:C.paper):(o.fg||C.paper); ctx.fillText(str,pw/2,ph/2+(b.a-b.d)/2);
+        ctx.font=pf; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color?(isLight(color)?C.ink:C.paper):(o.fg||C.paper); ctx.fillText(str,pw/2,ph/2+(b.a-b.d)/2);
       },{kind:'pill'});
       return L(id).hidden?0:ph;
     },
     /* place name with a map pin centred on the letters */
     pin(id,label,str,cx,y,o){
       o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; }
-      const fam=B.fonts.body, fs=fitSize(str,o.size||44,'800',fam,o.maxW||860), m=ctx.measureText(str), b=box(m,fs);
+      const ff=L(id).font&&fontInfo(L(id).font), fam=ff?ff.family:B.fonts.body, pw8=ff?ff.wt:'800';
+      const fs=fitSize(str,o.size||44,pw8,fam,o.maxW||860), m=ctx.measureText(str), b=box(m,fs);
       const pinH=Math.round(fs*.9), kk=pinH/224, pinW=176*kk, gap=14, tw=Math.ceil(m.width), tot=tw+gap+pinW, th=Math.ceil(b.a+b.d);
       layer(id,label,{x:cx-tot/2,y,w:tot,h:th},color=>{
-        ctx.font='800 '+fs+'px "'+fam+'"'; ctx.direction=dir; ctx.textBaseline='alphabetic'; ctx.textAlign='left'; ctx.fillStyle=color||o.color||C.muted;
+        ctx.font=(pw8?pw8+' ':'')+fs+'px "'+fam+'"'; ctx.direction=dir; ctx.textBaseline='alphabetic'; ctx.textAlign='left'; ctx.fillStyle=color||o.color||C.muted;
         const textX=dir==='rtl'?0:pinW+gap, pinX=dir==='rtl'?tw+gap:0;
         ctx.fillText(str,textX,b.a);
         const mid=b.a-(b.a-b.d)/2; ctx.translate(pinX-40*kk,mid-pinH/2-16*kk); ctx.scale(kk,kk); ctx.fill(PIN);
@@ -162,6 +238,7 @@ function isLight(hex){ const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return
 async function tool(cfg){
   const app=document.getElementById('app');
   app.innerHTML='<p class="hint" style="width:100%">Loading…</p>';
+  if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
   const B=await useBrand();
   const opts=v=>typeof v==='function'?v(B):v;
   const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
@@ -182,13 +259,16 @@ async function tool(cfg){
       <div class="insp-head"><b id="inspName">Text</b><button type="button" class="x" id="inspClose" aria-label="Done">Done</button></div>
       <input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" hidden>
       <div class="insp-row"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
+      <div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
       <div class="insp-row" id="inspColors" role="group" aria-label="Colour"></div>
       <div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
     </div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in step 1.')}</div>
-    <div class="tools"><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
+    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
   </div>
   <form class="panel" id="form" autocomplete="off">
+  <div class="banner" id="designBar" hidden></div>
+  <div class="banner" id="draftBar" hidden><span>You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
   <section class="step"><h2><span class="num">${step++}</span>${nPhotos>1?'Photos':'Photo'}</h2>`;
   if(cfg.photos.min&&cfg.photos.max>cfg.photos.min){
     html+=`<span class="lbl">How many photos</span><div class="row" role="group" aria-label="How many photos">`;
@@ -199,7 +279,9 @@ async function tool(cfg){
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn" style="align-self:flex-start;padding:0">Reset photo</button></div></section>`;
   if(cfg.styles) html+=`<section class="step"><h2><span class="num">${step++}</span>Style</h2><div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div></section>`;
   if(fields.length) html+=`<section class="step"><h2><span class="num">${step++}</span>Words</h2><div id="fields" class="field" style="gap:16px"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></section>`;
-  html+=`<button type="button" class="btn" id="save">Save story</button><div class="status" id="status" role="status"></div>
+  html+=`<button type="button" class="btn" id="save">Save story</button>
+  <button type="button" class="btn ghost" id="saveDesign"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span id="saveDesignTxt">Save design to the team</span></button>
+  <div class="status" id="status" role="status"></div>
   <div class="result" id="result" hidden><img id="resultImg" alt="Your finished story"><span class="small">Press and hold the image (or right-click) to save it.</span></div>
   ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
   </form>`;
@@ -260,7 +342,7 @@ async function tool(cfg){
     try{
       const img=await loadFile(file);
       const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
-      S.photos[i]={img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7)};
+      S.photos[i]={img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7),file,key:'p'+Date.now().toString(36)+i};
       S.active=i; $('result').hidden=true; status('');
       $('hint').textContent='Drag text or photos to move them. Tap text to edit it.';
       syncUI(); render();
@@ -305,7 +387,140 @@ async function tool(cfg){
     if(preview&&guide){ ctx.save(); ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.restore(); }
     ctx.restore(); if(preview) reg=r;
   }
-  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); }
+  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); }
+
+  /* ---- the design "recipe": everything needed to rebuild this story (saving, drafts, undo) ---- */
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  function recipe(){
+    return {v:1,tool:cfg.id,brand:B.id,style:S.style,count:S.count,values:clone(S.values),layers:clone(S.layers),extras:clone(S.extras),
+      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample)}))};
+  }
+  /* slots: optional photo objects to put in each slot (null = keep what's there) */
+  function applyRecipe(r,slots){
+    if(r.style&&(!cfg.styles||cfg.styles.some(s=>s.id===r.style))) S.style=r.style;
+    if(r.count) S.count=Math.min(nPhotos,Math.max(minPhotos,r.count));
+    Object.keys(r.values||{}).forEach(k=>{ if(k in S.values) S.values[k]=clone(r.values[k]); });
+    S.layers=clone(r.layers||{}); S.extras=clone(r.extras||[]);
+    extraN=S.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN);
+    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
+    S.sel=null;
+  }
+  async function fontsOf(r){ const fams=new Set(); Object.values(r.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }); await Promise.all([...fams].map(ensureFont)); }
+
+  /* ---- undo / redo: a snapshot after every pause in editing ---- */
+  const hist={stack:[],i:-1,timer:0,ready:false};
+  function snap(){ return {json:JSON.stringify(recipe()),photos:S.photos.map(p=>({...p}))}; }
+  function same(a,b){ return a&&b&&a.json===b.json&&a.photos.every((p,i)=>p.img===b.photos[i].img); }
+  function scheduleCommit(){ if(!hist.ready) return; clearTimeout(hist.timer); hist.timer=setTimeout(commit,450); }
+  function commit(){
+    if(pts.size) return scheduleCommit();                      // still dragging
+    const s=snap(); if(same(s,hist.stack[hist.i])) return;
+    hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
+    syncUndo(); saveDraft(s);
+  }
+  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); draw(vctx,true); syncUndo(); saveDraft(s); }
+  function undo(){ if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
+  function redo(){ if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
+  function syncUndo(){ $('undo').disabled=hist.i<=0; $('redo').disabled=hist.i>=hist.stack.length-1; }
+  function startHistory(){ hist.stack=[snap()]; hist.i=0; hist.ready=true; syncUndo(); }
+
+  /* ---- drafts: the unfinished story is kept on this phone, photos included ---- */
+  const DKEY='studio:draft:'+B.id+':'+cfg.id; let draftTimer=0, dirty=false;
+  function saveDraft(s){
+    if(!hist.ready) return; if(hist.i>0) dirty=true; if(!dirty) return;
+    clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
+      const keys=[];
+      for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(!p.draftSaved){ const blob=await photoBlob(p); if(blob){ await idb.put(DKEY+':'+p.key,blob); p.draftSaved=true; } } } else keys[i]=null; }
+      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),design:design&&{id:design.id,name:design.name,kind:design.kind}});
+      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(DKEY+':'+k); });
+    },800);
+  }
+  function clearDraft(){ const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
+  async function loadDraft(d){
+    const slots=[];
+    for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(DKEY+':'+k); if(blob) slots[i]=await photoFromBlob(blob,k,true); }
+    const r=JSON.parse(d.json); await fontsOf(r); applyRecipe(r,slots);
+    if(d.design){ design={...d.design,collections:[]}; showDesignBar(); }
+    dirty=true;
+  }
+  async function photoFromBlob(blob,key,draftSaved){
+    const img=await loadFile(blob); const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
+    return {img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7),file:blob,key:key||('p'+Math.random().toString(36).slice(2,9)),draftSaved:!!draftSaved};
+  }
+  /* the photo as a file: the original when we still have it at full size, otherwise a high-quality JPEG */
+  async function photoBlob(p){
+    if(p.file&&!(p.img instanceof HTMLCanvasElement)&&/^image\/(jpeg|png|webp)$/.test(p.file.type)) return p.file;
+    const c=document.createElement('canvas'); c.width=p.img.width; c.height=p.img.height; c.getContext('2d').drawImage(p.img,0,0);
+    const b=await canvasBlob(c,'image/jpeg',.95); c.width=c.height=0; return b;
+  }
+
+  /* ---- saved designs (shared with the team) ---- */
+  let design=null;   // {id,name,kind,collections}
+  function showDesignBar(){
+    const bar=$('designBar'); if(!design){ bar.hidden=true; $('saveDesignTxt').textContent='Save design to the team'; return; }
+    bar.hidden=false;
+    bar.innerHTML=`<span><span class="small">${design.kind==='template'?'Template':'Saved design'}</span><br><b>${esc(design.name)}</b></span><span class="banner-btns"><a class="mini" href="${ROOT}index.html#saved">All saved</a></span>`;
+    $('saveDesignTxt').textContent='Update “'+design.name+'”';
+  }
+  function thumbBlob(){
+    const c=document.createElement('canvas'); c.width=360; c.height=640; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,360,640); draw(ctx,true,1/3); S.sel=sel; return canvasBlob(c,'image/jpeg',.85);
+  }
+  async function openSaveDialog(){
+    if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) return;
+    const C=await cloud(); let cols=[]; try{ cols=await C.collections(B.id); }catch(_){}
+    const picked=new Set(design?design.collections:[]); const hasPhotos=S.photos.slice(0,S.count).some(p=>p.img&&!p.sample);
+    const d=dialog(`<form method="dialog" class="dlg-body">
+      <h3>${design?'Save design':'Save design to the team'}</h3>
+      <div class="field"><label class="lbl" for="dsName">Name</label><input type="text" id="dsName" dir="auto" required maxlength="80" placeholder="e.g. Restock – Al Khoud"></div>
+      <div class="field"><span class="lbl">Collections</span><div class="chips" id="dsCols"></div>
+        <div class="inline"><input type="text" id="dsNew" dir="auto" placeholder="New collection…" maxlength="40"><button type="button" class="mini" id="dsAdd">Add</button></div></div>
+      <label class="check"><input type="checkbox" id="dsKeep" ${hasPhotos&&(!design||design.kind!=='template')?'checked':''} ${hasPhotos?'':'disabled'}> Keep the photos</label>
+      <span class="small" id="dsKeepNote">${hasPhotos?'Off = a template: layout and words only, add new photos each time.':'No photos yet, so this is saved as a template.'}</span>
+      <div class="status" id="dsStatus" role="status"></div>
+      <div class="dlg-actions">${design?'<button type="button" class="mini" id="dsAsNew">Save as new</button>':'<button type="button" class="mini" id="dsCancel">Cancel</button>'}<button type="submit" class="btn" id="dsGo">${design?'Update':'Save'}</button></div>
+    </form>`);
+    const $d=id=>d.querySelector('#'+id); $d('dsName').value=design?design.name:'';
+    const paint=()=>{ const all=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b)); $d('dsCols').innerHTML=all.length?all.map(n=>`<button type="button" class="chip" dir="auto" data-col="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join(''):'<span class="small">No collections yet. Add one below.</span>'; };
+    paint();
+    $d('dsCols').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; picked.has(n)?picked.delete(n):picked.add(n); paint(); });
+    const addNew=()=>{ const n=$d('dsNew').value.trim(); if(n){ picked.add(n); $d('dsNew').value=''; paint(); } };
+    $d('dsAdd').onclick=addNew; $d('dsNew').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addNew(); } });
+    if($d('dsCancel')) $d('dsCancel').onclick=()=>d.close();
+    const go=async asNew=>{
+      const name=$d('dsName').value.trim(); if(!name){ $d('dsStatus').textContent='Give it a name.'; $d('dsName').focus(); return; }
+      d.querySelectorAll('button').forEach(b=>b.disabled=true); $d('dsStatus').textContent='Saving…';
+      try{
+        const keep=$d('dsKeep').checked&&hasPhotos, r=recipe();
+        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(i>=S.count||!p.img||p.sample) return null; if(p.path&&!p.changed) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
+        const id=await C.saveDesign({id:asNew?null:(design&&design.id),brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:[...picked]});
+        const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
+        design={id,name,kind:keep?'design':'template',collections:[...picked]}; showDesignBar(); clearDraft();
+        history.replaceState(null,'',location.pathname+'?design='+id);
+        d.close(); status('Saved to the team as “'+name+'”.');
+      }catch(err){ $d('dsStatus').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); }
+    };
+    d.querySelector('form').addEventListener('submit',e=>{ e.preventDefault(); go(false); });
+    if($d('dsAsNew')) $d('dsAsNew').onclick=()=>go(true);
+    setTimeout(()=>{ const n=$d('dsName'); n.focus(); n.select(); },50);
+  }
+  async function openDesign(id,ready){
+    status('Opening the saved design…');
+    if(!(await ensureMember('This design is saved with the team. Sign in to open it.'))){ status(''); return false; }
+    const C=await cloud(); const d=await C.getDesign(id); const r=d.recipe;
+    if(d.tool!==cfg.id){ location.replace(toolPage(d.tool)+'?design='+id+(ready?'&go=1':'')); return false; }
+    const slots=[];
+    if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
+    await fontsOf(r); applyRecipe(r,slots);
+    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; showDesignBar(); status('');
+    if(ready&&d.kind!=='template'){
+      const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
+        <div class="dlg-actions"><button type="button" class="mini" id="rdEdit">Edit first</button><button type="button" class="btn" id="rdSave">Save story</button></div></div>`);
+      dl.querySelector('#rdEdit').onclick=()=>dl.close();
+      dl.querySelector('#rdSave').onclick=()=>{ dl.close(); C.touchUsed(id); save(true); };
+    }
+    return true;
+  }
 
   /* ---- selecting and editing layers ---- */
   const extra=id=>S.extras.find(x=>x.id===id);
@@ -320,10 +535,25 @@ async function tool(cfg){
     $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspHide').hidden=!!x; $('inspDelete').hidden=!x;
     const C=B.colors, kind=b&&b.kind;
     const sw=kind==='logo'?[['dark','Dark',C.ink],['light','Light','#ffffff']]:[[null,'Auto',null],[C.paper,'White',C.paper],[C.ink,'Dark',C.ink],[C.accent,'Gold',C.accent]];
+    $('inspFontRow').hidden=!(kind==='text'||kind==='pill');
+    if(kind==='text'||kind==='pill'){
+      const opt=f=>`<option value="${esc(f.family)}" style="font-family:'${esc(f.family)}'">${esc(f.label||f.family)}</option>`;
+      const html=`<option value="">Brand font (default)</option><optgroup label="${esc(B.name)} fonts">${brandFonts().map(opt).join('')}</optgroup><optgroup label="More fonts">${MORE_FONTS.map(opt).join('')}</optgroup>`;
+      if($('inspFont').dataset.built!=='1'){ $('inspFont').innerHTML=html; $('inspFont').dataset.built='1'; }
+      $('inspFont').value=l.font||'';
+    }
     const cur=x?x.color:l.color;
     $('inspColors').innerHTML='<span class="lbl">Colour</span>'+sw.map(([v,n,c])=>`<button type="button" class="sw-btn" data-color="${v??''}" aria-pressed="${String((cur??'')===(v??''))}" aria-label="${n}" title="${n}" style="${c?'background:'+c:''}">${c?'':'A'}</button>`).join('');
   }
   $('inspClose').addEventListener('click',()=>select(null));
+  $('inspFont').addEventListener('change',async e=>{ const id=S.sel; if(!id) return; const fam=e.target.value||null; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
+    if(fam){ status('Loading font…'); await ensureFont(fam); status(''); } l.font=fam; render(); });
+  $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
+  document.addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)||e.altKey) return; const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
+    const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
+  $('saveDesign').addEventListener('click',openSaveDialog);
+  $('draftFresh').addEventListener('click',()=>{ clearDraft(); $('draftBar').hidden=true; });
+  $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const d=store(DKEY); if(d){ await loadDraft(d); syncUI(); draw(vctx,true); startHistory(); } });
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); render(); });
   $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
   $('inspColors').addEventListener('click',e=>{ const b=e.target.closest('[data-color]'); if(!b) return; const v=b.dataset.color||null, id=S.sel, x=extra(id); if(x){ x.color=v||B.colors.paper; x.shadow=!(v&&!isLight(v)); } else (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).color=v; syncInspector(); render(); });
@@ -445,13 +675,116 @@ async function tool(cfg){
   const names=(B.samples&&B.samples[cfg.id])||[];
   const imgs=await Promise.all(names.map(n=>load(B.base+'samples/'+n+'.jpg').catch(()=>null)));
   imgs.forEach((img,i)=>{ if(img&&S.photos[i]) S.photos[i]={img,zoom:1,ox:0,oy:0,sample:true}; });
-  syncUI(); render();
+  syncUI(); draw(vctx,true);
+
+  /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), or offer the unfinished story ---- */
+  const q=new URLSearchParams(location.search), draft=store(DKEY);
+  try{
+    if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
+    else if(draft&&q.get('draft')==='1') await loadDraft(draft);
+    else if(draft&&(draft.keys||[]).some(Boolean)||(draft&&draft.json!==JSON.stringify(recipe()))) $('draftBar').hidden=false;
+  }catch(err){ status(err.message||'Could not open that.'); }
+  syncUI(); draw(vctx,true); startHistory();
 }
 
-/* home page: brand name and logo */
+/* ---------- home: continue editing, saved designs + collections, tools ---------- */
+function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
-  const B=await useBrand();
+  const B=await useBrand(); const $=id=>document.getElementById(id);
   document.querySelectorAll('[data-thumb]').forEach(i=>{ i.src=ROOT+'assets/thumbs/'+B.id+'/'+i.dataset.thumb+'.jpg'; });
+
+  /* continue editing: unfinished stories kept on this phone */
+  const cont=Object.keys(TOOLS).map(id=>({id,d:store('studio:draft:'+B.id+':'+id)})).filter(x=>x.d).sort((a,b)=>b.d.at-a.d.at);
+  if(cont.length){ $('continueSec').hidden=false;
+    $('continueList').innerHTML=cont.map(x=>`<a class="rowcard" href="${toolPage(x.id)}?draft=1"><b>${esc(TOOLS[x.id].title)}</b><span>${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></a>`).join(''); }
+
+  /* account + saved */
+  const C=await cloud(); await C.client();
+  let all=[], cols=[], active='all', me=null, owner=false;
+  async function refreshAccount(){
+    const s=await C.session(); me=s&&s.user; const member=me&&await C.isMember();
+    $('acct').textContent=me?(me.email||'Account'):'Sign in'; $('acct').classList.toggle('on',!!me);
+    owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
+    return member;
+  }
+  async function loadSaved(){
+    const member=await refreshAccount();
+    if(!member){ $('q').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedGrid').innerHTML='';
+      $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=`<p>${me?'This email is not on the team yet. Ask the owner to add you.':'Sign in to see the designs your team saved.'}</p>${me?'':'<button type="button" class="btn slim" id="savedSignIn">Sign in</button>'}`;
+      const b=$('savedSignIn'); if(b) b.onclick=async()=>{ if(await ensureMember()) loadSaved(); };
+      return; }
+    $('savedEmpty').hidden=true; $('savedGrid').innerHTML='<p class="small">Loading…</p>';
+    try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }catch(err){ $('savedGrid').innerHTML=`<p class="small">${esc(err.message)}</p>`; return; }
+    paint();
+  }
+  function paint(){
+    $('q').hidden=!all.length;
+    $('colChips').hidden=!cols.length;
+    if(active!=='all'&&!cols.some(c=>c.id===active)) active='all';
+    $('colChips').innerHTML=`<button type="button" class="chip" data-col="all" aria-pressed="${active==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>`<button type="button" class="chip" dir="auto" data-col="${c.id}" aria-pressed="${active===c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('');
+    $('colTools').hidden=active==='all';
+    const q=$('q').value.trim().toLowerCase(), colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
+    const list=all.filter(d=>(active==='all'||d.collections.includes(active))&&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||(TOOLS[d.tool]&&TOOLS[d.tool].title.toLowerCase().includes(q))));
+    if(!all.length){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save design to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
+    $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
+    $('savedGrid').innerHTML=list.map(d=>`<button type="button" class="dcard" data-id="${d.id}"><span class="dthumb"><img alt="" data-path="${esc(d.thumb_path||'')}">${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc((TOOLS[d.tool]||{}).title||d.tool)} · ${ago(d.updated_at)}</span></span></button>`).join('');
+    C.fileUrls(list.map(d=>d.thumb_path)).then(u=>{ document.querySelectorAll('#savedGrid img[data-path]').forEach(i=>{ if(u[i.dataset.path]) i.src=u[i.dataset.path]; }); });
+  }
+  $('q').addEventListener('input',paint);
+  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(b){ active=b.dataset.col; paint(); } });
+  $('colRename').onclick=()=>{ const c=cols.find(x=>x.id===active); if(!c) return;
+    const d=dialog(`<form method="dialog" class="dlg-body"><h3>Rename collection</h3><input type="text" id="crName" dir="auto" maxlength="40"><div class="status" id="crSt"></div><div class="dlg-actions"><button type="button" class="mini" id="crX">Cancel</button><button type="submit" class="btn">Rename</button></div></form>`);
+    d.querySelector('#crName').value=c.name; d.querySelector('#crX').onclick=()=>d.close();
+    d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
+  $('colDelete').onclick=()=>{ const c=cols.find(x=>x.id===active); if(!c) return;
+    const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
+    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); active='all'; loadSaved(); }; };
+
+  /* one saved design: use it, edit it, rename, duplicate, collections, delete */
+  $('savedGrid').addEventListener('click',async e=>{
+    const card=e.target.closest('[data-id]'); if(!card) return; const dsg=all.find(x=>x.id===card.dataset.id); if(!dsg) return;
+    const url=await C.fileUrl(dsg.thumb_path), page=toolPage(dsg.tool);
+    const names=dsg.collections.map(id=>(cols.find(c=>c.id===id)||{}).name).filter(Boolean);
+    const d=dialog(`<div class="dlg-body design-sheet">
+      <div class="ds-top">${url?`<img src="${url}" alt="">`:''}<div><h3 dir="auto">${esc(dsg.name)}</h3><p class="small">${esc((TOOLS[dsg.tool]||{}).title||dsg.tool)}${dsg.kind==='template'?' · template (add new photos)':''}<br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
+      <div class="ds-main">${dsg.kind==='template'?`<a class="btn" href="${page}?design=${dsg.id}">Use template</a>`:`<a class="btn" href="${page}?design=${dsg.id}&go=1">Save story</a><a class="btn ghost" href="${page}?design=${dsg.id}">Edit</a>`}</div>
+      <div class="ds-more"><button type="button" class="mini" data-act="rename">Rename</button><button type="button" class="mini" data-act="dup">Duplicate</button><button type="button" class="mini" data-act="cols">Collections</button><button type="button" class="mini danger" data-act="del">Delete</button></div>
+      <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
+      <button type="button" class="link" id="dsClose">Close</button></div>`,'sheet');
+    const P=d.querySelector('#dsPanel'), st=t=>{ d.querySelector('#dsSt').textContent=t; };
+    d.querySelector('#dsClose').onclick=()=>d.close();
+    d.querySelector('.ds-more').addEventListener('click',async ev=>{
+      const b=ev.target.closest('[data-act]'); if(!b) return; const act=b.dataset.act; st('');
+      if(act==='rename'){ P.innerHTML=`<div class="inline"><input type="text" id="rn" dir="auto" maxlength="80"><button type="button" class="mini solid" id="rnGo">Save</button></div>`; const i=P.querySelector('#rn'); i.value=dsg.name; i.focus(); i.select();
+        P.querySelector('#rnGo').onclick=async()=>{ try{ await C.renameDesign(dsg.id,i.value); d.close(); loadSaved(); }catch(err){ st(err.message); } }; }
+      if(act==='dup'){ st('Copying…'); try{ await C.duplicateDesign(dsg.id); d.close(); loadSaved(); }catch(err){ st(err.message); } }
+      if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
+          P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
+          P.querySelector('.chips').onclick=ev2=>{ const c=ev2.target.closest('[data-n]'); if(c){ picked.has(c.dataset.n)?picked.delete(c.dataset.n):picked.add(c.dataset.n); draw(); } };
+          P.querySelector('#ncAdd').onclick=()=>{ const v=P.querySelector('#nc').value.trim(); if(v){ picked.add(v); draw(); } };
+          P.querySelector('#colsGo').onclick=async()=>{ try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); loadSaved(); }catch(err){ st(err.message); } }; };
+        draw(); }
+      if(act==='del'){ if(b.dataset.armed){ st('Deleting…'); try{ await C.deleteDesign(dsg.id); d.close(); loadSaved(); }catch(err){ st(err.message); } } else { b.dataset.armed='1'; b.textContent='Tap again to delete'; } }
+    });
+  });
+
+  /* account menu: who's signed in, team (owner), sign out */
+  $('acct').addEventListener('click',async()=>{
+    if(!me){ if(await ensureMember()) loadSaved(); else loadSaved(); return; }
+    const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">Signed in as<br><b>${esc(me.email||'')}</b></p>
+      <div id="teamBox"></div><div class="dlg-actions"><button type="button" class="mini" id="acSignOut">Sign out</button><button type="button" class="btn" id="acClose">Done</button></div></div>`);
+    d.querySelector('#acClose').onclick=()=>d.close();
+    d.querySelector('#acSignOut').onclick=async()=>{ await C.signOut(); d.close(); loadSaved(); };
+    if(owner){ const box=d.querySelector('#teamBox');
+      const drawTeam=async()=>{ const m=await C.members(); box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
+        <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
+        box.querySelector('#addForm').onsubmit=async e=>{ e.preventDefault(); try{ await C.addMember(box.querySelector('#addEmail').value); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } };
+        box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await C.removeMember(b.dataset.rm); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } }); };
+      drawTeam(); }
+  });
+  C.onAuth(ev=>{ if(ev==='SIGNED_IN'||ev==='SIGNED_OUT') loadSaved(); });
+  loadSaved();
+  if(location.hash==='#saved') setTimeout(()=>$('saved').scrollIntoView(),300);
 }
 
 window.Studio={tool,home,registerBrand,useBrand,brandList:window.Studio&&window.Studio.brandList||[],W,H};

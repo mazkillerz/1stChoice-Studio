@@ -8,23 +8,42 @@
 <link rel="icon" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
 <meta name="apple-mobile-web-app-title" content="Studio">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/studio.css">
 </head>
 <body>
-<nav class="top"><a class="home" href="index.html"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a></nav>
+<nav class="top"><a class="home" href="index.html"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a><button type="button" class="acct" id="acct">Sign in</button></nav>
 <header class="hero">
   <h1>Make a story in a minute</h1>
-  <p>Pick a tool, add your photo, choose the words, save. Tap any text in the preview to move, resize or rewrite it. Logo, fonts and wording come from the <b data-brand-name>brand</b> kit.</p>
+  <p>Pick a tool, add your photo, choose the words, save. Save designs to the team and reuse them in one tap. Logo, fonts and wording come from the <b data-brand-name>brand</b> kit.</p>
 </header>
-<main class="grid">
-  <a class="card" href="tools/new-place.html"><div class="thumb"><img data-thumb="new-place" alt=""></div><div class="txt"><b>New place</b><span>A new sale point: photo, place name, pin.</span></div></a>
-  <a class="card" href="tools/photo-story.html"><div class="thumb"><img data-thumb="photo-story" alt=""></div><div class="txt"><b>Photo story</b><span>A tall photo, full screen, headline and logo.</span></div></a>
-  <a class="card" href="tools/cinematic.html"><div class="thumb"><img data-thumb="cinematic" alt=""></div><div class="txt"><b>Cinematic bars</b><span>A wide photo shown whole, text on black bars.</span></div></a>
-  <a class="card" href="tools/collage.html"><div class="thumb"><img data-thumb="collage" alt=""></div><div class="txt"><b>Collage</b><span>2, 3 or 4 whole photos in different layouts.</span></div></a>
-  <a class="card" href="tools/split.html"><div class="thumb"><img data-thumb="split" alt=""></div><div class="txt"><b>Two-photo split</b><span>Close-up on top, wide below, words on the cut.</span></div></a>
-</main>
+
+<section class="hub-sec" id="continueSec" hidden>
+  <h2>Continue editing</h2>
+  <div class="rowcards" id="continueList"></div>
+</section>
+
+<section class="hub-sec" id="saved">
+  <div class="sec-head"><h2>Saved</h2><input type="search" id="q" placeholder="Search saved designs" aria-label="Search saved designs" dir="auto" hidden></div>
+  <div class="chips" id="colChips" role="group" aria-label="Collections" hidden></div>
+  <div class="col-tools" id="colTools" hidden><button type="button" class="link" id="colRename">Rename collection</button><button type="button" class="link" id="colDelete">Delete collection</button></div>
+  <div class="dgrid" id="savedGrid"></div>
+  <div class="empty" id="savedEmpty" hidden></div>
+</section>
+
+<section class="hub-sec">
+  <h2>Tools</h2>
+  <div class="grid">
+    <a class="card" href="tools/new-place.html"><div class="thumb"><img data-thumb="new-place" alt=""></div><div class="txt"><b>New place</b><span>A new sale point: photo, place name, pin.</span></div></a>
+    <a class="card" href="tools/photo-story.html"><div class="thumb"><img data-thumb="photo-story" alt=""></div><div class="txt"><b>Photo story</b><span>A tall photo, full screen, headline and logo.</span></div></a>
+    <a class="card" href="tools/cinematic.html"><div class="thumb"><img data-thumb="cinematic" alt=""></div><div class="txt"><b>Cinematic bars</b><span>A wide photo shown whole, text on black bars.</span></div></a>
+    <a class="card" href="tools/collage.html"><div class="thumb"><img data-thumb="collage" alt=""></div><div class="txt"><b>Collage</b><span>2, 3 or 4 whole photos in different layouts.</span></div></a>
+    <a class="card" href="tools/split.html"><div class="thumb"><img data-thumb="split" alt=""></div><div class="txt"><b>Two-photo split</b><span>Close-up on top, wide below, words on the cut.</span></div></a>
+  </div>
+</section>
 <p class="foot">On iPhone: open in Safari, tap Share, then “Add to Home Screen” to use it like an app.</p>
 <script src="assets/studio.js"></script>
 <script src="brands/brands.js"></script>

@@ -10,7 +10,13 @@ Studio.registerBrand({
   fonts:{
     display:'Lalezar',         // big headlines
     body:'Cairo',              // small lines, buttons, place names
-    google:'family=Cairo:wght@600;800&family=Lalezar'
+    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',
+    /* fonts offered first in the Font menu; new text always starts in display/body above */
+    choices:[
+      {family:'Lalezar',label:'Lalezar (headlines)',wt:''},
+      {family:'Cairo',label:'Cairo (body)',wt:'800'},
+      {family:'Modak',label:'Modak (English, logo style)',wt:''}
+    ]
   },
   colors:{
     ink:'#161210',             // text and buttons on light
