@@ -5,10 +5,10 @@ Studio.tool({
   styles:[{id:'black',label:'Black'},{id:'white',label:'White'}],
   lightBackground:style=>style==='white',
   fields:[
-    {id:'lay2',type:'seg',when:{count:2},label:'Layout',options:[{v:'stack',l:'Stacked'},{v:'diag',l:'Diagonal'}]},
-    {id:'lay3',type:'seg',when:{count:3},label:'Layout',options:[{v:'framed',l:'Framed'},{v:'stagger',l:'Stagger'},{v:'big',l:'Big + 2'}]},
-    {id:'lay4',type:'seg',when:{count:4},label:'Layout',options:[{v:'wide',l:'Wide / 2 / wide'},{v:'zigzag',l:'Zigzag'}]},
-    {id:'logo',type:'toggle',label:'Show the logo',default:true}
+    {id:'lay2',type:'seg',in:'style',when:{count:2},label:'Layout',options:[{v:'stack',l:'Stacked'},{v:'diag',l:'Diagonal'}]},
+    {id:'lay3',type:'seg',in:'style',when:{count:3},label:'Layout',options:[{v:'framed',l:'Framed'},{v:'stagger',l:'Stagger'},{v:'big',l:'Big + 2'}]},
+    {id:'lay4',type:'seg',in:'style',when:{count:4},label:'Layout',options:[{v:'wide',l:'Wide / 2 / wide'},{v:'zigzag',l:'Zigzag'}]},
+    {id:'logo',type:'toggle',in:'style',label:'Show the logo',default:true}
   ],
   draw(h,o){
     const {ctx,W,H,C}=h, dark=o.style!=='white'; ctx.fillStyle=dark?C.night:C.paper; ctx.fillRect(0,0,W,H);

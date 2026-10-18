@@ -70,6 +70,26 @@ async function ensureFont(fam){
   FONT_READY.add(fam);
 }
 
+/* ---------- icons (inline SVG, follow the text colour) ---------- */
+const svg=(d,w)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON={
+  undo:svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'),
+  redo:svg('<path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>'),
+  photo:svg('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>'),
+  text:svg('<path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/>'),
+  style:svg('<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.9-4.5-8.6-10-8.6z"/>'),
+  layers:svg('<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>'),
+  download:svg('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'),
+  share:svg('<path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
+  bookmark:svg('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
+  check:svg('<path d="M20 6 9 17l-5-5"/>',26),
+  plus:svg('<path d="M12 5v14M5 12h14"/>'),
+  shapes:svg('<circle cx="7.5" cy="7.5" r="4.5"/><rect x="12" y="12" width="9" height="9" rx="2"/>',20),
+  back:svg('<path d="m15 18-6-6 6-6"/>'),
+  next:svg('<path d="m9 18 6-6-6-6"/>'),
+  trash:svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/>',20)
+};
+
 /* ---------- assets: brand files (logo, can cut-outs, stickers) from the brand kit + built-in shapes ----------
    Shapes are drawn in a 200×200 box (or the size given) so they stay sharp at any size and take any brand colour. */
 const SHAPES=[
@@ -300,51 +320,147 @@ async function tool(cfg){
   const saved=store(KEY); if(saved){ if(saved.style&&cfg.styles&&cfg.styles.some(s=>s.id===saved.style))S.style=saved.style; if(saved.count)S.count=Math.min(nPhotos,Math.max(minPhotos,saved.count)); Object.keys(saved.values||{}).forEach(k=>{ if(k in S.values) S.values[k]=saved.values[k]; }); }
   const remember=()=>store(KEY,{style:S.style,count:S.count,values:S.values});
 
-  /* ---- page ---- */
+  /* ---- page ----
+     Phone: the preview fills the screen, one bottom bar (Photo, Words, Style, Layers, Save) opens bottom sheets over it.
+     Desktop: the same sheets show as cards beside the preview. One DOM, the CSS decides. */
+  const wordFields=fields.filter(f=>f.in!=='style'), styleFields=fields.filter(f=>f.in==='style');
+  const hasStyle=!!(cfg.styles||styleFields.length), hasWords=!!wordFields.length;
+  const sheetHead=(id,title,n,done)=>`<header class="sheet-head"><span class="grab" aria-hidden="true"></span><h2 id="h-${id}">${n?`<span class="num">${n}</span>`:''}${esc(title)}</h2>${done!==false?`<button type="button" class="done" data-close="${id}">Done</button>`:''}</header>`;
   let step=1;
-  let html=`<h1>${esc(cfg.title)}</h1>
-  <div class="stage">
-    <div class="phone"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Story preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
-    <div class="inspector" id="insp" hidden>
-      <div class="insp-head"><b id="inspName">Text</b><button type="button" class="x" id="inspClose" aria-label="Done">Done</button></div>
+  const nav=document.querySelector('nav.top');
+  if(nav){ nav.classList.add('tool-top');
+    nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
+  let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
+  <div class="stage" id="stage">
+    <div class="banner" id="draftBar" hidden><span>You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
+    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
+    <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
+    <div class="pager" id="pager" hidden></div>
+    <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in Photo.')}</div>
+    <section class="sheet insp" id="sh-insp" data-sheet="insp" aria-labelledby="inspName">
+      <header class="sheet-head"><span class="grab" aria-hidden="true"></span><h2 id="inspName">Text</h2><button type="button" class="done" id="inspClose">Done</button></header>
+      <div class="sheet-body">
       <input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" hidden>
       <div class="insp-row"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
       <div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
       <div class="insp-row" id="inspColors" role="group" aria-label="Colour"></div>
       <div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
       <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div>
-    </div>
-    <div class="layers" id="layers" hidden><div class="insp-head"><b>Layers</b><span class="small">Top layer first. Tap to edit.</span></div><ul id="layerList" role="list"></ul></div>
-    <div class="layers assets" id="assetsBox" hidden><div class="insp-head"><b>Add an asset</b><button type="button" class="x" id="assetsClose">Done</button></div><div id="assetList"></div></div>
-    <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in step 1.')}</div>
-    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="layersBtn" aria-expanded="false" aria-controls="layers"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg> Layers</button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="addAsset" aria-expanded="false" aria-controls="assetsBox">+ Add asset</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
+      </div>
+    </section>
+    <section class="sheet" id="sh-assets" data-sheet="assets" aria-labelledby="h-assets">${sheetHead('assets','Add an asset')}<div class="sheet-body" id="assetList"></div></section>
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
-  <div class="banner" id="draftBar" hidden><span>You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
-  <section class="step"><h2><span class="num">${step++}</span>${nPhotos>1?'Photos':'Photo'}</h2>`;
+  <section class="sheet" id="sh-photo" data-sheet="photo" aria-labelledby="h-photo">${sheetHead('photo',nPhotos>1&&!cfg.pages?'Photos':'Photo',step++)}<div class="sheet-body">`;
   if(cfg.photos.min&&cfg.photos.max>cfg.photos.min){
     html+=`<span class="lbl">How many photos</span><div class="row" role="group" aria-label="How many photos">`;
     for(let k=cfg.photos.min;k<=cfg.photos.max;k++) html+=`<button type="button" class="seg" data-count="${k}" aria-pressed="false">${k}</button>`;
     html+=`</div>`;
   }
-  html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo, or drop / paste one. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
-  <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn" style="align-self:flex-start;padding:0">Reset photo</button></div></section>`;
-  if(cfg.styles) html+=`<section class="step"><h2><span class="num">${step++}</span>Style</h2><div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div></section>`;
-  if(fields.length) html+=`<section class="step"><h2><span class="num">${step++}</span>Words</h2><div id="fields" class="field" style="gap:16px"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></section>`;
-  html+=`<button type="button" class="btn" id="save">Save story</button>
-  <button type="button" class="btn ghost" id="saveDesign"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span id="saveDesignTxt">Save design to the team</span></button>
-  <div class="status" id="status" role="status"></div>
-  <div class="result" id="result" hidden><img id="resultImg" alt="Your finished story"><span class="small">Press and hold the image (or right-click) to save it.</span></div>
-  ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
-  </form>`;
-  app.innerHTML=html;
+  html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this slide':''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
+  <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div></div></section>`;
+  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
+  if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
+  html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
+    <div class="row add-row"><button type="button" class="mini" id="addText">${ICON.text} Add text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Add asset</button></div>
+    <span class="small">Top layer first. Tap one to edit it, or the eye to hide it.</span><ul id="layerList" class="layer-list" role="list"></ul>
+    <button type="button" class="link" id="resetLayout">Reset layout</button></div></section>
+  <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
+    <button type="button" class="btn" id="save">${ICON.download}<span>${cfg.pages?'Save slides':'Save story'}</span></button>
+    <div class="progress" id="progress" hidden><div class="progress-bar"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
+    <div class="done-box" id="doneBox" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
+    <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
+    <button type="button" class="btn ghost" id="saveDesign">${ICON.bookmark}<span id="saveDesignTxt">Save design to the team</span></button>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
+  </div></section>
+  </form>
+  <nav class="bar" id="bar" aria-label="Editor">
+    <button type="button" class="tab" data-open="photo" aria-controls="sh-photo" aria-expanded="false">${ICON.photo}<span>Photo</span></button>
+    ${hasWords?`<button type="button" class="tab" data-open="words" aria-controls="sh-words" aria-expanded="false">${ICON.text}<span>Words</span></button>`:''}
+    ${hasStyle?`<button type="button" class="tab" data-open="style" aria-controls="sh-style" aria-expanded="false">${ICON.style}<span>${hasWords?'Style':'Layout'}</span></button>`:''}
+    <button type="button" class="tab" data-open="layers" aria-controls="sh-layers" aria-expanded="false">${ICON.layers}<span>Layers</span></button>
+    <button type="button" class="tab save" id="barSave">${ICON.download}<span>Save</span></button>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <input type="file" id="pick" accept="image/*" hidden aria-hidden="true" tabindex="-1">`;
+  app.innerHTML=html; app.classList.add('tool'); document.body.classList.add('tool-page');
   const $=id=>document.getElementById(id);
   const view=$('view'), vctx=view.getContext('2d');
 
+  /* ---- sheets + bottom bar (phone) / cards (desktop) ---- */
+  const phoneUI=matchMedia('(max-width: 820px)');
+  const isPhone=()=>phoneUI.matches;
+  let openName=null;
+  const sheetEl=n=>$('sh-'+n);
+  function openSheet(n,opt){
+    const el=sheetEl(n); if(!el) return;
+    if(!isPhone()){   // desktop: cards are always there; bring this one into view
+      if(n==='assets'||n==='insp') el.classList.add('active');
+      if(!(opt&&opt.quiet)) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+      return;
+    }
+    if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
+    openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
+    document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
+    fit();
+  }
+  function closeSheet(n){
+    if(!isPhone()){ if(n==='assets'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
+    if(n&&n!==openName) return; if(!openName) return;
+    const el=sheetEl(openName); el.classList.remove('open'); el.setAttribute('inert',''); el.style.transform='';
+    if(openName==='insp'&&S.sel){ S.sel=null; render(); }
+    openName=null; document.body.classList.remove('sheet-open');
+    document.querySelectorAll('#bar [data-open]').forEach(b=>{ b.setAttribute('aria-expanded','false'); b.classList.remove('on'); });
+    fit();
+  }
+  function syncSheetMode(){
+    document.querySelectorAll('.sheet').forEach(el=>{ if(isPhone()&&!el.classList.contains('open')) el.setAttribute('inert',''); else el.removeAttribute('inert'); });
+    if(!isPhone()){ openName=null; document.body.classList.remove('sheet-open'); document.querySelectorAll('.sheet.open').forEach(el=>el.classList.remove('open')); }
+    fit();
+  }
+  phoneUI.addEventListener('change',syncSheetMode);
+  $('bar').addEventListener('click',e=>{
+    const t=e.target.closest('[data-open]'); if(t){ const n=t.dataset.open; if(openName===n) closeSheet(); else { if(S.sel&&n!=='insp'){ S.sel=null; render(); } openSheet(n); } return; }
+    if(e.target.closest('#barSave')) saveTapped();
+  });
+  document.addEventListener('click',e=>{ const c=e.target.closest('[data-close]'); if(c) closeSheet(c.dataset.close); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openName&&!document.querySelector('dialog[open]')) closeSheet(); });
+  /* swipe a sheet down by its header to close it */
+  document.querySelectorAll('.sheet-head').forEach(hd=>{
+    let y0=null, el=null, dy=0;
+    hd.addEventListener('pointerdown',e=>{ if(!isPhone()||e.target.closest('button')) return; el=hd.closest('.sheet'); y0=e.clientY; dy=0; el.classList.add('dragging'); hd.setPointerCapture(e.pointerId); });
+    hd.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); el.style.transform=`translateY(${dy}px)`; });
+    const end=()=>{ if(y0==null) return; el.classList.remove('dragging'); el.style.transform=''; if(dy>70) closeSheet(); y0=null; };
+    hd.addEventListener('pointerup',end); hd.addEventListener('pointercancel',end);
+  });
+  /* fit the preview into the space left between the top bar and the open sheet (or the bottom bar) */
+  function fit(){
+    const ph=$('phone'), stage=$('stage');
+    if(!isPhone()){ ph.style.width=ph.style.height=''; stage.style.removeProperty('--stage-bottom'); return; }
+    const bar=$('bar').getBoundingClientRect(), kb=+(document.documentElement.style.getPropertyValue('--kb').replace('px','')||0);
+    let bottom=kb>0?innerHeight-kb:bar.top;
+    if(openName){ const el=sheetEl(openName); bottom=Math.min(bottom,bottom-el.offsetHeight); }
+    const top=(document.querySelector('nav.top')?.getBoundingClientRect().bottom||0);
+    const pager=($('pager').hidden?0:$('pager').offsetHeight+6)+(($('ctaPhoto').hidden||openName)?0:$('ctaPhoto').offsetHeight+6);
+    stage.style.setProperty('--stage-top',top+'px'); stage.style.setProperty('--stage-bottom',Math.max(0,innerHeight-bottom)+'px');
+    const availH=Math.max(120,bottom-top-16-pager), availW=innerWidth-24;
+    let h=availH, w=h*W/H; if(w>availW){ w=availW; h=w*H/W; }
+    ph.style.width=Math.floor(w)+'px'; ph.style.height=Math.floor(h)+'px';
+  }
+  addEventListener('resize',()=>fit());
+  if(window.ResizeObserver){ const ro=new ResizeObserver(()=>{ if(openName) fit(); }); document.querySelectorAll('.sheet').forEach(el=>ro.observe(el)); }
+  /* the on-screen keyboard: keep the open sheet just above it */
+  if(window.visualViewport){ const vv=window.visualViewport; const onVV=()=>{ const kb=Math.max(0,Math.round(innerHeight-vv.height-vv.offsetTop)); document.documentElement.style.setProperty('--kb',(kb>80?kb:0)+'px'); document.body.classList.toggle('kb-open',kb>80); fit(); }; vv.addEventListener('resize',onVV); vv.addEventListener('scroll',onVV); }
+  let toastT=0;
+  function toast(t,ms){ const el=$('toast'); if(!t){ el.hidden=true; return; } el.textContent=t; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{ el.hidden=true; },ms||3800); }
+
   /* ---- words ---- */
-  if(fields.length){
-    $('fields').innerHTML=fields.map(f=>{
+  const fieldBoxes=[...document.querySelectorAll('[data-fields]')];
+  fieldBoxes.forEach(box=>{
+    const list=box.dataset.fields==='style'?styleFields:wordFields;
+    box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
       else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg" data-v="${o.v}" aria-pressed="false">${esc(o.l)}</button>`).join('')}</div>`;
@@ -352,7 +468,7 @@ async function tool(cfg){
       else inner=(f.toggle?`<label class="check"><input type="checkbox" data-on="${f.id}"> ${esc(f.label)}</label>`:`<label class="lbl" for="t_${f.id}">${esc(f.label)}</label>`)+`<input type="text" dir="${B.dir||'ltr'}" id="t_${f.id}" data-text="${f.id}" placeholder="${esc(opts(f.placeholder)||'')}" ${f.toggle?`aria-label="${esc(f.label)}"`:''}>`;
       return `<div class="field" data-fw="${f.id}">${inner}</div>`;
     }).join('');
-    $('fields').addEventListener('click',e=>{
+    box.addEventListener('click',e=>{
       const more=e.target.closest('[data-more]'); if(more){ const g=more.parentNode, open=g.classList.toggle('open'); more.setAttribute('aria-expanded',String(open)); more.textContent=open?'Less':'More…'; return; }
       const b=e.target.closest('.chip'); if(b){ const id=b.parentNode.dataset.f, v=S.values[id];
         if(b.dataset.own){ if(v.pick!=='__own'&&!v.own) v.own=value(id); v.pick='__own'; syncUI(); const inp=document.querySelector(`[data-ownfor="${id}"]`); inp.focus(); }
@@ -361,9 +477,9 @@ async function tool(cfg){
         syncUI(); remember(); render(); return; }
       const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.parentNode.dataset.seg]=s.dataset.v; syncUI(); remember(); render(); }
     });
-    $('fields').addEventListener('input',e=>{ const t=e.target; if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value; remember(); render(); syncInspector(); });
-    $('fields').addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; syncUI(); remember(); render(); });
-  }
+    box.addEventListener('input',e=>{ const t=e.target; if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value; remember(); render(); syncInspector(); });
+    box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; syncUI(); remember(); render(); });
+  });
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
@@ -384,8 +500,9 @@ async function tool(cfg){
   /* ---- photo slots ---- */
   function slotsUI(){
     let s='';
-    for(let i=0;i<S.count;i++){ const p=S.photos[i], real=p.img&&!p.sample;
-      s+=`<label class="slot${real?' has':''}${i===S.active&&S.count>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(S.count>1?'Photo '+(i+1):'Add photo')}</span><input type="file" accept="image/*" data-file="${i}" aria-label="Photo ${i+1}"></label>`; }
+    const off=photoOffset();
+    for(let j=0;j<S.count;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
+      s+=`<label class="slot${real?' has':''}${i===S.active&&S.count>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(S.count>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${S.count>1?' '+(j+1):''}"></label>`; }
     $('slots').innerHTML=s;
   }
   $('slots').addEventListener('change',e=>{const t=e.target; if(t.dataset.file!=null){ setPhoto(+t.dataset.file,t.files&&t.files[0]); t.value=''; }});
@@ -401,13 +518,20 @@ async function tool(cfg){
       syncUI(); render();
     }catch(_){ status('That photo could not be opened. Try a JPG or PNG.'); }
   }
-  function nextEmpty(){ for(let i=0;i<S.count;i++){ if(S.photos[i].sample||!S.photos[i].img) return i; } return S.active; }
+  /* one picker for the preview and the "Add your photo" button; several photos fill the empty boxes in order */
+  let pickAt=0;
+  function pickPhoto(i){ pickAt=i; const p=$('pick'); p.multiple=S.count>1; p.click(); }
+  function slotTargets(i){ const off=photoOffset(), t=[i]; for(let j=0;j<S.count;j++){ const k=off+j, p=S.photos[k]; if(k!==i&&(!p.img||p.sample)) t.push(k); } return t; }
+  $('pick').addEventListener('change',e=>{ const fs=[...(e.target.files||[])], t=slotTargets(pickAt); fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f)); e.target.value=''; });
+  $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
+  function syncCta(){ $('pick').multiple=S.count>1; const off=photoOffset(); let any=false; for(let i=0;i<S.count;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=S.count>1?'Add your photos':'Add your photo'; }
+  function nextEmpty(){ const off=photoOffset(); for(let j=0;j<S.count;j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
   document.addEventListener('paste',e=>{ if(e.target&&e.target.tagName==='INPUT') return; const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/')); if(it) setPhoto(nextEmpty(),it.getAsFile());});
   let dd=0;
   document.addEventListener('dragenter',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){dd++;$('drop').hidden=false;}});
   document.addEventListener('dragleave',()=>{dd=Math.max(0,dd-1);if(!dd)$('drop').hidden=true;});
   document.addEventListener('dragover',e=>e.preventDefault());
-  document.addEventListener('drop',e=>{e.preventDefault();dd=0;$('drop').hidden=true;const fs=[...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/'));const i0=nextEmpty();fs.forEach((f,k)=>setPhoto(Math.min(S.count-1,i0+k),f));});
+  document.addEventListener('drop',e=>{e.preventDefault();dd=0;$('drop').hidden=true;const fs=[...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/'));const t=slotTargets(nextEmpty());fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f));});
 
   /* ---- syncing the controls with the state ---- */
   function syncUI(){
@@ -422,10 +546,10 @@ async function tool(cfg){
       else if(f.type==='toggle') document.querySelector(`[data-toggle="${f.id}"]`).checked=!!v;
       else { const t=document.querySelector(`[data-text="${f.id}"]`); if(t.value!==v.text&&document.activeElement!==t) t.value=v.text; if(f.toggle){const c=document.querySelector(`[data-on="${f.id}"]`);c.checked=v.on;t.disabled=!v.on;} }
     });
-    slotsUI(); syncZoom();
+    slotsUI(); syncZoom(); syncCta();
   }
   function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample; $('zoomRow').hidden=!real||cfg.noZoom; if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&S.count>1)); }
-  const status=t=>{$('status').textContent=t;};
+  const status=(t,ms)=>{ $('status').textContent=t; if(isPhone()&&openName!=='save') toast(t,ms); else if(!t) toast(''); };
 
   /* ---- drawing ---- */
   let reg=[], raf=0;
@@ -604,11 +728,14 @@ async function tool(cfg){
   const extra=id=>S.extras.find(x=>x.id===id);
   const textExtra=id=>{ const x=extra(id); return x&&x.type!=='asset'?x:null; };
   function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); return f?value(id):null; }
-  function select(id){ S.sel=id; syncInspector(); render(); }
+  function select(id){
+    S.sel=id; syncInspector(); render();
+    if(id) openSheet('insp',{quiet:true}); else if(openName==='insp') closeSheet('insp'); else if(!isPhone()) closeSheet('insp');
+  }
   function syncInspector(){
-    const id=S.sel, b=reg.find(x=>x.id===id); if(!id){ $('insp').hidden=true; return; }
+    const id=S.sel, b=reg.find(x=>x.id===id); if(!id) return;
     const l=S.layers[id]||{k:1,color:null,hidden:false}; const t=layerText(id), x=extra(id);
-    $('insp').hidden=false; $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):'Your text'):(b&&b.label)||'Layer';
+    $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):'Your text'):(b&&b.label)||'Layer';
     const ti=$('inspText'); ti.hidden=t===null; if(t!==null&&document.activeElement!==ti) ti.value=t;
     const isAsset=!!(x&&x.type==='asset'), ad=isAsset&&assetDef(x.ref);
     $('inspSize').min=isAsset?'0.2':'0.4'; $('inspSize').max=isAsset?'4':'2.5';
@@ -669,10 +796,9 @@ async function tool(cfg){
     if(a.file){ const got=await loadAsset(ref); if(!got||got.missing){ status('“'+a.label+'” is not in the brand kit yet ('+a.file+').'); return; } }
     const id='asset'+(++assetN), w=a.w0||(a.file?(a.group==='Logo'?320:420):(a.w>a.h*2?420:260));
     S.extras.push({id,type:'asset',ref,w,x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:(a.color||B.colors.accent||B.colors.ink)});
-    $('assetsBox').hidden=true; $('addAsset').setAttribute('aria-expanded','false'); select(id);
+    closeSheet('assets'); select(id);
   }
-  $('addAsset').addEventListener('click',()=>{ const open=$('assetsBox').hidden; if(open) paintAssets(); $('assetsBox').hidden=!open; $('addAsset').setAttribute('aria-expanded',String(open)); });
-  $('assetsClose').addEventListener('click',()=>{ $('assetsBox').hidden=true; $('addAsset').setAttribute('aria-expanded','false'); });
+  $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
@@ -686,14 +812,12 @@ async function tool(cfg){
   const KIND={text:'Text',pill:'Button',logo:'Logo',asset:'Asset'};
   let layersSig='';
   function paintLayers(){
-    const box=document.getElementById('layers'); if(!box||box.hidden) return;
     const seen=new Set(), items=[];
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(!b.id||b.empty||seen.has(b.id)) continue; seen.add(b.id); items.push(b); }
     const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x&&x.type!=='asset'?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
     const sig=JSON.stringify(rows); if(sig===layersSig) return; layersSig=sig;
     $('layerList').innerHTML=rows.length?rows.map(r=>`<li class="lyr${r.sel?' sel':''}${r.hidden?' off':''}"><button type="button" class="lyr-pick" data-pick="${esc(r.id)}" aria-current="${r.sel}"><b>${esc(r.name)}</b>${r.text?`<span dir="auto">${esc(r.text)}</span>`:(r.kind&&r.kind!==r.name?`<span>${esc(r.kind)}</span>`:'')}</button><button type="button" class="lyr-eye" data-eye="${esc(r.id)}" aria-pressed="${!r.hidden}" aria-label="${r.hidden?'Show':'Hide'} ${esc(r.name)}" title="${r.hidden?'Show':'Hide'}">${r.hidden?EYE_OFF:EYE}</button></li>`).join(''):'<li class="small">No layers yet.</li>';
   }
-  $('layersBtn').addEventListener('click',()=>{ const open=$('layers').hidden; $('layers').hidden=!open; $('layersBtn').setAttribute('aria-expanded',String(open)); layersSig=''; paintLayers(); });
   $('layerList').addEventListener('click',e=>{
     const eye=e.target.closest('[data-eye]'); if(eye){ const id=eye.dataset.eye, l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); l.hidden=!l.hidden; if(S.sel===id) syncInspector(); render(); return; }
     const pk=e.target.closest('[data-pick]'); if(pk){ const id=pk.dataset.pick; select(S.sel===id?null:id); }
@@ -711,7 +835,7 @@ async function tool(cfg){
     const pt=toCanvas(e); const h=pts.size?target:hit(pt);
     if(!pts.size){ target=h; moved=false; }
     if(!target){ select(null); return; }
-    if(target.photo!=null){ const p=S.photos[target.photo]; if(!p.img||p.sample){ S.active=target.photo; const inp=document.querySelector(`[data-file="${target.photo}"]`); if(inp) inp.click(); target=null; return; } S.active=target.photo; syncZoom(); if(S.sel) select(null); }
+    if(target.photo!=null){ const p=S.photos[target.photo]; if(!p.img||p.sample){ S.active=target.photo; pickPhoto(target.photo); target=null; return; } S.active=target.photo; syncZoom(); if(S.sel) select(null); }
     view.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     snapshot(); view.classList.add('dragging');
   });
@@ -757,49 +881,86 @@ async function tool(cfg){
   $('fitBtn').addEventListener('click',()=>{const p=S.photos[S.active]; if(p){p.zoom=1;p.ox=0;p.oy=0;$('zoom').value=1;render();}});
   $('form').addEventListener('submit',e=>e.preventDefault());
 
-  /* ---- saving ---- */
+  /* ---- saving: full-quality lossless PNG (2x, stepping down to 1.5x / 1x only if the phone runs out of memory) ---- */
   let downloads=null; const inClaude=!!(window.claude&&window.claude.use);
   if(inClaude) window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
-  function fname(ext,kind){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+'.'+ext; }
-  async function save(withPhotos){
-    const sel=S.sel; S.sel=null;
-    status('Making a full-quality copy…'); await new Promise(r=>setTimeout(r,30));
-    /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
-    const type='image/png', ext='png';
-    async function renderAt(K){
-      const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
-      const ctx=c.getContext('2d'); if(!ctx) return null;
-      try{
-        draw(ctx,false,K);
-        if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
-        const b=await new Promise(r=>c.toBlob(r,type));
-        return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
-      }catch(_){ return null; }
-      finally{ freeSharp(); c.width=c.height=0; }
-    }
-    /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
-    let blob=null, used=0;
-    for(const K of [EXPORT_SCALE,1.5,1]){ blob=await renderAt(K); if(blob){ used=K; break; } }
-    S.sel=sel; render();
-    if(!blob){ status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
-    const name=fname(ext,withPhotos?null:'frame');
-    status(used<EXPORT_SCALE?'Saved a slightly smaller copy ('+Math.round(W*used)+'×'+Math.round(H*used)+'): this phone was low on memory. Close other tabs for full size.':'');
-    if(downloads){ try{ await downloads.save({filename:name,data:blob}); status('Saved.'); return; }catch(err){ if(err&&err.code==='declined'){ status('Not saved.'); return; } } }
-    const file=new File([blob],name,{type}), touch=matchMedia('(pointer:coarse)').matches;
-    if(!inClaude&&touch&&navigator.canShare&&navigator.canShare({files:[file]})){
-      try{ await navigator.share({files:[file]}); status('Done. Choose “Save Image” to put it in your photos.'); return; }
-      catch(err){ if(err&&err.name==='AbortError') return; }
-    }
-    const url=URL.createObjectURL(blob);
-    if(!inClaude){ const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); status('Saved to your downloads.'); }
-    $('resultImg').src=url; $('result').hidden=!(inClaude||touch); if(inClaude) status('Your image is ready below.');
+  function fname(ext,kind,n){ const d=new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
+  function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; if(txt) $('progressTxt').textContent=txt; } }
+  function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
+  let lastFiles=null, saving=false;
+  async function shareFiles(files){
+    if(!(navigator.canShare&&navigator.canShare({files}))) return false;
+    try{ await navigator.share({files}); return 'shared'; }
+    catch(err){ if(err&&err.name==='AbortError') return 'cancelled'; if(err&&err.name==='NotAllowedError') return 'needtap'; return false; }
   }
-  $('save').addEventListener('click',()=>{
-    const miss=[]; for(let i=0;i<S.count;i++){ if(!S.photos[i].img||S.photos[i].sample) miss.push(i+1); }
-    if(miss.length){ status(S.count===1?'Add your photo first (step 1).':'Add photo '+miss.join(', ')+' first (step 1).'); return; }
+  async function save(withPhotos){
+    if(saving) return; saving=true;
+    const sel=S.sel; S.sel=null;
+    openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
+    $('save').disabled=true; $('barSave').disabled=true;
+    const type='image/png', ext='png', pages=pageCount(), files=[]; let used=EXPORT_SCALE;
+    try{
+      for(let pg=0;pg<pages;pg++){
+        const tag=pages>1?'Slide '+(pg+1)+' of '+pages+': ':'';
+        progress((pg+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
+        /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
+        async function renderAt(K){
+          const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
+          const ctx=c.getContext('2d'); if(!ctx) return null;
+          try{
+            withPage(pg,()=>draw(ctx,false,K));
+            if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
+            progress((pg+.55)/pages,tag+'Making the PNG…');
+            const b=await new Promise(r=>c.toBlob(r,type));
+            return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
+          }catch(_){ return null; }
+          finally{ freeSharp(); c.width=c.height=0; }
+        }
+        /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
+        let blob=null;
+        for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
+        if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
+        files.push(new File([blob],fname(ext,withPhotos?null:'frame',pages>1?pg+1:0),{type}));
+      }
+      progress(1,'Done');
+      const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
+      const what=pages>1?files.length+' slides':(withPhotos?'Your story':'The frame');
+      lastFiles=files;
+      if(downloads){ try{ for(const f of files) await downloads.save({filename:f.name,data:f}); finish(what+' saved.',small); return; }catch(err){ if(err&&err.code==='declined'){ progress(null); status('Not saved.'); return; } } }
+      const touch=matchMedia('(pointer:coarse)').matches;
+      if(!inClaude&&touch){
+        const r=await shareFiles(files);
+        if(r==='shared'){ finish('Saved!','Choose “Save Image” if you haven’t yet. '+what+' '+(pages>1?'are':'is')+' full quality.'+small); return; }
+        if(r==='cancelled'){ progress(null); done(null); status('Not saved. Tap Save again when you are ready.'); showResult(files,true); return; }
+        if(r==='needtap'){ progress(null); showResult(files,true); finish('Ready!','Tap “Save to Photos” to put it in your photos.'+small,true); return; }
+      }
+      if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
+      showResult(files,false);
+      finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your slides are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
+    } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
+  }
+  function finish(title,txt,keepBar){ if(!keepBar) setTimeout(()=>progress(null),400); done(title,txt); }
+  function showResult(files,offerShare){
+    const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
+    $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
+  }
+  $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?'slides are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
+  function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const o=cfg.pages?pg*S.count:off; for(let i=0;i<S.count;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
+  function saveTapped(){
+    const miss=missingPhotos();
+    if(miss.length&&!cfg.allowSamples){
+      openSheet('photo');
+      status(cfg.pages?'Add a photo to slide '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
+      return;
+    }
     save(true);
-  });
+  }
+  $('save').addEventListener('click',saveTapped);
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
+  /* pages (carousels): one page for ordinary stories */
+  function pageCount(){ return 1; }
+  function withPage(pg,fn){ return fn(); }
+  function photoOffset(){ return 0; }
 
   /* ---- start with the brand's example photos so the tool shows what it makes ---- */
   const names=(B.samples&&B.samples[cfg.id])||[];

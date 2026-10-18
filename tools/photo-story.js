@@ -5,7 +5,7 @@ Studio.tool({
   fields:[
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true},
-    {id:'pos',type:'seg',label:'Text place',options:[{v:'bottom',l:'Bottom'},{v:'top',l:'Top'}]}
+    {id:'pos',type:'seg',in:'style',label:'Text place',options:[{v:'bottom',l:'Bottom'},{v:'top',l:'Top'}]}
   ],
   draw(h,o){
     const {W,H,C}=h;
