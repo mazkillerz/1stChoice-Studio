@@ -431,11 +431,26 @@ async function tool(cfg){
     <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
-    <button type="button" class="btn" id="save">${ICON.download}<span>${cfg.pages?'Save slides':'Save story'}</span></button>
     <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
     <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
-    <button type="button" class="btn ghost" id="saveDesign">${ICON.bookmark}<span id="saveDesignTxt">Save design to the team</span></button>
+    <div class="team-status" id="teamStatus" role="status" aria-live="polite" hidden></div>
+    <div class="save-opts" id="saveOpts">
+      <div class="opt-row"><span class="opt-ic">${ICON.download}</span><span class="opt-txt"><b>Save to Photos</b><small>Full-quality PNG${cfg.pages?' for every slide':''}</small></span><span class="opt-always">Always</span></div>
+      <label class="opt-row"><span class="opt-ic">${ICON.bookmark}</span><span class="opt-txt"><b id="teamLbl">Also save to the team</b><small id="teamSub">Find and reuse it in Saved</small></span><input type="checkbox" class="switch" id="teamOn" role="switch"></label>
+      <div class="team-box" id="teamBox" hidden>
+        <label class="sr-only" for="teamName">Name for the team</label><input type="text" id="teamName" dir="auto" maxlength="80" placeholder="Name, e.g. Restock – Al Khoud">
+        <button type="button" class="link team-more" id="teamMore" aria-expanded="false" aria-controls="teamMoreBox">More options</button>
+        <div class="team-more-box" id="teamMoreBox" hidden>
+          <span class="lbl">Collections</span><div class="chips" id="teamCols"><span class="small">Loading…</span></div>
+          <div class="inline"><input type="text" id="teamNewCol" dir="auto" placeholder="New collection…" maxlength="40"><button type="button" class="mini" id="teamAddCol">Add</button></div>
+          <label class="check"><input type="checkbox" id="teamKeep"> Keep the photos <span class="small">(off = a template: layout and words only)</span></label>
+          <label class="check" id="teamAsNewRow" hidden><input type="checkbox" id="teamAsNew"> Save as a new design instead of updating</label>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
+    <button type="button" class="link" id="teamOnly">Only save to the team (no image)</button>
     <div class="status" id="status" role="status" aria-live="polite"></div>
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
   </div></section>
@@ -737,7 +752,8 @@ async function tool(cfg){
   /* ---- drafts: the unfinished story is kept on this phone, photos included ---- */
   const DKEY='studio:draft:'+B.id+':'+cfg.id; let draftTimer=0, dirty=false;
   function saveDraft(s){
-    if(!hist.ready) return; if(hist.i>0) dirty=true; if(!dirty) return;
+    if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing (and never replaces your unfinished story)
+    if(hist.i>0) dirty=true; if(!dirty) return;
     clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
       const keys=[];
       for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(!p.draftSaved){ const blob=await photoBlob(p); if(blob){ await idb.put(DKEY+':'+p.key,blob); p.draftSaved=true; } } } else keys[i]=null; }
@@ -751,7 +767,6 @@ async function tool(cfg){
     const slots=[];
     for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(DKEY+':'+k); if(blob) slots[i]=await photoFromBlob(blob,k,true); }
     const r=JSON.parse(d.json); await fontsOf(r); applyRecipe(r,slots);
-    if(d.design){ design={...d.design,collections:[]}; showDesignBar(); }
     dirty=true;
   }
   async function photoFromBlob(blob,key,draftSaved){
@@ -768,53 +783,81 @@ async function tool(cfg){
   /* ---- saved designs (shared with the team) ---- */
   let design=null;   // {id,name,kind,collections}
   function showDesignBar(){
-    const bar=$('designBar'); if(!design){ bar.hidden=true; $('saveDesignTxt').textContent='Save design to the team'; return; }
+    const bar=$('designBar'); syncSaveOpts(); if(!design){ bar.hidden=true; return; }
     bar.hidden=false;
     bar.innerHTML=`<span><span class="small">${design.kind==='template'?'Template':'Saved design'}</span><br><b>${esc(design.name)}</b></span><span class="banner-btns"><a class="mini" href="${ROOT}index.html#saved">All saved</a></span>`;
-    $('saveDesignTxt').textContent='Update “'+design.name+'”';
   }
   function thumbBlob(){
     const k=360/W, c=document.createElement('canvas'); c.width=360; c.height=Math.round(H*k); const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
     ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k)); S.sel=sel; draw(vctx,true); return canvasBlob(c,'image/jpeg',.85);
   }
-  async function openSaveDialog(){
-    if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) return;
-    const C=await cloud(); let cols=[]; try{ cols=await C.collections(B.id); }catch(_){}
-    const picked=new Set(design?design.collections:[]); const hasPhotos=S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
-    const d=dialog(`<form method="dialog" class="dlg-body">
-      <h3>${design?'Save design':'Save design to the team'}</h3>
-      <div class="field"><label class="lbl" for="dsName">Name</label><input type="text" id="dsName" dir="auto" required maxlength="80" placeholder="e.g. Restock – Al Khoud"></div>
-      <div class="field"><span class="lbl">Collections</span><div class="chips" id="dsCols"></div>
-        <div class="inline"><input type="text" id="dsNew" dir="auto" placeholder="New collection…" maxlength="40"><button type="button" class="mini" id="dsAdd">Add</button></div></div>
-      <label class="check"><input type="checkbox" id="dsKeep" ${hasPhotos&&(!design||design.kind!=='template')?'checked':''} ${hasPhotos?'':'disabled'}> Keep the photos</label>
-      <span class="small" id="dsKeepNote">${hasPhotos?'Off = a template: layout and words only, add new photos each time.':'No photos yet, so this is saved as a template.'}</span>
-      <div class="status" id="dsStatus" role="status"></div>
-      <div class="dlg-actions">${design?'<button type="button" class="mini" id="dsAsNew">Save as new</button>':'<button type="button" class="mini" id="dsCancel">Cancel</button>'}<button type="submit" class="btn" id="dsGo">${design?'Update':'Save'}</button></div>
-    </form>`);
-    const $d=id=>d.querySelector('#'+id); $d('dsName').value=design?design.name:'';
-    const paint=()=>{ const all=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b)); $d('dsCols').innerHTML=all.length?all.map(n=>`<button type="button" class="chip" dir="auto" data-col="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join(''):'<span class="small">No collections yet. Add one below.</span>'; };
-    paint();
-    $d('dsCols').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; picked.has(n)?picked.delete(n):picked.add(n); paint(); });
-    const addNew=()=>{ const n=$d('dsNew').value.trim(); if(n){ picked.add(n); $d('dsNew').value=''; paint(); } };
-    $d('dsAdd').onclick=addNew; $d('dsNew').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addNew(); } });
-    if($d('dsCancel')) $d('dsCancel').onclick=()=>d.close();
-    const go=async asNew=>{
-      const name=$d('dsName').value.trim(); if(!name){ $d('dsStatus').textContent='Give it a name.'; $d('dsName').focus(); return; }
-      d.querySelectorAll('button').forEach(b=>b.disabled=true); $d('dsStatus').textContent='Saving…';
-      try{
-        const keep=$d('dsKeep').checked&&hasPhotos, r=recipe();
-        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
-        const id=await C.saveDesign({id:asNew?null:(design&&design.id),brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:[...picked]});
-        const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
-        design={id,name,kind:keep?'design':'template',collections:[...picked]}; showDesignBar(); clearDraft();
-        history.replaceState(null,'',location.pathname+'?design='+id);
-        d.close(); status('Saved to the team as “'+name+'”.');
-      }catch(err){ $d('dsStatus').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); }
-    };
-    d.querySelector('form').addEventListener('submit',e=>{ e.preventDefault(); go(false); });
-    if($d('dsAsNew')) $d('dsAsNew').onclick=()=>go(true);
-    setTimeout(()=>{ const n=$d('dsName'); n.focus(); n.select(); },50);
+  /* ---- saving to the team: one function used by the Save sheet, "Only save to the team" and the leave prompt ---- */
+  let teamCols=null; const teamPicked=new Set();
+  const hasPhotosNow=()=>S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
+  function defaultName(){ const d=new Date(); return cfg.title+' – '+d.getDate()+' '+d.toLocaleString('en',{month:'short'}); }
+  async function teamSave(o){
+    o=o||{}; const C=await cloud();
+    if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
+    const asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName());
+    const keep=(o.keep!=null?o.keep:(design?design.kind!=='template':true))&&hasPhotosNow(), r=recipe();
+    const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
+    const cols=o.collections||(design?design.collections:[])||[];
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:cols});
+    const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
+    design={id,name,kind:keep?'design':'template',collections:cols}; showDesignBar(); clearDraft(); markSaved();
+    history.replaceState(null,'',location.pathname+'?design='+id);
+    return name;
   }
+  /* the Save sheet's options: remembered switch, name, collections, keep photos */
+  function syncSaveOpts(){
+    const on=$('teamOn').checked;
+    $('teamBox').hidden=!on;
+    $('teamLbl').textContent=design?'Update “'+design.name+'” in the team':'Also save to the team';
+    $('teamSub').textContent=design?'Saved designs keep your latest changes':'Find and reuse it in Saved';
+    $('teamAsNewRow').hidden=!design;
+    if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
+    $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
+    $('saveTxt').textContent=on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save slides':'Save story');
+  }
+  $('teamOn').checked=!!store('studio:teamSave');
+  $('teamOn').addEventListener('change',()=>{ store('studio:teamSave',$('teamOn').checked?1:null); syncSaveOpts(); });
+  $('teamName').addEventListener('input',e=>{ e.target.dataset.touched='1'; });
+  $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
+  async function paintTeamCols(){
+    if(!teamCols){ try{ const C=await cloud(); if(await C.session()&&await C.isMember()) teamCols=await C.collections(B.id); else teamCols=[]; }catch(_){ teamCols=[]; } if(design) (design.collections||[]).forEach(n=>teamPicked.add(n)); }
+    const all=[...new Set([...teamCols.map(c=>c.name),...teamPicked])].sort((a,b)=>a.localeCompare(b));
+    $('teamCols').innerHTML=all.length?all.map(n=>`<button type="button" class="chip" dir="auto" data-col="${esc(n)}" aria-pressed="${teamPicked.has(n)}">${esc(n)}</button>`).join(''):'<span class="small">No collections yet. Add one below.</span>';
+  }
+  $('teamMore').addEventListener('click',()=>{ const open=$('teamMoreBox').hidden; $('teamMoreBox').hidden=!open; $('teamMore').setAttribute('aria-expanded',String(open)); $('teamMore').textContent=open?'Fewer options':'More options'; if(open) paintTeamCols(); });
+  $('teamCols').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); paintTeamCols(); });
+  const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); $('teamNewCol').value=''; paintTeamCols(); } };
+  $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
+  function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:design&&$('teamAsNew').checked,collections:teamCols?[...teamPicked]:null}; }
+  function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
+  async function runTeamSave(){
+    teamLine('Saving to the team…');
+    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); }
+    catch(err){ teamLine(''); status(err.message||'Could not save to the team.'); }
+  }
+  $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
+
+  /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
+  let baseJson=null;
+  const curJson=()=>{ const r=recipe(); delete r.page; return JSON.stringify(r)+'|'+S.photos.map(p=>p.path||p.key||'').join(','); };
+  function markSaved(){ baseJson=curJson(); }
+  const designDirty=()=>!!design&&baseJson!==null&&curJson()!==baseJson;
+  function leavePrompt(href){
+    const d=dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
+      <div class="status" id="lvSt" role="status"></div>
+      <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
+    d.querySelector('#lvKeep').onclick=()=>d.close();
+    d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
+    d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
+      try{ await teamSave({name:design.name}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+  }
+  let leaving=false;
+  document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(a.href); } }));
+  addEventListener('beforeunload',e=>{ if(!leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
   async function openDesign(id,ready){
     status('Opening the saved design…');
     if(!(await ensureMember('This design is saved with the team. Sign in to open it.'))){ status(''); return false; }
@@ -823,7 +866,7 @@ async function tool(cfg){
     const slots=[];
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
     await fontsOf(r); applyRecipe(r,slots);
-    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; showDesignBar(); status('');
+    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; showDesignBar(); status(''); markSaved();
     if(ready&&d.kind!=='template'){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
         <div class="dlg-actions"><button type="button" class="mini" id="rdEdit">Edit first</button><button type="button" class="btn" id="rdSave">Save story</button></div></div>`);
@@ -883,7 +926,6 @@ async function tool(cfg){
   $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
   document.addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)||e.altKey) return; const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
     const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
-  $('saveDesign').addEventListener('click',openSaveDialog);
   $('draftFresh').addEventListener('click',()=>{ clearDraft(); $('draftBar').hidden=true; });
   $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const d=store(DKEY); if(d){ await loadDraft(d); syncUI(); draw(vctx,true); startHistory(); } });
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); render(); });
@@ -1072,16 +1114,28 @@ async function tool(cfg){
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?'slides are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
   function needsPhoto(pg){ return !cfg.pageNeedsPhoto||withPage(pg,()=>cfg.pageNeedsPhoto(value)); }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ if(!needsPhoto(pg)) continue; const o=cfg.pages?pg*S.count:off; for(let i=0;i<S.count;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
+  /* Save on the bar opens the Save sheet first (Photos + optional team); the sheet's Save button does it */
   function saveTapped(){
+    if(isPhone()&&openName!=='save'){ resetSaveSheet(); openSheet('save'); focusSheet('save'); return; }
+    doSave();
+  }
+  function resetSaveSheet(){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
+  async function doSave(){
     const miss=missingPhotos();
     if(miss.length&&!cfg.allowSamples){
       openSheet('photo');
       status(cfg.pages?'Add a photo to slide '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
       return;
     }
-    save(true);
+    const team=$('teamOn').checked;
+    /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
+    $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true;
+    await save(true);
+    if(team) await runTeamSave();
+    $('save').hidden=false; $('saveTxt').textContent='Save again';
+    if(!isPhone()){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; syncSaveOpts(); }
   }
-  $('save').addEventListener('click',saveTapped);
+  $('save').addEventListener('click',doSave);
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
   /* pages (carousels): one page for ordinary stories */
   function pageCount(){ return S.P.length; }
@@ -1120,7 +1174,7 @@ async function tool(cfg){
     else if(draft&&q.get('draft')==='1') await loadDraft(draft);
     else if(draft&&(draft.keys||[]).some(Boolean)||(draft&&draft.json!==JSON.stringify(recipe()))) $('draftBar').hidden=false;
   }catch(err){ status(err.message||'Could not open that.'); }
-  syncUI(); paintPager(); fit(); draw(vctx,true); startHistory();
+  syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); syncSaveOpts();
   Studio.debug={S,reg:()=>reg,recipe,render};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
@@ -1132,6 +1186,10 @@ async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
   /* tools: one compact row per entry in TOOLS, with a small real preview made with the brand's sample photos */
   $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t],i)=>`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb"><img alt="" loading="lazy" decoding="async" src="${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'"></span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`).join('');
+  /* how tools are shown: list, grid or compact; each phone remembers its own choice */
+  let toolsView=store('studio:toolsView')||'list';
+  function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView; document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
+  paintToolsView();
   /* bottom bar (phone): the tab you tap lights up at once and stays lit while the page scrolls there;
      when you scroll by hand it follows the section whose top is nearest the top of the screen */
   const secLinks=[...document.querySelectorAll('.hubbar a')]; let lockUntil=0;
@@ -1141,7 +1199,7 @@ async function home(){
     const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; window.scrollTo({top:a.dataset.sec==='continueSec'||a.dataset.sec==='tools'&&$('continueSec').hidden?0:t.getBoundingClientRect().top+scrollY-8,behavior:reduce?'auto':'smooth'}); history.replaceState(null,'','#'+a.dataset.sec); }));
   const spy=()=>{ if(Date.now()<lockUntil) return; const ids=['continueSec','tools','saved'].filter(id=>secLinks.some(a=>a.dataset.sec===id&&!a.hidden)); let cur=ids[0];
     ids.forEach(id=>{ const el=$(id); if(el&&!el.hidden&&el.getBoundingClientRect().top<innerHeight*.35) cur=id; });
-    if(innerHeight+scrollY>=document.documentElement.scrollHeight-4) cur=ids[ids.length-1];
+    if(scrollY<24) cur=ids[0]; else if(innerHeight+scrollY>=document.documentElement.scrollHeight-4) cur=ids[ids.length-1];
     setTab(cur); };
   addEventListener('scroll',()=>requestAnimationFrame(spy),{passive:true}); addEventListener('resize',spy);
 
@@ -1162,7 +1220,7 @@ async function home(){
   function paintCont(){
     const list=cont.filter(x=>!x.gone);
     $('continueSec').hidden=$('hubCont').hidden=!list.length;
-    $('continueList').innerHTML=list.map(x=>`<div class="rowcard" data-draft="${x.id}"><a href="${toolPage(x.id)}?draft=1" class="rlink"><span class="rthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${x.id}" aria-label="Remove ${esc(TOOLS[x.id].title)} from Continue editing">✕</button></div>`).join('');
+    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${x.id}"><a href="${toolPage(x.id)}?draft=1" class="rlink"><span class="cthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${x.id}" aria-label="Remove ${esc(TOOLS[x.id].title)} from Continue editing">✕</button></div>`).join('');
     spy();
   }
   /* remove an unfinished story: it disappears at once; Undo brings it back; after a few seconds its photos are deleted from the phone */
@@ -1177,69 +1235,100 @@ async function home(){
 
   /* account + saved */
   const C=await cloud(); await C.client();
-  let all=[], cols=[], active='all', me=null, owner=false;
+  let all=[], cols=[], filter='all', me=null, owner=false, loading=null, loadedFor=undefined;
+  const pref=(k,d)=>store('studio:'+k)||d;
+  let savedView=pref('savedView','list'), sortBy=pref('savedSort','recent');
   async function refreshAccount(){
     const s=await C.session(); me=s&&s.user; const member=me&&await C.isMember();
     $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
     owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
     return member;
   }
-  async function loadSaved(){
-    const member=await refreshAccount();
-    if(!member){ $('qWrap').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedGrid').innerHTML='';
+  /* load once at a time; sign-in events for the same person don't reload (that used to redraw the list under your finger) */
+  function loadSaved(force){ if(loading&&!force) return loading; loading=doLoad().finally(()=>{ loading=null; }); return loading; }
+  async function doLoad(){
+    const member=await refreshAccount(); loadedFor=me?me.id:null;
+    if(!member){ $('qWrap').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedCtl').hidden=true; $('recentWrap').hidden=true; $('savedGrid').innerHTML='';
       $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=`<p>${me?'This email is not on the team yet. Ask the owner to add you.':'Sign in to see the designs your team saved.'}</p>${me?'':'<button type="button" class="btn slim" id="savedSignIn">Sign in</button>'}`;
-      const b=$('savedSignIn'); if(b) b.onclick=async()=>{ if(await ensureMember()) loadSaved(); };
+      const b=$('savedSignIn'); if(b) b.onclick=async()=>{ if(await ensureMember()) loadSaved(true); };
       return; }
-    $('savedEmpty').hidden=true; $('savedGrid').innerHTML='<div class="skeleton"></div><div class="skeleton"></div>';
+    $('savedEmpty').hidden=true; if(!all.length) $('savedGrid').innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
     try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }catch(err){ $('savedGrid').innerHTML=`<p class="small">${esc(err.message)}</p>`; return; }
     paint();
   }
+  const toolName=t=>(TOOLS[t]||{}).title||t, colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
+  const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
+  const urls={};
+  function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
+  function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('#saved img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
+    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
   function paint(){
-    $('qWrap').hidden=!all.length;
-    $('colChips').hidden=!cols.length;
-    if(active!=='all'&&!cols.some(c=>c.id===active)) active='all';
-    $('colChips').innerHTML=`<button type="button" class="chip" data-col="all" aria-pressed="${active==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>`<button type="button" class="chip" dir="auto" data-col="${c.id}" aria-pressed="${active===c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('');
-    $('colTools').hidden=active==='all';
-    const q=$('q').value.trim().toLowerCase(), colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
-    const list=all.filter(d=>(active==='all'||d.collections.includes(active))&&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||(TOOLS[d.tool]&&TOOLS[d.tool].title.toLowerCase().includes(q))));
-    if(!all.length){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save design to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
+    const has=!!all.length; $('qWrap').hidden=!has; $('savedCtl').hidden=!has;
+    $('sort').value=sortBy; document.querySelectorAll('[data-view="saved"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===savedView)));
+    $('savedGrid').className='dgrid view-'+savedView;
+    /* one row of filter chips: collections, then the tools that have saved designs */
+    const tools=[...new Set(all.map(d=>d.tool))];
+    if(filter!=='all'&&!(filter.startsWith('c:')&&cols.some(c=>'c:'+c.id===filter))&&!(filter.startsWith('t:')&&tools.includes(filter.slice(2)))) filter='all';
+    $('colChips').hidden=!has||(cols.length+tools.length)<2;
+    $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`
+      +cols.map(c=>`<button type="button" class="chip" dir="auto" data-f="c:${c.id}" aria-pressed="${filter==='c:'+c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('')
+      +tools.map(t=>`<button type="button" class="chip chip-tool" data-f="t:${esc(t)}" aria-pressed="${filter==='t:'+t}">${esc(toolName(t))}</button>`).join('');
+    $('colTools').hidden=!filter.startsWith('c:');
+    const q=$('q').value.trim().toLowerCase();
+    let list=all.filter(d=>(filter==='all'||(filter.startsWith('c:')&&d.collections.includes(filter.slice(2)))||(filter.startsWith('t:')&&d.tool===filter.slice(2)))
+      &&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||toolName(d.tool).toLowerCase().includes(q)));
+    list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='tool'?(a,b)=>toolName(a.tool).localeCompare(toolName(b.tool))||lastUse(b)-lastUse(a):(a,b)=>lastUse(b)-lastUse(a));
+    /* Recent: the last designs you used or saved, one tap to reopen (only when you're not searching or filtering) */
+    const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,6);
+    $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!q);
+    $('recentList').innerHTML=recent.map(d=>`<a class="rcard" href="${toolPage(d.tool)}?design=${d.id}"><span class="rthumb">${thumbImg(d)}</span><span class="rtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}</span></span></a>`).join('');
+    if(!has){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save</b> and switch on <b>Also save to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
-    $('savedGrid').innerHTML=list.map(d=>`<button type="button" class="dcard" data-id="${d.id}" aria-label="${esc(d.name)}, ${esc((TOOLS[d.tool]||{}).title||d.tool)}"><span class="dthumb"><img alt="" data-path="${esc(d.thumb_path||'')}">${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc((TOOLS[d.tool]||{}).title||d.tool)} · ${ago(d.updated_at)}</span></span></button>`).join('');
-    C.fileUrls(list.map(d=>d.thumb_path)).then(u=>{ document.querySelectorAll('#savedGrid img[data-path]').forEach(i=>{ if(u[i.dataset.path]) i.src=u[i.dataset.path]; }); });
+    $('savedGrid').innerHTML=list.map((d,i)=>{ const cn=d.collections.map(colName).filter(Boolean);
+      return `<div class="sitem" data-id="${d.id}" style="--i:${Math.min(i,12)}"><button type="button" class="dcard" data-open="${d.id}" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}. Opens options."><span class="dthumb">${thumbImg(d)}${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}${cn.length?' · '+esc(cn.join(', ')):''} · ${ago(d.updated_at)}</span></span></button><button type="button" class="dmore" data-open="${d.id}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; }).join('');
+    fillThumbs([...list,...recent]);
   }
   $('q').addEventListener('input',paint);
-  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(b){ active=b.dataset.col; paint(); } });
-  $('colRename').onclick=()=>{ const c=cols.find(x=>x.id===active); if(!c) return;
+  $('sort').addEventListener('change',e=>{ sortBy=e.target.value; store('studio:savedSort',sortBy); paint(); });
+  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f; paint(); } });
+  $('colRename').onclick=()=>{ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<form method="dialog" class="dlg-body"><h3>Rename collection</h3><input type="text" id="crName" dir="auto" maxlength="40"><div class="status" id="crSt"></div><div class="dlg-actions"><button type="button" class="mini" id="crX">Cancel</button><button type="submit" class="btn">Rename</button></div></form>`);
     d.querySelector('#crName').value=c.name; d.querySelector('#crX').onclick=()=>d.close();
-    d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
-  $('colDelete').onclick=()=>{ const c=cols.find(x=>x.id===active); if(!c) return;
+    d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(true); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
+  $('colDelete').onclick=()=>{ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
-    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); active='all'; loadSaved(); }; };
+    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }; };
+  /* view switches (Tools and Saved), remembered on this phone */
+  document.querySelectorAll('.vswitch').forEach(sw=>sw.addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return;
+    if(sw.dataset.view==='saved'){ savedView=b.dataset.v; store('studio:savedView',savedView); paint(); }
+    else { toolsView=b.dataset.v; store('studio:toolsView',toolsView); paintToolsView(); } }));
 
-  /* one saved design: use it, edit it, rename, duplicate, collections, delete */
-  $('savedGrid').addEventListener('click',async e=>{
-    const card=e.target.closest('[data-id]'); if(!card) return; const dsg=all.find(x=>x.id===card.dataset.id); if(!dsg) return;
-    const url=await C.fileUrl(dsg.thumb_path), page=toolPage(dsg.tool);
-    const names=dsg.collections.map(id=>(cols.find(c=>c.id===id)||{}).name).filter(Boolean);
-    const d=dialog(`<div class="dlg-body design-sheet">
-      <div class="ds-top">${url?`<img src="${url}" alt="">`:''}<div><h3 dir="auto">${esc(dsg.name)}</h3><p class="small">${esc((TOOLS[dsg.tool]||{}).title||dsg.tool)}${dsg.kind==='template'?' · template (add new photos)':''}<br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
+  /* one saved design: tap (or long-press, or ⋯) opens its actions right away: Save story, Edit, Rename, Duplicate, Collections, Delete */
+  $('savedGrid').addEventListener('click',e=>{ const card=e.target.closest('[data-open]'); if(!card) return; const dsg=all.find(x=>x.id===card.dataset.open); if(dsg) designSheet(dsg); });
+  /* long-press (phones) / right-click opens the same actions instead of the browser's menu */
+  $('savedGrid').addEventListener('contextmenu',e=>{ const c=e.target.closest('[data-open]'); if(!c) return; e.preventDefault(); const dsg=all.find(x=>x.id===c.dataset.open); if(dsg&&!document.querySelector('dialog[open]')) designSheet(dsg); });
+  function designSheet(dsg){
+    try{
+      const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path];
+      const d=dialog(`<div class="dlg-body design-sheet">
+      <div class="ds-top">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}<div><h3 dir="auto">${esc(dsg.name)}</h3><p class="small">${esc(toolName(dsg.tool))}${dsg.kind==='template'?' · template (add new photos)':''}<br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <div class="ds-main">${dsg.kind==='template'?`<a class="btn" href="${page}?design=${dsg.id}">Use template</a>`:`<a class="btn" href="${page}?design=${dsg.id}&go=1">Save story</a><a class="btn ghost" href="${page}?design=${dsg.id}">Edit</a>`}</div>
       <div class="ds-more"><button type="button" class="mini" data-act="rename">Rename</button><button type="button" class="mini" data-act="dup">Duplicate</button><button type="button" class="mini" data-act="cols">Collections</button><button type="button" class="mini danger" data-act="del">Delete</button></div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
-      <button type="button" class="link" id="dsClose">Close</button></div>`,'sheet');
+      <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
+      if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
     const P=d.querySelector('#dsPanel'), st=t=>{ d.querySelector('#dsSt').textContent=t; };
     d.querySelector('#dsClose').onclick=()=>d.close();
     d.querySelector('.ds-more').addEventListener('click',async ev=>{
       const b=ev.target.closest('[data-act]'); if(!b) return; const act=b.dataset.act; st('');
       if(act==='rename'){ P.innerHTML=`<div class="inline"><input type="text" id="rn" dir="auto" maxlength="80"><button type="button" class="mini solid" id="rnGo">Save</button></div>`; const i=P.querySelector('#rn'); i.value=dsg.name; i.focus(); i.select();
-        P.querySelector('#rnGo').onclick=async()=>{ try{ await C.renameDesign(dsg.id,i.value); d.close(); loadSaved(); }catch(err){ st(err.message); } }; }
-      if(act==='dup'){ st('Copying…'); try{ await C.duplicateDesign(dsg.id); d.close(); loadSaved(); }catch(err){ st(err.message); } }
+        P.querySelector('#rnGo').onclick=async()=>{ try{ await C.renameDesign(dsg.id,i.value); d.close(); loadSaved(true); }catch(err){ st(err.message); } }; }
+      if(act==='dup'){ st('Copying…'); try{ await C.duplicateDesign(dsg.id); d.close(); loadSaved(true); }catch(err){ st(err.message); } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
           P.querySelector('.chips').onclick=ev2=>{ const c=ev2.target.closest('[data-n]'); if(c){ picked.has(c.dataset.n)?picked.delete(c.dataset.n):picked.add(c.dataset.n); draw(); } };
           P.querySelector('#ncAdd').onclick=()=>{ const v=P.querySelector('#nc').value.trim(); if(v){ picked.add(v); draw(); } };
-          P.querySelector('#colsGo').onclick=async()=>{ try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); loadSaved(); }catch(err){ st(err.message); } }; };
+          P.querySelector('#colsGo').onclick=async()=>{ try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); loadSaved(true); }catch(err){ st(err.message); } }; };
         draw(); }
       if(act==='del'){
         const cf=dialog(`<div class="dlg-body"><h3 dir="auto">Delete “${esc(dsg.name)}”?</h3>
@@ -1248,19 +1337,20 @@ async function home(){
           <div class="dlg-actions"><button type="button" class="mini" id="cfNo">Cancel</button><button type="button" class="btn danger" id="cfYes">Delete</button></div></div>`);
         cf.querySelector('#cfNo').onclick=()=>cf.close();
         cf.querySelector('#cfYes').onclick=async()=>{ cf.querySelectorAll('button').forEach(x=>x.disabled=true); cf.querySelector('#cfSt').textContent='Deleting the design and its images…';
-          try{ await C.deleteDesign(dsg.id); cf.close(); d.close(); loadSaved(); }
+          try{ await C.deleteDesign(dsg.id); cf.close(); d.close(); loadSaved(true); }
           catch(err){ cf.querySelector('#cfSt').textContent=err.message; cf.querySelectorAll('button').forEach(x=>x.disabled=false); } };
       }
     });
-  });
+    }catch(err){ hubToast('Could not open that design: '+(err.message||err)); }
+  }
 
   /* account menu: who's signed in, team (owner), sign out */
   $('acct').addEventListener('click',async()=>{
-    if(!me){ if(await ensureMember()) loadSaved(); else loadSaved(); return; }
+    if(!me){ await ensureMember(); loadSaved(true); return; }
     const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">${me.email===C.teamEmail?'Signed in with the team login. You stay signed in on this phone until you sign out.':'Signed in as<br><b>'+esc(me.email||'')+'</b>'}</p>
       <div id="teamBox"></div><div class="dlg-actions"><button type="button" class="mini" id="acSignOut">Sign out</button><button type="button" class="btn" id="acClose">Done</button></div></div>`);
     d.querySelector('#acClose').onclick=()=>d.close();
-    d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(); };
+    d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(true); };
     if(owner){ const box=d.querySelector('#teamBox');
       const drawTeam=async()=>{ const m=await C.members(); box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
         <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
@@ -1268,7 +1358,7 @@ async function home(){
         box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await C.removeMember(b.dataset.rm); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } }); };
       drawTeam(); }
   });
-  C.onAuth(ev=>{ if(ev==='SIGNED_IN'||ev==='SIGNED_OUT') loadSaved(); });
+  C.onAuth((ev,sess)=>{ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); });
   loadSaved();
   if(location.hash==='#saved') setTimeout(()=>$('saved').scrollIntoView(),300);
 }

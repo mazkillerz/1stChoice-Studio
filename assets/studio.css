@@ -460,3 +460,104 @@ html,body{background:var(--bg)}
   .place-pick{width:112px}
   .place-pick.one{width:84px}
 }
+
+/* ---------- v4.2 hub: view switches, Continue cards, Recent, Saved list/grid ---------- */
+.sec-head{flex-wrap:nowrap}
+.sec-tools{display:flex;align-items:center;gap:var(--sp-2)}
+.sort{min-width:0;width:auto;flex:none;min-height:40px;padding:4px 10px;font-size:14px;border-radius:var(--r-pill)}
+.vswitch{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-pill);background:var(--chip);border:1px solid var(--line);flex:none}
+.vswitch button{width:40px;height:34px;border:0;border-radius:var(--r-pill);background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background-color .2s var(--ease),color .2s}
+.vswitch button::after{content:"";position:absolute;inset:-5px -1px}
+.vswitch button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.vswitch button:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+/* tools: grid and compact views reuse the same rows */
+.grid.view-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid.view-grid .tool-row{flex-direction:column;align-items:stretch;padding:0;gap:0;overflow:hidden}
+.grid.view-grid .tthumb{width:100%;aspect-ratio:4/5;border-radius:0;box-shadow:none}
+.grid.view-grid .ttxt{padding:8px 10px 10px}
+.grid.view-grid .chev{display:none}
+.grid.view-compact{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+.grid.view-compact .tool-row{flex-direction:column;align-items:stretch;padding:6px;gap:6px;border-radius:var(--r-m)}
+.grid.view-compact .tthumb{width:100%;aspect-ratio:1;border-radius:8px}
+.grid.view-compact .ttxt span,.grid.view-compact .chev,.grid.view-compact .tag{display:none}
+.grid.view-compact .ttxt b{font-size:var(--fs-xs);line-height:1.2;display:block;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Continue editing: short, wide cards */
+.ccard{position:relative;flex:0 0 auto;width:216px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);animation:rise .35s var(--ease) both;transition:transform .12s var(--ease)}
+.ccard:active{transform:scale(.98)}
+.ccard .rlink{display:flex;align-items:center;gap:10px;padding:6px 40px 6px 6px;text-decoration:none;color:inherit;min-height:72px}
+.ccard .cthumb{width:60px;height:60px;flex:none;border-radius:10px;overflow:hidden;background:var(--chip)}
+.ccard .cthumb img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
+.ccard .rtxt{display:flex;flex-direction:column;min-width:0;padding:0}
+.ccard b{font:800 var(--fs-s) var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .rtxt span{font-size:var(--fs-xs);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .rx{position:absolute;top:50%;inset-inline-end:6px;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:0;background:var(--chip);color:var(--muted);font:800 13px var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ccard .rx::after{content:"";position:absolute;inset:-8px}
+.ccard .rx:active{transform:translateY(-50%) scale(.9)}
+/* Recent row */
+.recent{display:flex;flex-direction:column;gap:6px}
+.rcard{flex:0 0 auto;width:92px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:4px;animation:rise .35s var(--ease) both}
+.rcard .rthumb{width:92px;height:92px;border-radius:var(--r-m);overflow:hidden;background:var(--chip);box-shadow:0 0 0 1px var(--line)}
+.rcard .rthumb img{width:100%;height:100%;object-fit:cover;object-position:center 35%;display:block}
+.rcard .rtxt{display:flex;flex-direction:column;padding:0 2px}
+.rcard b{font:800 12px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard .rtxt span{font-size:11px;color:var(--muted)}
+.rcard:active .rthumb{transform:scale(.97)}
+/* Saved: list rows or photo grid */
+.dgrid .sitem{position:relative;animation:rise .3s var(--ease) both;animation-delay:calc(var(--i,0) * 20ms)}
+.dgrid .dcard{width:100%;animation:none;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.dgrid .dthumb img{-webkit-touch-callout:none;pointer-events:none}
+.dmore{position:absolute;width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dmore:active{transform:scale(.9)}
+.dgrid.view-list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--sp-2)}
+.dgrid.view-list .dcard{flex-direction:row;align-items:center;gap:var(--sp-3);padding:6px 48px 6px 6px;border-radius:var(--r-l);min-height:76px}
+.dgrid.view-list .dthumb{width:42px;flex:none;aspect-ratio:9/16;border-radius:8px;overflow:hidden}
+.dgrid.view-list .dthumb em{display:none}
+.dgrid.view-list .dtxt{padding:0;min-width:0}
+.dgrid.view-list .dtxt b{font-size:var(--fs-m)}
+.dgrid.view-list .dtxt span{font-size:var(--fs-s);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgrid.view-list .dmore{top:50%;inset-inline-end:6px;transform:translateY(-50%)}
+.dgrid.view-list .dmore:active{transform:translateY(-50%) scale(.9)}
+.dgrid.view-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+.dgrid.view-grid .dcard{border-radius:var(--r-m)}
+.dgrid.view-grid .dthumb{aspect-ratio:1}
+.dgrid.view-grid .dthumb img{object-position:center 35%}
+.dgrid.view-grid .dtxt{padding:5px 7px 7px}
+.dgrid.view-grid .dtxt span{display:none}
+.dgrid.view-grid .dmore{display:none}
+.chip-tool{border-style:dashed}
+.ds-ph{width:96px;aspect-ratio:9/16;border-radius:var(--r-m);background:var(--chip);flex-shrink:0;display:block}
+@media (max-width:820px){
+  .dgrid.view-list{grid-template-columns:1fr}
+  .dgrid.view-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid.view-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid.view-compact{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid.view-list{grid-template-columns:1fr}
+  .saved-tools{position:static;margin:0}
+}
+
+/* ---------- v4.2 Save sheet: Photos always, team optional ---------- */
+.save-opts{display:flex;flex-direction:column;gap:var(--sp-2)}
+.opt-row{display:flex;align-items:center;gap:var(--sp-3);padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--bg);min-height:60px;cursor:default}
+label.opt-row{cursor:pointer}
+.opt-ic{width:36px;height:36px;border-radius:10px;background:var(--chip);display:flex;align-items:center;justify-content:center;flex:none}
+.opt-txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.opt-txt b{font:800 var(--fs-m) var(--sans);overflow:hidden;text-overflow:ellipsis}
+.opt-txt small{font-size:var(--fs-xs);color:var(--muted)}
+.opt-always{font:800 var(--fs-xs) var(--sans);color:var(--muted)}
+.switch{appearance:none;-webkit-appearance:none;width:50px;height:30px;border-radius:15px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background-color .25s var(--ease);margin:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .25s var(--ease)}
+.switch:checked{background:var(--ok)}
+.switch:checked::after{transform:translateX(20px)}
+.switch:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.team-box{display:flex;flex-direction:column;gap:var(--sp-2);padding:2px 2px 4px;animation:part-in .2s var(--ease)}
+.team-more{align-self:flex-start;padding:4px 2px;min-height:36px}
+.team-more-box{display:flex;flex-direction:column;gap:var(--sp-2)}
+.team-status{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:var(--fs-s);color:var(--muted);min-height:28px}
+.team-status.ok{color:var(--ok)}
+.team-status svg{width:18px;height:18px}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--fg);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#teamOnly{align-self:center}
+.dlg-actions.col{flex-direction:column;align-items:stretch}
+.dlg-actions.col .btn{flex:none}
+@media (max-width:820px){ .save-sheet #save{display:inline-flex} }
