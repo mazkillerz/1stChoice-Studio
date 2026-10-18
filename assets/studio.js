@@ -50,7 +50,8 @@ const TOOLS={
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
   'collage':{title:'Collage',blurb:'2, 3 or 4 whole photos in different layouts.'},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',tag:'New'}
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',tag:'New'},
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',tag:'New'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
