@@ -263,8 +263,9 @@ async function tool(cfg){
       <div class="insp-row" id="inspColors" role="group" aria-label="Colour"></div>
       <div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
     </div>
+    <div class="layers" id="layers" hidden><div class="insp-head"><b>Layers</b><span class="small">Top layer first. Tap to edit.</span></div><ul id="layerList" role="list"></ul></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in step 1.')}</div>
-    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
+    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="layersBtn" aria-expanded="false" aria-controls="layers"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg> Layers</button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
@@ -385,7 +386,7 @@ async function tool(cfg){
     cfg.draw(h,{style:S.style,count:S.count,value,preview}); drawExtras(h);
     if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
     if(preview&&guide){ ctx.save(); ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.restore(); }
-    ctx.restore(); if(preview) reg=r;
+    ctx.restore(); if(preview){ reg=r; paintLayers(); }
   }
   function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); }
 
@@ -569,6 +570,25 @@ async function tool(cfg){
     select(id); setTimeout(()=>{ $('inspText').focus(); $('inspText').select(); },30);
   });
   $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); });
+
+  /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
+  const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  const KIND={text:'Text',pill:'Button',logo:'Logo'};
+  let layersSig='';
+  function paintLayers(){
+    const box=document.getElementById('layers'); if(!box||box.hidden) return;
+    const seen=new Set(), items=[];
+    for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(!b.id||b.empty||seen.has(b.id)) continue; seen.add(b.id); items.push(b); }
+    const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
+    const sig=JSON.stringify(rows); if(sig===layersSig) return; layersSig=sig;
+    $('layerList').innerHTML=rows.length?rows.map(r=>`<li class="lyr${r.sel?' sel':''}${r.hidden?' off':''}"><button type="button" class="lyr-pick" data-pick="${esc(r.id)}" aria-current="${r.sel}"><b>${esc(r.name)}</b>${r.text?`<span dir="auto">${esc(r.text)}</span>`:(r.kind&&r.kind!==r.name?`<span>${esc(r.kind)}</span>`:'')}</button><button type="button" class="lyr-eye" data-eye="${esc(r.id)}" aria-pressed="${!r.hidden}" aria-label="${r.hidden?'Show':'Hide'} ${esc(r.name)}" title="${r.hidden?'Show':'Hide'}">${r.hidden?EYE_OFF:EYE}</button></li>`).join(''):'<li class="small">No layers yet.</li>';
+  }
+  $('layersBtn').addEventListener('click',()=>{ const open=$('layers').hidden; $('layers').hidden=!open; $('layersBtn').setAttribute('aria-expanded',String(open)); layersSig=''; paintLayers(); });
+  $('layerList').addEventListener('click',e=>{
+    const eye=e.target.closest('[data-eye]'); if(eye){ const id=eye.dataset.eye, l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); l.hidden=!l.hidden; if(S.sel===id) syncInspector(); render(); return; }
+    const pk=e.target.closest('[data-pick]'); if(pk){ const id=pk.dataset.pick; select(S.sel===id?null:id); }
+  });
 
   /* ---- pointer: drag layers or photos, pinch to resize/zoom, tap text to edit ---- */
   let guide=false; const pts=new Map(); let st=null, target=null, moved=false;
