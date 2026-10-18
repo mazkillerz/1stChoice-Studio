@@ -97,6 +97,7 @@ const ICON={
   size:svg('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',20),
   drop:svg('<path d="M12 2.7s6 6.4 6 11.3a6 6 0 0 1-12 0c0-4.9 6-11.3 6-11.3z"/>',20),
   font:svg('<path d="M4 20 10 4h1l6 16"/><path d="M6.5 14h8"/><path d="M17 20h4"/>',20),
+  grid:svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',20),
   more:svg('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',20),
   magnet:svg('<path d="M6 3v8a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/>',22),
   plus:svg('<path d="M12 5v14M5 12h14"/>'),
@@ -215,8 +216,9 @@ function freeSharp(){ SHARP.forEach(c=>Object.values(c).forEach(cv=>{cv.width=cv
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
 let onAssetLoad=null;
-function makeHelpers(ctx,S,preview,reg,scale,off){
+function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
+  const ix=(i,opt)=>opt&&opt.page!=null?opt.page*(perPage||1)+i:off+i;   // opt.page: a photo from another slide (panoramas)
   const B=BRAND, C=B.colors, dir=B.dir||'ltr';
   const L=id=>S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
   function fitSize(text,size,weight,family,maxW){ let s=size; for(;;){ ctx.font=(weight?weight+' ':'')+s+'px "'+family+'"'; if(ctx.measureText(text).width<=maxW||s<=24) return s; s-=2; } }
@@ -230,9 +232,9 @@ function makeHelpers(ctx,S,preview,reg,scale,off){
   }
   const h={W,H,ctx,rr,brand:B,C,dir,
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
-    photoAspect(i){const p=S.photos[off+i];return p&&p.img?p.img.width/p.img.height:1.5;},
+    photoAspect(i,opt){const p=S.photos[ix(i,opt)];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
-      opt=opt||{}; const p=S.photos[off+i];
+      opt=opt||{}; const p=S.photos[ix(i,opt)];
       ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip();
       if(p&&p.img){
         const im=p.img, mode=opt.mode||'cover';
@@ -246,7 +248,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
       ctx.restore();
-      reg.push({photo:off+i,x,y,w,h:hh,mode:opt.mode||'cover'});
+      reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover'});
     },
     logoH(w){return w*LOGO.height/LOGO.width;},
     /* logo layer; tone 'dark' or 'light' */
@@ -366,14 +368,17 @@ async function tool(cfg){
     if(f.type==='multi') return {picks:clone(d??f.options.map(o=>o.v)),own:''};
     if(f.type==='tiles') return clone(d||[{small:'',big:''}]);
     if(f.type==='place') return d||'bottom-center';
+    if(f.type==='note') return null;
     if(f.type==='dates'){ const t=today(); return {on:f.on!==false,from:iso(t),to:iso(new Date(t.getTime()+6*864e5))}; }
     return {text:d||'',on:f.on!==false};
   }
-  function newPage(pg){ const v={}; fields.forEach(f=>{ v[f.id]=fieldDefault(f,pg); }); return {values:v,layers:{},extras:[]}; }
+  function newPage(pg){ const v={}; fields.forEach(f=>{ v[f.id]=f.global&&S.P&&S.P.length?clone(S.P[0].values[f.id]):fieldDefault(f,pg); }); return {values:v,layers:{},extras:[]}; }
   S.P.push(newPage(0)); if(PG) for(let i=1;i<(PG.start||PG.min);i++) S.P.push(newPage(i));
   const KEY='studio:'+B.id+':'+cfg.id;
   const saved=store(KEY); if(saved){ if(saved.style&&cfg.styles&&cfg.styles.some(s=>s.id===saved.style))S.style=saved.style; if(saved.count&&!PG)S.count=Math.min(perPage,Math.max(minPhotos,saved.count)); if(!PG) Object.keys(saved.values||{}).forEach(k=>{ const f=fields.find(x=>x.id===k); if(f&&f.type!=='dates') S.values[k]=saved.values[k]; }); }
-  const remember=()=>store(KEY,PG?{style:S.style}:{style:S.style,count:S.count,values:S.values});
+  /* settings marked global (carousel "All slides") are the same on every slide */
+  function syncGlobals(){ if(!PG) return; fields.forEach(f=>{ if(f.global) S.P.forEach((pp,i)=>{ if(i!==S.page) pp.values[f.id]=clone(S.values[f.id]); }); }); }
+  const remember=()=>{ syncGlobals(); store(KEY,PG?{style:S.style}:{style:S.style,count:S.count,values:S.values}); };
 
   /* ---- page ----
      Phone: the preview fills the screen, one bottom bar (Photo, Words, Style, Layers, Save) opens bottom sheets over it.
@@ -425,7 +430,7 @@ async function tool(cfg){
   }
   html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this slide':''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div></div></section>`;
-  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
+  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
     <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
@@ -451,6 +456,7 @@ async function tool(cfg){
     </div>
     <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no image)</button>
+    ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this slide only</button>':''}
     <div class="status" id="status" role="status" aria-live="polite"></div>
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
   </div></section>
@@ -553,6 +559,7 @@ async function tool(cfg){
       else if(f.type==='place'){ const rtl=(B.dir||'ltr')==='rtl', cols=f.cols===false?['center']:(rtl?['end','center','start']:['start','center','end']), side=c=>c==='center'?'centre':((c==='start')!==rtl?'left':'right');
         inner=`<span class="lbl">${esc(f.label)}</span><div class="place-pick${f.cols===false?' one':''}" role="group" aria-label="${esc(f.label)}" data-place="${f.id}">${['top','middle','bottom'].map(r=>cols.map(c=>`<button type="button" class="pp" data-v="${r}-${c}" aria-pressed="false" aria-label="${r==='middle'?'Middle':r[0].toUpperCase()+r.slice(1)}${f.cols===false?'':', '+side(c)}"><i></i></button>`).join('')).join('')}</div>`; }
       else if(f.type==='dates') inner=`<label class="check"><input type="checkbox" data-don="${f.id}"> ${esc(f.label)}</label><div class="row dates-ed"><label class="field"><span class="lbl">From</span><input type="date" data-date="${f.id}:from"></label><label class="field"><span class="lbl">To</span><input type="date" data-date="${f.id}:to"></label></div>`;
+      else if(f.type==='note') inner=`<h3 class="fgroup">${esc(f.label)}</h3>`;
       else inner=(f.toggle?`<label class="check"><input type="checkbox" data-on="${f.id}"> ${esc(f.label)}</label>`:`<label class="lbl" for="t_${f.id}">${esc(f.label)}</label>`)+`<input type="text" dir="${B.dir||'ltr'}" id="t_${f.id}" data-text="${f.id}" placeholder="${esc(opts(f.placeholder)||'')}" ${f.toggle?`aria-label="${esc(f.label)}"`:''}>`;
       return `<div class="field" data-fw="${f.id}">${inner}</div>`;
     }).join('');
@@ -612,12 +619,14 @@ async function tool(cfg){
   document.querySelectorAll('[data-count]').forEach(b=>b.addEventListener('click',()=>{S.count=+b.dataset.count;S.active=Math.min(S.active,S.count-1);syncUI();remember();render();}));
 
   /* ---- photo slots ---- */
+  /* how many photos this slide takes (a carousel's slide type decides: words-only takes none, two-photo takes two) */
+  function pagePhotoCount(pg){ if(!PG||!cfg.pagePhotos) return S.count; return withPage(pg,()=>cfg.pagePhotos(value,{page:pg,pageValue})); }
+  const slotCount=()=>pagePhotoCount(S.page);
   function slotsUI(){
-    let s='';
-    const off=photoOffset();
-    for(let j=0;j<S.count;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
-      s+=`<label class="slot${real?' has':''}${i===S.active&&S.count>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(S.count>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${S.count>1?' '+(j+1):''}"></label>`; }
-    $('slots').innerHTML=s;
+    let s=''; const off=photoOffset(), n=slotCount();
+    for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
+      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
+    $('slots').innerHTML=n?s:'<p class="small">This slide has no photo. Change it in Style → This slide.</p>';
   }
   $('slots').addEventListener('change',e=>{const t=e.target; if(t.dataset.file!=null){ setPhoto(+t.dataset.file,t.files&&t.files[0]); t.value=''; }});
   $('slots').addEventListener('click',e=>{const l=e.target.closest('[data-slot]'); if(l){S.active=+l.dataset.slot; syncZoom();}});
@@ -627,19 +636,24 @@ async function tool(cfg){
       const img=await loadFile(file);
       const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
       S.photos[i]={img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7),file,key:'p'+Date.now().toString(36)+i};
-      S.active=i; $('result').hidden=true; status('');
+      S.active=i; $('result').hidden=true; status(''); if(PG) refreshThumbs();
       $('hint').textContent='Drag text or photos to move them. Tap text to edit it.';
       syncUI(); render();
     }catch(_){ status('That photo could not be opened. Try a JPG or PNG.'); }
   }
   /* one picker for the preview and the "Add your photo" button; several photos fill the empty boxes in order */
   let pickAt=0;
-  function pickPhoto(i){ pickAt=i; const p=$('pick'); p.multiple=S.count>1; p.click(); }
-  function slotTargets(i){ const off=photoOffset(), t=[i]; for(let j=0;j<S.count;j++){ const k=off+j, p=S.photos[k]; if(k!==i&&(!p.img||p.sample)) t.push(k); } return t; }
-  $('pick').addEventListener('change',e=>{ const off=photoOffset(), at=pickAt>=off&&pickAt<off+S.count?pickAt:nextEmpty(), fs=[...(e.target.files||[])], t=slotTargets(at); fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f)); e.target.value=''; });
+  function pickPhoto(i){ pickAt=i; const p=$('pick'); p.multiple=!!PG||slotCount()>1; p.click(); }
+  function slotTargets(i){ const off=photoOffset(), t=[i]; for(let j=0;j<slotCount();j++){ const k=off+j, p=S.photos[k]; if(k!==i&&(!p.img||p.sample)) t.push(k); } return t; }
+  $('pick').addEventListener('change',e=>{ const off=photoOffset(), at=pickAt>=off&&pickAt<off+slotCount()?pickAt:nextEmpty(), fs=[...(e.target.files||[])], t=slotCount()?slotTargets(at):[];
+    fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f));
+    /* carousels: more photos than this slide takes fill the next slides, adding slides if needed */
+    if(PG&&fs.length>t.length){ let pg=S.page; for(const f of fs.slice(t.length)){ pg++; while(pg<S.P.length&&!pagePhotoCount(pg)) pg++; if(pg>=S.P.length){ if(S.P.length>=PG.max) break; insertPage(S.P.length,newPage(S.P.length)); pg=S.P.length-1; } setPhoto(pg*perPage,f); }
+      paintPager(); status(fs.length+' photos added across the slides.'); }
+    e.target.value=''; });
   $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
-  function syncCta(){ $('pick').multiple=S.count>1; const off=photoOffset(); let any=false; if(needsPhoto(S.page)) for(let i=0;i<S.count;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=S.count>1?'Add your photos':'Add your photo'; }
-  function nextEmpty(){ const off=photoOffset(); for(let j=0;j<S.count;j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
+  function syncCta(){ const n=slotCount(); $('pick').multiple=!!PG||n>1; const off=photoOffset(); let any=false; for(let i=0;i<n;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=n>1||PG?'Add your photos':'Add your photo'; }
+  function nextEmpty(){ const off=photoOffset(); for(let j=0;j<slotCount();j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
   document.addEventListener('paste',e=>{ if(e.target&&e.target.tagName==='INPUT') return; const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/')); if(it) setPhoto(nextEmpty(),it.getAsFile());});
   let dd=0;
   document.addEventListener('dragenter',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){dd++;$('drop').hidden=false;}});
@@ -660,6 +674,7 @@ async function tool(cfg){
       else if(f.type==='toggle') document.querySelector(`[data-toggle="${f.id}"]`).checked=!!v;
       else if(f.type==='multi') document.querySelectorAll(`[data-mf="${f.id}"] .chip`).forEach(b=>b.setAttribute('aria-pressed',String(v.picks.includes(b.dataset.v))));
       else if(f.type==='tiles') paintTiles(f);
+      else if(f.type==='note'){}
       else if(f.type==='place'){ const cur=String(v).includes('-')?v:v+'-start'; document.querySelectorAll(`[data-place="${f.id}"] .pp`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===cur||(f.cols===false&&b.dataset.v.split('-')[0]===cur.split('-')[0])))); }
       else if(f.type==='dates'){ document.querySelector(`[data-don="${f.id}"]`).checked=v.on; document.querySelectorAll(`[data-date^="${f.id}:"]`).forEach(inp=>{ const k=inp.dataset.date.split(':')[1]; inp.value=v[k]; inp.disabled=!v.on; }); }
       else { const t=document.querySelector(`[data-text="${f.id}"]`); if(t.value!==v.text&&document.activeElement!==t) t.value=v.text; if(f.toggle){const c=document.querySelector(`[data-on="${f.id}"]`);c.checked=v.on;t.disabled=!v.on;} }
@@ -677,10 +692,11 @@ async function tool(cfg){
       else h.text(x.id,'Your text',x.text,W/2,x.y,{font:x.font,weight:x.font==='display'?'':'800',size:x.size,color:x.color,shadow:x.shadow});
     });
   }
-  function draw(ctx,preview,scale){
+  function draw(ctx,preview,scale,thumb){
     const r=[]; ctx.save(); if(scale) ctx.scale(scale,scale); ctx.clearRect(0,0,W,H);
-    const h=makeHelpers(ctx,S,preview,r,scale||1,photoOffset());
-    cfg.draw(h,{style:S.style,count:S.count,value,preview,page:S.page,pages:S.P.length}); drawExtras(h);
+    const h=makeHelpers(ctx,S,preview,r,scale||1,photoOffset(),perPage);
+    cfg.draw(h,{style:S.style,count:S.count,value,preview:preview&&!thumb,page:S.page,pages:S.P.length,pageValue,pagePhotos:pagePhotoCount}); drawExtras(h);
+    if(thumb){ ctx.restore(); return; }
     if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
     if(preview&&dragging) drawGuides(ctx);
     ctx.restore(); if(preview){ reg=r; paintLayers(); }
@@ -707,13 +723,13 @@ async function tool(cfg){
     let best=null; [a,a+len/2,a+len].forEach(p=>targets.forEach(t=>{ const d=t.v-p; if(Math.abs(d)<=tol&&(!best||Math.abs(d)<Math.abs(best.d))) best={d,v:t.v,kind:t.kind}; }));
     return best;
   }
-  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); }
+  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); scheduleThumb(); }
 
   /* ---- the design "recipe": everything needed to rebuild this story (saving, drafts, undo) ---- */
   function recipe(){
     /* v2 keeps every page; page 1's values/layers/extras are also written at the top so older readers still work */
     const p0=S.P[0];
-    return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
+    return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,pp:perPage,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
       ...(PG?{pages:clone(S.P)}:{}),
       photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample)}))};
   }
@@ -725,7 +741,9 @@ async function tool(cfg){
     S.P=pages.map((pp,i)=>{ const np=newPage(i); Object.keys(pp.values||{}).forEach(k=>{ if(k in np.values) np.values[k]=clone(pp.values[k]); }); np.layers=clone(pp.layers||{}); np.extras=clone(pp.extras||[]); return np; });
     S.page=Math.min(S.P.length-1,Math.max(0,r.page||0));
     S.P.forEach(pp=>{ extraN=pp.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); }); assetN=Math.max(assetN,extraN);
-    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
+    /* older carousels kept 1 photo per slide; map them onto today's layout */
+    const oldPP=PG?(r.pp||1):perPage; if(oldPP!==perPage){ const map=i=>Math.floor(i/oldPP)*perPage+i%oldPP, rp2=[], sl2=[]; (r.photos||[]).forEach((x,i)=>{ rp2[map(i)]=x; }); if(slots) slots.forEach((x,i)=>{ if(x) sl2[map(i)]=x; }); r={...r,photos:rp2}; slots=slots?sl2:slots; }
+    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
     S.sel=null;
   }
   async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
@@ -761,7 +779,7 @@ async function tool(cfg){
       if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(DKEY+':'+k); });
     },800);
   }
-  function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
+  function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
   function clearDraft(){ const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
   async function loadDraft(d){
     const slots=[];
@@ -789,7 +807,7 @@ async function tool(cfg){
   }
   function thumbBlob(){
     const k=360/W, c=document.createElement('canvas'); c.width=360; c.height=Math.round(H*k); const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k)); S.sel=sel; draw(vctx,true); return canvasBlob(c,'image/jpeg',.85);
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return canvasBlob(c,'image/jpeg',.85);
   }
   /* ---- saving to the team: one function used by the Save sheet, "Only save to the team" and the leave prompt ---- */
   let teamCols=null; const teamPicked=new Set();
@@ -997,6 +1015,14 @@ async function tool(cfg){
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return {photo:b.photo,mode:b.mode}; }
     return null;
   }
+  /* carousels: swipe sideways starting near the left or right edge of the preview to change slide */
+  let swipe=null;
+  view.addEventListener('pointerdown',e=>{ if(!PG||pts.size) return; const pt=toCanvas(e); const h0=hit(pt); if(h0&&h0.layer) return;
+    if(pt.x<W*.09||pt.x>W*.91){ swipe={x:e.clientX,y:e.clientY,id:e.pointerId}; e.stopImmediatePropagation(); view.setPointerCapture(e.pointerId); } },true);
+  view.addEventListener('pointermove',e=>{ if(swipe&&e.pointerId===swipe.id) e.stopImmediatePropagation(); },true);
+  view.addEventListener('pointerup',e=>{ if(!swipe||e.pointerId!==swipe.id) return; e.stopImmediatePropagation(); const dx=e.clientX-swipe.x, dy=e.clientY-swipe.y; swipe=null;
+    if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)) goPage(S.page+(dx<0?1:-1)); },true);
+  view.addEventListener('pointercancel',()=>{ swipe=null; },true);
   view.addEventListener('pointerdown',e=>{
     const pt=toCanvas(e); const h=pts.size?target:hit(pt);
     if(!pts.size){ target=h; moved=false; }
@@ -1060,16 +1086,16 @@ async function tool(cfg){
     try{ await navigator.share({files}); return 'shared'; }
     catch(err){ if(err&&err.name==='AbortError') return 'cancelled'; if(err&&err.name==='NotAllowedError') return 'needtap'; return false; }
   }
-  async function save(withPhotos){
+  async function save(withPhotos,only){
     if(saving) return; saving=true;
     const sel=S.sel; S.sel=null;
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
-    const type='image/png', ext='png', pages=pageCount(), files=[], stamp=new Date(); let used=EXPORT_SCALE;
+    const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
     try{
-      for(let pg=0;pg<pages;pg++){
-        const tag=pages>1?'Slide '+(pg+1)+' of '+pages+': ':'';
-        progress((pg+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
+      for(const [li,pg] of list.entries()){
+        const tag=pages>1?'Slide '+(li+1)+' of '+pages+': ':'';
+        progress((li+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
         /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
         async function renderAt(K){
           const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
@@ -1077,7 +1103,7 @@ async function tool(cfg){
           try{
             withPage(pg,()=>draw(ctx,false,K));
             if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
-            progress((pg+.55)/pages,tag+'Making the PNG…');
+            progress((li+.55)/pages,tag+'Making the PNG…');
             const b=await new Promise(r=>c.toBlob(r,type));
             return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
           }catch(_){ return null; }
@@ -1087,7 +1113,7 @@ async function tool(cfg){
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
         if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
-        files.push(new File([blob],fname(ext,withPhotos?null:'frame',pages>1?pg+1:0,stamp),{type}));
+        files.push(new File([blob],fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
       }
       progress(1,'Done');
       const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
@@ -1112,16 +1138,16 @@ async function tool(cfg){
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?'slides are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
-  function needsPhoto(pg){ return !cfg.pageNeedsPhoto||withPage(pg,()=>cfg.pageNeedsPhoto(value)); }
-  function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ if(!needsPhoto(pg)) continue; const o=cfg.pages?pg*S.count:off; for(let i=0;i<S.count;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
+  function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
+  function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar opens the Save sheet first (Photos + optional team); the sheet's Save button does it */
   function saveTapped(){
     if(isPhone()&&openName!=='save'){ resetSaveSheet(); openSheet('save'); focusSheet('save'); return; }
     doSave();
   }
-  function resetSaveSheet(){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
-  async function doSave(){
-    const miss=missingPhotos();
+  function resetSaveSheet(){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
+  async function doSave(only){
+    const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
       openSheet('photo');
       status(cfg.pages?'Add a photo to slide '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
@@ -1129,42 +1155,92 @@ async function tool(cfg){
     }
     const team=$('teamOn').checked;
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
-    $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true;
-    await save(true);
+    $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
+    await save(true,only);
     if(team) await runTeamSave();
     $('save').hidden=false; $('saveTxt').textContent='Save again';
-    if(!isPhone()){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; syncSaveOpts(); }
+    if(PG) $('saveThis').hidden=false; if(!isPhone()){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; syncSaveOpts(); }
   }
-  $('save').addEventListener('click',doSave);
+  $('save').addEventListener('click',()=>doSave());
+  if(PG) $('saveThis').addEventListener('click',()=>doSave(S.page));
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
   /* pages (carousels): one page for ordinary stories */
   function pageCount(){ return S.P.length; }
   function withPage(pg,fn){ const keep=S.page; S.page=pg; try{ return fn(); } finally{ S.page=keep; } }
   function photoOffset(){ return PG?S.page*perPage:0; }
-  /* slide pager: pick a slide, add one after this one, or delete this one */
+  /* ---- slides (carousels): a filmstrip of real previews. Tap = open, long-press = menu, long-press + drag = reorder ---- */
+  const blankPhoto=()=>({img:null,zoom:1,ox:0,oy:0,sample:true});
+  const TH_W=60, TH_H=Math.round(TH_W*H/W);
   function paintPager(){
     if(!PG) return; const n=S.P.length, el=$('pager'); el.hidden=false;
-    el.innerHTML=`<button type="button" class="mini icon" data-pg="prev" aria-label="Previous slide" ${S.page===0?'disabled':''}>${ICON.back}</button>
-      <div class="pg-dots" role="group" aria-label="Slides">${S.P.map((_,i)=>`<button type="button" class="pg-dot" data-pg="${i}" aria-current="${i===S.page}" aria-label="Slide ${i+1}">${i+1}</button>`).join('')}</div>
-      <button type="button" class="mini icon" data-pg="next" aria-label="Next slide" ${S.page>=n-1?'disabled':''}>${ICON.next}</button>
-      <button type="button" class="mini icon" data-pg="add" aria-label="Add a slide after this one" ${n>=PG.max?'disabled':''}>${ICON.plus}</button>
-      <button type="button" class="mini icon" data-pg="del" aria-label="Delete this slide" ${n<=PG.min?'disabled':''}>${ICON.trash}</button>`;
+    el.innerHTML=`<div class="strip" id="strip" role="group" aria-label="Slides. Long-press a slide for options or to move it.">${S.P.map((_,i)=>`<button type="button" class="sthumb" data-pg="${i}" aria-current="${i===S.page}" aria-label="Slide ${i+1}"><canvas width="${TH_W*2}" height="${TH_H*2}"></canvas><span>${i+1}</span></button>`).join('')}<button type="button" class="sadd" data-pg="add" aria-label="Add a slide" ${n>=PG.max?'disabled':''}>${ICON.plus}</button></div>
+      <button type="button" class="mini icon sall" data-pg="all" aria-label="See all slides" title="See all slides">${ICON.grid}</button>`;
+    S.P.forEach((_,i)=>drawThumb(i));
+    const cur=el.querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest'});
+    fit();
   }
-  const blankPhoto=()=>({img:null,zoom:1,ox:0,oy:0,sample:true});
-  function goPage(n){ n=Math.max(0,Math.min(S.P.length-1,n)); S.page=n; S.sel=null; S.active=photoOffset(); if(openName==='insp') closeSheet('insp'); syncUI(); syncInspector(); paintPager(); render(); }
-  if(PG) $('pager').addEventListener('click',e=>{
-    const b=e.target.closest('[data-pg]'); if(!b||b.disabled) return; const a=b.dataset.pg;
-    if(a==='prev') goPage(S.page-1); else if(a==='next') goPage(S.page+1);
-    else if(a==='add'){ if(S.P.length>=PG.max) return; const at=S.page+1; S.P.splice(at,0,newPage(at)); S.photos.splice(at*perPage,0,...Array.from({length:perPage},blankPhoto)); S.photos.length=nPhotos; goPage(at); status('Slide '+(at+1)+' added.'); }
-    else if(a==='del'){ if(S.P.length<=PG.min) return; const at=S.page; S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); goPage(Math.min(at,S.P.length-1)); status('Slide deleted. Undo brings it back.'); }
-    else goPage(+a);
-  });
-  function photoUsed(i){ return PG?i<S.P.length*perPage&&i%perPage<S.count:i<S.count; }
+  function drawThumb(i,canvas){
+    const c=canvas||$('pager').querySelector(`.sthumb[data-pg="${i}"] canvas`); if(!c) return; const x=c.getContext('2d');
+    x.fillStyle='#000'; x.fillRect(0,0,c.width,c.height); const keep=S.sel; S.sel=null; withPage(i,()=>draw(x,true,c.width/W,true)); S.sel=keep;
+  }
+  let allT=0; function refreshThumbs(){ clearTimeout(allT); allT=setTimeout(()=>S.P.forEach((_,i)=>drawThumb(i)),300); }
+  let thumbT=0; function scheduleThumb(){ if(!PG) return; clearTimeout(thumbT); thumbT=setTimeout(()=>drawThumb(S.page),220); }
+  function goPage(n){ n=Math.max(0,Math.min(S.P.length-1,n)); S.page=n; S.sel=null; S.active=photoOffset(); if(openName==='insp') closeSheet('insp'); syncUI(); syncInspector();
+    $('pager').querySelectorAll('.sthumb').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.pg===n))); const cur=$('pager').querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); render(); }
+  function insertPage(at,page,photos){ S.P.splice(at,0,page); S.photos.splice(at*perPage,0,...(photos||Array.from({length:perPage},blankPhoto))); S.photos.length=nPhotos; for(let i=0;i<nPhotos;i++) if(!S.photos[i]) S.photos[i]=blankPhoto(); }
+  function removePage(at){ S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); }
+  function movePage(from,to){ if(to<0||to>=S.P.length||from===to) return; const pg=S.P[from], ph=S.photos.slice(from*perPage,from*perPage+perPage); removePage(from); insertPage(to,pg,ph); S.page=to; paintPager(); goPage(to); }
+  function dupPage(at){ if(S.P.length>=PG.max) return status('A carousel can have up to '+PG.max+' slides.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const nid=x.type==='asset'?'asset'+(++assetN):'extra'+(++extraN); if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
+    insertPage(at+1,pg,S.photos.slice(at*perPage,at*perPage+perPage).map(p=>({...p}))); paintPager(); goPage(at+1); status('Slide '+(at+1)+' duplicated.'); }
+  function deletePage(at){ if(S.P.length<=PG.min) return status('A carousel needs at least '+PG.min+' slides.'); removePage(at); paintPager(); goPage(Math.min(at,S.P.length-1)); status('Slide deleted. Undo brings it back.'); }
+  /* add a slide: pick its type (or duplicate this one); panoramas add 2 or 3 slides that share one wide photo */
+  function addMenu(){
+    const kinds=(cfg.slideKinds||[]).filter(k=>S.P.length+(k.slides||1)<=PG.max);
+    const d=dialog(`<div class="dlg-body"><h3>Add a slide</h3><div class="kind-grid">${kinds.map(k=>`<button type="button" class="kind" data-kind="${k.v}" data-n="${k.slides||1}">${k.ic||''}<b>${esc(k.l)}</b>${k.d?`<span>${esc(k.d)}</span>`:''}</button>`).join('')}</div>
+      <div class="dlg-actions"><button type="button" class="mini" data-dup="1">Duplicate this slide</button><button type="button" class="mini" data-x="1">Cancel</button></div></div>`);
+    d.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) return d.close(); if(e.target.closest('[data-dup]')){ d.close(); return dupPage(S.page); }
+      const k=e.target.closest('[data-kind]'); if(!k) return; d.close(); let at=S.page+1; const n=+k.dataset.n;
+      for(let j=0;j<n;j++){ const pg=newPage(at+j); if(pg.values.kind!==undefined) pg.values.kind=k.dataset.kind; if(cfg.slideDefaults) cfg.slideDefaults(k.dataset.kind,pg.values,B); insertPage(at+j,pg); }
+      paintPager(); goPage(at); status(n>1?n+' panorama slides added. Add one wide photo to the first.':'Slide '+(at+1)+' added.'); });
+  }
+  function slideMenu(i){
+    const d=dialog(`<div class="dlg-body"><h3>Slide ${i+1}</h3><div class="menu-list">
+      <button type="button" class="mini" data-a="open">Open</button><button type="button" class="mini" data-a="dup" ${S.P.length>=PG.max?'disabled':''}>Duplicate</button>
+      <button type="button" class="mini" data-a="left" ${i===0?'disabled':''}>Move left</button><button type="button" class="mini" data-a="right" ${i>=S.P.length-1?'disabled':''}>Move right</button>
+      <button type="button" class="mini danger" data-a="del" ${S.P.length<=PG.min?'disabled':''}>Delete</button></div><button type="button" class="link" data-a="x">Close</button></div>`);
+    d.addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(!b||b.disabled) return; d.close(); const a=b.dataset.a;
+      if(a==='open') goPage(i); else if(a==='dup') dupPage(i); else if(a==='left') movePage(i,i-1); else if(a==='right') movePage(i,i+1); else if(a==='del') deletePage(i); });
+  }
+  function seeAll(){
+    const d=dialog(`<div class="dlg-body see-all"><h3>All slides</h3><p class="small">How the carousel flows. Tap a slide to open it.</p><div class="sa-row">${S.P.map((_,i)=>`<button type="button" class="sa-slide" data-i="${i}" aria-label="Open slide ${i+1}"><canvas width="${Math.round(W/4)}" height="${Math.round(H/4)}"></canvas><span>${i+1}</span></button>`).join('')}</div><button type="button" class="btn slim" data-x="1">Close</button></div>`,'wide');
+    d.querySelectorAll('.sa-slide canvas').forEach((c,i)=>drawThumb(i,c));
+    d.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) return d.close(); const b=e.target.closest('[data-i]'); if(b){ d.close(); goPage(+b.dataset.i); } });
+  }
+  if(PG){
+    const el=$('pager'); let press=null;
+    el.addEventListener('click',e=>{ if(press&&press.used){ press=null; return; } const b=e.target.closest('[data-pg]'); if(!b||b.disabled) return; const a=b.dataset.pg;
+      if(a==='add') addMenu(); else if(a==='all') seeAll(); else goPage(+a); });
+    /* long-press a slide: hold still = menu; hold then drag sideways = move it */
+    el.addEventListener('pointerdown',e=>{ const b=e.target.closest('.sthumb'); if(!b) return; const i=+b.dataset.pg;
+      press={i,x:e.clientX,y:e.clientY,b,long:false,drag:false,used:false,timer:setTimeout(()=>{ press.long=true; b.classList.add('lift'); if(navigator.vibrate) navigator.vibrate(8); },380)}; });
+    el.addEventListener('pointermove',e=>{ if(!press) return; const dx=e.clientX-press.x, dy=e.clientY-press.y;
+      if(!press.long){ if(Math.hypot(dx,dy)>8){ clearTimeout(press.timer); press=null; } return; }
+      press.drag=true; press.b.style.transform=`translateX(${dx}px) scale(1.06)`;
+      const over=document.elementFromPoint(e.clientX,press.b.getBoundingClientRect().top+10)?.closest('.sthumb'); el.querySelectorAll('.sthumb').forEach(t=>t.classList.toggle('drop-here',t===over&&t!==press.b)); });
+    el.addEventListener('touchmove',e=>{ if(press&&press.long) e.preventDefault(); },{passive:false});   // while moving a slide, the strip doesn't scroll
+    const end=e=>{ if(!press) return; clearTimeout(press.timer); const p=press; p.b.classList.remove('lift'); p.b.style.transform=''; el.querySelectorAll('.drop-here').forEach(t=>t.classList.remove('drop-here'));
+      if(p.long){ p.used=true; e.preventDefault(); if(p.drag){ const over=document.elementFromPoint(e.clientX,p.b.getBoundingClientRect().top+10)?.closest('.sthumb'); if(over&&+over.dataset.pg!==p.i) movePage(p.i,+over.dataset.pg); } else slideMenu(p.i); press=p; setTimeout(()=>{ if(press===p) press=null; },50); }
+      else press=null; };
+    el.addEventListener('pointerup',end); el.addEventListener('pointercancel',()=>{ if(press){ clearTimeout(press.timer); press.b.classList.remove('lift'); press.b.style.transform=''; press=null; } });
+    el.addEventListener('contextmenu',e=>{ if(e.target.closest('.sthumb')) e.preventDefault(); });
+  }
+  function photoUsed(i){ if(!PG) return i<S.count; const pg=Math.floor(i/perPage); return pg<S.P.length&&i%perPage<pagePhotoCount(pg); }
+  function pageValue(pg,id){ return withPage(pg,()=>value(id)); }
 
   /* ---- start with the brand's example photos so the tool shows what it makes ---- */
   const names=(B.samples&&B.samples[cfg.id])||[];
   const imgs=await Promise.all(names.map(n=>load(B.base+'samples/'+n+'.jpg').catch(()=>null)));
-  imgs.forEach((img,i)=>{ if(img&&S.photos[i]) S.photos[i]={img,zoom:1,ox:0,oy:0,sample:true}; });
+  imgs.forEach((img,i)=>{ const k=PG?i*perPage:i; if(img&&S.photos[k]) S.photos[k]={img,zoom:1,ox:0,oy:0,sample:true}; });
   syncUI(); draw(vctx,true);
 
   /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), or offer the unfinished story ---- */

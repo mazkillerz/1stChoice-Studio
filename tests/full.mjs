@@ -16,7 +16,7 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     pg.on('pageerror',e=>R.errors.push(String(e))); pg.on('console',m=>{ if(m.type()==='error'&&!/status of 404/.test(m.text())) R.errors.push(m.text()); });
     pg.on('response',r=>{ if(r.status()>=400&&!/\/brands\/[^/]+\/assets\//.test(r.url())) R.errors.push(r.status()+' '+r.url()); });
     await pg.goto(''+BASE+'tools/'+t+'.html'); await pg.waitForTimeout(1500);
-    const pages=await pg.evaluate(()=>Studio.debug.S.P.length), per=await pg.evaluate(()=>Studio.debug.S.count);
+    const pages=await pg.evaluate(()=>Studio.debug.S.P.length), per=t==='carousel'?1:await pg.evaluate(()=>Studio.debug.S.count);
     const tap=async sel=>mob?pg.tap(sel):pg.click(sel);
     // sheets + bottom bar by touch
     if(mob){
@@ -52,7 +52,7 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
       await pg.setInputFiles('#pick',Array.from({length:per},(_,i)=>SAMPLES+['pair','closeup','hand','window','tall'][(p+i)%5]+'.jpg')); await pg.waitForTimeout(700); }
     // save PNG(s)
     const dls=[]; pg.on('download',d=>dls.push(d));
-    if(mob) await pg.tap('#barSave'); else await pg.click('#save');
+    if(mob){ await pg.tap('#barSave'); await pg.waitForTimeout(450); await pg.tap('#save'); } else await pg.click('#save');
     for(let i=0;i<60&&dls.length<pages;i++) await pg.waitForTimeout(300);
     const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/'+tag+'-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
     const want=t==='carousel'?'2160x2700':'2160x3840';
@@ -61,8 +61,10 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     ok('success message',await pg.isVisible('#doneBox'),await pg.textContent('#doneTitle'));
     // save the design to the team (fake cloud) and reopen it in a fresh page
     const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
-    if(mob){ if(!(await pg.isVisible('#saveDesign'))){ await pg.tap('#bar [data-open="layers"]'); await pg.tap('#barSave').catch(()=>{}); } }
-    await tap('#saveDesign'); await pg.waitForSelector('#dsName',{timeout:6000}).catch(async e=>{ await pg.screenshot({path:'../shots/fail.png'}); console.log(R.checks); throw e; }); await pg.fill('#dsName','Test '+t); await tap('#dsGo');
+    /* the Save sheet's team option: Only save to the team */
+    if(mob&&!(await pg.isVisible('#teamOnly'))){ await pg.tap('#barSave'); await pg.waitForTimeout(450); }
+    if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click());
+    await pg.fill('#teamName','Test '+t); await tap('#teamOnly');
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
     const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
     const p2=await ctx.newPage(); p2.on('pageerror',e=>R.errors.push('reopen: '+e));
@@ -70,7 +72,10 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     const after=await p2.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
     const photosBack=await p2.evaluate(()=>Studio.debug.recipe().photos.filter(p=>p.has).length);
     ok('saved design reopens the same',!!id&&before===after,id?(before===after?'identical recipe':'recipe differs'):'no id');
-    ok('saved photos come back',photosBack===pages*per,photosBack+' photos');
+    const wantPh=JSON.parse(before).photos.filter(p=>p&&p.has).length;
+    ok('saved photos come back',photosBack===wantPh,photosBack+' of '+wantPh+' photos');
+    if(mob&&t==='new-place'){ await p2.goto(BASE+'index.html#saved'); await p2.waitForTimeout(1500); await p2.tap('.dcard'); await p2.waitForTimeout(700);
+      ok('saved design opens on tap (visible)',await p2.locator('dialog[open] .design-sheet').isVisible()); }
     await p2.close(); await pg.close();
     R.errors=[...new Set(R.errors)];
     ok('no console errors',!R.errors.length,R.errors.slice(0,3).join(' | '));
