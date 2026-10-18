@@ -333,3 +333,11 @@ body.sheet-open .cta-photo{display:none}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
   :is(.btn,.mini,.chip,.seg,.tab,.icon-btn,.card,.dcard,.rowcard,.asset-tile,.slot,.lyr-pick,.done,.back):active{transform:none!important}
 }
+
+/* offer tiles + dates editors */
+.tiles-ed{display:flex;flex-direction:column;gap:var(--sp-2)}
+.tile-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:var(--sp-2);align-items:center}
+.tile-row input.big{font-weight:800}
+.dates-ed .field{flex:1 1 140px}
+input[type=date]{font:600 16px var(--sans);padding:8px 12px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:var(--tap);width:100%}
+input[type=date]:disabled{opacity:.5}

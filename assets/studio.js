@@ -4,7 +4,7 @@
    (drag, tap to edit, resize, recolour, add your own text), photo dragging/zooming, and saving.
    Everything brand-specific (logo, fonts, colours, wording, example photos) comes from the active brand kit. */
 (function(){
-const W=1080,H=1920;
+let W=1080,H=1920;      // story size; a tool can ask for another (cfg.size), e.g. 1080×1350 for a feed carousel
 const MANY=8;          // word lists longer than this show a "More…" button
 const EXPORT_SCALE=2;   // saved stories are 2160×3840 so they stay sharp when zoomed; Instagram scales them down cleanly
 const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels (every iPhone/Android main camera photo);
@@ -49,7 +49,8 @@ const TOOLS={
   'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.'},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
   'collage':{title:'Collage',blurb:'2, 3 or 4 whole photos in different layouts.'},
-  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'}
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',tag:'New'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -199,7 +200,8 @@ function freeSharp(){ SHARP.forEach(c=>Object.values(c).forEach(cv=>{cv.width=cv
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
 let onAssetLoad=null;
-function makeHelpers(ctx,S,preview,reg,scale){
+function makeHelpers(ctx,S,preview,reg,scale,off){
+  off=off||0;   // first photo of the current page (carousels)
   const B=BRAND, C=B.colors, dir=B.dir||'ltr';
   const L=id=>S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
   function fitSize(text,size,weight,family,maxW){ let s=size; for(;;){ ctx.font=(weight?weight+' ':'')+s+'px "'+family+'"'; if(ctx.measureText(text).width<=maxW||s<=24) return s; s-=2; } }
@@ -213,9 +215,9 @@ function makeHelpers(ctx,S,preview,reg,scale){
   }
   const h={W,H,ctx,rr,brand:B,C,dir,
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
-    photoAspect(i){const p=S.photos[i];return p&&p.img?p.img.width/p.img.height:1.5;},
+    photoAspect(i){const p=S.photos[off+i];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
-      opt=opt||{}; const p=S.photos[i];
+      opt=opt||{}; const p=S.photos[off+i];
       ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip();
       if(p&&p.img){
         const im=p.img, mode=opt.mode||'cover';
@@ -226,10 +228,10 @@ function makeHelpers(ctx,S,preview,reg,scale){
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
         ctx.drawImage(preview?im:sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
-        ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+ '+(i+1),x+w/2,y+hh/2);
+        ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
       ctx.restore();
-      reg.push({photo:i,x,y,w,h:hh,mode:opt.mode||'cover'});
+      reg.push({photo:off+i,x,y,w,h:hh,mode:opt.mode||'cover'});
     },
     logoH(w){return w*LOGO.height/LOGO.width;},
     /* logo layer; tone 'dark' or 'light' */
@@ -298,6 +300,25 @@ function makeHelpers(ctx,S,preview,reg,scale){
         layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>{ ctx.scale(sw/a.w,sh/a.h); ctx.fillStyle=color||x.color||C.ink; a.draw(ctx); },{kind:'asset'});
       }
     },
+    /* numbers in the brand's digits (Arabic brands write ٢٠٪, not 20%) */
+    digits(str){ str=String(str??''); if(B.digits!=='arabic') return str; return str.replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]).replace(/%/g,'٪').replace(/,/g,'،'); },
+    /* a row of small pills (e.g. flavours) as one layer; items: [{text,bg,fg,line}] */
+    tags(id,label,items,cx,y,o){
+      o=o||{}; items=(items||[]).filter(t=>t&&t.text); if(!items.length){ reg.push({id,label,empty:true}); return 0; }
+      const size=o.size||34, ph=o.h||70, pad=o.pad||56, gap=o.gap||18, font='800 '+size+'px "'+B.fonts.body+'"';
+      ctx.font=font; const ws=items.map(t=>Math.ceil(ctx.measureText(t.text).width)+pad), tot=ws.reduce((a,b)=>a+b,0)+gap*(items.length-1), b0=box(ctx.measureText(items[0].text),size);
+      layer(id,label,{x:cx-tot/2,y,w:tot,h:ph},color=>{
+        let x=0; const order=dir==='rtl'?items.map((t,i)=>i).reverse():items.map((t,i)=>i);
+        order.forEach(i=>{ const t=items[i], w=ws[i]; ctx.beginPath(); rr(ctx,x,0,w,ph,ph/2);
+          if(t.line){ ctx.lineWidth=4; ctx.strokeStyle=color||t.line; ctx.stroke(); } else { ctx.fillStyle=t.bg||C.ink; ctx.fill(); }
+          ctx.font=font; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=t.line?(color||t.fg||t.line):(t.fg||C.paper); ctx.fillText(t.text,x+w/2,ph/2+(b0.a-b0.d)/2); x+=w+gap; });
+      },{kind:'text'});
+      return L(id).hidden?0:ph;
+    },
+    /* a custom layer drawn by the tool: draw(ctx,color) works in a box from (0,0) to (w,h) */
+    block(id,label,x,y,w,hh,draw,kind){ layer(id,label,{x,y,w,h:hh},color=>draw(ctx,color),{kind:kind||'text'}); return L(id).hidden?0:hh; },
+    /* page dots for carousels: n dots, i = current */
+    dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=dir==='rtl'?n-1-k:k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
   return h;
@@ -311,14 +332,32 @@ async function tool(cfg){
   if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
   const B=await useBrand();
   const opts=v=>typeof v==='function'?v(B):v;
+  const clone=o=>JSON.parse(JSON.stringify(o));
   const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
-  const nPhotos=cfg.photos.max||cfg.photos.count||1, minPhotos=cfg.photos.min||cfg.photos.count||1;
-  const S={style:cfg.styles?cfg.styles[0].id:null,count:cfg.photos.count||cfg.photos.min||1,active:0,photos:[],values:{},layers:{},extras:[],sel:null};
+  if(cfg.size){ W=cfg.size.w; H=cfg.size.h; }
+  const PG=cfg.pages||null;   // carousels: {min,max,start}
+  const perPage=cfg.photos.max||cfg.photos.count||1, minPhotos=cfg.photos.min||cfg.photos.count||1;
+  const nPhotos=PG?PG.max*perPage:perPage;
+  /* state. A story is one page; a carousel has several. values / layers / extras always mean "the page you're on". */
+  const S={style:cfg.styles?cfg.styles[0].id:null,count:cfg.photos.count||cfg.photos.min||1,active:0,photos:[],P:[],page:0,sel:null};
+  ['values','layers','extras'].forEach(k=>Object.defineProperty(S,k,{get(){ return S.P[S.page][k]; },set(v){ S.P[S.page][k]=v; },enumerable:false}));
   for(let i=0;i<nPhotos;i++) S.photos.push({img:null,zoom:1,ox:0,oy:0,sample:true});
-  fields.forEach(f=>{ S.values[f.id]=f.type==='chips'?{pick:f.default??f.options[0],own:''}:f.type==='seg'?f.options[0].v:f.type==='toggle'?(f.default!==false):{text:f.default||'',on:f.on!==false}; });
+  const today=()=>new Date(), iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  function fieldDefault(f,pg){
+    const d=f.pageDefault?f.pageDefault(pg):f.default;
+    if(f.type==='chips') return {pick:d??f.options[0],own:''};
+    if(f.type==='seg') return d??f.options[0].v;
+    if(f.type==='toggle') return d!==false;
+    if(f.type==='multi') return {picks:clone(d??f.options.map(o=>o.v)),own:''};
+    if(f.type==='tiles') return clone(d||[{small:'',big:''}]);
+    if(f.type==='dates'){ const t=today(); return {on:f.on!==false,from:iso(t),to:iso(new Date(t.getTime()+6*864e5))}; }
+    return {text:d||'',on:f.on!==false};
+  }
+  function newPage(pg){ const v={}; fields.forEach(f=>{ v[f.id]=fieldDefault(f,pg); }); return {values:v,layers:{},extras:[]}; }
+  S.P.push(newPage(0)); if(PG) for(let i=1;i<(PG.start||PG.min);i++) S.P.push(newPage(i));
   const KEY='studio:'+B.id+':'+cfg.id;
-  const saved=store(KEY); if(saved){ if(saved.style&&cfg.styles&&cfg.styles.some(s=>s.id===saved.style))S.style=saved.style; if(saved.count)S.count=Math.min(nPhotos,Math.max(minPhotos,saved.count)); Object.keys(saved.values||{}).forEach(k=>{ if(k in S.values) S.values[k]=saved.values[k]; }); }
-  const remember=()=>store(KEY,{style:S.style,count:S.count,values:S.values});
+  const saved=store(KEY); if(saved){ if(saved.style&&cfg.styles&&cfg.styles.some(s=>s.id===saved.style))S.style=saved.style; if(saved.count&&!PG)S.count=Math.min(perPage,Math.max(minPhotos,saved.count)); if(!PG) Object.keys(saved.values||{}).forEach(k=>{ const f=fields.find(x=>x.id===k); if(f&&f.type!=='dates') S.values[k]=saved.values[k]; }); }
+  const remember=()=>store(KEY,PG?{style:S.style}:{style:S.style,count:S.count,values:S.values});
 
   /* ---- page ----
      Phone: the preview fills the screen, one bottom bar (Photo, Words, Style, Layers, Save) opens bottom sheets over it.
@@ -468,6 +507,9 @@ async function tool(cfg){
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
       else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg" data-v="${o.v}" aria-pressed="false">${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
+      else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
+      else if(f.type==='tiles') inner=`<span class="lbl">${esc(f.label)}</span><div class="tiles-ed" data-tiles="${f.id}"></div><button type="button" class="mini" data-addtile="${f.id}">${ICON.plus} ${esc(f.addLabel||'Add one')}</button>${f.hint?`<span class="small">${esc(f.hint)}</span>`:''}`;
+      else if(f.type==='dates') inner=`<label class="check"><input type="checkbox" data-don="${f.id}"> ${esc(f.label)}</label><div class="row dates-ed"><label class="field"><span class="lbl">From</span><input type="date" data-date="${f.id}:from"></label><label class="field"><span class="lbl">To</span><input type="date" data-date="${f.id}:to"></label></div>`;
       else inner=(f.toggle?`<label class="check"><input type="checkbox" data-on="${f.id}"> ${esc(f.label)}</label>`:`<label class="lbl" for="t_${f.id}">${esc(f.label)}</label>`)+`<input type="text" dir="${B.dir||'ltr'}" id="t_${f.id}" data-text="${f.id}" placeholder="${esc(opts(f.placeholder)||'')}" ${f.toggle?`aria-label="${esc(f.label)}"`:''}>`;
       return `<div class="field" data-fw="${f.id}">${inner}</div>`;
     }).join('');
@@ -478,16 +520,41 @@ async function tool(cfg){
         else if(b.dataset.none) v.pick='__none'; else v.pick=b.dataset.v;
         if(S.layers[id]) S.layers[id].hidden=false;
         syncUI(); remember(); render(); return; }
-      const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.parentNode.dataset.seg]=s.dataset.v; syncUI(); remember(); render(); }
+      const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.parentNode.dataset.seg]=s.dataset.v; syncUI(); remember(); render(); return; }
+      const m=e.target.closest('[data-mf] .chip'); if(m){ const id=m.parentNode.dataset.mf, v=S.values[id], k=v.picks.indexOf(m.dataset.v); if(k>=0) v.picks.splice(k,1); else v.picks.push(m.dataset.v); if(S.layers[id]) S.layers[id].hidden=false; syncUI(); remember(); render(); return; }
+      const at=e.target.closest('[data-addtile]'); if(at){ const f=fields.find(x=>x.id===at.dataset.addtile), v=S.values[f.id]; if(v.length<(f.max||3)){ v.push({small:'',big:''}); syncUI(); render(); const ins=document.querySelectorAll(`[data-tiles="${f.id}"] input`); if(ins.length) ins[ins.length-2].focus(); } return; }
+      const rt=e.target.closest('[data-rmtile]'); if(rt){ const [id,i]=rt.dataset.rmtile.split(':'); S.values[id].splice(+i,1); syncUI(); render(); return; }
     });
-    box.addEventListener('input',e=>{ const t=e.target; if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value; remember(); render(); syncInspector(); });
-    box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; syncUI(); remember(); render(); });
+    box.addEventListener('input',e=>{ const t=e.target;
+      if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value;
+      else if(t.dataset.tile){ const [id,i,k]=t.dataset.tile.split(':'); S.values[id][+i][k]=t.value; }
+      else if(t.dataset.date){ const [id,k]=t.dataset.date.split(':'); if(t.value) S.values[id][k]=t.value; }
+      remember(); render(); syncInspector(); });
+    box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; if(t.dataset.don) S.values[t.dataset.don].on=t.checked; syncUI(); remember(); render(); });
   });
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
     if(f.type==='seg'||f.type==='toggle') return v;
+    if(f.type==='multi') return f.options.filter(o=>v.picks.includes(o.v)).map(o=>o.l);
+    if(f.type==='tiles') return v.filter(t=>String(t.small||'').trim()||String(t.big||'').trim()).map(t=>({small:String(t.small||'').trim(),big:String(t.big||'').trim()}));
+    if(f.type==='dates') return v.on?dateRange(v.from,v.to):'';
     if(f.toggle&&!v.on) return ''; return String(v.text||'').trim();
+  }
+  /* "10 – 15 October" in the brand's language (Arabic month names and digits for an Arabic brand) */
+  function dateRange(a,b){
+    try{ const loc=(B.locale||B.lang||'en'), A=new Date(a+'T12:00'), Z=new Date((b||a)+'T12:00'); if(isNaN(A)) return '';
+      const day=d=>new Intl.DateTimeFormat(loc,{day:'numeric'}).format(d), mon=d=>new Intl.DateTimeFormat(loc,{month:'long'}).format(d);
+      if(!b||a===b) return day(A)+' '+mon(A);
+      return A.getMonth()===Z.getMonth()?day(A)+' – '+day(Z)+' '+mon(Z):day(A)+' '+mon(A)+' – '+day(Z)+' '+mon(Z);
+    }catch(_){ return ''; } }
+  const whenOk=f=>!f.when||((f.when.count==null||f.when.count===S.count)&&(!f.when.field||[].concat(f.when.is).includes(S.values[f.when.field])));
+  function paintTiles(f){
+    const box=document.querySelector(`[data-tiles="${f.id}"]`), v=S.values[f.id], sig=S.page+':'+v.length;
+    if(box.dataset.sig!==sig){ box.dataset.sig=sig;
+      box.innerHTML=v.map((t,i)=>`<div class="tile-row"><input type="text" dir="auto" data-tile="${f.id}:${i}:small" aria-label="${esc(f.smallLabel||'Top line')} ${i+1}" placeholder="${esc(f.smallLabel||'Top line')}"><input type="text" dir="auto" data-tile="${f.id}:${i}:big" class="big" aria-label="${esc(f.bigLabel||'Big line')} ${i+1}" placeholder="${esc(f.bigLabel||'Big line')}"><button type="button" class="mini icon" data-rmtile="${f.id}:${i}" aria-label="Remove ${i+1}" ${v.length<2?'disabled':''}>${ICON.trash}</button></div>`).join(''); }
+    box.querySelectorAll('[data-tile]').forEach(inp=>{ const [,i,k]=inp.dataset.tile.split(':'); const val=v[+i][k]||''; if(inp.value!==val&&document.activeElement!==inp) inp.value=val; });
+    const add=document.querySelector(`[data-addtile="${f.id}"]`); if(add) add.hidden=v.length>=(f.max||3);
   }
   /* set a word field's text from the inspector (switches a chips field to "Write my own") */
   function setValue(id,text){
@@ -527,7 +594,7 @@ async function tool(cfg){
   function slotTargets(i){ const off=photoOffset(), t=[i]; for(let j=0;j<S.count;j++){ const k=off+j, p=S.photos[k]; if(k!==i&&(!p.img||p.sample)) t.push(k); } return t; }
   $('pick').addEventListener('change',e=>{ const fs=[...(e.target.files||[])], t=slotTargets(pickAt); fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f)); e.target.value=''; });
   $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
-  function syncCta(){ $('pick').multiple=S.count>1; const off=photoOffset(); let any=false; for(let i=0;i<S.count;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=S.count>1?'Add your photos':'Add your photo'; }
+  function syncCta(){ $('pick').multiple=S.count>1; const off=photoOffset(); let any=false; if(needsPhoto(S.page)) for(let i=0;i<S.count;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=S.count>1?'Add your photos':'Add your photo'; }
   function nextEmpty(){ const off=photoOffset(); for(let j=0;j<S.count;j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
   document.addEventListener('paste',e=>{ if(e.target&&e.target.tagName==='INPUT') return; const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/')); if(it) setPhoto(nextEmpty(),it.getAsFile());});
   let dd=0;
@@ -541,12 +608,15 @@ async function tool(cfg){
     document.querySelectorAll('[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.style===S.style)));
     document.querySelectorAll('[data-count]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.count===S.count)));
     fields.forEach(f=>{
-      const v=S.values[f.id]; const fw=document.querySelector(`[data-fw="${f.id}"]`); if(fw) fw.hidden=!!(f.when&&f.when.count!==S.count);
+      const v=S.values[f.id]; const fw=document.querySelector(`[data-fw="${f.id}"]`); if(fw) fw.hidden=!whenOk(f);
       if(f.type==='chips'){
         document.querySelectorAll(`[data-f="${f.id}"] .chip`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.own?v.pick==='__own':b.dataset.none?v.pick==='__none':v.pick===b.dataset.v)));
         const inp=document.querySelector(`[data-ownfor="${f.id}"]`); inp.hidden=v.pick!=='__own'; if(inp.value!==v.own&&document.activeElement!==inp) inp.value=v.own;
       } else if(f.type==='seg') document.querySelectorAll(`[data-seg="${f.id}"] .seg`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
       else if(f.type==='toggle') document.querySelector(`[data-toggle="${f.id}"]`).checked=!!v;
+      else if(f.type==='multi') document.querySelectorAll(`[data-mf="${f.id}"] .chip`).forEach(b=>b.setAttribute('aria-pressed',String(v.picks.includes(b.dataset.v))));
+      else if(f.type==='tiles') paintTiles(f);
+      else if(f.type==='dates'){ document.querySelector(`[data-don="${f.id}"]`).checked=v.on; document.querySelectorAll(`[data-date^="${f.id}:"]`).forEach(inp=>{ const k=inp.dataset.date.split(':')[1]; inp.value=v[k]; inp.disabled=!v.on; }); }
       else { const t=document.querySelector(`[data-text="${f.id}"]`); if(t.value!==v.text&&document.activeElement!==t) t.value=v.text; if(f.toggle){const c=document.querySelector(`[data-on="${f.id}"]`);c.checked=v.on;t.disabled=!v.on;} }
     });
     slotsUI(); syncZoom(); syncCta();
@@ -564,8 +634,8 @@ async function tool(cfg){
   }
   function draw(ctx,preview,scale){
     const r=[]; ctx.save(); if(scale) ctx.scale(scale,scale); ctx.clearRect(0,0,W,H);
-    const h=makeHelpers(ctx,S,preview,r,scale||1);
-    cfg.draw(h,{style:S.style,count:S.count,value,preview}); drawExtras(h);
+    const h=makeHelpers(ctx,S,preview,r,scale||1,photoOffset());
+    cfg.draw(h,{style:S.style,count:S.count,value,preview,page:S.page,pages:S.P.length}); drawExtras(h);
     if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
     if(preview&&dragging) drawGuides(ctx);
     ctx.restore(); if(preview){ reg=r; paintLayers(); }
@@ -595,22 +665,26 @@ async function tool(cfg){
   function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); }
 
   /* ---- the design "recipe": everything needed to rebuild this story (saving, drafts, undo) ---- */
-  const clone=o=>JSON.parse(JSON.stringify(o));
   function recipe(){
-    return {v:1,tool:cfg.id,brand:B.id,style:S.style,count:S.count,values:clone(S.values),layers:clone(S.layers),extras:clone(S.extras),
+    /* v2 keeps every page; page 1's values/layers/extras are also written at the top so older readers still work */
+    const p0=S.P[0];
+    return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
+      ...(PG?{pages:clone(S.P)}:{}),
       photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample)}))};
   }
   /* slots: optional photo objects to put in each slot (null = keep what's there) */
   function applyRecipe(r,slots){
     if(r.style&&(!cfg.styles||cfg.styles.some(s=>s.id===r.style))) S.style=r.style;
-    if(r.count) S.count=Math.min(nPhotos,Math.max(minPhotos,r.count));
-    Object.keys(r.values||{}).forEach(k=>{ if(k in S.values) S.values[k]=clone(r.values[k]); });
-    S.layers=clone(r.layers||{}); S.extras=clone(r.extras||[]);
-    extraN=S.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); assetN=Math.max(assetN,extraN);
+    if(r.count) S.count=Math.min(perPage,Math.max(minPhotos,r.count));
+    const pages=(PG&&r.pages&&r.pages.length?r.pages:[{values:r.values,layers:r.layers,extras:r.extras}]).slice(0,PG?PG.max:1);
+    S.P=pages.map((pp,i)=>{ const np=newPage(i); Object.keys(pp.values||{}).forEach(k=>{ if(k in np.values) np.values[k]=clone(pp.values[k]); }); np.layers=clone(pp.layers||{}); np.extras=clone(pp.extras||[]); return np; });
+    S.page=Math.min(S.P.length-1,Math.max(0,r.page||0));
+    S.P.forEach(pp=>{ extraN=pp.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); }); assetN=Math.max(assetN,extraN);
     (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
     S.sel=null;
   }
-  async function fontsOf(r){ const fams=new Set(); Object.values(r.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }); await Promise.all([...fams].map(ensureFont)); await Promise.all((r.extras||[]).filter(x=>x.type==='asset').map(x=>loadAsset(x.ref))); }
+  async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
+    await Promise.all([...fams].map(ensureFont)); await Promise.all(pages.flatMap(pp=>(pp.extras||[]).filter(x=>x.type==='asset').map(x=>loadAsset(x.ref)))); }
 
   /* ---- undo / redo: a snapshot after every pause in editing ---- */
   const hist={stack:[],i:-1,timer:0,ready:false};
@@ -623,7 +697,7 @@ async function tool(cfg){
     hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
     syncUndo(); saveDraft(s);
   }
-  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); draw(vctx,true); syncUndo(); saveDraft(s); }
+  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); }
   function undo(){ if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
   function redo(){ if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
   function syncUndo(){ $('undo').disabled=hist.i<=0; $('redo').disabled=hist.i>=hist.stack.length-1; }
@@ -669,13 +743,13 @@ async function tool(cfg){
     $('saveDesignTxt').textContent='Update “'+design.name+'”';
   }
   function thumbBlob(){
-    const c=document.createElement('canvas'); c.width=360; c.height=640; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,360,640); draw(ctx,true,1/3); S.sel=sel; return canvasBlob(c,'image/jpeg',.85);
+    const k=360/W, c=document.createElement('canvas'); c.width=360; c.height=Math.round(H*k); const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k)); S.sel=sel; draw(vctx,true); return canvasBlob(c,'image/jpeg',.85);
   }
   async function openSaveDialog(){
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) return;
     const C=await cloud(); let cols=[]; try{ cols=await C.collections(B.id); }catch(_){}
-    const picked=new Set(design?design.collections:[]); const hasPhotos=S.photos.slice(0,S.count).some(p=>p.img&&!p.sample);
+    const picked=new Set(design?design.collections:[]); const hasPhotos=S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
     const d=dialog(`<form method="dialog" class="dlg-body">
       <h3>${design?'Save design':'Save design to the team'}</h3>
       <div class="field"><label class="lbl" for="dsName">Name</label><input type="text" id="dsName" dir="auto" required maxlength="80" placeholder="e.g. Restock – Al Khoud"></div>
@@ -698,7 +772,7 @@ async function tool(cfg){
       d.querySelectorAll('button').forEach(b=>b.disabled=true); $d('dsStatus').textContent='Saving…';
       try{
         const keep=$d('dsKeep').checked&&hasPhotos, r=recipe();
-        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(i>=S.count||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
+        const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
         const id=await C.saveDesign({id:asNew?null:(design&&design.id),brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:[...picked]});
         const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
         design={id,name,kind:keep?'design':'template',collections:[...picked]}; showDesignBar(); clearDraft();
@@ -731,7 +805,7 @@ async function tool(cfg){
   /* ---- selecting and editing layers ---- */
   const extra=id=>S.extras.find(x=>x.id===id);
   const textExtra=id=>{ const x=extra(id); return x&&x.type!=='asset'?x:null; };
-  function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); return f?value(id):null; }
+  function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); if(!f) return null; const t=value(id); return typeof t==='string'?t:null; }
   function select(id){
     S.sel=id; syncInspector(); render();
     if(id) openSheet('insp',{quiet:true}); else if(openName==='insp') closeSheet('insp'); else if(!isPhone()) closeSheet('insp');
@@ -949,7 +1023,8 @@ async function tool(cfg){
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?'slides are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
-  function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const o=cfg.pages?pg*S.count:off; for(let i=0;i<S.count;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
+  function needsPhoto(pg){ return !cfg.pageNeedsPhoto||withPage(pg,()=>cfg.pageNeedsPhoto(value)); }
+  function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ if(!needsPhoto(pg)) continue; const o=cfg.pages?pg*S.count:off; for(let i=0;i<S.count;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   function saveTapped(){
     const miss=missingPhotos();
     if(miss.length&&!cfg.allowSamples){
@@ -962,9 +1037,28 @@ async function tool(cfg){
   $('save').addEventListener('click',saveTapped);
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
   /* pages (carousels): one page for ordinary stories */
-  function pageCount(){ return 1; }
-  function withPage(pg,fn){ return fn(); }
-  function photoOffset(){ return 0; }
+  function pageCount(){ return S.P.length; }
+  function withPage(pg,fn){ const keep=S.page; S.page=pg; try{ return fn(); } finally{ S.page=keep; } }
+  function photoOffset(){ return PG?S.page*perPage:0; }
+  /* slide pager: pick a slide, add one after this one, or delete this one */
+  function paintPager(){
+    if(!PG) return; const n=S.P.length, el=$('pager'); el.hidden=false;
+    el.innerHTML=`<button type="button" class="mini icon" data-pg="prev" aria-label="Previous slide" ${S.page===0?'disabled':''}>${ICON.back}</button>
+      <div class="pg-dots" role="group" aria-label="Slides">${S.P.map((_,i)=>`<button type="button" class="pg-dot" data-pg="${i}" aria-current="${i===S.page}" aria-label="Slide ${i+1}">${i+1}</button>`).join('')}</div>
+      <button type="button" class="mini icon" data-pg="next" aria-label="Next slide" ${S.page>=n-1?'disabled':''}>${ICON.next}</button>
+      <button type="button" class="mini icon" data-pg="add" aria-label="Add a slide after this one" ${n>=PG.max?'disabled':''}>${ICON.plus}</button>
+      <button type="button" class="mini icon" data-pg="del" aria-label="Delete this slide" ${n<=PG.min?'disabled':''}>${ICON.trash}</button>`;
+  }
+  const blankPhoto=()=>({img:null,zoom:1,ox:0,oy:0,sample:true});
+  function goPage(n){ n=Math.max(0,Math.min(S.P.length-1,n)); S.page=n; S.sel=null; S.active=photoOffset(); if(openName==='insp') closeSheet('insp'); syncUI(); syncInspector(); paintPager(); render(); }
+  if(PG) $('pager').addEventListener('click',e=>{
+    const b=e.target.closest('[data-pg]'); if(!b||b.disabled) return; const a=b.dataset.pg;
+    if(a==='prev') goPage(S.page-1); else if(a==='next') goPage(S.page+1);
+    else if(a==='add'){ if(S.P.length>=PG.max) return; const at=S.page+1; S.P.splice(at,0,newPage(at)); S.photos.splice(at*perPage,0,...Array.from({length:perPage},blankPhoto)); S.photos.length=nPhotos; goPage(at); status('Slide '+(at+1)+' added.'); }
+    else if(a==='del'){ if(S.P.length<=PG.min) return; const at=S.page; S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); goPage(Math.min(at,S.P.length-1)); status('Slide deleted. Undo brings it back.'); }
+    else goPage(+a);
+  });
+  function photoUsed(i){ return PG?i<S.P.length*perPage&&i%perPage<S.count:i<S.count; }
 
   /* ---- start with the brand's example photos so the tool shows what it makes ---- */
   const names=(B.samples&&B.samples[cfg.id])||[];
@@ -979,7 +1073,7 @@ async function tool(cfg){
     else if(draft&&q.get('draft')==='1') await loadDraft(draft);
     else if(draft&&(draft.keys||[]).some(Boolean)||(draft&&draft.json!==JSON.stringify(recipe()))) $('draftBar').hidden=false;
   }catch(err){ status(err.message||'Could not open that.'); }
-  syncUI(); draw(vctx,true); startHistory();
+  syncUI(); paintPager(); fit(); draw(vctx,true); startHistory();
   Studio.debug={S,reg:()=>reg,recipe,render};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());

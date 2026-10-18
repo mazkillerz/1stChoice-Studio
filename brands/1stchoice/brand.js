@@ -7,6 +7,8 @@ Studio.registerBrand({
   logo:'logo.png',             // dark logo on a transparent background; a light copy is made automatically
   icon:'icon.png',
   lang:'ar', dir:'rtl',
+  locale:'ar-OM',              // dates in Arabic (Oman)
+  digits:'arabic',             // numbers are written ٠١٢٣٤٥٦٧٨٩ and ٪ (Lalezar has no Latin digits)
   fonts:{
     display:'Lalezar',         // big headlines
     body:'Cairo',              // small lines, buttons, place names
@@ -25,8 +27,15 @@ Studio.registerBrand({
     muted:'#5f5c57',           // secondary text on light
     mutedOnDark:'#cfcdc8',
     accent:'#D6B078',          // gold, for dark grounds
-    cream:'#F3EADC'
+    cream:'#F3EADC',
+    brown:'#7A563A',           // secondary text on cream
+    blob:'#E5D5C0'             // soft shape behind products
   },
+  /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
+  flavours:[
+    {id:'classic',name:'كلاسيك',bg:'#161210',fg:'#FFFFFF'},
+    {id:'passion',name:'باشن فروت',bg:'#F6C040',fg:'#161210'}
+  ],
   /* Wording from the owner's Omani phrasebook. Only approved lines go here. */
   phrases:{
     headlines:['يسرسح ثلج','جربته؟','ترا فنان','ما يتفوت','عالميييي','تعرف ويش؟','مشتهيه؟','صبر شوي...','اطلب الحين','وين تلقانا؟','رجع متوفر','وفرنا كمية جديدة','خذلك كولد برو','هذا ولا هذا؟','أنت أي واحد؟','اختيارك؟','منشن ربعك','صباح الخير','روّق','الجو حرّ اليوم؟'],
@@ -34,6 +43,9 @@ Studio.registerBrand({
     buttons:['الرابط في البايو','راسلنا خاص','اطلب الحين','شوف أقرب نقطة بيع لك'],
     newPlace:['نقطة بيع جديدة','وين تلقانا؟ هنا','صرنا متوفرين هنا'],
     cut:['وين تلقانا؟','يسرسح ثلج','صبر شوي...','لا تعدّي قبل لا تشوف هذا','ياخذ وقته...','هذا ولا هذا؟','ترا فنان','أنت أي واحد؟','تعرف ويش؟','خذلك كولد برو'],
+    restock:['رجع متوفر','وفرنا كمية جديدة'],
+    /* Offer wording is still waiting for the owner's approval, so the Offer tool starts with headlines above
+       and offer tiles made of numbers only (e.g. ٢٠٪ / ×٣); people type their own words. */
     placeName:'اسم المكان',
     write:'اكتب هنا'
   },
@@ -52,6 +64,7 @@ Studio.registerBrand({
   /* Example photos each tool opens with (files in samples/). */
   samples:{
     'new-place':['shelf'], 'photo-story':['tall'], 'cinematic':['pair'],
-    'collage':['beans','foam','passion','window'], 'split':['closeup','shelf']
+    'collage':['beans','foam','passion','window'], 'split':['closeup','shelf'],
+    'restock':['pair'], 'offer':['hands'], 'carousel':['pair','closeup','hand','window']
   }
 });
