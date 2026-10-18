@@ -3,7 +3,7 @@
    - Code and pages are "network first": when online you always get the newest version.
    - Images (samples, thumbs, assets) are "cache first" and refreshed in the background.
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network. */
-const VERSION='studio-v4-5';
+const VERSION='studio-v4-6';
 const SHELL=[
   './','index.html','manifest.webmanifest',
   'assets/studio.css','assets/studio.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',

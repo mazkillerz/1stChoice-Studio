@@ -125,7 +125,8 @@ body.sheet-open .cta-photo{display:none}
 #fitBtn{align-self:flex-start;padding:0}
 .swatch{width:30px;height:46px;border-radius:5px;border:1px solid var(--line);display:block;position:relative;overflow:hidden}
 .swatch i{position:absolute;background:#b8a58f}
-.add-row .mini{flex:1 1 140px}
+.add-row{display:flex;gap:var(--sp-2)}
+.add-row .mini{flex:1 1 0;padding:0 10px;min-width:0;white-space:nowrap}
 
 /* inspector */
 .insp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -138,7 +139,7 @@ body.sheet-open .cta-photo{display:none}
 .view:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 
 /* layers list */
-.layer-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto}
+.layer-list{list-style:none;margin:0;padding:0 0 4px;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}
 .lyr{display:flex;align-items:stretch;gap:6px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--bg)}
 .lyr.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .lyr.off .lyr-pick{opacity:.45}
@@ -343,3 +344,119 @@ body.sheet-open .cta-photo{display:none}
 .dates-ed .field{flex:1 1 140px}
 input[type=date]{font:600 16px var(--sans);padding:8px 12px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:var(--tap);width:100%}
 input[type=date]:disabled{opacity:.5}
+
+/* ---------- v4.1: slim layer bar (inspector) ---------- */
+.insp-bar{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-3) 14px 0}
+.insp-name{margin:0;font:800 var(--fs-m) var(--sans);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insp-tabs{display:none}
+.insp-parts{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3) 14px 14px}
+.done.icon{width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.snap-btn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.layer-list .lyr-pick{min-height:44px;padding:6px 12px}
+@media (max-width:820px){
+  .sheet.insp{max-height:none;overflow:visible}
+  .insp-bar{padding:8px 8px 8px 12px;gap:6px}
+  .insp-name{display:none}
+  .insp-tabs{display:flex;flex:1;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}
+  .insp-tabs::-webkit-scrollbar{display:none}
+  .itab{flex:1 0 auto;min-width:56px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:0;border-radius:var(--r-m);background:none;color:var(--muted);font:800 11px var(--sans);cursor:pointer;padding:0 6px;transition:background-color .15s,color .15s,transform .12s var(--ease)}
+  .itab:active{transform:scale(.94)}
+  .itab[aria-pressed="true"]{background:var(--chip);color:var(--fg)}
+  .itab[hidden]{display:none}
+  .insp-parts{padding:0 14px}
+  .insp-part{display:none}
+  .insp-part.on{display:flex;padding-bottom:12px;animation:part-in .2s var(--ease)}
+  .insp-part[data-part="text"].on input{width:100%}
+  .insp-part[data-part="more"].on{flex-direction:column;gap:var(--sp-2)}
+  /* while you drag or pinch a layer, the bar steps out of the way */
+  body.dragging-layer .sheet.insp.open{opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .15s,transform .15s}
+  .sheet.insp.open{transition:transform var(--t) var(--ease),opacity .2s,visibility 0s}
+  .layer-list{max-height:none}
+  #sh-layers .sheet-body{padding-bottom:calc(16px + 8px)}
+}
+@keyframes part-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (max-width:820px){
+  /* a scrolling sheet fades out at the bottom instead of chopping a row in half; the extra padding lets the last row show fully */
+  .sheet-body{-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent);padding-bottom:30px}
+  .sheet[data-sheet="layers"]{max-height:min(58dvh,520px)}
+}
+
+/* ---------- v4.1 hub: compact tool rows, smaller cards, sliding tab pill ---------- */
+.grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--sp-2)}
+.tool-row{display:flex;align-items:center;gap:var(--sp-3);padding:8px 10px 8px 8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);text-decoration:none;min-height:84px;animation:rise .35s var(--ease) both;animation-delay:calc(var(--i,0) * 30ms);transition:transform .12s var(--ease),box-shadow .15s}
+.tool-row:active{transform:scale(.98)}
+@media (hover:hover){.tool-row:hover{box-shadow:var(--shadow)}}
+.tool-row:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.tthumb{width:52px;aspect-ratio:9/16;flex:none;border-radius:10px;overflow:hidden;background:var(--chip);box-shadow:0 0 0 1px var(--line)}
+.tthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ttxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ttxt b{font:800 var(--fs-l) var(--sans);display:flex;align-items:center;gap:6px}
+.ttxt span{color:var(--muted);font-size:var(--fs-s);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ttxt .tag{font:800 10px var(--sans);font-style:normal;background:var(--accent);color:var(--on-accent);padding:2px 7px;border-radius:var(--r-pill)}
+.chev{color:var(--muted);flex:none;display:flex}
+[dir=rtl] .chev{transform:scaleX(-1)}
+.rowcard{position:relative;width:96px;animation:rise .35s var(--ease) both}
+.rowcard .rlink{display:flex;flex-direction:column;text-decoration:none;color:inherit;border-radius:inherit}
+.rowcard .rtxt{padding:6px 8px 8px}
+.rowcard .rx{position:absolute;top:4px;inset-inline-end:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(22,18,16,.72);color:#fff;font:800 13px var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rowcard .rx::after{content:"";position:absolute;inset:-8px}
+.rowcard .rx:active{transform:scale(.9)}
+.dgrid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--sp-2)}
+.dcard{border-radius:var(--r-m);animation:rise .35s var(--ease) both}
+.dtxt{padding:6px 8px 8px}
+.dtxt b{font-size:var(--fs-s)}
+.toast-btn{margin-inline-start:10px;background:none;border:0;color:inherit;font:800 var(--fs-m) var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:36px;padding:0 4px}
+#hubToast{display:flex;align-items:center;gap:4px;bottom:calc(var(--bar-h) + var(--safe-b) + 14px)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hubbar .pill{display:none}
+@media (max-width:820px){
+  .hero{padding-top:var(--sp-2)}
+  .hero h1{font-size:26px}
+  .hero p{font-size:var(--fs-s);margin-top:2px}
+  .hub-sec{padding-top:var(--sp-3);gap:var(--sp-2)}
+  .hub-sec h2{font-size:22px}
+  .grid{grid-template-columns:1fr;gap:var(--sp-2)}
+  .dgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .hubbar{position:fixed}
+  .hubbar a{position:relative;z-index:1;transition:color .2s}
+  .hubbar a[aria-current="true"]{background:none}
+  .hubbar .pill{display:block;position:absolute;top:6px;left:0;height:52px;border-radius:var(--r-m);background:var(--chip);transition:transform .32s cubic-bezier(.32,.72,0,1),width .32s cubic-bezier(.32,.72,0,1);z-index:0}
+}
+html{scroll-padding-top:8px}
+.tool-row{min-height:0;padding:6px 10px 6px 6px}
+.tthumb{width:42px;border-radius:8px}
+.ttxt span{-webkit-line-clamp:1}
+.rowcard b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg.has-ic{gap:4px;padding:8px 6px;font-size:var(--fs-s)}
+.seg-ic{display:flex;color:var(--muted)}
+.seg[aria-pressed="true"] .seg-ic{color:var(--fg)}
+[data-seg] .seg.has-ic{flex:1 1 84px}
+
+/* text place picker: a small story you tap where the words should go */
+.place-pick{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:4px;width:132px;aspect-ratio:9/14;padding:6px;border-radius:14px;background:var(--chip);border:1px solid var(--line)}
+.place-pick.one{grid-template-columns:1fr;width:96px}
+.pp{border:0;border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:44px;transition:background-color .15s,transform .12s var(--ease)}
+.pp i{width:60%;max-width:34px;height:6px;border-radius:3px;background:var(--line)}
+.pp:hover i{background:var(--muted)}
+.pp:active{transform:scale(.92)}
+.pp[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.pp[aria-pressed="true"] i{background:var(--accent);height:8px}
+.pp:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+
+/* ---------- v4.1 motion + Android edge-to-edge ---------- */
+:root{--t:.36s;--ease:cubic-bezier(.32,.72,0,1)}   /* one smooth, iOS-like curve for sheets, bars and the preview */
+html,body{background:var(--bg)}
+@media (max-width:820px){
+  .sheet{will-change:transform;transition:transform var(--t) var(--ease),visibility 0s linear var(--t)}
+  .sheet.open{transition:transform var(--t) var(--ease),visibility 0s}
+  /* the bars reach the very bottom edge (behind Android's gesture line / iPhone's home bar); only their inner padding avoids it */
+  .bar,.hubbar{padding-bottom:max(6px,env(safe-area-inset-bottom,0px));min-height:calc(var(--bar-h) + env(safe-area-inset-bottom,0px))}
+  .bar::after,.hubbar::after{content:"";position:absolute;left:0;right:0;top:100%;height:60px;background:inherit}   /* no light strip if the browser draws a little past the page */
+  .tab,.hubbar a{transition:color .2s,background-color .2s,transform .12s var(--ease)}
+}
+@media (max-width:820px){
+  .sheet{max-height:min(45dvh,440px)}
+  .sheet[data-sheet="layers"]{max-height:min(52dvh,500px)}
+  .place-pick{width:112px}
+  .place-pick.one{width:84px}
+}

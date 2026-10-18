@@ -12,6 +12,7 @@ Studio.tool({
     {id:'kind',type:'seg',in:'style',label:'This slide',options:[{v:'cover',l:'Cover'},{v:'photo',l:'Photo + words'},{v:'full',l:'Full photo'},{v:'words',l:'Words only'}],pageDefault:pg=>pg===0?'cover':'photo'},
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines,none:true,pageDefault:pg=>pg===0?undefined:'__none'},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,pageDefault:()=>'__none'},
+    {id:'place',type:'place',in:'style',label:'Words place',when:{field:'kind',is:['cover','full']},pageDefault:pg=>pg===0?'bottom-start':'bottom-center'},
     {id:'logo',type:'toggle',in:'style',label:'Logo on every slide',default:false}
   ],
   draw(h,o){
@@ -22,21 +23,20 @@ Studio.tool({
     const everyLogo=o.value('logo');
     if(kind==='cover'||kind==='full'){
       h.photo(0,0,0,W,H,{mode:'cover'});
-      if(kind==='cover'){ h.shade(H,H-760,.78,0); h.shade(0,300,.35,0);
-        const start=h.dir==='rtl'?W-80:80, lw=210;
-        h.logo(h.dir==='rtl'?W-80-lw:80,80,lw,'light');
-        const hm=head?h.measure(head,{font:'display',size:150,maxW:920}):{h:0}, sm=small?h.measure(small,{weight:'800',size:40,maxW:900}):{h:0};
-        let y=H-150-hm.h-(small?sm.h+22:0);
-        y+=h.text('head','Headline',head,start,y,{font:'display',size:150,color:C.paper,align:'start',shadow:true,maxW:920})+22;
-        h.text('small','Small line',small,start,y,{weight:'800',size:40,color:'rgba(255,255,255,.92)',align:'start',shadow:true,maxW:900});
-      } else {
-        h.shade(H,H-260,.45,0);
-        if(head||small){ h.shade(H,H-620,.6,0); let y=H-150-(small?62:0)-h.measure(head||' ',{font:'display',size:110,maxW:920}).h;
-          y+=h.text('head','Headline',head,W/2,y,{font:'display',size:110,color:C.paper,shadow:true,maxW:920})+18;
-          h.text('small','Small line',small,W/2,y,{weight:'800',size:38,color:'rgba(255,255,255,.92)',shadow:true,maxW:900}); }
-        else { h.text('head','Headline','',0,0); h.text('small','Small line','',0,0); }
-        if(everyLogo) h.logo((W-170)/2,70,170,'light');
-      }
+      /* words go where "Words place" says; the fade follows them */
+      let [vp,hp]=String(o.value('place')||'bottom-start').split('-'); hp=hp||'start';
+      const big=kind==='cover'?150:110, rtl=h.dir==='rtl', center=hp==='center', lx=80, rx=W-80;
+      const tx=center?W/2:(hp==='start')!==rtl?lx:rx, al=center?'center':hp;
+      const hm=head?h.measure(head,{font:'display',size:big,maxW:920}):{h:0}, sm=small?h.measure(small,{weight:'800',size:40,maxW:900}):{h:0};
+      const blockH=hm.h+(small?sm.h+22:0);
+      if(head||small){ if(vp==='top') h.shade(0,760,.72,0); else if(vp==='middle'){ h.shade(H/2-520,H/2,0,.5); h.shade(H/2+520,H/2,0,.5); } else h.shade(H,H-760,.75,0); }
+      else h.shade(H,H-260,.45,0);
+      /* cover logo: top corner, or bottom corner when the words are at the top */
+      const lw=kind==='cover'?210:170;
+      if(kind==='cover'||everyLogo){ const ly=vp==='top'?H-120-h.logoH(lw):80, lxx=center?(W-lw)/2:((hp==='start')!==rtl?W-80-lw:80); h.shade(0,300,vp==='top'?0:.3,0); h.logo(lxx,ly,lw,'light'); }
+      let y=vp==='top'?(kind==='cover'||everyLogo?100:110):vp==='middle'?Math.round((H-blockH)/2):H-150-blockH;
+      y+=h.text('head','Headline',head,tx,y,{font:'display',size:big,color:C.paper,align:al,shadow:true,maxW:920})+(head?22:0);
+      h.text('small','Small line',small,tx,y,{weight:'800',size:40,color:'rgba(255,255,255,.92)',align:al,shadow:true,maxW:900});
       dotsOn(true); return;
     }
     ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);

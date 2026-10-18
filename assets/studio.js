@@ -39,6 +39,14 @@ function stepDown(im,tw,th){
   if(cur!==im) cur.width=cur.height=0;
   return out;
 }
+/* Speed: the live preview draws a lighter copy of big photos and cut-outs (made once, max 2000px).
+   Saving always uses the full-size original, so quality is unchanged. */
+const PREV=new WeakMap(), PREV_MAX=2000;
+function prev(im){
+  if(!im||Math.max(im.width,im.height)<=PREV_MAX) return im;
+  let c=PREV.get(im); if(c) return c;
+  const k=PREV_MAX/Math.max(im.width,im.height); c=stepDown(im,Math.round(im.width*k),Math.round(im.height*k)); PREV.set(im,c); return c;
+}
 function rr(ctx,x,y,w,h,r){r=typeof r==='number'?[r,r,r,r]:(r||[0,0,0,0]);const [a,b,c,d]=r.map(v=>Math.max(0,Math.min(v,w/2,h/2)));ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath();}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; }}
@@ -85,7 +93,12 @@ const ICON={
   download:svg('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'),
   share:svg('<path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
   bookmark:svg('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
-  check:svg('<path d="M20 6 9 17l-5-5"/>',26),
+  check:svg('<path d="M20 6 9 17l-5-5"/>',24),
+  size:svg('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',20),
+  drop:svg('<path d="M12 2.7s6 6.4 6 11.3a6 6 0 0 1-12 0c0-4.9 6-11.3 6-11.3z"/>',20),
+  font:svg('<path d="M4 20 10 4h1l6 16"/><path d="M6.5 14h8"/><path d="M17 20h4"/>',20),
+  more:svg('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',20),
+  magnet:svg('<path d="M6 3v8a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/>',22),
   plus:svg('<path d="M12 5v14M5 12h14"/>'),
   shapes:svg('<circle cx="7.5" cy="7.5" r="4.5"/><rect x="12" y="12" width="9" height="9" rx="2"/>',20),
   back:svg('<path d="m15 18-6-6 6-6"/>'),
@@ -228,7 +241,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off){
         const mx=Math.max(0,(dw-w)/2), my=Math.max(0,(dh-hh)/2);
         p.ox=Math.max(-mx,Math.min(mx,p.ox)); p.oy=Math.max(-my,Math.min(my,p.oy));
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-        ctx.drawImage(preview?im:sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
+        ctx.drawImage(preview?prev(im):sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
@@ -292,8 +305,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off){
         if(got.missing){ reg.push({id:x.id,label:a.label,empty:true}); return; }
         const im=got.img, hh=x.w*im.height/im.width;
         layer(x.id,a.label,{x:x.x-x.w/2,y:x.y-hh/2,w:x.w,h:hh},color=>{
-          const k=L(x.id).k; let src=im; const c=color||x.color;
-          if(a.tint&&c) src=tinted(im,c);
+          const k=L(x.id).k; const c=color||x.color; const base=preview?prev(im):im;
+          let src=a.tint&&c?tinted(base,c):base;
           ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
           ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
         },{kind:'asset'});
@@ -352,6 +365,7 @@ async function tool(cfg){
     if(f.type==='toggle') return d!==false;
     if(f.type==='multi') return {picks:clone(d??f.options.map(o=>o.v)),own:''};
     if(f.type==='tiles') return clone(d||[{small:'',big:''}]);
+    if(f.type==='place') return d||'bottom-center';
     if(f.type==='dates'){ const t=today(); return {on:f.on!==false,from:iso(t),to:iso(new Date(t.getTime()+6*864e5))}; }
     return {text:d||'',on:f.on!==false};
   }
@@ -370,7 +384,7 @@ async function tool(cfg){
   let step=1;
   const nav=document.querySelector('nav.top');
   if(nav){ nav.classList.add('tool-top');
-    nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
+    nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}</button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
     <div class="banner" id="draftBar" hidden><span>You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
@@ -379,14 +393,24 @@ async function tool(cfg){
     <div class="pager" id="pager" hidden></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in Photo.')}</div>
     <section class="sheet insp" id="sh-insp" data-sheet="insp" aria-labelledby="inspName">
-      <header class="sheet-head"><span class="grab" aria-hidden="true"></span><h2 id="inspName">Text</h2><button type="button" class="done" id="inspClose">Done</button></header>
-      <div class="sheet-body">
-      <input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" hidden>
-      <div class="insp-row"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
-      <div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
-      <div class="insp-row" id="inspColors" role="group" aria-label="Colour"></div>
-      <div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
-      <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div>
+      <div class="insp-bar">
+        <h2 id="inspName" class="insp-name">Text</h2>
+        <div class="insp-tabs" role="group" aria-label="Edit this layer">
+          <button type="button" class="itab" data-part="text" aria-pressed="false">${ICON.text}<span>Edit</span></button>
+          <button type="button" class="itab" data-part="size" aria-pressed="false">${ICON.size}<span>Size</span></button>
+          <button type="button" class="itab" data-part="color" aria-pressed="false">${ICON.drop}<span>Colour</span></button>
+          <button type="button" class="itab" data-part="font" aria-pressed="false">${ICON.font}<span>Font</span></button>
+          <button type="button" class="itab" data-part="more" aria-pressed="false">${ICON.more}<span>More</span></button>
+        </div>
+        <button type="button" class="done icon" id="inspClose" aria-label="Done">${ICON.check}</button>
+      </div>
+      <div class="insp-parts">
+        <div class="insp-part" data-part="text"><input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" enterkeyhint="done"></div>
+        <div class="insp-part insp-row" data-part="size"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
+        <div class="insp-part insp-row" data-part="font" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
+        <div class="insp-part insp-row" data-part="color" id="inspColors" role="group" aria-label="Colour"></div>
+        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+          <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
     <section class="sheet" id="sh-assets" data-sheet="assets" aria-labelledby="h-assets">${sheetHead('assets','Add an asset')}<div class="sheet-body" id="assetList"></div></section>
@@ -404,9 +428,8 @@ async function tool(cfg){
   if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
-    <div class="row add-row"><button type="button" class="mini" id="addText">${ICON.text} Add text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Add asset</button></div>
-    <span class="small">Top layer first. Tap one to edit it, or the eye to hide it.</span><ul id="layerList" class="layer-list" role="list"></ul>
-    <button type="button" class="link" id="resetLayout">Reset layout</button></div></section>
+    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
+    <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
     <button type="button" class="btn" id="save">${ICON.download}<span>${cfg.pages?'Save slides':'Save story'}</span></button>
     <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
@@ -444,6 +467,7 @@ async function tool(cfg){
     }
     if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
     openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
+    if(n==='layers') paintLayers();
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
     fit();
   }
@@ -507,10 +531,12 @@ async function tool(cfg){
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
-      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg" data-v="${o.v}" aria-pressed="false">${esc(o.l)}</button>`).join('')}</div>`;
+      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='tiles') inner=`<span class="lbl">${esc(f.label)}</span><div class="tiles-ed" data-tiles="${f.id}"></div><button type="button" class="mini" data-addtile="${f.id}">${ICON.plus} ${esc(f.addLabel||'Add one')}</button>${f.hint?`<span class="small">${esc(f.hint)}</span>`:''}`;
+      else if(f.type==='place'){ const rtl=(B.dir||'ltr')==='rtl', cols=f.cols===false?['center']:(rtl?['end','center','start']:['start','center','end']), side=c=>c==='center'?'centre':((c==='start')!==rtl?'left':'right');
+        inner=`<span class="lbl">${esc(f.label)}</span><div class="place-pick${f.cols===false?' one':''}" role="group" aria-label="${esc(f.label)}" data-place="${f.id}">${['top','middle','bottom'].map(r=>cols.map(c=>`<button type="button" class="pp" data-v="${r}-${c}" aria-pressed="false" aria-label="${r==='middle'?'Middle':r[0].toUpperCase()+r.slice(1)}${f.cols===false?'':', '+side(c)}"><i></i></button>`).join('')).join('')}</div>`; }
       else if(f.type==='dates') inner=`<label class="check"><input type="checkbox" data-don="${f.id}"> ${esc(f.label)}</label><div class="row dates-ed"><label class="field"><span class="lbl">From</span><input type="date" data-date="${f.id}:from"></label><label class="field"><span class="lbl">To</span><input type="date" data-date="${f.id}:to"></label></div>`;
       else inner=(f.toggle?`<label class="check"><input type="checkbox" data-on="${f.id}"> ${esc(f.label)}</label>`:`<label class="lbl" for="t_${f.id}">${esc(f.label)}</label>`)+`<input type="text" dir="${B.dir||'ltr'}" id="t_${f.id}" data-text="${f.id}" placeholder="${esc(opts(f.placeholder)||'')}" ${f.toggle?`aria-label="${esc(f.label)}"`:''}>`;
       return `<div class="field" data-fw="${f.id}">${inner}</div>`;
@@ -523,6 +549,7 @@ async function tool(cfg){
         if(S.layers[id]) S.layers[id].hidden=false;
         syncUI(); remember(); render(); return; }
       const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.parentNode.dataset.seg]=s.dataset.v; syncUI(); remember(); render(); return; }
+      const pp=e.target.closest('[data-place] .pp'); if(pp){ S.values[pp.parentNode.dataset.place]=pp.dataset.v; syncUI(); remember(); render(); return; }
       const m=e.target.closest('[data-mf] .chip'); if(m){ const id=m.parentNode.dataset.mf, v=S.values[id], k=v.picks.indexOf(m.dataset.v); if(k>=0) v.picks.splice(k,1); else v.picks.push(m.dataset.v); if(S.layers[id]) S.layers[id].hidden=false; syncUI(); remember(); render(); return; }
       const at=e.target.closest('[data-addtile]'); if(at){ const f=fields.find(x=>x.id===at.dataset.addtile), v=S.values[f.id]; if(v.length<(f.max||3)){ v.push({small:'',big:''}); syncUI(); render(); const ins=document.querySelectorAll(`[data-tiles="${f.id}"] input`); if(ins.length) ins[ins.length-2].focus(); } return; }
       const rt=e.target.closest('[data-rmtile]'); if(rt){ const [id,i]=rt.dataset.rmtile.split(':'); S.values[id].splice(+i,1); syncUI(); render(); return; }
@@ -537,7 +564,7 @@ async function tool(cfg){
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
-    if(f.type==='seg'||f.type==='toggle') return v;
+    if(f.type==='seg'||f.type==='toggle'||f.type==='place') return v;
     if(f.type==='multi') return f.options.filter(o=>v.picks.includes(o.v)).map(o=>o.l);
     if(f.type==='tiles') return v.filter(t=>String(t.small||'').trim()||String(t.big||'').trim()).map(t=>({small:String(t.small||'').trim(),big:String(t.big||'').trim()}));
     if(f.type==='dates') return v.on?dateRange(v.from,v.to):'';
@@ -550,7 +577,7 @@ async function tool(cfg){
       if(!b||a===b) return day(A)+' '+mon(A);
       return A.getMonth()===Z.getMonth()?day(A)+' – '+day(Z)+' '+mon(Z):day(A)+' '+mon(A)+' – '+day(Z)+' '+mon(Z);
     }catch(_){ return ''; } }
-  const whenOk=f=>!f.when||((f.when.count==null||f.when.count===S.count)&&(!f.when.field||[].concat(f.when.is).includes(S.values[f.when.field])));
+  const whenOk=f=>!f.when||((f.when.count==null||f.when.count===S.count)&&(f.when.style==null||[].concat(f.when.style).includes(S.style))&&(!f.when.field||[].concat(f.when.is).includes(S.values[f.when.field])));
   function paintTiles(f){
     const box=document.querySelector(`[data-tiles="${f.id}"]`), v=S.values[f.id], sig=S.page+':'+v.length;
     if(box.dataset.sig!==sig){ box.dataset.sig=sig;
@@ -618,6 +645,7 @@ async function tool(cfg){
       else if(f.type==='toggle') document.querySelector(`[data-toggle="${f.id}"]`).checked=!!v;
       else if(f.type==='multi') document.querySelectorAll(`[data-mf="${f.id}"] .chip`).forEach(b=>b.setAttribute('aria-pressed',String(v.picks.includes(b.dataset.v))));
       else if(f.type==='tiles') paintTiles(f);
+      else if(f.type==='place'){ const cur=String(v).includes('-')?v:v+'-start'; document.querySelectorAll(`[data-place="${f.id}"] .pp`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===cur||(f.cols===false&&b.dataset.v.split('-')[0]===cur.split('-')[0])))); }
       else if(f.type==='dates'){ document.querySelector(`[data-don="${f.id}"]`).checked=v.on; document.querySelectorAll(`[data-date^="${f.id}:"]`).forEach(inp=>{ const k=inp.dataset.date.split(':')[1]; inp.value=v[k]; inp.disabled=!v.on; }); }
       else { const t=document.querySelector(`[data-text="${f.id}"]`); if(t.value!==v.text&&document.activeElement!==t) t.value=v.text; if(f.toggle){const c=document.querySelector(`[data-on="${f.id}"]`);c.checked=v.on;t.disabled=!v.on;} }
     });
@@ -656,7 +684,7 @@ async function tool(cfg){
   function snapTargets(skip){
     const xs=[{v:0,kind:'canvas'},{v:W/2,kind:'canvas'},{v:W,kind:'canvas'}], ys=[{v:0,kind:'canvas'},{v:H/2,kind:'canvas'},{v:H,kind:'canvas'}];
     if(SAFE){ ys.push({v:SAFE.top,kind:'safe'},{v:H-SAFE.bottom,kind:'safe'}); }
-    reg.forEach(b=>{ if(!b.id||b.id===skip||b.hidden||b.empty) return; xs.push({v:b.x,kind:'layer'},{v:b.x+b.w/2,kind:'layer'},{v:b.x+b.w,kind:'layer'}); ys.push({v:b.y,kind:'layer'},{v:b.y+b.h/2,kind:'layer'},{v:b.y+b.h,kind:'layer'}); });
+    reg.forEach(b=>{ if(!b.id||b.id===skip||b.hidden||b.empty) return; xs.push({v:b.x+b.w/2,kind:'layer'}); ys.push({v:b.y+b.h/2,kind:'layer'}); });
     return {xs,ys};
   }
   /* best snap for one axis: the box's start/centre/end against the targets, within tol canvas px */
@@ -809,7 +837,9 @@ async function tool(cfg){
   const extra=id=>S.extras.find(x=>x.id===id);
   const textExtra=id=>{ const x=extra(id); return x&&x.type!=='asset'?x:null; };
   function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); if(!f) return null; const t=value(id); return typeof t==='string'?t:null; }
+  let inspPart=null;   // phone: which one control of the layer bar is open (none = slim bar only)
   function select(id){
+    if(id!==S.sel) inspPart=null;
     S.sel=id; syncInspector(); render();
     if(id) openSheet('insp',{quiet:true}); else if(openName==='insp') closeSheet('insp'); else if(!isPhone()) closeSheet('insp');
   }
@@ -817,7 +847,7 @@ async function tool(cfg){
     const id=S.sel, b=reg.find(x=>x.id===id); if(!id) return;
     const l=S.layers[id]||{k:1,color:null,hidden:false}; const t=layerText(id), x=extra(id);
     $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):'Your text'):(b&&b.label)||'Layer';
-    const ti=$('inspText'); ti.hidden=t===null; if(t!==null&&document.activeElement!==ti) ti.value=t;
+    const ti=$('inspText'); if(t!==null&&document.activeElement!==ti) ti.value=t;
     const isAsset=!!(x&&x.type==='asset'), ad=isAsset&&assetDef(x.ref);
     $('inspSize').min=isAsset?'0.2':'0.4'; $('inspSize').max=isAsset?'4':'2.5';
     $('inspSize').value=x&&!isAsset?x.size/60:l.k;
@@ -835,11 +865,21 @@ async function tool(cfg){
       $('inspFont').value=l.font||'';
     }
     const cur=x&&!isAsset?x.color:l.color;
+    const has={text:t!==null,size:true,color:!!sw.length,font:kind==='text'||kind==='pill',more:true};
+    if(inspPart&&!has[inspPart]) inspPart=null;
+    document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
+    document.querySelectorAll('#sh-insp .insp-part').forEach(pt=>{ pt.classList.toggle('on',pt.dataset.part===inspPart); pt.hidden=!has[pt.dataset.part]; });
     $('inspColors').innerHTML='<span class="lbl">Colour</span>'+sw.map(([v,n,c])=>`<button type="button" class="sw-btn" data-color="${v??''}" aria-pressed="${String((cur??'')===(v??''))}" aria-label="${n}" title="${n}" style="${c?'background:'+c:''}">${c?'':'A'}</button>`).join('');
   }
   $('inspClose').addEventListener('click',()=>select(null));
+  document.querySelector('#sh-insp .insp-tabs').addEventListener('click',e=>{ const tb=e.target.closest('.itab'); if(!tb) return; inspPart=inspPart===tb.dataset.part?null:tb.dataset.part; syncInspector();
+    if(inspPart==='text') setTimeout(()=>{ $('inspText').focus(); },30); });
+  $('inspText').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   $('inspFont').addEventListener('change',async e=>{ const id=S.sel; if(!id) return; const fam=e.target.value||null; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
     if(fam){ status('Loading font…'); await ensureFont(fam); status(''); } l.font=fam; render(); });
+  let snapOn=!!store('studio:snap');   // off unless you turn it on; remembered on this phone
+  const syncSnap=()=>{ $('snapBtn').setAttribute('aria-pressed',String(snapOn)); $('snapBtn').title=snapOn?'Snap to guides: on':'Snap to guides: off'; };
+  syncSnap(); $('snapBtn').addEventListener('click',()=>{ snapOn=!snapOn; store('studio:snap',snapOn?1:null); syncSnap(); status(snapOn?'Snap to guides: on':'Snap to guides: off',1500); });
   $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
   document.addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)||e.altKey) return; const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
     const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
@@ -858,7 +898,7 @@ async function tool(cfg){
     const id='extra'+(++extraN);
     // new text starts in the middle, light with a soft shadow so it reads on photos; change colour in the panel
     S.extras.push({id,text:B.phrases.write||'Text',font:'display',size:72,color:B.colors.paper,shadow:true,y:H/2-60+(S.extras.length%4)*90});
-    select(id); setTimeout(()=>{ $('inspText').focus(); $('inspText').select(); },30);
+    select(id); inspPart='text'; syncInspector(); setTimeout(()=>{ $('inspText').focus(); $('inspText').select(); },30);
   });
   /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
   function assetThumb(a){
@@ -875,7 +915,9 @@ async function tool(cfg){
   async function addAsset(ref){
     const a=assetDef(ref); if(!a) return;
     if(a.file){ const got=await loadAsset(ref); if(!got||got.missing){ status('“'+a.label+'” is not in the brand kit yet ('+a.file+').'); return; } }
-    const id='asset'+(++assetN), w=a.w0||(a.file?(a.group==='Logo'?320:420):(a.w>a.h*2?420:260));
+    /* starting size: logo 320 wide; photos/cut-outs about 700 tall (so a pair of cans starts big enough), never wider than 960 */
+    let w=a.w0; if(!w){ if(a.file){ const im=ASSET_IMG.get(ref).img; w=a.tint||a.group==='Logo'?320:Math.min(960,Math.round(700*im.width/im.height)); } else w=a.w>a.h*2?420:260; }
+    const id='asset'+(++assetN);
     S.extras.push({id,type:'asset',ref,w,x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:(a.color||B.colors.accent||B.colors.ink)});
     closeSheet('assets'); select(id);
   }
@@ -893,6 +935,7 @@ async function tool(cfg){
   const KIND={text:'Text',pill:'Button',logo:'Logo',asset:'Asset'};
   let layersSig='';
   function paintLayers(){
+    if(isPhone()&&openName!=='layers'){ layersSig=''; return; }   // only keep the list up to date while it's on screen
     const seen=new Set(), items=[];
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(!b.id||b.empty||seen.has(b.id)) continue; seen.add(b.id); items.push(b); }
     const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x&&x.type!=='asset'?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
@@ -931,9 +974,10 @@ async function tool(cfg){
     if(pts.size===1&&st.pts.size===1){
       const p0=[...st.pts.values()][0], ddx=(e.clientX-p0.x)*k, ddy=(e.clientY-p0.y)*k;
       if(Math.hypot(ddx,ddy)>8) moved=true; if(!moved) return;
-      if(target.layer){ const l=S.layers[target.layer]; let mx=ddx, my=ddy; guides=[]; dragging=true;
-        if(st.box){ const tol=8*k, sx=snapAxis(st.box.x+mx,st.box.w,st.snap.xs,tol), sy=snapAxis(st.box.y+my,st.box.h,st.snap.ys,tol);
-          if(sx){ mx+=sx.d; guides.push({axis:'x',v:sx.v,kind:sx.kind}); } if(sy){ my+=sy.d; guides.push({axis:'y',v:sy.v,kind:sy.kind}); } }
+      if(target.layer){ const l=S.layers[target.layer]; let mx=ddx, my=ddy; guides=[]; dragging=true; document.body.classList.add('dragging-layer');
+        /* snap on: a gentle pull within 6px of a line. Snap off: lines still show when you're within 2px, nothing moves you. */
+        if(st.box){ const tol=(snapOn?6:2)*k, sx=snapAxis(st.box.x+mx,st.box.w,st.snap.xs,tol), sy=snapAxis(st.box.y+my,st.box.h,st.snap.ys,tol);
+          if(sx){ if(snapOn) mx+=sx.d; guides.push({axis:'x',v:sx.v,kind:sx.kind}); } if(sy){ if(snapOn) my+=sy.d; guides.push({axis:'y',v:sy.v,kind:sy.kind}); } }
         l.dx=st.dx+mx; l.dy=st.dy+my;
         if(!S.sel||S.sel!==target.layer) select(target.layer);
       } else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; }
@@ -947,8 +991,8 @@ async function tool(cfg){
   function endPtr(e){
     pts.delete(e.pointerId);
     if(!pts.size){
-      view.classList.remove('dragging'); guides=[]; dragging=false;
-      if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); const ti=$('inspText'); if(already&&!ti.hidden){ ti.focus(); } }
+      view.classList.remove('dragging'); guides=[]; dragging=false; document.body.classList.remove('dragging-layer');
+      if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); if(already&&layerText(target.layer)!==null){ inspPart='text'; syncInspector(); setTimeout(()=>$('inspText').focus(),30); } }
       target=null; st=null; render();
     } else snapshot();
   }
@@ -1086,11 +1130,20 @@ async function tool(cfg){
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
-  /* tools: one card per entry in TOOLS, with a real preview made with the brand's sample photos */
-  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t])=>`<a class="card" href="${toolPage(id)}"><span class="thumb"><img alt="" loading="lazy" src="${ROOT}assets/thumbs/${B.id}/${id}.jpg" onerror="this.style.visibility='hidden'">${t.tag?`<span class="tag">${esc(t.tag)}</span>`:''}</span><span class="txt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>`).join('');
-  /* bottom bar (phone): jump to a section; the bar follows your scrolling */
-  const secLinks=[...document.querySelectorAll('.hubbar a')];
-  if(window.IntersectionObserver){ const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting) secLinks.forEach(a=>a.setAttribute('aria-current',String(a.dataset.sec===e.target.id))); }); },{rootMargin:'-45% 0px -50% 0px'}); ['continueSec','tools','saved'].forEach(id=>$(id)&&io.observe($(id))); }
+  /* tools: one compact row per entry in TOOLS, with a small real preview made with the brand's sample photos */
+  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t],i)=>`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb"><img alt="" loading="lazy" decoding="async" src="${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'"></span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`).join('');
+  /* bottom bar (phone): the tab you tap lights up at once and stays lit while the page scrolls there;
+     when you scroll by hand it follows the section whose top is nearest the top of the screen */
+  const secLinks=[...document.querySelectorAll('.hubbar a')]; let lockUntil=0;
+  const setTab=id=>{ secLinks.forEach(a=>a.setAttribute('aria-current',String(a.dataset.sec===id))); const on=secLinks.find(a=>a.dataset.sec===id), pill=document.querySelector('.hubbar .pill');
+    if(on&&pill){ pill.style.width=on.offsetWidth+'px'; pill.style.transform=`translateX(${on.offsetLeft}px)`; } };
+  secLinks.forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); const t=$(a.dataset.sec); if(!t) return; lockUntil=Date.now()+900; setTab(a.dataset.sec);
+    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; window.scrollTo({top:a.dataset.sec==='continueSec'||a.dataset.sec==='tools'&&$('continueSec').hidden?0:t.getBoundingClientRect().top+scrollY-8,behavior:reduce?'auto':'smooth'}); history.replaceState(null,'','#'+a.dataset.sec); }));
+  const spy=()=>{ if(Date.now()<lockUntil) return; const ids=['continueSec','tools','saved'].filter(id=>secLinks.some(a=>a.dataset.sec===id&&!a.hidden)); let cur=ids[0];
+    ids.forEach(id=>{ const el=$(id); if(el&&!el.hidden&&el.getBoundingClientRect().top<innerHeight*.35) cur=id; });
+    if(innerHeight+scrollY>=document.documentElement.scrollHeight-4) cur=ids[ids.length-1];
+    setTab(cur); };
+  addEventListener('scroll',()=>requestAnimationFrame(spy),{passive:true}); addEventListener('resize',spy);
 
   /* install hint: Android/desktop Chrome get a real Install button; iPhone gets the Share → Add to Home Screen steps */
   (function(){
@@ -1106,9 +1159,21 @@ async function home(){
 
   /* continue editing: unfinished stories kept on this phone */
   const cont=Object.keys(TOOLS).map(id=>({id,d:store('studio:draft:'+B.id+':'+id)})).filter(x=>x.d).sort((a,b)=>b.d.at-a.d.at);
-  if(cont.length){ $('continueSec').hidden=false;
-    $('hubCont').hidden=false;
-    $('continueList').innerHTML=cont.map(x=>`<a class="rowcard" href="${toolPage(x.id)}?draft=1"><span class="rthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a>`).join(''); }
+  function paintCont(){
+    const list=cont.filter(x=>!x.gone);
+    $('continueSec').hidden=$('hubCont').hidden=!list.length;
+    $('continueList').innerHTML=list.map(x=>`<div class="rowcard" data-draft="${x.id}"><a href="${toolPage(x.id)}?draft=1" class="rlink"><span class="rthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${x.id}" aria-label="Remove ${esc(TOOLS[x.id].title)} from Continue editing">✕</button></div>`).join('');
+    spy();
+  }
+  /* remove an unfinished story: it disappears at once; Undo brings it back; after a few seconds its photos are deleted from the phone */
+  const hubToast=(msg,undo)=>{ let t=document.getElementById('hubToast'); if(!t){ t=document.createElement('div'); t.id='hubToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
+    t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="toast-btn">Undo</button>':''}`; t.hidden=false; t.style.pointerEvents='auto';
+    clearTimeout(t._h); t._h=setTimeout(()=>{ t.hidden=true; },5000); if(undo) t.querySelector('button').onclick=()=>{ t.hidden=true; undo(); }; };
+  $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.id===b.dataset.rm); if(!x) return;
+    x.gone=true; paintCont(); const key='studio:draft:'+B.id+':'+x.id, d=x.d;
+    store(key,null); const timer=setTimeout(()=>{ (d.keys||[]).forEach(k=>{ if(k) idb.del(key+':'+k); }); },5200);
+    hubToast(TOOLS[x.id].title+' removed.',()=>{ clearTimeout(timer); store(key,d); x.gone=false; paintCont(); }); });
+  if(cont.length) paintCont(); requestAnimationFrame(spy);
 
   /* account + saved */
   const C=await cloud(); await C.client();

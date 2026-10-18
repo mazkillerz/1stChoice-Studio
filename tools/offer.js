@@ -15,6 +15,7 @@ Studio.tool({
       default:[{small:'×3',big:'20%'}],hint:'Up to 3 tiles. Numbers are written in the brand’s digits automatically.'},
     {id:'dates',type:'dates',label:'Show the dates'},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,default:'__none'},
+    {id:'place',type:'place',in:'style',cols:false,label:'Words place',default:'bottom-center',when:{style:'photo'}},
     {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>b.phrases.buttons.find(x=>x==='اطلب الحين')||b.phrases.buttons[0]}
   ],
   draw(h,o){
@@ -35,10 +36,13 @@ Studio.tool({
       });
     });
     if(full){
-      h.photo(0,0,0,W,H,{mode:'cover'}); h.shade(H,H-1250,.82,0); h.shade(0,420,.45,0);
+      const vp=String(o.value('place')||'bottom').split('-')[0];
+      h.photo(0,0,0,W,H,{mode:'cover'});
+      if(vp==='top'){ h.shade(0,1300,.8,0); } else if(vp==='middle'){ h.shade(H/2-700,H/2,0,.62); h.shade(H/2+700,H/2,0,.62); h.shade(0,420,.4,0); } else { h.shade(H,H-1200,.8,0); h.shade(0,420,.45,0); }
       h.logo((W-230)/2,250,230,'light');
       const blockH=hm.h+34+(n?th+36:0)+(dates?56:0)+(small?56:0)+(pill?76+30:0);
-      let y=Math.min(1580,H-300)-blockH;
+      const lgH=h.logoH(240);
+      let y=vp==='top'?250+lgH+60:vp==='middle'?Math.round((H-blockH)/2):Math.min(1580,H-300)-blockH;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:140,color:ink,shadow:true,maxW:940})+34;
       if(n) y+=drawTiles(y)+36;
       const d=h.text('dates','Dates',dates,W/2,y,{weight:'800',size:40,color:muted,shadow:true,maxW:900}); if(d) y+=d+26;
