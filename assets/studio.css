@@ -605,3 +605,6 @@ label.opt-row{cursor:pointer}
   #saved .sec-tools{width:100%}
   #saved .sec-tools .sort{flex:1 1 0;max-width:none;font-size:14px}
 }
+#inspRotOut{min-width:44px;text-align:end;font-weight:800;font-variant-numeric:tabular-nums}
+.rot-btns{width:100%}
+.insp-part[data-part="rotate"]{flex-wrap:wrap}

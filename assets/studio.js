@@ -101,6 +101,7 @@ const ICON={
   share:svg('<path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
   bookmark:svg('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
   check:svg('<path d="M20 6 9 17l-5-5"/>',24),
+  rotate:svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',20),
   size:svg('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',20),
   drop:svg('<path d="M12 2.7s6 6.4 6 11.3a6 6 0 0 1-12 0c0-4.9 6-11.3 6-11.3z"/>',20),
   font:svg('<path d="M4 20 10 4h1l6 16"/><path d="M6.5 14h8"/><path d="M17 20h4"/>',20),
@@ -155,7 +156,15 @@ async function cloud(){
   return window.StudioCloud;
 }
 /* One sign-in dialog for every page. Resolves true once the person is signed in AND on the team. */
-function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>setTimeout(()=>d.remove(),50)); d.showModal(); return d; }
+function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>setTimeout(()=>d.remove(),50)); d.showModal();
+  /* tapping the dimmed area outside closes it like Cancel; not while it's busy (buttons disabled = saving, deleting, signing in) */
+  let downOutside=false;
+  d.addEventListener('pointerdown',e=>{ downOutside=e.target===d&&outside(e); });
+  d.addEventListener('click',e=>{ if(!downOutside||e.target!==d||!outside(e)) return; downOutside=false;
+    const btns=[...d.querySelectorAll('button')].filter(b=>!b.hidden); if(btns.length&&btns.every(b=>b.disabled)) return;   // busy
+    const ev=new Event('cancel',{cancelable:true}); d.dispatchEvent(ev); if(!ev.defaultPrevented) d.close(); });
+  function outside(e){ const r=d.getBoundingClientRect(); return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom; }
+  return d; }
 async function ensureMember(reason){
   const C=await cloud();
   if(await C.session()){ if(await C.isMember()) return true; }
@@ -234,8 +243,10 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   function layer(id,label,bx,draw,opt){
     const l=L(id); const cx=bx.x+bx.w/2+l.dx, cy=bx.y+bx.h/2+l.dy, k=l.k;
     if(l.hidden){ reg.push({id,label,hidden:true,...opt}); return; }
-    ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
-    reg.push({id,label,x:cx-bx.w*k/2,y:cy-bx.h*k/2,w:bx.w*k,h:bx.h*k,...opt});
+    const rot=(l.rot||0)*Math.PI/180;   // rotation in degrees, around the layer's centre
+    ctx.save(); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
+    const rw=bx.w*k, rh=bx.h*k, c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot)), ew=rw*c+rh*s, eh=rw*s+rh*c;   // box around the turned layer
+    reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
   const h={W,H,ctx,rr,brand:B,C,dir,
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
@@ -410,6 +421,7 @@ async function tool(cfg){
         <div class="insp-tabs" role="group" aria-label="Edit this layer">
           <button type="button" class="itab" data-part="text" aria-pressed="false">${ICON.text}<span>Edit</span></button>
           <button type="button" class="itab" data-part="size" aria-pressed="false">${ICON.size}<span>Size</span></button>
+          <button type="button" class="itab" data-part="rotate" aria-pressed="false">${ICON.rotate}<span>Rotate</span></button>
           <button type="button" class="itab" data-part="color" aria-pressed="false">${ICON.drop}<span>Colour</span></button>
           <button type="button" class="itab" data-part="font" aria-pressed="false">${ICON.font}<span>Font</span></button>
           <button type="button" class="itab" data-part="more" aria-pressed="false">${ICON.more}<span>More</span></button>
@@ -419,6 +431,8 @@ async function tool(cfg){
       <div class="insp-parts">
         <div class="insp-part" data-part="text"><input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" enterkeyhint="done"></div>
         <div class="insp-part insp-row" data-part="size"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
+        <div class="insp-part insp-row" data-part="rotate"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
+          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div>
         <div class="insp-part insp-row" data-part="font" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
         <div class="insp-part insp-row" data-part="color" id="inspColors" role="group" aria-label="Colour"></div>
         <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
@@ -517,6 +531,8 @@ async function tool(cfg){
     fit();
   }
   phoneUI.addEventListener('change',syncSheetMode);
+  /* tapping the space around the preview closes the open panel too */
+  $('stage').addEventListener('click',e=>{ if(isPhone()&&openName&&(e.target===$('stage')||e.target.classList.contains('phone'))) closeSheet(); });
   $('bar').addEventListener('click',e=>{
     const t=e.target.closest('[data-open]'); if(t){ const n=t.dataset.open; if(openName===n) closeSheet(); else { if(S.sel&&n!=='insp'){ S.sel=null; render(); } openSheet(n); focusSheet(n); } return; }
     if(e.target.closest('#barSave')) saveTapped();
@@ -720,7 +736,7 @@ async function tool(cfg){
     const h=makeHelpers(ctx,S,preview,r,scale||1,photoOffset(),perPage);
     cfg.draw(h,{style:S.style,count:S.count,value,preview:preview&&!thumb,page:S.page,pages:S.P.length,pageValue,pagePhotos:pagePhotoCount}); drawExtras(h);
     if(thumb){ ctx.restore(); return; }
-    if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
+    if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; if(b.rot){ ctx.translate(b.cx,b.cy); ctx.rotate(b.rot); ctx.strokeRect(-b.rw/2-12,-b.rh/2-12,b.rw+24,b.rh+24); } else ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
     if(preview&&dragging) drawGuides(ctx);
     if(preview&&lift&&lift.on){ ctx.save(); r.forEach(b=>{ if(b.photo===lift.i){ ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.setLineDash([18,12]); ctx.lineWidth=6; ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.strokeRect(b.x+3,b.y+3,b.w-6,b.h-6); }
       if(b.photo!=null&&b.photo===lift.over){ ctx.setLineDash([]); ctx.lineWidth=12; ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x+6,b.y+6,b.w-12,b.h-12); } }); ctx.restore(); }
@@ -955,7 +971,8 @@ async function tool(cfg){
       $('inspFont').value=l.font||'';
     }
     const cur=x&&!isAsset?x.color:l.color;
-    const has={text:t!==null,size:true,color:!!sw.length,font:kind==='text'||kind==='pill',more:true};
+    const has={text:t!==null,size:true,rotate:true,color:!!sw.length,font:kind==='text'||kind==='pill',more:true};
+    const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
     if(inspPart&&!has[inspPart]) inspPart=null;
     document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
     document.querySelectorAll('#sh-insp .insp-part').forEach(pt=>{ pt.classList.toggle('on',pt.dataset.part===inspPart); pt.hidden=!has[pt.dataset.part]; });
@@ -964,6 +981,8 @@ async function tool(cfg){
   $('inspClose').addEventListener('click',()=>select(null));
   document.querySelector('#sh-insp .insp-tabs').addEventListener('click',e=>{ const tb=e.target.closest('.itab'); if(!tb) return; inspPart=inspPart===tb.dataset.part?null:tb.dataset.part; syncInspector();
     if(inspPart==='text') setTimeout(()=>{ $('inspText').focus(); },30); });
+  $('inspRot').addEventListener('input',e=>{ if(S.sel) setRot(S.sel,snapRot(+e.target.value)); });
+  document.querySelector('#sh-insp .rot-btns').addEventListener('click',e=>{ const b=e.target.closest('[data-rot]'); if(!b||!S.sel) return; const d=+b.dataset.rot, cur=(S.layers[S.sel]||{}).rot||0; setRot(S.sel,d?Math.round((cur+d)/15)*15:0); });
   $('inspText').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   $('inspFont').addEventListener('change',async e=>{ const id=S.sel; if(!id) return; const fam=e.target.value||null; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
     if(fam){ status('Loading font…'); await ensureFont(fam); status(''); } l.font=fam; render(); });
@@ -1040,7 +1059,9 @@ async function tool(cfg){
   let guides=[], dragging=false; const pts=new Map(); let st=null, target=null, moved=false;
   function toCanvas(e){ const r=view.getBoundingClientRect(), k=W/r.width; return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k,k}; }
   function hit(pt){
-    for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.id&&!b.hidden&&!b.empty){ const pad=24; if(pt.x>=b.x-pad&&pt.x<=b.x+b.w+pad&&pt.y>=b.y-pad&&pt.y<=b.y+b.h+pad) return {layer:b.id}; } }
+    for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.id&&!b.hidden&&!b.empty){ const pad=24;
+      if(b.rot){ const dx=pt.x-b.cx, dy=pt.y-b.cy, c=Math.cos(-b.rot), s=Math.sin(-b.rot), lx=dx*c-dy*s, ly=dx*s+dy*c; if(Math.abs(lx)<=b.rw/2+pad&&Math.abs(ly)<=b.rh/2+pad) return {layer:b.id}; }
+      else if(pt.x>=b.x-pad&&pt.x<=b.x+b.w+pad&&pt.y>=b.y-pad&&pt.y<=b.y+b.h+pad) return {layer:b.id}; } }
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return {photo:b.photo,mode:b.mode}; }
     return null;
   }
@@ -1052,22 +1073,36 @@ async function tool(cfg){
   view.addEventListener('pointerup',e=>{ if(!swipe||e.pointerId!==swipe.id) return; e.stopImmediatePropagation(); const dx=e.clientX-swipe.x, dy=e.clientY-swipe.y; swipe=null;
     if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)) goPage(S.page+(dx<0?1:-1)); },true);
   view.addEventListener('pointercancel',()=>{ swipe=null; },true);
+  /* keepSel: a layer was selected when this touch began somewhere else. A second finger then pinches / twists
+     that layer (wherever the fingers are); a one-finger tap elsewhere deselects it as before. */
+  let keepSel=null;
   view.addEventListener('pointerdown',e=>{
-    const pt=toCanvas(e); const h=pts.size?target:hit(pt);
-    if(!pts.size){ target=h; moved=false; }
-    if(!target){ select(null); return; }
-    if(target.photo!=null){ const p=S.photos[target.photo]; if(!p.img||p.sample){ S.active=target.photo; pickPhoto(target.photo); target=null; return; } S.active=target.photo; syncZoom(); if(S.sel) select(null);
-      /* more than one photo: hold a photo to lift it, then drop it on another to swap (Collage photos can't pan, so a plain drag lifts them) */
-      if(!pts.size&&slotCount()>1){ const i=target.photo; lift={i,on:false,instant:target.mode==='contain',x:e.clientX,y:e.clientY};
-        if(!lift.instant) lift.timer=setTimeout(()=>{ if(lift&&!lift.on&&!moved&&pts.size===1) startLift(lift.x,lift.y); },380); } }
+    const pt=toCanvas(e);
+    if(pts.size){   // another finger joins
+      if(keepSel&&(!target||!target.layer)){ if(lift) endLift(); target={layer:keepSel}; moved=true; }
+      if(!target) return;
+      view.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); snapshot(); return;
+    }
+    target=hit(pt); moved=false; keepSel=S.sel&&!(target&&target.layer===S.sel)?S.sel:null;
+    if(!target&&!keepSel){ select(null); if(openName&&openName!=='insp') closeSheet(); return; }   // tapping an empty spot closes the open panel
+    if(target&&target.photo!=null){ const p=S.photos[target.photo];
+      if(!p.img||p.sample){ S.active=target.photo; target.pick=true; }   // an empty photo box opens the picker when you lift your finger
+      else { S.active=target.photo; syncZoom();
+        /* more than one photo: hold a photo to lift it, then drop it on another to swap (Collage photos can't pan, so a plain drag lifts them) */
+        if(slotCount()>1){ const i=target.photo; lift={i,on:false,instant:target.mode==='contain',x:e.clientX,y:e.clientY};
+          if(!lift.instant) lift.timer=setTimeout(()=>{ if(lift&&!lift.on&&!moved&&pts.size===1) startLift(lift.x,lift.y); },380); } } }
     view.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     snapshot(); view.classList.add('dragging');
   });
   function snapshot(){
     if(!target) return;
-    if(target.layer){ const id=target.layer, x=extra(id), l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); const b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); st={dx:l.dx,dy:l.dy,k:l.k,size:x?x.size:0,box:b?{x:b.x,y:b.y,w:b.w,h:b.h}:null,snap:snapTargets(id),pts:new Map(pts)}; }
+    if(target.layer){ const id=target.layer, x=extra(id), l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); const b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); st={dx:l.dx,dy:l.dy,k:l.k,rot:l.rot||0,size:x?x.size:0,box:b?{x:b.x,y:b.y,w:b.w,h:b.h}:null,snap:snapTargets(id),pts:new Map(pts)}; }
     else { const p=S.photos[target.photo]; st={ox:p.ox,oy:p.oy,zoom:p.zoom,pts:new Map(pts)}; }
   }
+  /* rotation in degrees, kept between -180 and 180; within 4° of 0/90/180 it settles there */
+  function normRot(r){ r=((r+180)%360+360)%360-180; return Math.round(r*10)/10; }
+  function snapRot(r){ r=normRot(r); for(const t of [-180,-90,0,90,180]) if(Math.abs(r-t)<4) return t===-180?180:t; return r; }
+  function setRot(id,r){ const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); l.rot=normRot(r); if(!l.rot) delete l.rot; syncInspector(); render(); }
   /* ---- swapping photos: lift one, drop it on another ---- */
   let lift=null;
   function photoAt(pt){ for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return b.photo; } return null; }
@@ -1092,11 +1127,13 @@ async function tool(cfg){
           if(sx){ if(snapOn) mx+=sx.d; guides.push({axis:'x',v:sx.v,kind:sx.kind}); } if(sy){ if(snapOn) my+=sy.d; guides.push({axis:'y',v:sy.v,kind:sy.kind}); } }
         l.dx=st.dx+mx; l.dy=st.dy+my;
         if(!S.sel||S.sel!==target.layer) select(target.layer);
-      } else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; }
+      } else if(target.photo!=null&&!target.pick){ if(keepSel){ keepSel=null; select(null); } if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; } }
     } else if(pts.size>=2&&st.pts.size>=2){
       moved=true; const a=[...pts.values()], c=[...st.pts.values()]; const r=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)/(Math.hypot(c[0].x-c[1].x,c[0].y-c[1].y)||1);
-      if(target.layer){ const x=extra(target.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(x?.2:.4,Math.min(x?4:2.5,st.k*r)); syncInspector(); }
-      else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.zoom=Math.max(1,Math.min(3,st.zoom*r)); $('zoom').value=p.zoom; }
+      if(target.layer){ const x=extra(target.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(x?.2:.4,Math.min(x?4:2.5,st.k*r));
+        /* two-finger twist turns the layer; it settles on straight and right angles when close */
+        const ang=(p,q)=>Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; let rot=st.rot+ang(a[0],a[1])-ang(c[0],c[1]); S.layers[target.layer].rot=snapRot(rot); syncInspector(); }
+      else if(target.mode==='cover'&&!target.pick){ const p=S.photos[target.photo]; p.zoom=Math.max(1,Math.min(3,st.zoom*r)); $('zoom').value=p.zoom; }
     }
     render();
   });
@@ -1106,6 +1143,8 @@ async function tool(cfg){
     if(!pts.size){
       view.classList.remove('dragging'); guides=[]; dragging=false; document.body.classList.remove('dragging-layer');
       if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); if(already&&layerText(target.layer)!==null){ inspPart='text'; syncInspector(); setTimeout(()=>$('inspText').focus(),30); } }
+      else if(!moved&&(!target||!target.layer)){ if(S.sel) select(null); if(!target&&openName&&openName!=='insp') closeSheet(); if(target&&target.pick) pickPhoto(target.photo); }
+      keepSel=null;
       target=null; st=null; render();
     } else snapshot();
   }
@@ -1114,7 +1153,8 @@ async function tool(cfg){
     if(t.layer){ const x=extra(t.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,x.size*(1-e.deltaY*.0015))); else { const l=S.layers[t.layer]||(S.layers[t.layer]={dx:0,dy:0,k:1}); l.k=Math.max(x?.2:.4,Math.min(x?4:2.5,l.k*(1-e.deltaY*.0015))); } if(S.sel!==t.layer) select(t.layer); else syncInspector(); }
     else if(t.mode==='cover'){ const p=S.photos[t.photo]; if(!p.img||p.sample) return; p.zoom=Math.max(1,Math.min(3,p.zoom-e.deltaY*.0015)); S.active=t.photo; syncZoom(); }
     render(); },{passive:false});
-  view.addEventListener('keydown',e=>{ if(!S.sel) return; const l=S.layers[S.sel]||(S.layers[S.sel]={dx:0,dy:0,k:1}); const st=e.shiftKey?20:4; const m={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key]; if(m){ e.preventDefault(); l.dx+=m[0]; l.dy+=m[1]; render(); } else if(e.key==='Escape') select(null); });
+  view.addEventListener('keydown',e=>{ if(!S.sel) return; const l=S.layers[S.sel]||(S.layers[S.sel]={dx:0,dy:0,k:1}); const st=e.shiftKey?20:4; const m={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key]; if(m){ e.preventDefault(); l.dx+=m[0]; l.dy+=m[1]; render(); }
+    else if(e.key==='['||e.key===']'){ e.preventDefault(); setRot(S.sel,(l.rot||0)+(e.key===']'?1:-1)*(e.shiftKey?15:1)); } else if(e.key==='Escape') select(null); });
   $('zoom').addEventListener('input',e=>{const p=S.photos[S.active]; if(p){p.zoom=+e.target.value;render();}});
   $('fitBtn').addEventListener('click',()=>{const p=S.photos[S.active]; if(p){p.zoom=1;p.ox=0;p.oy=0;$('zoom').value=1;render();}});
   $('form').addEventListener('submit',e=>e.preventDefault());

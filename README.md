@@ -25,7 +25,9 @@ Continue editing (hub) only keeps new stories you haven't saved to the team; tap
 The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
 
 ## Editing on the preview
-- Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Colour, Font, More) and the preview stays big; it fades away while you drag.
+- Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Rotate, Colour, Font, More) and the preview stays big; it fades away while you drag.
+- Rotate text, buttons, the logo and assets with two fingers (twist), the Rotate slider or ±15° buttons; it settles on straight and right angles. With a layer selected, a two-finger pinch or twist anywhere on the preview acts on it. On a computer: [ and ] (Shift = 15°).
+- Tap outside a pop-up to close it, or an empty spot beside the preview to close the open panel.
 - Drag to move. Guide lines show when things line up and the safe zones (top 250px, bottom 300px) show while you drag. The magnet button (top bar) turns gentle snapping on or off; it starts off. Pinch or scroll to resize. Arrow keys nudge the selected item.
 - **Add text** puts your own text on the story. **Add asset** adds the logo, the HD can cut-outs or a shape as a movable layer. **Reset layout** puts everything back.
 - Photos: drag to move, pinch / slider to zoom. With two or more photos, hold one and drop it on another to swap them (in Collage a plain drag swaps). The same works with the boxes in the Photo sheet.

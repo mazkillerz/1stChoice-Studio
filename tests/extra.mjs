@@ -35,6 +35,22 @@ const chips=await pg.$$eval('#colChips .chip',cs=>cs.map(c=>c.textContent.replac
 ok('chips are only collections',JSON.stringify(chips)==='["All","Ramadan"]',chips.join(', '));
 await pg.selectOption('#toolFilter','restock'); await pg.waitForTimeout(300);
 const names=await pg.$$eval('#savedGrid .dtxt b',bs=>bs.map(b=>b.textContent)); ok('tool menu filters',JSON.stringify(names)==='["Restock Oct"]',names.join(', '));
+// tapping outside: a pop-up closes, a busy one doesn't; an empty spot closes the open panel
+await pg.tap('.dcard'); await pg.waitForTimeout(500);
+await pg.mouse.click(10,10); await pg.waitForTimeout(400); ok('tap outside closes a pop-up',!(await pg.locator('dialog[open]').count()));
+await pg.goto(BASE+'tools/carousel.html'); await pg.waitForTimeout(1200); await pg.evaluate(()=>document.getElementById('draftFresh')?.click());
+await pg.tap('[data-pg="add"]'); await pg.waitForTimeout(400); await pg.evaluate(()=>document.querySelectorAll('dialog[open] button').forEach(b=>b.disabled=true));
+await pg.mouse.click(10,10); await pg.waitForTimeout(300); ok('a busy pop-up stays open',await pg.locator('dialog[open]').count()===1);
+await pg.evaluate(()=>document.querySelector('dialog[open]').close()); await pg.waitForTimeout(200);
+await pg.tap('#bar [data-open="words"]'); await pg.waitForTimeout(450);
+const st=await pg.locator('#stage').boundingBox(); await pg.touchscreen.tap(st.x+6,st.y+st.height/2); await pg.waitForTimeout(450);
+ok('tap beside the preview closes the panel',!(await pg.evaluate(()=>document.querySelector('.sheet.open'))));
+// rotation: buttons + saved with the design
+await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1000);
+const vv=await pg.locator('#view').boundingBox(), kk=vv.width/1080; const hb=await pg.evaluate(()=>{ const b=Studio.debug.reg().find(x=>x.id==='head'); return {x:b.cx,y:b.cy}; });
+await pg.touchscreen.tap(vv.x+hb.x*kk,vv.y+hb.y*kk); await pg.waitForTimeout(400); await pg.tap('.itab[data-part="rotate"]'); await pg.waitForTimeout(500);
+await pg.tap('[data-rot="15"]'); await pg.waitForTimeout(200); ok('rotate +15°',await pg.evaluate(()=>Studio.debug.S.layers.head.rot)===15);
+ok('recipe keeps rotation',await pg.evaluate(()=>Studio.debug.recipe().layers.head.rot)===15);
 ok('no page errors',!errs.length,errs.slice(0,2).join(' | '));
 console.log(res.join('\n')); await b.close();
 process.exit(res.some(r=>r.startsWith('FAIL'))?1:0);
