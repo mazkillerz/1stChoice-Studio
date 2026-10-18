@@ -175,8 +175,10 @@ body.sheet-open .cta-photo{display:none}
 
 /* pager (carousels) */
 .pager{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);width:100%;max-width:400px}
-.pager .pg-dots{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;flex:1}
-.pg-dot{min-width:34px;height:34px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:800 var(--fs-s) var(--sans);cursor:pointer;position:relative}
+.pager .pg-dots{display:flex;gap:6px;align-items:center;justify-content:safe center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:6px 2px}
+.pager .pg-dots::-webkit-scrollbar{display:none}
+.pager .mini.icon{flex:none}
+.pg-dot{flex:none;min-width:36px;height:36px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:800 var(--fs-s) var(--sans);cursor:pointer;position:relative}
 .pg-dot::after{content:"";position:absolute;inset:-7px -3px}
 .pg-dot[aria-current="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 

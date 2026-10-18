@@ -51,7 +51,8 @@ const TOOLS={
   'collage':{title:'Collage',blurb:'2, 3 or 4 whole photos in different layouts.'},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
   'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',tag:'New'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',tag:'New'}
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',tag:'New'},
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',tag:'New'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -318,8 +319,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off){
     },
     /* a custom layer drawn by the tool: draw(ctx,color) works in a box from (0,0) to (w,h) */
     block(id,label,x,y,w,hh,draw,kind){ layer(id,label,{x,y,w,h:hh},color=>draw(ctx,color),{kind:kind||'text'}); return L(id).hidden?0:hh; },
-    /* page dots for carousels: n dots, i = current */
-    dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=dir==='rtl'?n-1-k:k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
+    /* page dots for carousels: n dots, i = current. Always left to right, like Instagram's own swipe. */
+    dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
   return h;
@@ -593,7 +594,7 @@ async function tool(cfg){
   let pickAt=0;
   function pickPhoto(i){ pickAt=i; const p=$('pick'); p.multiple=S.count>1; p.click(); }
   function slotTargets(i){ const off=photoOffset(), t=[i]; for(let j=0;j<S.count;j++){ const k=off+j, p=S.photos[k]; if(k!==i&&(!p.img||p.sample)) t.push(k); } return t; }
-  $('pick').addEventListener('change',e=>{ const fs=[...(e.target.files||[])], t=slotTargets(pickAt); fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f)); e.target.value=''; });
+  $('pick').addEventListener('change',e=>{ const off=photoOffset(), at=pickAt>=off&&pickAt<off+S.count?pickAt:nextEmpty(), fs=[...(e.target.files||[])], t=slotTargets(at); fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f)); e.target.value=''; });
   $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
   function syncCta(){ $('pick').multiple=S.count>1; const off=photoOffset(); let any=false; if(needsPhoto(S.page)) for(let i=0;i<S.count;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=S.count>1?'Add your photos':'Add your photo'; }
   function nextEmpty(){ const off=photoOffset(); for(let j=0;j<S.count;j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
@@ -691,7 +692,7 @@ async function tool(cfg){
   const hist={stack:[],i:-1,timer:0,ready:false};
   function snap(){ return {json:JSON.stringify(recipe()),photos:S.photos.map(p=>({...p}))}; }
   function same(a,b){ return a&&b&&a.json===b.json&&a.photos.every((p,i)=>p.img===b.photos[i].img); }
-  function scheduleCommit(){ if(!hist.ready) return; clearTimeout(hist.timer); hist.timer=setTimeout(commit,450); }
+  function scheduleCommit(){ if(!hist.ready) return; clearTimeout(hist.timer); hist.timer=setTimeout(()=>{ hist.timer=0; commit(); },450); }
   function commit(){
     if(pts.size) return scheduleCommit();                      // still dragging
     const s=snap(); if(same(s,hist.stack[hist.i])) return;
@@ -699,8 +700,9 @@ async function tool(cfg){
     syncUndo(); saveDraft(s);
   }
   function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); }
-  function undo(){ if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
-  function redo(){ if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
+  function flush(){ if(hist.timer){ clearTimeout(hist.timer); hist.timer=0; if(!pts.size) commit(); } }   // record an edit made just before Undo
+  function undo(){ flush(); if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
+  function redo(){ flush(); if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
   function syncUndo(){ $('undo').disabled=hist.i<=0; $('redo').disabled=hist.i>=hist.stack.length-1; }
   function startHistory(){ hist.stack=[snap()]; hist.i=0; hist.ready=true; syncUndo(); }
 
@@ -963,7 +965,7 @@ async function tool(cfg){
   /* ---- saving: full-quality lossless PNG (2x, stepping down to 1.5x / 1x only if the phone runs out of memory) ---- */
   let downloads=null; const inClaude=!!(window.claude&&window.claude.use);
   if(inClaude) window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
-  function fname(ext,kind,n){ const d=new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
+  function fname(ext,kind,n,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
   function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
   let lastFiles=null, saving=false;
@@ -977,7 +979,7 @@ async function tool(cfg){
     const sel=S.sel; S.sel=null;
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
-    const type='image/png', ext='png', pages=pageCount(), files=[]; let used=EXPORT_SCALE;
+    const type='image/png', ext='png', pages=pageCount(), files=[], stamp=new Date(); let used=EXPORT_SCALE;
     try{
       for(let pg=0;pg<pages;pg++){
         const tag=pages>1?'Slide '+(pg+1)+' of '+pages+': ':'';
@@ -999,7 +1001,7 @@ async function tool(cfg){
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
         if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
-        files.push(new File([blob],fname(ext,withPhotos?null:'frame',pages>1?pg+1:0),{type}));
+        files.push(new File([blob],fname(ext,withPhotos?null:'frame',pages>1?pg+1:0,stamp),{type}));
       }
       progress(1,'Done');
       const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
