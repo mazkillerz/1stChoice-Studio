@@ -6,10 +6,14 @@
 <title>Studio</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/icon.png">
-<link rel="apple-touch-icon" href="assets/icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-title" content="Studio">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/studio.css">
@@ -20,6 +24,7 @@
   <h1>Make a story in a minute</h1>
   <p>Pick a tool, add your photo, choose the words, save. Save designs to the team and reuse them in one tap. Logo, fonts and wording come from the <b data-brand-name>brand</b> kit.</p>
 </header>
+<div class="install" id="installBar" role="region" aria-label="Install Studio" hidden><span class="install-ic" aria-hidden="true"><img src="assets/icon-192.png" alt=""></span><span class="install-txt" id="installTxt"><b>Install Studio</b><span>Open it from your home screen like an app.</span></span><button type="button" class="mini solid" id="installGo">Install</button><button type="button" class="mini icon" id="installX" aria-label="Hide this">✕</button></div>
 
 <section class="hub-sec" id="continueSec" hidden>
   <h2>Continue editing</h2>
@@ -44,7 +49,6 @@
     <a class="card" href="tools/split.html"><div class="thumb"><img data-thumb="split" alt=""></div><div class="txt"><b>Two-photo split</b><span>Close-up on top, wide below, words on the cut.</span></div></a>
   </div>
 </section>
-<p class="foot">On iPhone: open in Safari, tap Share, then “Add to Home Screen” to use it like an app.</p>
 <script src="assets/studio.js"></script>
 <script src="brands/brands.js"></script>
 <script>Studio.home();</script>

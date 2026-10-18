@@ -12,6 +12,10 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
+/* installable app: the service worker caches the app shell (never Supabase calls) */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)) window.addEventListener('load',()=>{ navigator.serviceWorker.register(ROOT+'sw.js').catch(()=>{}); });
+let installEvt=null; window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; document.dispatchEvent(new Event('studio:installable')); });
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 
 /* ---------- small utilities ---------- */
@@ -821,6 +825,18 @@ function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) retur
 async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
   document.querySelectorAll('[data-thumb]').forEach(i=>{ i.src=ROOT+'assets/thumbs/'+B.id+'/'+i.dataset.thumb+'.jpg'; });
+
+  /* install hint: Android/desktop Chrome get a real Install button; iPhone gets the Share → Add to Home Screen steps */
+  (function(){
+    const bar=$('installBar'); if(!bar||standalone()||store('studio:installHidden')) return;
+    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const showPrompt=()=>{ bar.hidden=false; $('installGo').hidden=false; };
+    if(installEvt) showPrompt(); document.addEventListener('studio:installable',showPrompt);
+    if(ios){ bar.hidden=false; $('installGo').hidden=true; $('installTxt').innerHTML='<b>Install Studio</b><span>Tap <svg class="ios-share" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> Share, then <b>Add to Home Screen</b>.</span>'; }
+    $('installGo').onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); const r=await installEvt.userChoice.catch(()=>null); installEvt=null; if(r&&r.outcome==='accepted') bar.hidden=true; };
+    $('installX').onclick=()=>{ bar.hidden=true; store('studio:installHidden',1); };
+    window.addEventListener('appinstalled',()=>{ bar.hidden=true; });
+  })();
 
   /* continue editing: unfinished stories kept on this phone */
   const cont=Object.keys(TOOLS).map(id=>({id,d:store('studio:draft:'+B.id+':'+id)})).filter(x=>x.d).sort((a,b)=>b.d.at-a.d.at);
