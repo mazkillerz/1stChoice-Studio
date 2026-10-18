@@ -633,10 +633,11 @@ async function tool(cfg){
     clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
       const keys=[];
       for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(!p.draftSaved){ const blob=await photoBlob(p); if(blob){ await idb.put(DKEY+':'+p.key,blob); p.draftSaved=true; } } } else keys[i]=null; }
-      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),design:design&&{id:design.id,name:design.name,kind:design.kind}});
+      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),thumb:draftThumb(),design:design&&{id:design.id,name:design.name,kind:design.kind}});
       if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(DKEY+':'+k); });
     },800);
   }
+  function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
   function clearDraft(){ const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
   async function loadDraft(d){
     const slots=[];
@@ -985,7 +986,11 @@ async function tool(cfg){
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
-  document.querySelectorAll('[data-thumb]').forEach(i=>{ i.src=ROOT+'assets/thumbs/'+B.id+'/'+i.dataset.thumb+'.jpg'; });
+  /* tools: one card per entry in TOOLS, with a real preview made with the brand's sample photos */
+  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t])=>`<a class="card" href="${toolPage(id)}"><span class="thumb"><img alt="" loading="lazy" src="${ROOT}assets/thumbs/${B.id}/${id}.jpg" onerror="this.style.visibility='hidden'">${t.tag?`<span class="tag">${esc(t.tag)}</span>`:''}</span><span class="txt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>`).join('');
+  /* bottom bar (phone): jump to a section; the bar follows your scrolling */
+  const secLinks=[...document.querySelectorAll('.hubbar a')];
+  if(window.IntersectionObserver){ const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting) secLinks.forEach(a=>a.setAttribute('aria-current',String(a.dataset.sec===e.target.id))); }); },{rootMargin:'-45% 0px -50% 0px'}); ['continueSec','tools','saved'].forEach(id=>$(id)&&io.observe($(id))); }
 
   /* install hint: Android/desktop Chrome get a real Install button; iPhone gets the Share → Add to Home Screen steps */
   (function(){
@@ -1002,7 +1007,8 @@ async function home(){
   /* continue editing: unfinished stories kept on this phone */
   const cont=Object.keys(TOOLS).map(id=>({id,d:store('studio:draft:'+B.id+':'+id)})).filter(x=>x.d).sort((a,b)=>b.d.at-a.d.at);
   if(cont.length){ $('continueSec').hidden=false;
-    $('continueList').innerHTML=cont.map(x=>`<a class="rowcard" href="${toolPage(x.id)}?draft=1"><b>${esc(TOOLS[x.id].title)}</b><span>${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></a>`).join(''); }
+    $('hubCont').hidden=false;
+    $('continueList').innerHTML=cont.map(x=>`<a class="rowcard" href="${toolPage(x.id)}?draft=1"><span class="rthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a>`).join(''); }
 
   /* account + saved */
   const C=await cloud(); await C.client();
@@ -1015,16 +1021,16 @@ async function home(){
   }
   async function loadSaved(){
     const member=await refreshAccount();
-    if(!member){ $('q').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedGrid').innerHTML='';
+    if(!member){ $('qWrap').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedGrid').innerHTML='';
       $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=`<p>${me?'This email is not on the team yet. Ask the owner to add you.':'Sign in to see the designs your team saved.'}</p>${me?'':'<button type="button" class="btn slim" id="savedSignIn">Sign in</button>'}`;
       const b=$('savedSignIn'); if(b) b.onclick=async()=>{ if(await ensureMember()) loadSaved(); };
       return; }
-    $('savedEmpty').hidden=true; $('savedGrid').innerHTML='<p class="small">Loading…</p>';
+    $('savedEmpty').hidden=true; $('savedGrid').innerHTML='<div class="skeleton"></div><div class="skeleton"></div>';
     try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }catch(err){ $('savedGrid').innerHTML=`<p class="small">${esc(err.message)}</p>`; return; }
     paint();
   }
   function paint(){
-    $('q').hidden=!all.length;
+    $('qWrap').hidden=!all.length;
     $('colChips').hidden=!cols.length;
     if(active!=='all'&&!cols.some(c=>c.id===active)) active='all';
     $('colChips').innerHTML=`<button type="button" class="chip" data-col="all" aria-pressed="${active==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>`<button type="button" class="chip" dir="auto" data-col="${c.id}" aria-pressed="${active===c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('');
@@ -1033,7 +1039,7 @@ async function home(){
     const list=all.filter(d=>(active==='all'||d.collections.includes(active))&&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||(TOOLS[d.tool]&&TOOLS[d.tool].title.toLowerCase().includes(q))));
     if(!all.length){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save design to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
-    $('savedGrid').innerHTML=list.map(d=>`<button type="button" class="dcard" data-id="${d.id}"><span class="dthumb"><img alt="" data-path="${esc(d.thumb_path||'')}">${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc((TOOLS[d.tool]||{}).title||d.tool)} · ${ago(d.updated_at)}</span></span></button>`).join('');
+    $('savedGrid').innerHTML=list.map(d=>`<button type="button" class="dcard" data-id="${d.id}" aria-label="${esc(d.name)}, ${esc((TOOLS[d.tool]||{}).title||d.tool)}"><span class="dthumb"><img alt="" data-path="${esc(d.thumb_path||'')}">${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc((TOOLS[d.tool]||{}).title||d.tool)} · ${ago(d.updated_at)}</span></span></button>`).join('');
     C.fileUrls(list.map(d=>d.thumb_path)).then(u=>{ document.querySelectorAll('#savedGrid img[data-path]').forEach(i=>{ if(u[i.dataset.path]) i.src=u[i.dataset.path]; }); });
   }
   $('q').addEventListener('input',paint);

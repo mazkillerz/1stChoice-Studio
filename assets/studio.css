@@ -263,8 +263,8 @@ body.sheet-open .cta-photo{display:none}
 .scroller>*{flex:0 0 auto;scroll-snap-align:start}
 .col-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:-6px}
 .col-tools .link{padding:4px 6px;align-self:auto}
-.rowcard{width:132px;display:flex;flex-direction:column;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden}
-.rowcard .rthumb{aspect-ratio:9/16;background:var(--chip);display:block;max-height:180px}
+.rowcard{width:120px;display:flex;flex-direction:column;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden}
+.rowcard .rthumb{aspect-ratio:9/16;background:var(--chip);display:block}
 .rowcard .rthumb img{width:100%;height:100%;object-fit:cover;display:block}
 .rowcard .rtxt{padding:8px 10px 10px;display:flex;flex-direction:column}
 .rowcard b{font:800 var(--fs-s) var(--sans)}.rowcard span{color:var(--muted);font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -292,6 +292,7 @@ body.sheet-open .cta-photo{display:none}
   .hero h1{font-size:32px}
   .hero p{font-size:var(--fs-s)}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .card .thumb{aspect-ratio:4/5}
   .card .txt{padding:8px 10px 10px}
   .card b{font-size:var(--fs-m)}
   .dgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
