@@ -839,8 +839,10 @@ async function tool(cfg){
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
     $('saveTxt').textContent=on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save slides':'Save story');
   }
-  $('teamOn').checked=!!store('studio:teamSave');
-  $('teamOn').addEventListener('change',()=>{ store('studio:teamSave',$('teamOn').checked?1:null); syncSaveOpts(); });
+  /* the team switch always starts off: you turn it on for the saves you want in the team, so nothing goes there by accident */
+  store('studio:teamSave',null);   // forget the old remembered setting
+  $('teamOn').checked=false;
+  $('teamOn').addEventListener('change',syncSaveOpts);
   $('teamName').addEventListener('input',e=>{ e.target.dataset.touched='1'; });
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
   async function paintTeamCols(){
@@ -1147,7 +1149,7 @@ async function tool(cfg){
     if(isPhone()&&openName!=='save'){ resetSaveSheet(); openSheet('save'); focusSheet('save'); return; }
     doSave();
   }
-  function resetSaveSheet(){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
+  function resetSaveSheet(){ $('teamOn').checked=false; $('saveOpts').hidden=false; $('teamOnly').hidden=false; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
   async function doSave(only){
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
@@ -1159,7 +1161,7 @@ async function tool(cfg){
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     await save(true,only);
-    if(team) await runTeamSave();
+    if(team){ await runTeamSave(); $('teamOn').checked=false; }
     $('save').hidden=false; $('saveTxt').textContent='Save again';
     if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; $('teamOnly').hidden=team; syncSaveOpts(); $('saveTxt').textContent='Save again';
   }

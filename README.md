@@ -18,7 +18,7 @@ Built so any brand can plug in. The first brand kit is **1st Choice**.
 
 ## On a phone
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
-Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch (remembered) with the name filled in. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
+Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch with the name filled in. The switch starts off every time, so nothing is saved to the team by accident. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
 
 Continue editing (hub) only keeps new stories you haven't saved to the team; tap ✕ to remove one. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
