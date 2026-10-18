@@ -368,8 +368,8 @@ async function tool(cfg){
     <button type="button" class="link" id="resetLayout">Reset layout</button></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
     <button type="button" class="btn" id="save">${ICON.download}<span>${cfg.pages?'Save slides':'Save story'}</span></button>
-    <div class="progress" id="progress" hidden><div class="progress-bar"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
-    <div class="done-box" id="doneBox" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
+    <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
+    <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
     <button type="button" class="btn ghost" id="saveDesign">${ICON.bookmark}<span id="saveDesignTxt">Save design to the team</span></button>
     <div class="status" id="status" role="status" aria-live="polite"></div>
@@ -406,12 +406,15 @@ async function tool(cfg){
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
     fit();
   }
+  /* move focus into a sheet opened from the bar (screen readers land on its title), and back to the bar on close */
+  function focusSheet(n){ const h=sheetEl(n)?.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); setTimeout(()=>h.focus({preventScroll:true}),60); } }
   function closeSheet(n){
     if(!isPhone()){ if(n==='assets'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
     if(n&&n!==openName) return; if(!openName) return;
     const el=sheetEl(openName); el.classList.remove('open'); el.setAttribute('inert',''); el.style.transform='';
     if(openName==='insp'&&S.sel){ S.sel=null; render(); }
-    openName=null; document.body.classList.remove('sheet-open');
+    const was=openName; openName=null; document.body.classList.remove('sheet-open');
+    if(el.contains(document.activeElement)){ const tab=document.querySelector(`#bar [data-open="${was}"]`); if(tab) tab.focus({preventScroll:true}); else view.focus({preventScroll:true}); }
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ b.setAttribute('aria-expanded','false'); b.classList.remove('on'); });
     fit();
   }
@@ -422,7 +425,7 @@ async function tool(cfg){
   }
   phoneUI.addEventListener('change',syncSheetMode);
   $('bar').addEventListener('click',e=>{
-    const t=e.target.closest('[data-open]'); if(t){ const n=t.dataset.open; if(openName===n) closeSheet(); else { if(S.sel&&n!=='insp'){ S.sel=null; render(); } openSheet(n); } return; }
+    const t=e.target.closest('[data-open]'); if(t){ const n=t.dataset.open; if(openName===n) closeSheet(); else { if(S.sel&&n!=='insp'){ S.sel=null; render(); } openSheet(n); focusSheet(n); } return; }
     if(e.target.closest('#barSave')) saveTapped();
   });
   document.addEventListener('click',e=>{ const c=e.target.closest('[data-close]'); if(c) closeSheet(c.dataset.close); });
@@ -782,7 +785,7 @@ async function tool(cfg){
   });
   /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
   function assetThumb(a){
-    if(a.file) return `<img alt="" src="${esc(assetUrl(a))}" loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
+    if(a.file) return `<img alt="" src="${esc(assetUrl(a))}"${a.tint?' data-logo':''} loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
     const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); x.fillStyle=getComputedStyle(document.body).color||'#161210'; a.draw(x);
     return `<img alt="" src="${c.toDataURL()}">`;
   }
@@ -886,7 +889,7 @@ async function tool(cfg){
   let downloads=null; const inClaude=!!(window.claude&&window.claude.use);
   if(inClaude) window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
   function fname(ext,kind,n){ const d=new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
-  function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; if(txt) $('progressTxt').textContent=txt; } }
+  function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
   let lastFiles=null, saving=false;
   async function shareFiles(files){
