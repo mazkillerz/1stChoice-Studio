@@ -2,16 +2,17 @@
 Studio.tool({
   id:'collage', title:'Collage', fileName:'collage', noZoom:true,
   photos:{min:2,max:4}, sampleNote:'Example photos. Every photo shows whole, never cropped.',
-  styles:[{id:'black',label:'Black'},{id:'white',label:'White'}],
-  lightBackground:style=>style==='white',
+  styles:[{id:'black',label:'Black'},{id:'white',label:'White'},{id:'cream',label:'Cream'}],
+  lightBackground:style=>style!=='black',
   fields:[
     {id:'lay2',type:'seg',in:'style',when:{count:2},label:'Layout',options:[{v:'stack',l:'Stacked'},{v:'diag',l:'Diagonal'}]},
     {id:'lay3',type:'seg',in:'style',when:{count:3},label:'Layout',options:[{v:'framed',l:'Framed'},{v:'stagger',l:'Stagger'},{v:'big',l:'Big + 2'}]},
     {id:'lay4',type:'seg',in:'style',when:{count:4},label:'Layout',options:[{v:'wide',l:'Wide / 2 / wide'},{v:'zigzag',l:'Zigzag'}]},
-    {id:'logo',type:'toggle',in:'style',label:'Show the logo',default:true}
+    {id:'logo',type:'toggle',in:'style',label:'Show the logo',default:true},
+    {id:'round',type:'toggle',in:'style',label:'Rounded corners',default:false}
   ],
   draw(h,o){
-    const {ctx,W,H,C}=h, dark=o.style!=='white'; ctx.fillStyle=dark?C.night:C.paper; ctx.fillRect(0,0,W,H);
+    const {ctx,W,H,C}=h, dark=o.style==='black'; ctx.fillStyle=dark?C.night:o.style==='cream'?(C.cream||C.paper):C.paper; ctx.fillRect(0,0,W,H);
     const n=o.count, a=i=>h.photoAspect(i); let R=[];
     const col=(list,gap)=>{let y=0;const out=[];list.forEach(([i,w,x])=>{const hh=w/a(i);out.push({i,x,y,w,h:hh});y+=hh+gap;});return out;};
     const pair=(t,g,i,j,w)=>{const sw=(W-g)/2,s1=sw/a(i),s2=sw/a(j),sh=Math.max(s1,s2);return {rows:[{i,x:0,y:t+(sh-s1)/2,w:sw,h:s1},{i:j,x:W-sw,y:t+(sh-s2)/2,w:sw,h:s2}],h:sh};};
@@ -26,7 +27,8 @@ Studio.tool({
     }
     const showLogo=!!o.value('logo'), room=H-(showLogo?260:120);
     let gh=Math.max(...R.map(r=>r.y+r.h)); const k=Math.min(1,room/gh); const gw=W*k, ox=(W-gw)/2; gh*=k; const oy=(H-gh)/2-(showLogo?50:0);
-    R.forEach(r=>h.photo(r.i,ox+r.x*k,oy+r.y*k,r.w*k,r.h*k,{mode:'contain'}));
+    const rad=o.value('round')?28:0;
+    R.forEach(r=>h.photo(r.i,ox+r.x*k,oy+r.y*k,r.w*k,r.h*k,{mode:'contain',r:rad}));
     if(showLogo){ const lw=170, lh=h.logoH(lw), by=oy+gh; h.logo((W-lw)/2,by+Math.max(40,((H-by)-lh)/2-20),lw,dark?'light':'dark'); }
   }
 });
