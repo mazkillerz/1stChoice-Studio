@@ -385,8 +385,30 @@ async function tool(cfg){
     const h=makeHelpers(ctx,S,preview,r,scale||1);
     cfg.draw(h,{style:S.style,count:S.count,value,preview}); drawExtras(h);
     if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
-    if(preview&&guide){ ctx.save(); ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.restore(); }
+    if(preview&&dragging) drawGuides(ctx);
     ctx.restore(); if(preview){ reg=r; paintLayers(); }
+  }
+  /* ---- alignment guides: while dragging, the story's safe zones show and snap lines appear ---- */
+  const SAFE=cfg.safe||(H===1920?{top:250,bottom:300}:null);
+  function drawGuides(ctx){
+    ctx.save();
+    if(SAFE){ ctx.fillStyle='rgba(255,45,135,.10)'; ctx.fillRect(0,0,W,SAFE.top); ctx.fillRect(0,H-SAFE.bottom,W,SAFE.bottom);
+      ctx.setLineDash([14,10]); ctx.lineWidth=2; ctx.strokeStyle='rgba(255,45,135,.55)'; ctx.beginPath(); ctx.moveTo(0,SAFE.top); ctx.lineTo(W,SAFE.top); ctx.moveTo(0,H-SAFE.bottom); ctx.lineTo(W,H-SAFE.bottom); ctx.stroke(); ctx.setLineDash([]); }
+    guides.forEach(g=>{ ctx.strokeStyle=g.kind==='canvas'?'rgba(61,107,255,.95)':g.kind==='safe'?'rgba(255,45,135,.95)':'rgba(255,140,0,.95)'; ctx.lineWidth=3; ctx.beginPath();
+      if(g.axis==='x'){ ctx.moveTo(g.v,0); ctx.lineTo(g.v,H); } else { ctx.moveTo(0,g.v); ctx.lineTo(W,g.v); } ctx.stroke(); });
+    ctx.restore();
+  }
+  /* snap targets: canvas edges + centre, safe-zone lines, and the edges + centres of every other visible layer */
+  function snapTargets(skip){
+    const xs=[{v:0,kind:'canvas'},{v:W/2,kind:'canvas'},{v:W,kind:'canvas'}], ys=[{v:0,kind:'canvas'},{v:H/2,kind:'canvas'},{v:H,kind:'canvas'}];
+    if(SAFE){ ys.push({v:SAFE.top,kind:'safe'},{v:H-SAFE.bottom,kind:'safe'}); }
+    reg.forEach(b=>{ if(!b.id||b.id===skip||b.hidden||b.empty) return; xs.push({v:b.x,kind:'layer'},{v:b.x+b.w/2,kind:'layer'},{v:b.x+b.w,kind:'layer'}); ys.push({v:b.y,kind:'layer'},{v:b.y+b.h/2,kind:'layer'},{v:b.y+b.h,kind:'layer'}); });
+    return {xs,ys};
+  }
+  /* best snap for one axis: the box's start/centre/end against the targets, within tol canvas px */
+  function snapAxis(a,len,targets,tol){
+    let best=null; [a,a+len/2,a+len].forEach(p=>targets.forEach(t=>{ const d=t.v-p; if(Math.abs(d)<=tol&&(!best||Math.abs(d)<Math.abs(best.d))) best={d,v:t.v,kind:t.kind}; }));
+    return best;
   }
   function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); }
 
@@ -591,7 +613,7 @@ async function tool(cfg){
   });
 
   /* ---- pointer: drag layers or photos, pinch to resize/zoom, tap text to edit ---- */
-  let guide=false; const pts=new Map(); let st=null, target=null, moved=false;
+  let guides=[], dragging=false; const pts=new Map(); let st=null, target=null, moved=false;
   function toCanvas(e){ const r=view.getBoundingClientRect(), k=W/r.width; return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k,k}; }
   function hit(pt){
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.id&&!b.hidden&&!b.empty){ const pad=24; if(pt.x>=b.x-pad&&pt.x<=b.x+b.w+pad&&pt.y>=b.y-pad&&pt.y<=b.y+b.h+pad) return {layer:b.id}; } }
@@ -608,7 +630,7 @@ async function tool(cfg){
   });
   function snapshot(){
     if(!target) return;
-    if(target.layer){ const id=target.layer, x=extra(id), l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); const b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); st={dx:l.dx,dy:l.dy,k:l.k,size:x?x.size:0,cx:b?b.x+b.w/2:null,pts:new Map(pts)}; }
+    if(target.layer){ const id=target.layer, x=extra(id), l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); const b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); st={dx:l.dx,dy:l.dy,k:l.k,size:x?x.size:0,box:b?{x:b.x,y:b.y,w:b.w,h:b.h}:null,snap:snapTargets(id),pts:new Map(pts)}; }
     else { const p=S.photos[target.photo]; st={ox:p.ox,oy:p.oy,zoom:p.zoom,pts:new Map(pts)}; }
   }
   view.addEventListener('pointermove',e=>{
@@ -617,9 +639,10 @@ async function tool(cfg){
     if(pts.size===1&&st.pts.size===1){
       const p0=[...st.pts.values()][0], ddx=(e.clientX-p0.x)*k, ddy=(e.clientY-p0.y)*k;
       if(Math.hypot(ddx,ddy)>8) moved=true; if(!moved) return;
-      if(target.layer){ const l=S.layers[target.layer]; let nx=st.dx+ddx; l.dy=st.dy+ddy; guide=false;
-        if(st.cx!=null){ const c=st.cx+(nx-st.dx); if(Math.abs(c-W/2)<18){ nx=st.dx+(W/2-st.cx); guide=true; } }
-        l.dx=nx;
+      if(target.layer){ const l=S.layers[target.layer]; let mx=ddx, my=ddy; guides=[]; dragging=true;
+        if(st.box){ const tol=8*k, sx=snapAxis(st.box.x+mx,st.box.w,st.snap.xs,tol), sy=snapAxis(st.box.y+my,st.box.h,st.snap.ys,tol);
+          if(sx){ mx+=sx.d; guides.push({axis:'x',v:sx.v,kind:sx.kind}); } if(sy){ my+=sy.d; guides.push({axis:'y',v:sy.v,kind:sy.kind}); } }
+        l.dx=st.dx+mx; l.dy=st.dy+my;
         if(!S.sel||S.sel!==target.layer) select(target.layer);
       } else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; }
     } else if(pts.size>=2&&st.pts.size>=2){
@@ -632,7 +655,7 @@ async function tool(cfg){
   function endPtr(e){
     pts.delete(e.pointerId);
     if(!pts.size){
-      view.classList.remove('dragging'); guide=false;
+      view.classList.remove('dragging'); guides=[]; dragging=false;
       if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); const ti=$('inspText'); if(already&&!ti.hidden){ ti.focus(); } }
       target=null; st=null; render();
     } else snapshot();
@@ -705,6 +728,9 @@ async function tool(cfg){
     else if(draft&&(draft.keys||[]).some(Boolean)||(draft&&draft.json!==JSON.stringify(recipe()))) $('draftBar').hidden=false;
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); draw(vctx,true); startHistory();
+  Studio.debug={S,reg:()=>reg,recipe,render};   // used by the automated tests
+  // web fonts can finish after the first drawing: draw again so the preview uses the right font
+  if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
 }
 
 /* ---------- home: continue editing, saved designs + collections, tools ---------- */
