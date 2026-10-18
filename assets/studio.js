@@ -773,14 +773,16 @@ async function tool(cfg){
     if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing (and never replaces your unfinished story)
     if(hist.i>0) dirty=true; if(!dirty) return;
     clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
+      if(design) return;   // it was saved to the team meanwhile
       const keys=[];
       for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(!p.draftSaved){ const blob=await photoBlob(p); if(blob){ await idb.put(DKEY+':'+p.key,blob); p.draftSaved=true; } } } else keys[i]=null; }
-      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),thumb:draftThumb(),design:design&&{id:design.id,name:design.name,kind:design.kind}});
+      if(design) return;
+      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),thumb:draftThumb()});
       if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(DKEY+':'+k); });
     },800);
   }
   function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
-  function clearDraft(){ const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
+  function clearDraft(){ clearTimeout(draftTimer); const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
   async function loadDraft(d){
     const slots=[];
     for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(DKEY+':'+k); if(blob) slots[i]=await photoFromBlob(blob,k,true); }
@@ -1159,7 +1161,7 @@ async function tool(cfg){
     await save(true,only);
     if(team) await runTeamSave();
     $('save').hidden=false; $('saveTxt').textContent='Save again';
-    if(PG) $('saveThis').hidden=false; if(!isPhone()){ $('saveOpts').hidden=false; $('teamOnly').hidden=false; syncSaveOpts(); }
+    if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; $('teamOnly').hidden=team; syncSaveOpts(); $('saveTxt').textContent='Save again';
   }
   $('save').addEventListener('click',()=>doSave());
   if(PG) $('saveThis').addEventListener('click',()=>doSave(S.page));

@@ -63,8 +63,8 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
     /* the Save sheet's team option: Only save to the team */
     if(mob&&!(await pg.isVisible('#teamOnly'))){ await pg.tap('#barSave'); await pg.waitForTimeout(450); }
-    if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click());
-    await pg.fill('#teamName','Test '+t); await tap('#teamOnly');
+    if(await pg.isVisible('#teamOnly')){ if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName','Test '+t); await tap('#teamOnly'); }
+    /* else: the team switch was already on, so Save just sent it to the team too */
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
     const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
     const p2=await ctx.newPage(); p2.on('pageerror',e=>R.errors.push('reopen: '+e));

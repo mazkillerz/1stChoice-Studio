@@ -14,11 +14,15 @@ Built so any brand can plug in. The first brand kit is **1st Choice**.
 | Two-photo split | Close-up on top, wide below, words + logo on a label across the cut. White / black / gold label, cut in the middle, higher or lower. |
 | Restock | Back in stock: cans photo, approved headline, flavour pills, button. Cream / white / full photo. |
 | Offer | Discount story: offer tiles (e.g. ×3 / ٢٠٪), dates line, product photo, button. Cream / black / full photo. |
-| Carousel | 1080×1350 Instagram carousel, 2–8 slides with page dots; saves numbered PNGs (2160×2700). |
+| Carousel | 1080×1350 Instagram carousel, 2–10 slides: Cover, Photo + words, Full photo, Two photos, Words only, Big number, Panorama (one wide photo across 2–3 slides), End slide. Filmstrip to switch / reorder (long-press), See all, swipe the preview edges. Saves numbered PNGs (2160×2700) or just one slide. |
 
 ## On a phone
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
-Save makes the PNG and opens the share sheet (choose “Save Image”). On a computer the same panels sit beside the preview.
+Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch (remembered) with the name filled in. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
+
+Continue editing (hub) only keeps new stories you haven't saved to the team; tap ✕ to remove one. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
+
+The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options.
 
 ## Editing on the preview
 - Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Colour, Font, More) and the preview stays big; it fades away while you drag.
