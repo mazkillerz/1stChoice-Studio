@@ -37,6 +37,18 @@ Studio.registerBrand({
     placeName:'اسم المكان',
     write:'اكتب هنا'
   },
+  /* Assets people can add to any story as movable layers (Add asset). Files live in this folder.
+     Cans: always the HD cut-outs (transparent PNG). A file that isn't here yet shows as "Not added yet".
+     No cat mascot stickers unless the owner asks for them. */
+  assets:[
+    {id:'logo',label:'Logo',file:'logo.png',group:'Logo',tint:true},
+    {id:'can-classic',label:'Classic can',file:'assets/classic_can.png',group:'Cans (HD cut-outs)'},
+    {id:'can-classic-shadow',label:'Classic + shadow',file:'assets/classic_can_shadow.png',group:'Cans (HD cut-outs)'},
+    {id:'can-passion',label:'Passion Fruit can',file:'assets/passion_can.png',group:'Cans (HD cut-outs)'},
+    {id:'can-passion-shadow',label:'Passion + shadow',file:'assets/passion_can_shadow.png',group:'Cans (HD cut-outs)'},
+    {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',group:'Cans (HD cut-outs)'},
+    {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',group:'Cans (HD cut-outs)'}
+  ],
   /* Example photos each tool opens with (files in samples/). */
   samples:{
     'new-place':['shelf'], 'photo-story':['tall'], 'cinematic':['pair'],

@@ -66,6 +66,32 @@ async function ensureFont(fam){
   FONT_READY.add(fam);
 }
 
+/* ---------- assets: brand files (logo, can cut-outs, stickers) from the brand kit + built-in shapes ----------
+   Shapes are drawn in a 200×200 box (or the size given) so they stay sharp at any size and take any brand colour. */
+const SHAPES=[
+  {id:'shape:circle',label:'Circle',w:200,h:200,draw(c){ c.beginPath(); c.arc(100,100,100,0,Math.PI*2); c.fill(); }},
+  {id:'shape:blob',label:'Soft box',w:240,h:200,draw(c){ c.beginPath(); rr(c,0,0,240,200,70); c.fill(); }},
+  {id:'shape:badge',label:'Badge',w:200,h:200,draw(c){ c.beginPath(); for(let i=0;i<32;i++){ const a=i/32*Math.PI*2-Math.PI/2, r=i%2?86:100; c.lineTo(100+Math.cos(a)*r,100+Math.sin(a)*r); } c.closePath(); c.fill(); }},
+  {id:'shape:ring',label:'Ring',w:200,h:200,draw(c){ c.beginPath(); c.arc(100,100,100,0,Math.PI*2); c.arc(100,100,84,0,Math.PI*2,true); c.fill(); }},
+  {id:'shape:arrow',label:'Arrow',w:240,h:120,draw(c){ c.beginPath(); c.moveTo(0,46); c.lineTo(160,46); c.lineTo(160,8); c.lineTo(240,60); c.lineTo(160,112); c.lineTo(160,74); c.lineTo(0,74); c.closePath(); c.fill(); }},
+  {id:'shape:underline',label:'Underline',w:300,h:40,draw(c){ c.beginPath(); c.moveTo(6,30); c.quadraticCurveTo(150,-6,294,24); c.lineWidth=14; c.lineCap='round'; c.strokeStyle=c.fillStyle; c.stroke(); }},
+  {id:'shape:sparkle',label:'Sparkle',w:200,h:200,draw(c){ c.beginPath(); c.moveTo(100,0); c.quadraticCurveTo(112,88,200,100); c.quadraticCurveTo(112,112,100,200); c.quadraticCurveTo(88,112,0,100); c.quadraticCurveTo(88,88,100,0); c.fill(); }},
+  {id:'shape:line',label:'Line',w:300,h:12,draw(c){ c.beginPath(); rr(c,0,0,300,12,6); c.fill(); }}
+];
+const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
+function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
+function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||brandAssets().find(x=>x.id===ref)||null; }
+function assetUrl(a){ return BRAND.base+a.file; }
+function loadAsset(ref){
+  const hit=ASSET_IMG.get(ref); if(hit) return hit.then?hit:Promise.resolve(hit);
+  const a=assetDef(ref); if(!a||!a.file){ return Promise.resolve(null); }
+  const p=load(assetUrl(a)).then(img=>{ const v={img}; ASSET_IMG.set(ref,v); return v; }).catch(()=>{ const v={missing:true}; ASSET_IMG.set(ref,v); return v; });
+  ASSET_IMG.set(ref,p); return p;
+}
+const TINTS=new Map();
+function tinted(img,color){ const key=color; let m=TINTS.get(img); if(!m){ m={}; TINTS.set(img,m); } if(m[key]) return m[key];
+  const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d'); x.drawImage(img,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height); return m[key]=c; }
+
 /* ---------- small IndexedDB store for draft photos (they're too big for localStorage) ---------- */
 const idb={
   db:null,
@@ -148,6 +174,7 @@ function freeSharp(){ SHARP.forEach(c=>Object.values(c).forEach(cv=>{cv.width=cv
 /* ---------- drawing helpers handed to each tool ----------
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
+let onAssetLoad=null;
 function makeHelpers(ctx,S,preview,reg,scale){
   const B=BRAND, C=B.colors, dir=B.dir||'ltr';
   const L=id=>S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
@@ -228,6 +255,25 @@ function makeHelpers(ctx,S,preview,reg,scale){
       },{kind:'text'});
       return L(id).hidden?0:th;
     },
+    /* an asset layer (brand file or shape) placed by its centre */
+    asset(x){
+      const a=assetDef(x.ref); if(!a){ reg.push({id:x.id,label:'Asset',empty:true}); return; }
+      if(a.file){
+        const got=ASSET_IMG.get(x.ref);
+        if(!got||got.then){ loadAsset(x.ref).then(()=>{ if(preview&&onAssetLoad) onAssetLoad(); }); reg.push({id:x.id,label:a.label,empty:true}); return; }
+        if(got.missing){ reg.push({id:x.id,label:a.label,empty:true}); return; }
+        const im=got.img, hh=x.w*im.height/im.width;
+        layer(x.id,a.label,{x:x.x-x.w/2,y:x.y-hh/2,w:x.w,h:hh},color=>{
+          const k=L(x.id).k; let src=im; const c=color||x.color;
+          if(a.tint&&c) src=tinted(im,c);
+          ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+          ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
+        },{kind:'asset'});
+      } else {
+        const sw=x.w, sh=x.w*a.h/a.w;
+        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>{ ctx.scale(sw/a.w,sh/a.h); ctx.fillStyle=color||x.color||C.ink; a.draw(ctx); },{kind:'asset'});
+      }
+    },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
   return h;
@@ -262,10 +308,12 @@ async function tool(cfg){
       <div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
       <div class="insp-row" id="inspColors" role="group" aria-label="Colour"></div>
       <div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+      <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div>
     </div>
     <div class="layers" id="layers" hidden><div class="insp-head"><b>Layers</b><span class="small">Top layer first. Tap to edit.</span></div><ul id="layerList" role="list"></ul></div>
+    <div class="layers assets" id="assetsBox" hidden><div class="insp-head"><b>Add an asset</b><button type="button" class="x" id="assetsClose">Done</button></div><div id="assetList"></div></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in step 1.')}</div>
-    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="layersBtn" aria-expanded="false" aria-controls="layers"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg> Layers</button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
+    <div class="tools"><button type="button" class="mini icon" id="undo" aria-label="Undo" title="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="mini icon" id="redo" aria-label="Redo" title="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button type="button" class="mini" id="layersBtn" aria-expanded="false" aria-controls="layers"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg> Layers</button><button type="button" class="mini" id="addText">+ Add text</button><button type="button" class="mini" id="addAsset" aria-expanded="false" aria-controls="assetsBox">+ Add asset</button><button type="button" class="mini" id="resetLayout">Reset layout</button></div>
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
@@ -378,7 +426,10 @@ async function tool(cfg){
   /* ---- drawing ---- */
   let reg=[], raf=0;
   function drawExtras(h){
-    S.extras.forEach(x=>{ h.text(x.id,'Your text',x.text,W/2,x.y,{font:x.font,weight:x.font==='display'?'':'800',size:x.size,color:x.color,shadow:x.shadow}); });
+    S.extras.forEach(x=>{
+      if(x.type==='asset') h.asset(x);
+      else h.text(x.id,'Your text',x.text,W/2,x.y,{font:x.font,weight:x.font==='display'?'':'800',size:x.size,color:x.color,shadow:x.shadow});
+    });
   }
   function draw(ctx,preview,scale){
     const r=[]; ctx.save(); if(scale) ctx.scale(scale,scale); ctx.clearRect(0,0,W,H);
@@ -424,11 +475,11 @@ async function tool(cfg){
     if(r.count) S.count=Math.min(nPhotos,Math.max(minPhotos,r.count));
     Object.keys(r.values||{}).forEach(k=>{ if(k in S.values) S.values[k]=clone(r.values[k]); });
     S.layers=clone(r.layers||{}); S.extras=clone(r.extras||[]);
-    extraN=S.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN);
+    extraN=S.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); assetN=Math.max(assetN,extraN);
     (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
     S.sel=null;
   }
-  async function fontsOf(r){ const fams=new Set(); Object.values(r.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }); await Promise.all([...fams].map(ensureFont)); }
+  async function fontsOf(r){ const fams=new Set(); Object.values(r.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }); await Promise.all([...fams].map(ensureFont)); await Promise.all((r.extras||[]).filter(x=>x.type==='asset').map(x=>loadAsset(x.ref))); }
 
   /* ---- undo / redo: a snapshot after every pause in editing ---- */
   const hist={stack:[],i:-1,timer:0,ready:false};
@@ -547,17 +598,23 @@ async function tool(cfg){
 
   /* ---- selecting and editing layers ---- */
   const extra=id=>S.extras.find(x=>x.id===id);
-  function layerText(id){ const x=extra(id); if(x) return x.text; const f=fields.find(f=>f.id===id); return f?value(id):null; }
+  const textExtra=id=>{ const x=extra(id); return x&&x.type!=='asset'?x:null; };
+  function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); return f?value(id):null; }
   function select(id){ S.sel=id; syncInspector(); render(); }
   function syncInspector(){
     const id=S.sel, b=reg.find(x=>x.id===id); if(!id){ $('insp').hidden=true; return; }
     const l=S.layers[id]||{k:1,color:null,hidden:false}; const t=layerText(id), x=extra(id);
-    $('insp').hidden=false; $('inspName').textContent=x?'Your text':(b&&b.label)||'Layer';
+    $('insp').hidden=false; $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):'Your text'):(b&&b.label)||'Layer';
     const ti=$('inspText'); ti.hidden=t===null; if(t!==null&&document.activeElement!==ti) ti.value=t;
-    $('inspSize').value=x?x.size/60:l.k;
-    $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspHide').hidden=!!x; $('inspDelete').hidden=!x;
+    const isAsset=!!(x&&x.type==='asset'), ad=isAsset&&assetDef(x.ref);
+    $('inspSize').min=isAsset?'0.2':'0.4'; $('inspSize').max=isAsset?'4':'2.5';
+    $('inspSize').value=x&&!isAsset?x.size/60:l.k;
+    $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspHide').hidden=!!x; $('inspDelete').hidden=!x; $('inspOrder').hidden=!x;
+    if(x){ const i=S.extras.indexOf(x); $('inspBack').disabled=i<=0; $('inspFwd').disabled=i>=S.extras.length-1; }
     const C=B.colors, kind=b&&b.kind;
-    const sw=kind==='logo'?[['dark','Dark',C.ink],['light','Light','#ffffff']]:[[null,'Auto',null],[C.paper,'White',C.paper],[C.ink,'Dark',C.ink],[C.accent,'Gold',C.accent]];
+    const palette=[[C.ink,'Dark',C.ink],[C.paper,'White',C.paper],[C.accent,'Gold',C.accent],...(C.cream?[[C.cream,'Cream',C.cream]]:[]),...(C.muted?[[C.muted,'Grey',C.muted]]:[])];
+    const sw=kind==='logo'?[['dark','Dark',C.ink],['light','Light','#ffffff']]:isAsset?(ad&&(ad.tint||!ad.file)?[[null,'Original',null],...palette]:[]):[[null,'Auto',null],[C.paper,'White',C.paper],[C.ink,'Dark',C.ink],[C.accent,'Gold',C.accent]];
+    $('inspColors').hidden=!sw.length;
     $('inspFontRow').hidden=!(kind==='text'||kind==='pill');
     if(kind==='text'||kind==='pill'){
       const opt=f=>`<option value="${esc(f.family)}" style="font-family:'${esc(f.family)}'">${esc(f.label||f.family)}</option>`;
@@ -565,7 +622,7 @@ async function tool(cfg){
       if($('inspFont').dataset.built!=='1'){ $('inspFont').innerHTML=html; $('inspFont').dataset.built='1'; }
       $('inspFont').value=l.font||'';
     }
-    const cur=x?x.color:l.color;
+    const cur=x&&!isAsset?x.color:l.color;
     $('inspColors').innerHTML='<span class="lbl">Colour</span>'+sw.map(([v,n,c])=>`<button type="button" class="sw-btn" data-color="${v??''}" aria-pressed="${String((cur??'')===(v??''))}" aria-label="${n}" title="${n}" style="${c?'background:'+c:''}">${c?'':'A'}</button>`).join('');
   }
   $('inspClose').addEventListener('click',()=>select(null));
@@ -578,10 +635,10 @@ async function tool(cfg){
   $('draftFresh').addEventListener('click',()=>{ clearDraft(); $('draftBar').hidden=true; });
   $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const d=store(DKEY); if(d){ await loadDraft(d); syncUI(); draw(vctx,true); startHistory(); } });
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); render(); });
-  $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
-  $('inspColors').addEventListener('click',e=>{ const b=e.target.closest('[data-color]'); if(!b) return; const v=b.dataset.color||null, id=S.sel, x=extra(id); if(x){ x.color=v||B.colors.paper; x.shadow=!(v&&!isLight(v)); } else (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).color=v; syncInspector(); render(); });
+  $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=textExtra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
+  $('inspColors').addEventListener('click',e=>{ const b=e.target.closest('[data-color]'); if(!b) return; const v=b.dataset.color||null, id=S.sel, x=textExtra(id); if(x){ x.color=v||B.colors.paper; x.shadow=!(v&&!isLight(v)); } else (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).color=v; syncInspector(); render(); });
   $('inspCenter').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id); if(!b||b.hidden) return; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.dx+=W/2-(b.x+b.w/2); render(); });
-  $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=extra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
+  $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=textExtra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
   $('inspHide').addEventListener('click',()=>{ const id=S.sel; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.hidden=!l.hidden; syncInspector(); render(); });
   $('inspDelete').addEventListener('click',()=>{ S.extras=S.extras.filter(x=>x.id!==S.sel); delete S.layers[S.sel]; select(null); });
   let extraN=0;
@@ -591,18 +648,44 @@ async function tool(cfg){
     S.extras.push({id,text:B.phrases.write||'Text',font:'display',size:72,color:B.colors.paper,shadow:true,y:H/2-60+(S.extras.length%4)*90});
     select(id); setTimeout(()=>{ $('inspText').focus(); $('inspText').select(); },30);
   });
+  /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
+  function assetThumb(a){
+    if(a.file) return `<img alt="" src="${esc(assetUrl(a))}" loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
+    const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); x.fillStyle=getComputedStyle(document.body).color||'#161210'; a.draw(x);
+    return `<img alt="" src="${c.toDataURL()}">`;
+  }
+  function paintAssets(){
+    const groups={}; brandAssets().forEach(a=>{ (groups[a.group||'Brand']=groups[a.group||'Brand']||[]).push(a); }); groups.Shapes=SHAPES;
+    $('assetList').innerHTML=Object.entries(groups).map(([g,list])=>`<span class="lbl">${esc(g)}</span><div class="asset-grid">${list.map(a=>`<button type="button" class="asset-tile" data-asset="${esc(a.id)}" title="${esc(a.file?a.label+' ('+a.file+')':a.label)}">${assetThumb(a)}<span>${esc(a.label)}</span><i class="miss-note">Not added yet</i></button>`).join('')}</div>`).join('')
+      +(brandAssets().length?'':'<p class="small">This brand kit lists no asset files yet.</p>');
+  }
+  let assetN=0;
+  async function addAsset(ref){
+    const a=assetDef(ref); if(!a) return;
+    if(a.file){ const got=await loadAsset(ref); if(!got||got.missing){ status('“'+a.label+'” is not in the brand kit yet ('+a.file+').'); return; } }
+    const id='asset'+(++assetN), w=a.w0||(a.file?(a.group==='Logo'?320:420):(a.w>a.h*2?420:260));
+    S.extras.push({id,type:'asset',ref,w,x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:(a.color||B.colors.accent||B.colors.ink)});
+    $('assetsBox').hidden=true; $('addAsset').setAttribute('aria-expanded','false'); select(id);
+  }
+  $('addAsset').addEventListener('click',()=>{ const open=$('assetsBox').hidden; if(open) paintAssets(); $('assetsBox').hidden=!open; $('addAsset').setAttribute('aria-expanded',String(open)); });
+  $('assetsClose').addEventListener('click',()=>{ $('assetsBox').hidden=true; $('addAsset').setAttribute('aria-expanded','false'); });
+  $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
+  function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
+  $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
+  onAssetLoad=()=>render();
+
   $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); });
 
   /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
   const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
-  const KIND={text:'Text',pill:'Button',logo:'Logo'};
+  const KIND={text:'Text',pill:'Button',logo:'Logo',asset:'Asset'};
   let layersSig='';
   function paintLayers(){
     const box=document.getElementById('layers'); if(!box||box.hidden) return;
     const seen=new Set(), items=[];
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(!b.id||b.empty||seen.has(b.id)) continue; seen.add(b.id); items.push(b); }
-    const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
+    const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x&&x.type!=='asset'?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
     const sig=JSON.stringify(rows); if(sig===layersSig) return; layersSig=sig;
     $('layerList').innerHTML=rows.length?rows.map(r=>`<li class="lyr${r.sel?' sel':''}${r.hidden?' off':''}"><button type="button" class="lyr-pick" data-pick="${esc(r.id)}" aria-current="${r.sel}"><b>${esc(r.name)}</b>${r.text?`<span dir="auto">${esc(r.text)}</span>`:(r.kind&&r.kind!==r.name?`<span>${esc(r.kind)}</span>`:'')}</button><button type="button" class="lyr-eye" data-eye="${esc(r.id)}" aria-pressed="${!r.hidden}" aria-label="${r.hidden?'Show':'Hide'} ${esc(r.name)}" title="${r.hidden?'Show':'Hide'}">${r.hidden?EYE_OFF:EYE}</button></li>`).join(''):'<li class="small">No layers yet.</li>';
   }
@@ -647,7 +730,7 @@ async function tool(cfg){
       } else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; }
     } else if(pts.size>=2&&st.pts.size>=2){
       moved=true; const a=[...pts.values()], c=[...st.pts.values()]; const r=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)/(Math.hypot(c[0].x-c[1].x,c[0].y-c[1].y)||1);
-      if(target.layer){ const x=extra(target.layer); if(x) x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(.4,Math.min(2.5,st.k*r)); syncInspector(); }
+      if(target.layer){ const x=extra(target.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(x?.2:.4,Math.min(x?4:2.5,st.k*r)); syncInspector(); }
       else if(target.mode==='cover'){ const p=S.photos[target.photo]; p.zoom=Math.max(1,Math.min(3,st.zoom*r)); $('zoom').value=p.zoom; }
     }
     render();
@@ -662,7 +745,7 @@ async function tool(cfg){
   }
   view.addEventListener('pointerup',endPtr); view.addEventListener('pointercancel',endPtr);
   view.addEventListener('wheel',e=>{ const t=hit(toCanvas(e)); if(!t) return; e.preventDefault();
-    if(t.layer){ const x=extra(t.layer); if(x) x.size=Math.max(20,Math.min(220,x.size*(1-e.deltaY*.0015))); else { const l=S.layers[t.layer]||(S.layers[t.layer]={dx:0,dy:0,k:1}); l.k=Math.max(.4,Math.min(2.5,l.k*(1-e.deltaY*.0015))); } if(S.sel!==t.layer) select(t.layer); else syncInspector(); }
+    if(t.layer){ const x=extra(t.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,x.size*(1-e.deltaY*.0015))); else { const l=S.layers[t.layer]||(S.layers[t.layer]={dx:0,dy:0,k:1}); l.k=Math.max(x?.2:.4,Math.min(x?4:2.5,l.k*(1-e.deltaY*.0015))); } if(S.sel!==t.layer) select(t.layer); else syncInspector(); }
     else if(t.mode==='cover'){ const p=S.photos[t.photo]; if(!p.img||p.sample) return; p.zoom=Math.max(1,Math.min(3,p.zoom-e.deltaY*.0015)); S.active=t.photo; syncZoom(); }
     render(); },{passive:false});
   view.addEventListener('keydown',e=>{ if(!S.sel) return; const l=S.layers[S.sel]||(S.layers[S.sel]={dx:0,dy:0,k:1}); const st=e.shiftKey?20:4; const m={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key]; if(m){ e.preventDefault(); l.dx+=m[0]; l.dy+=m[1]; render(); } else if(e.key==='Escape') select(null); });

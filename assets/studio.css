@@ -172,3 +172,12 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .lyr-eye[aria-pressed="false"]{color:var(--muted)}
 .lyr-pick:focus-visible,.lyr-eye:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:10px}
 #layersBtn{display:inline-flex;align-items:center;gap:6px}
+
+/* assets library */
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin:4px 0 8px}
+.asset-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;padding:8px 6px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);font:700 12px var(--sans);cursor:pointer;text-align:center}
+.asset-tile img{max-width:64px;max-height:56px;object-fit:contain;display:block}
+.asset-tile .miss-note{display:none;font-style:normal;font-size:11px;color:var(--muted)}
+.asset-tile.missing{opacity:.55;border-style:dashed}
+.asset-tile.missing .miss-note{display:block}
+.asset-tile:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
