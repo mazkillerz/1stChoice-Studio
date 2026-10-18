@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem('studio:lab')!=='"1"')location.replace('../index.html#lab')}catch(e){location.replace('../index.html')}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lab · Studio</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="../assets/icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../assets/studio.css">
+<link rel="stylesheet" href="lab.css">
+</head>
+<body class="lab">
+<nav class="top"><a class="back" href="../index.html" aria-label="Back to Studio"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span class="back-txt">Studio</span></a><span class="spacer"></span><button type="button" class="mini" id="lockB">Lock the lab</button></nav>
+<main class="lab-main">
+  <header class="lab-hero"><span class="lab-tag">Experimental</span><h1>Lab</h1><p>New things we're trying before they join the studio. They may change or break, and they don't touch your saved designs.</p></header>
+
+  <section class="lab-sec" aria-labelledby="xH">
+    <h2 id="xH">Experiments</h2>
+    <article class="xcard">
+      <div class="x-ic" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M17 3v18M3 7h18M3 17h18"/></svg></div>
+      <div class="x-txt"><h3>Board <span class="x-badge">Best on a computer</span></h3><p>A free canvas like Figma or Canva: frames of any size, text, shapes, photos, brand assets, icons, drawing, effects, layers, and export.</p></div>
+      <button type="button" class="btn slim" id="newB">New board</button>
+    </article>
+  </section>
+
+  <section class="lab-sec" aria-labelledby="bH">
+    <div class="lab-sec-head"><h2 id="bH">Your boards</h2><button type="button" class="mini" id="importB">Open board file</button></div>
+    <p class="small muted">Boards are kept on this device. Download a board file from a board's menu to move it to another one.</p>
+    <div class="bgrid" id="boards"></div>
+  </section>
+</main>
+<input type="file" id="pickBoard" accept=".board,application/json" hidden>
+<script src="../assets/studio.js"></script>
+<script src="../brands/brands.js"></script>
+<script src="board-lib.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>

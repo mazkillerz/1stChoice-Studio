@@ -608,3 +608,12 @@ label.opt-row{cursor:pointer}
 #inspRotOut{min-width:44px;text-align:end;font-weight:800;font-variant-numeric:tabular-nums}
 .rot-btns{width:100%}
 .insp-part[data-part="rotate"]{flex-wrap:wrap}
+
+/* ---------- v4.4: experimental area entry (end of the hub) ---------- */
+.lab-entry{max-width:1080px;margin:-16px auto 0;padding:0 var(--gutter-r) 32px var(--gutter);display:flex;justify-content:center}
+.lab-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--r-pill);border:1px dashed var(--line);background:none;color:var(--muted);font:700 var(--fs-s) var(--sans);cursor:pointer}
+.lab-btn:hover,.lab-btn:focus-visible{color:var(--fg);border-style:solid}
+.code-in{font:800 var(--fs-2xl) var(--sans);letter-spacing:.4em;text-align:center;min-height:60px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface-2)}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@media (prefers-reduced-motion:reduce){.shake{animation:none}}

@@ -8,3 +8,5 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/full.mjs                 # needs Playwright (npm i -g playwright)
 
     node tests/extra.mjs                # HEIC photos, swapping photos, Saved collection chips
+
+    node tests/lab.mjs                  # Lab: passcode gate and the Board editor (drawing, text, photos, snapping, undo, export, board files, phone)

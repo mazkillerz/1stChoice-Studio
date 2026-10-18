@@ -1523,9 +1523,30 @@ async function home(){
       drawTeam(); }
   });
   C.onAuth((ev,sess)=>{ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); });
+  /* Experimental area (lab/): hidden behind a passcode so unfinished experiments stay out of the way.
+     The code only hides the area; it is not security. Unlocking is remembered on this device. */
+  const LAB_CODE='6790';
+  function openLab(){
+    if(store('studio:lab')==='1'){ location.href=ROOT+'lab/index.html'; return; }
+    const d=dialog(`<form method="dialog" class="dlg-body lab-gate" action="#"><h3>Experimental</h3>
+      <p class="small">A space for testing new things before they join the studio. Enter the passcode.</p>
+      <input type="password" id="labCode" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Passcode" aria-label="Passcode" class="code-in">
+      <div class="status" id="labSt" role="status"></div>
+      <div class="dlg-actions"><button type="button" class="mini" id="labNo">Cancel</button><button type="submit" class="btn" id="labGo">Enter</button></div></form>`);
+    const i=d.querySelector('#labCode'); setTimeout(()=>i.focus(),50);
+    d.querySelector('#labNo').onclick=()=>d.close();
+    d.querySelector('form').onsubmit=e=>{ e.preventDefault();
+      if(i.value.trim()===LAB_CODE){ store('studio:lab','1'); location.href=ROOT+'lab/index.html'; }
+      else{ d.querySelector('#labSt').textContent='That passcode is not right.'; i.value=''; i.focus(); const f=d.querySelector('form'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake'); } };
+  }
+  const labBtn=$('labBtn'); if(labBtn) labBtn.onclick=openLab;
+  if(location.hash==='#lab') setTimeout(openLab,200);
   loadSaved();
   if(location.hash==='#saved') setTimeout(()=>$('saved').scrollIntoView(),300);
 }
 
-window.Studio={tool,home,registerBrand,useBrand,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+/* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
+const lab={ROOT,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
+  brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
+window.Studio={tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

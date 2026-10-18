@@ -33,6 +33,21 @@ The hub remembers per phone how you like Tools (list / grid / compact) and Saved
 - Photos: drag to move, pinch / slider to zoom. With two or more photos, hold one and drop it on another to swap them (in Collage a plain drag swaps). The same works with the boxes in the Photo sheet.
 - iPhone HEIC photos work everywhere: a HEIC reader (`assets/vendor/heic-to.js`, LGPL) loads the first time one is picked; Safari opens them itself.
 
+## Lab (experimental)
+A small **Experimental** button at the end of the home page opens the lab after the passcode. The device remembers it; **Lock the lab** forgets it.
+The passcode only hides the area from everyday use; it is not security. Nothing in the lab changes the studio tools or the team's saved designs.
+
+**Board** (`lab/board.html`) is a free canvas editor, made for a computer (works on a phone/tablet for simple edits):
+- Endless canvas: scroll or Space+drag (or the Hand tool) to move, pinch or Ctrl/⌘+scroll to zoom (2%–800%), mini map, Fit.
+- Frames of any size side by side (Story, Post 4:5, Square, 16:9, YouTube, X, Facebook cover, A4/A5 at 300 dpi, business card, poster, menu screen, custom). Rename, resize, turn, fit to content, duplicate, **Copy to another size** (copies a frame and fits its content to the new size).
+- Tools: Move, Hand, Frame, Rectangle, Ellipse, Triangle/Polygon, Star, Line, Arrow, Draw (pen + highlighter), Text, Photos. Add panel: text styles, the brand's approved wording, brand assets (HD cans, logo), 28 shapes, 7 line styles, 40 icons, emoji, starter templates.
+- Select, Shift-click, drag a box; move with smart snapping (edges and centres) and pink guides; hold Alt to measure distances; Alt+drag to copy; handles to resize and rotate; double-click to edit text or open a group.
+- Design panel: position/size/rotation, align and space evenly, fill (solid, linear, radial gradient), outline and dashes, corners, text (font, weight, size, spacing, line height, italic/underline/strike, background box), opacity, blend modes, shadow.
+- Photos (JPEG/PNG/HEIC, drop, paste): crop/move inside the box, zoom, round corners or a circle, fill the frame, make background, replace, 10 looks and 11 adjustments, spread one photo across frames (carousels).
+- Layers panel with hide, lock, rename and drag to reorder. Right-click menu, copy/paste (also between boards), copy/paste style, undo/redo, keyboard shortcuts (press ?).
+- Export frames as lossless PNG at 2× (falls back to 1.5× then 1× only if the device can't make it that big), JPG, 1×/3×, a selection with a see-through background, or copy the image. Present mode shows frames full screen.
+- Boards autosave on this device (IndexedDB). Download a `.board` file (with its photos) to move a board to another device. Uses Konva 9.3.22 (`assets/vendor/konva.min.js`, MIT).
+
 ## How it is built
 ```
 index.html                 home page with the tool cards
@@ -46,6 +61,7 @@ brands/<brand>/assets/     files for Add asset (HD can cut-outs…), listed in b
 manifest.webmanifest, sw.js  installable app; the service worker caches the app shell, never Supabase
 _archive/                  old files kept for reference (never deleted)
 assets/thumbs/<brand>/     home page pictures for that brand
+lab/                       experimental area (passcode): lab home + Board editor (board.js engine, board-ui.js panels, board-lib.js shapes/icons/templates)
 ```
 
 ### Add a brand
