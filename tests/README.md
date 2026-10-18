@@ -6,3 +6,5 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
 
     npx http-server -p 8080 -c-1 .      # from the repo root
     node tests/full.mjs                 # needs Playwright (npm i -g playwright)
+
+    node tests/extra.mjs                # HEIC photos, swapping photos, Saved collection chips

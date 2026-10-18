@@ -21,9 +21,16 @@ let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 /* ---------- small utilities ---------- */
 function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+/* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
+   loaded the first time someone picks one. Safari opens them itself, so it's only used when needed. */
+const isHeic=f=>!!f&&(/^image\/hei[cf]/i.test(f.type||'')||/\.(heic|heif)$/i.test(f.name||''));
+const isPhotoFile=f=>!!f&&(/^image\//.test(f.type||'')||isHeic(f));
+async function decodeHeic(file){ if(!window.HeicTo) await loadScript(ROOT+'assets/vendor/heic-to.js'); const fn=typeof window.HeicTo==='function'?window.HeicTo:window.HeicTo.heicTo; return await fn({blob:file,type:'bitmap'}); }
 async function loadFile(file){
-  let src;
-  try{ src=await createImageBitmap(file,{imageOrientation:'from-image'}); }catch(_){ src=await load(URL.createObjectURL(file)); }
+  let src=null;
+  try{ src=await createImageBitmap(file,{imageOrientation:'from-image'}); }catch(_){}
+  if(!src&&isHeic(file)) src=await decodeHeic(file);          // full resolution, turned the right way
+  if(!src) src=await load(URL.createObjectURL(file));
   const px=src.width*src.height;
   if(px<=PHOTO_MAX_PX) return src;                       // normal photos: untouched, full quality
   const k=Math.sqrt(PHOTO_MAX_PX/px), tw=Math.floor(src.width*k), th=Math.floor(src.height*k);
@@ -469,7 +476,7 @@ async function tool(cfg){
     <button type="button" class="tab save" id="barSave">${ICON.download}<span>Save</span></button>
   </nav>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <input type="file" id="pick" accept="image/*" hidden aria-hidden="true" tabindex="-1">`;
+  <input type="file" id="pick" accept="image/*,.heic,.heif" hidden aria-hidden="true" tabindex="-1">`;
   app.innerHTML=html; app.classList.add('tool'); document.body.classList.add('tool-page');
   const $=id=>document.getElementById(id);
   const view=$('view'), vctx=view.getContext('2d');
@@ -625,13 +632,29 @@ async function tool(cfg){
   function slotsUI(){
     let s=''; const off=photoOffset(), n=slotCount();
     for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
-      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
+      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
     $('slots').innerHTML=n?s:'<p class="small">This slide has no photo. Change it in Style → This slide.</p>';
   }
   $('slots').addEventListener('change',e=>{const t=e.target; if(t.dataset.file!=null){ setPhoto(+t.dataset.file,t.files&&t.files[0]); t.value=''; }});
-  $('slots').addEventListener('click',e=>{const l=e.target.closest('[data-slot]'); if(l){S.active=+l.dataset.slot; syncZoom();}});
+  $('slots').addEventListener('click',e=>{ if(slotDrag&&slotDrag.used){ e.preventDefault(); e.stopPropagation(); slotDrag=null; return; } const l=e.target.closest('[data-slot]'); if(l){S.active=+l.dataset.slot; syncZoom();}},true);
+  /* in the Photo sheet: hold a photo box, drag it onto another box, let go = swap */
+  let slotDrag=null;
+  $('slots').addEventListener('pointerdown',e=>{ const sl=e.target.closest('.slot.has'); if(!sl||slotCount()<2) return; const i=+sl.dataset.slot;
+    slotDrag={i,x:e.clientX,y:e.clientY,el:sl,on:false,timer:setTimeout(()=>{ if(slotDrag){ slotDrag.on=true; sl.classList.add('lift'); if(navigator.vibrate) navigator.vibrate(10); } },380)}; });
+  $('slots').addEventListener('pointermove',e=>{ if(!slotDrag) return; const dx=e.clientX-slotDrag.x, dy=e.clientY-slotDrag.y;
+    if(!slotDrag.on){ if(Math.hypot(dx,dy)>8){ clearTimeout(slotDrag.timer); slotDrag=null; } return; }
+    slotDrag.el.style.transform=`translate(${dx}px,${dy}px) scale(1.05)`; const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('.slot');
+    $('slots').querySelectorAll('.slot').forEach(x=>x.classList.toggle('drop-here',x===over&&x!==slotDrag.el)); });
+  $('slots').addEventListener('touchmove',e=>{ if(slotDrag&&slotDrag.on) e.preventDefault(); },{passive:false});
+  $('slots').addEventListener('pointerup',e=>{ if(!slotDrag) return; clearTimeout(slotDrag.timer); const d=slotDrag; d.el.classList.remove('lift'); d.el.style.transform='';
+    $('slots').querySelectorAll('.drop-here').forEach(x=>x.classList.remove('drop-here'));
+    if(d.on){ d.used=true; e.preventDefault(); const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('.slot'); if(over&&+over.dataset.slot!==d.i) swapPhotos(d.i,+over.dataset.slot); setTimeout(()=>{ if(slotDrag===d) slotDrag=null; },400); }
+    else slotDrag=null; });
+  $('slots').addEventListener('pointercancel',()=>{ if(slotDrag){ clearTimeout(slotDrag.timer); slotDrag.el.classList.remove('lift'); slotDrag.el.style.transform=''; slotDrag=null; } });
+  $('slots').addEventListener('contextmenu',e=>{ if(e.target.closest('.slot')) e.preventDefault(); });
   async function setPhoto(i,file){
-    if(!file||!/^image\//.test(file.type)){ status('That is not a photo. Try a JPG or PNG.'); return; }
+    if(!isPhotoFile(file)){ status('That is not a photo. Try a JPG, PNG or HEIC.'); return; }
+    if(isHeic(file)) status('Opening your iPhone photo…',10000);
     try{
       const img=await loadFile(file);
       const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
@@ -639,7 +662,7 @@ async function tool(cfg){
       S.active=i; $('result').hidden=true; status(''); if(PG) refreshThumbs();
       $('hint').textContent='Drag text or photos to move them. Tap text to edit it.';
       syncUI(); render();
-    }catch(_){ status('That photo could not be opened. Try a JPG or PNG.'); }
+    }catch(_){ status(isHeic(file)?'That iPhone photo could not be opened. Try sharing it as a JPG.':'That photo could not be opened. Try a JPG or PNG.'); }
   }
   /* one picker for the preview and the "Add your photo" button; several photos fill the empty boxes in order */
   let pickAt=0;
@@ -659,7 +682,7 @@ async function tool(cfg){
   document.addEventListener('dragenter',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){dd++;$('drop').hidden=false;}});
   document.addEventListener('dragleave',()=>{dd=Math.max(0,dd-1);if(!dd)$('drop').hidden=true;});
   document.addEventListener('dragover',e=>e.preventDefault());
-  document.addEventListener('drop',e=>{e.preventDefault();dd=0;$('drop').hidden=true;const fs=[...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/'));const t=slotTargets(nextEmpty());fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f));});
+  document.addEventListener('drop',e=>{e.preventDefault();dd=0;$('drop').hidden=true;const fs=[...(e.dataTransfer?.files||[])].filter(isPhotoFile);const t=slotTargets(nextEmpty());fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f));});
 
   /* ---- syncing the controls with the state ---- */
   function syncUI(){
@@ -699,6 +722,8 @@ async function tool(cfg){
     if(thumb){ ctx.restore(); return; }
     if(preview&&S.sel){ const b=r.find(x=>x.id===S.sel&&!x.hidden&&!x.empty); if(b){ ctx.save(); ctx.lineWidth=4; ctx.setLineDash([16,10]); ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x-12,b.y-12,b.w+24,b.h+24); ctx.restore(); } }
     if(preview&&dragging) drawGuides(ctx);
+    if(preview&&lift&&lift.on){ ctx.save(); r.forEach(b=>{ if(b.photo===lift.i){ ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.setLineDash([18,12]); ctx.lineWidth=6; ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.strokeRect(b.x+3,b.y+3,b.w-6,b.h-6); }
+      if(b.photo!=null&&b.photo===lift.over){ ctx.setLineDash([]); ctx.lineWidth=12; ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x+6,b.y+6,b.w-12,b.h-12); } }); ctx.restore(); }
     ctx.restore(); if(preview){ reg=r; paintLayers(); }
   }
   /* ---- alignment guides: while dragging, the story's safe zones show and snap lines appear ---- */
@@ -1031,7 +1056,10 @@ async function tool(cfg){
     const pt=toCanvas(e); const h=pts.size?target:hit(pt);
     if(!pts.size){ target=h; moved=false; }
     if(!target){ select(null); return; }
-    if(target.photo!=null){ const p=S.photos[target.photo]; if(!p.img||p.sample){ S.active=target.photo; pickPhoto(target.photo); target=null; return; } S.active=target.photo; syncZoom(); if(S.sel) select(null); }
+    if(target.photo!=null){ const p=S.photos[target.photo]; if(!p.img||p.sample){ S.active=target.photo; pickPhoto(target.photo); target=null; return; } S.active=target.photo; syncZoom(); if(S.sel) select(null);
+      /* more than one photo: hold a photo to lift it, then drop it on another to swap (Collage photos can't pan, so a plain drag lifts them) */
+      if(!pts.size&&slotCount()>1){ const i=target.photo; lift={i,on:false,instant:target.mode==='contain',x:e.clientX,y:e.clientY};
+        if(!lift.instant) lift.timer=setTimeout(()=>{ if(lift&&!lift.on&&!moved&&pts.size===1) startLift(lift.x,lift.y); },380); } }
     view.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     snapshot(); view.classList.add('dragging');
   });
@@ -1040,9 +1068,21 @@ async function tool(cfg){
     if(target.layer){ const id=target.layer, x=extra(id), l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); const b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); st={dx:l.dx,dy:l.dy,k:l.k,size:x?x.size:0,box:b?{x:b.x,y:b.y,w:b.w,h:b.h}:null,snap:snapTargets(id),pts:new Map(pts)}; }
     else { const p=S.photos[target.photo]; st={ox:p.ox,oy:p.oy,zoom:p.zoom,pts:new Map(pts)}; }
   }
+  /* ---- swapping photos: lift one, drop it on another ---- */
+  let lift=null;
+  function photoAt(pt){ for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return b.photo; } return null; }
+  function startLift(cx,cy){ if(!lift) return; lift.on=true; const p=S.photos[lift.i]; if(navigator.vibrate) navigator.vibrate(10);
+    const g=document.createElement('img'); g.className='lift-ghost'; g.src=p.thumb||''; g.alt=''; document.body.appendChild(g); lift.ghost=g; moveGhost(cx,cy); view.classList.add('lifting'); render(); }
+  function moveGhost(cx,cy){ if(lift&&lift.ghost) lift.ghost.style.transform=`translate(${cx-44}px,${cy-44}px)`; }
+  function endLift(){ if(!lift) return; clearTimeout(lift.timer); if(lift.ghost) lift.ghost.remove(); view.classList.remove('lifting'); const l=lift; lift=null;
+    if(l.on&&l.over!=null&&l.over!==l.i) swapPhotos(l.i,l.over); else if(l.on) render(); return l.on; }
+  function swapPhotos(i,j){ const a=S.photos[i], b=S.photos[j]; S.photos[i]=b; S.photos[j]=a; [a,b].forEach(p=>{ if(p){ p.ox=0; p.oy=0; p.zoom=1; } }); S.active=j; syncUI(); render(); status('Photos swapped. Undo puts them back.',2500); }
   view.addEventListener('pointermove',e=>{
     if(!pts.has(e.pointerId)||!st||!target) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     const k=W/view.getBoundingClientRect().width;
+    if(lift){ if(pts.size>1){ endLift(); }
+      else if(lift.on){ moveGhost(e.clientX,e.clientY); const j=photoAt(toCanvas(e)); const over=j!=null&&j!==lift.i?j:null; if(over!==lift.over){ lift.over=over; render(); } return; }
+      else if(Math.hypot(e.clientX-lift.x,e.clientY-lift.y)>8){ if(lift.instant){ moved=true; startLift(e.clientX,e.clientY); return; } clearTimeout(lift.timer); lift=null; } }
     if(pts.size===1&&st.pts.size===1){
       const p0=[...st.pts.values()][0], ddx=(e.clientX-p0.x)*k, ddy=(e.clientY-p0.y)*k;
       if(Math.hypot(ddx,ddy)>8) moved=true; if(!moved) return;
@@ -1062,6 +1102,7 @@ async function tool(cfg){
   });
   function endPtr(e){
     pts.delete(e.pointerId);
+    if(lift&&!pts.size){ if(endLift()) moved=true; }
     if(!pts.size){
       view.classList.remove('dragging'); guides=[]; dragging=false; document.body.classList.remove('dragging-layer');
       if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); if(already&&layerText(target.layer)!==null){ inspPart='text'; syncInspector(); setTimeout(()=>$('inspText').focus(),30); } }
@@ -1317,7 +1358,7 @@ async function home(){
   const C=await cloud(); await C.client();
   let all=[], cols=[], filter='all', me=null, owner=false, loading=null, loadedFor=undefined;
   const pref=(k,d)=>store('studio:'+k)||d;
-  let savedView=pref('savedView','list'), sortBy=pref('savedSort','recent');
+  let savedView=pref('savedView','list'), sortBy=pref('savedSort','recent'), toolFilter='';
   async function refreshAccount(){
     const s=await C.session(); me=s&&s.user; const member=me&&await C.isMember();
     $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
@@ -1346,21 +1387,23 @@ async function home(){
     const has=!!all.length; $('qWrap').hidden=!has; $('savedCtl').hidden=!has;
     $('sort').value=sortBy; document.querySelectorAll('[data-view="saved"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===savedView)));
     $('savedGrid').className='dgrid view-'+savedView;
-    /* one row of filter chips: collections, then the tools that have saved designs */
+    /* chips: only the collections your team made. Filtering by tool lives in the menu next to Saved. */
     const tools=[...new Set(all.map(d=>d.tool))];
-    if(filter!=='all'&&!(filter.startsWith('c:')&&cols.some(c=>'c:'+c.id===filter))&&!(filter.startsWith('t:')&&tools.includes(filter.slice(2)))) filter='all';
-    $('colChips').hidden=!has||(cols.length+tools.length)<2;
+    if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
+    if(toolFilter&&!tools.includes(toolFilter)) toolFilter='';
+    $('colChips').hidden=!has||!cols.length;
     $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`
-      +cols.map(c=>`<button type="button" class="chip" dir="auto" data-f="c:${c.id}" aria-pressed="${filter==='c:'+c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('')
-      +tools.map(t=>`<button type="button" class="chip chip-tool" data-f="t:${esc(t)}" aria-pressed="${filter==='t:'+t}">${esc(toolName(t))}</button>`).join('');
+      +cols.map(c=>`<button type="button" class="chip" dir="auto" data-f="c:${c.id}" aria-pressed="${filter==='c:'+c.id}">${esc(c.name)} <i>${c.count}</i></button>`).join('');
+    $('toolFilter').innerHTML=`<option value="">All tools</option>`+tools.map(t=>`<option value="${esc(t)}">${esc(toolName(t))}</option>`).join('');
+    $('toolFilter').value=toolFilter; $('toolFilter').hidden=tools.length<2;
     $('colTools').hidden=!filter.startsWith('c:');
     const q=$('q').value.trim().toLowerCase();
-    let list=all.filter(d=>(filter==='all'||(filter.startsWith('c:')&&d.collections.includes(filter.slice(2)))||(filter.startsWith('t:')&&d.tool===filter.slice(2)))
+    let list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&(!toolFilter||d.tool===toolFilter)
       &&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||toolName(d.tool).toLowerCase().includes(q)));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='tool'?(a,b)=>toolName(a.tool).localeCompare(toolName(b.tool))||lastUse(b)-lastUse(a):(a,b)=>lastUse(b)-lastUse(a));
     /* Recent: the last designs you used or saved, one tap to reopen (only when you're not searching or filtering) */
     const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,6);
-    $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!q);
+    $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!toolFilter&&!q);
     $('recentList').innerHTML=recent.map(d=>`<a class="rcard" href="${toolPage(d.tool)}?design=${d.id}"><span class="rthumb">${thumbImg(d)}</span><span class="rtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}</span></span></a>`).join('');
     if(!has){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save</b> and switch on <b>Also save to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
@@ -1370,6 +1413,7 @@ async function home(){
   }
   $('q').addEventListener('input',paint);
   $('sort').addEventListener('change',e=>{ sortBy=e.target.value; store('studio:savedSort',sortBy); paint(); });
+  $('toolFilter').addEventListener('change',e=>{ toolFilter=e.target.value; paint(); });
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f; paint(); } });
   $('colRename').onclick=()=>{ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<form method="dialog" class="dlg-body"><h3>Rename collection</h3><input type="text" id="crName" dir="auto" maxlength="40"><div class="status" id="crSt"></div><div class="dlg-actions"><button type="button" class="mini" id="crX">Cancel</button><button type="submit" class="btn">Rename</button></div></form>`);

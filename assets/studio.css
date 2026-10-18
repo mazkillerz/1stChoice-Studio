@@ -591,3 +591,17 @@ label.opt-row{cursor:pointer}
 .sa-slide canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px var(--line)}
 .sa-slide span{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font:800 12px/20px var(--sans);padding:0 8px;border-radius:10px}
 @media (max-width:820px){ .pager{max-width:none;padding:0 4px} }
+
+/* ---------- v4.3: swapping photos, Saved menus ---------- */
+.lift-ghost{position:fixed;left:0;top:0;width:88px;height:88px;object-fit:cover;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.35),0 0 0 3px #fff;pointer-events:none;z-index:80;opacity:.95}
+.view.lifting{cursor:grabbing}
+.slot{touch-action:pan-y;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;transition:transform .15s var(--ease),box-shadow .15s}
+.slot.lift{z-index:3;box-shadow:var(--shadow);transition:none}
+.slot.drop-here{border-color:var(--focus);box-shadow:0 0 0 3px var(--focus) inset}
+.sec-tools .sort{max-width:118px;text-overflow:ellipsis}
+@media (max-width:420px){ .sec-tools{gap:6px} .sec-tools .sort{max-width:92px;padding-inline:8px;font-size:13px} }
+@media (max-width:420px){
+  #saved .sec-head{flex-wrap:wrap;row-gap:8px}
+  #saved .sec-tools{width:100%}
+  #saved .sec-tools .sort{flex:1 1 0;max-width:none;font-size:14px}
+}

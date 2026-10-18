@@ -22,13 +22,14 @@ Save opens a short Save sheet: the full-quality PNG always, plus an optional **A
 
 Continue editing (hub) only keeps new stories you haven't saved to the team; tap ✕ to remove one. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
-The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options.
+The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
 
 ## Editing on the preview
 - Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Colour, Font, More) and the preview stays big; it fades away while you drag.
 - Drag to move. Guide lines show when things line up and the safe zones (top 250px, bottom 300px) show while you drag. The magnet button (top bar) turns gentle snapping on or off; it starts off. Pinch or scroll to resize. Arrow keys nudge the selected item.
 - **Add text** puts your own text on the story. **Add asset** adds the logo, the HD can cut-outs or a shape as a movable layer. **Reset layout** puts everything back.
-- Photos: drag to move, pinch / slider to zoom.
+- Photos: drag to move, pinch / slider to zoom. With two or more photos, hold one and drop it on another to swap them (in Collage a plain drag swaps). The same works with the boxes in the Photo sheet.
+- iPhone HEIC photos work everywhere: a HEIC reader (`assets/vendor/heic-to.js`, LGPL) loads the first time one is picked; Safari opens them itself.
 
 ## How it is built
 ```
