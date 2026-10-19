@@ -25,13 +25,14 @@
     <h2 id="xH">Experiments</h2>
     <article class="xcard">
       <div class="x-ic" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M17 3v18M3 7h18M3 17h18"/></svg></div>
-      <div class="x-txt"><h3>Board <span class="x-badge">Best on a computer</span></h3><p>A free canvas like Figma or Canva: frames of any size, text, shapes, photos, brand assets, icons, drawing, effects, layers, and export.</p></div>
+      <div class="x-txt"><h3>Board <span class="x-badge">Best on a computer</span></h3><p>A free canvas like Figma or Canva. Frames of any size, real print sizes in mm, text, shapes, photos, brand assets, masks, barcodes and QR codes. Opens SVG and PDF files as layers; exports PNG, JPG, PDF and SVG.</p></div>
       <button type="button" class="btn slim" id="newB">New board</button>
     </article>
   </section>
 
   <section class="lab-sec" aria-labelledby="bH">
     <div class="lab-sec-head"><h2 id="bH">Your boards</h2><button type="button" class="mini" id="importB">Open board file</button></div>
+    <div class="b-tools" id="bTools" hidden><label class="search"><span class="sr-only">Search boards</span><input type="search" id="bQ" placeholder="Search boards" dir="auto"></label><label class="sr-only" for="bSort">Sort boards</label><select id="bSort" class="sel sort"><option value="recent">Recent</option><option value="name">Name</option><option value="old">Oldest</option></select></div>
     <p class="small muted">Boards are kept on this device. Download a board file from a board's menu to move it to another one.</p>
     <div class="bgrid" id="boards"></div>
   </section>

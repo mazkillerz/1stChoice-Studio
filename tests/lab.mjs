@@ -52,12 +52,13 @@ ok('rotate handle turns only the selection',await pg.evaluate(()=>BD.S.sel.lengt
 // photos (JPEG + HEIC), brand asset, shapes, icons, emoji
 await pg.setInputFiles('#pickImg',[ROOT+'brands/1stchoice/samples/pair.jpg',ROOT+'tests/fixtures/sample.heic']); await pg.waitForFunction(()=>BD.main.find('Image').length===2,null,{timeout:15000});
 ok('photos added (JPEG and HEIC)',true);
-await pg.click('#tabAdd'); await pg.click('[data-asset="cans-pair-shadow"]'); await pg.waitForTimeout(600);
-await pg.click('[data-shape="heart"]'); await pg.click('[data-icon="coffee"]'); await pg.click('[data-emoji="☕"]'); await pg.click('[data-stroke="squiggle"]');
+await pg.click('#tabAdd'); await pg.click('[data-cat="brand"]'); await pg.click('[data-asset="cans-pair-shadow"]'); await pg.waitForTimeout(600);
+await pg.click('#addBack'); await pg.click('[data-cat="shapes"]'); await pg.click('[data-shape="heart"]');
+await pg.fill('#addQ','coffee'); await pg.click('[data-icon="coffee"]'); await pg.fill('#addQ',''); await pg.click('#addBack'); await pg.click('[data-cat="emoji"]'); await pg.click('[data-emoji="☕"]'); await pg.click('#addBack'); await pg.click('[data-cat="lines"]'); await pg.click('[data-stroke="squiggle"]');
 ok('brand asset, shape, icon, emoji, line added',await pg.evaluate(()=>['asset','path','icon','stroke'].every(k=>BD.main.find('.obj').some(n=>BD.util.kind(n)===k))));
 // panel: photo looks + adjust + crop
 await pg.evaluate(()=>BD.select([BD.main.find('Image').find(n=>BD.util.kind(n)==='image')]));
-await pg.click('[data-look="warm"]'); ok('photo look applied',await pg.evaluate(()=>BD.S.sel[0].isCached()&&BD.S.sel[0].getAttr('fx').temp>0));
+await pg.click('[data-rtab="effects"]'); await pg.click('[data-look="warm"]'); await pg.click('[data-rtab="design"]'); ok('photo look applied',await pg.evaluate(()=>BD.S.sel[0].isCached()&&BD.S.sel[0].getAttr('fx').temp>0));
 await pg.evaluate(()=>{ const n=BD.S.sel[0]; n.width(300); n.height(600); BD.applyCrop(n); });
 const c0=await pg.evaluate(()=>BD.S.sel[0].crop().x); await pg.click('[data-act="crop"]');
 r=await pg.evaluate(()=>BD.util.wrect(BD.S.sel[0])); a=await W(r.x+r.width/2,r.y+r.height/2); await drag(a,{x:a.x+60,y:a.y}); await pg.click('#cropDone');
@@ -65,7 +66,7 @@ ok('crop mode moves the photo inside its box, not the box',await pg.evaluate(c=>
 // text panel
 await pg.evaluate(()=>BD.select([BD.main.find('Text')[0]]));
 await pg.click('[data-seg="oFillType"][data-v="linear"]'); ok('gradient fill',await pg.evaluate(()=>BD.S.sel[0].fillPriority()==='linear-gradient'));
-await pg.check('[data-k="shadowOn"]'); ok('shadow',await pg.evaluate(()=>BD.S.sel[0].shadowEnabled()));
+await pg.click('[data-rtab="effects"]'); await pg.check('[data-k="shadowOn"]'); ok('shadow',await pg.evaluate(()=>BD.S.sel[0].shadowEnabled())); await pg.click('[data-rtab="design"]');
 await pg.click('[data-color="tbg"]'); await pg.click('#pop .sw >> nth=1'); ok('text background box',await pg.evaluate(()=>!!BD.S.sel[0].getAttr('tbg')));
 await pg.mouse.click(st.x+8,st.y+8); ok('colour pop-up closes on outside click',!(await pg.isVisible('#pop .cp')));
 // tools after clicking a checkbox still work
@@ -96,7 +97,7 @@ await pg.evaluate(()=>BD.select([BD.util.frames()[0]])); await pg.keyboard.press
 let [dl]=await Promise.all([pg.waitForEvent('download'),pg.click('#exGo')]); await dl.saveAs(OUT+'/f.png');
 ok('export a frame at 2× (2160×3840 PNG)',JSON.stringify(pngSize(OUT+'/f.png'))==='[2160,3840]',pngSize(OUT+'/f.png'));
 await pg.evaluate(()=>BD.select([BD.main.find('Rect').find(n=>BD.util.kind(n)==='rect')]));
-[dl]=await Promise.all([pg.waitForEvent('download'),pg.click('[data-act="expSel"]')]); await dl.saveAs(OUT+'/s.png'); ok('export the selection as PNG',pngSize(OUT+'/s.png')[0]===800,pngSize(OUT+'/s.png'));
+await pg.click('[data-rtab="export"]'); [dl]=await Promise.all([pg.waitForEvent('download'),pg.click('[data-act="expSel"]')]); await pg.click('[data-rtab="design"]'); await dl.saveAs(OUT+'/s.png'); ok('export the selection as PNG',pngSize(OUT+'/s.png')[0]===800,pngSize(OUT+'/s.png'));
 // save, reload, board file
 await pg.waitForTimeout(1500); const n1=await pg.evaluate(()=>BD.main.find('.obj').length); await pg.reload(); await pg.waitForFunction(()=>window.BD&&BD.util&&BD.main.find('.obj').length>0); await pg.waitForTimeout(800);
 ok('board is kept after reload',await pg.evaluate(n=>BD.main.find('.obj').length===n&&BD.main.find('Image').every(i=>!!i.image()),n1));

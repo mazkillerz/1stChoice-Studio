@@ -38,15 +38,18 @@ A small **Experimental** button at the end of the home page opens the lab after 
 The passcode only hides the area from everyday use; it is not security. Nothing in the lab changes the studio tools or the team's saved designs.
 
 **Board** (`lab/board.html`) is a free canvas editor, made for a computer (works on a phone/tablet for simple edits):
-- Endless canvas: scroll or Space+drag (or the Hand tool) to move, pinch or Ctrl/⌘+scroll to zoom (2%–800%), mini map, Fit.
-- Frames of any size side by side (Story, Post 4:5, Square, 16:9, YouTube, X, Facebook cover, A4/A5 at 300 dpi, business card, poster, menu screen, custom). Rename, resize, turn, fit to content, duplicate, **Copy to another size** (copies a frame and fits its content to the new size).
-- Tools: Move, Hand, Frame, Rectangle, Ellipse, Triangle/Polygon, Star, Line, Arrow, Draw (pen + highlighter), Text, Photos. Add panel: text styles, the brand's approved wording, brand assets (HD cans, logo), 28 shapes, 7 line styles, 40 icons, emoji, starter templates.
-- Select, Shift-click, drag a box; move with smart snapping (edges and centres) and pink guides; hold Alt to measure distances; Alt+drag to copy; handles to resize and rotate; double-click to edit text or open a group.
-- Design panel: position/size/rotation, align and space evenly, fill (solid, linear, radial gradient), outline and dashes, corners, text (font, weight, size, spacing, line height, italic/underline/strike, background box), opacity, blend modes, shadow.
-- Photos (JPEG/PNG/HEIC, drop, paste): crop/move inside the box, zoom, round corners or a circle, fill the frame, make background, replace, 10 looks and 11 adjustments, spread one photo across frames (carousels).
-- Layers panel with hide, lock, rename and drag to reorder. Right-click menu, copy/paste (also between boards), copy/paste style, undo/redo, keyboard shortcuts (press ?).
-- Export frames as lossless PNG at 2× (falls back to 1.5× then 1× only if the device can't make it that big), JPG, 1×/3×, a selection with a see-through background, or copy the image. Present mode shows frames full screen.
-- Boards autosave on this device (IndexedDB). Download a `.board` file (with its photos) to move a board to another device. Uses Konva 9.3.22 (`assets/vendor/konva.min.js`, MIT).
+- **Moving around:** scroll or Space+drag (or the Hand tool) to move, pinch or Ctrl/⌘+scroll to zoom (2%–800%), mini map, Fit. Rulers along the top and left (Shift+R) measure from the frame you're in; drag from a ruler to add a guide, drag it back to remove it.
+- **Tools** sit in a floating bar at the bottom: Move/Hand, Frame, Shapes (rectangle, ellipse, triangle, star, line, arrow), Text (and curved text), Draw (pen, highlighter, eraser), Upload, Brand kit, and More (barcode, QR code, mask, repeat, find and replace, replace a colour, versions). The small arrow on a tool, or tapping it again, shows its options. **Ctrl/⌘ K** finds any tool or action by typing.
+- **Quick-edit bar** above whatever is selected: font, size, colour, bold, alignment; fill and outline; crop and photo looks; size; group, mask, duplicate, delete.
+- **Real sizes for print:** pick px, mm, cm, in or pt (top bar). Print frames know their DPI (150/300/600), so a can label typed as 205 × 85 mm is exactly that. Bleed and a safe margin show as pink and green dashed lines; layout grids (columns, gap, margin) and guides snap.
+- **Frames** of any size: social sizes, print sizes (A3–A6, Letter, business card, postcard, DL, labels, stickers) or custom. Copy a frame to another size with its content fitted.
+- **Opening files:** photos (HEIC too); **SVG** files open as layers you can change (groups, shapes, paths, gradients, clip masks, text and embedded pictures, layer names; Canva text that was turned into shapes stays shapes); **PDF** pages (also .ai) become print frames at their real size, with the page artwork underneath and the text editable where the file has real text; board files.
+- **Editing:** snapping to edges, centres, guides, grid columns and equal gaps; Alt to measure; Alt+drag to copy; groups; masks (a photo inside any shape); outline inside/centre/outside; corners one by one; layer blur; shadows; blend modes; gradients; text background boxes; saved text styles and colours; eyedropper on the design.
+- **Photos:** crop/move inside the box, zoom, corners or a circle, fill the frame, make background, replace, 10 looks and 11 adjustments, spread across frames.
+- **Barcodes (EAN-13, UPC-A, check digit added for you) and QR codes** are made as sharp shapes.
+- **Export:** PNG (lossless, see-through possible), JPG, WebP, **PDF** (every frame as a page at its exact size; print frames keep mm and DPI, with bleed and crop marks), **SVG** (layers kept, opens again in Board, Figma, Illustrator), one **ZIP** of many frames. Print PNG/JPG files carry their DPI so printers read the real size. Screen frames save at 2× (falling back to 1.5× then 1× only if the device can't make it that big).
+- Layers panel with frames list (thumbnails, drag to reorder), hide, lock, rename, drag to reorder; folding Design / Effects / Export panels; right-click menu; copy/paste between boards; undo/redo; versions; find and replace; keyboard shortcuts (press ?).
+- Boards autosave on this device (IndexedDB). Download a `.board` file (with its photos) to move a board. Uses Konva 9.3.22 (`assets/vendor/konva.min.js`, MIT), pdf.js 3.11.174 (`assets/vendor/pdfjs/`, Apache-2.0, loaded only when a PDF is opened) and qrcode-generator 1.4.4 (`assets/vendor/qrcode.js`, MIT).
 
 ## How it is built
 ```
@@ -61,7 +64,9 @@ brands/<brand>/assets/     files for Add asset (HD can cut-outs…), listed in b
 manifest.webmanifest, sw.js  installable app; the service worker caches the app shell, never Supabase
 _archive/                  old files kept for reference (never deleted)
 assets/thumbs/<brand>/     home page pictures for that brand
-lab/                       experimental area (passcode): lab home + Board editor (board.js engine, board-ui.js panels, board-lib.js shapes/icons/templates)
+lab/                       experimental area (passcode): lab home + Board editor — board.js (canvas engine), board-tools.js (mask, curved text,
+                           barcode, QR, repeat, versions…), board-io.js (SVG/PDF in, PDF/SVG/ZIP out), board-ui.js (bars, layers, assets),
+                           board-panel.js (Design/Effects/Export panel), board-dialogs.js (export and other dialogs), board-lib.js (sizes, shapes, icons)
 ```
 
 ### Add a brand

@@ -20,6 +20,12 @@ BD.PRESETS=[
   {id:'menu',label:'Menu board 16:9',w:3840,h:2160,group:'Screens'}
 ];
 
+/* print sizes in millimetres (frames are made at the chosen DPI, 300 by default) */
+BD.PRINT=[
+  {id:'a4',label:'A4',w:210,h:297},{id:'a5',label:'A5',w:148,h:210},{id:'a6',label:'A6',w:105,h:148},{id:'a3',label:'A3',w:297,h:420},
+  {id:'letter',label:'US Letter',w:215.9,h:279.4},{id:'card',label:'Business card',w:85,h:55},{id:'postcard',label:'Postcard',w:148,h:105},
+  {id:'dl',label:'DL flyer',w:99,h:210},{id:'sticker50',label:'Sticker 50 × 50',w:50,h:50},{id:'label100',label:'Label 100 × 70',w:100,h:70}
+];
 /* filled shapes drawn in a 100×100 box (Konva.Path) */
 function poly(n,r1,r2,rot){ let d=''; for(let i=0;i<n*2;i++){ const a=(i/(n*2))*Math.PI*2+(rot||-Math.PI/2), r=i%2?r2:r1; d+=(i?'L':'M')+(50+Math.cos(a)*r).toFixed(2)+' '+(50+Math.sin(a)*r).toFixed(2); } return d+'Z'; }
 BD.SHAPES=[

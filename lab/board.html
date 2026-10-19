@@ -21,49 +21,72 @@
   <a class="bt-btn bt-back" href="index.html" aria-label="Back to the lab" title="Back to the lab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
   <div class="bt-file">
     <input id="bName" class="bt-name" type="text" maxlength="60" aria-label="Board name" dir="auto" spellcheck="false">
-    <button type="button" class="bt-btn" id="fileMenu" aria-label="Board menu" title="Board menu" aria-haspopup="menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button type="button" class="bt-btn bt-caret" id="fileMenu" aria-label="Board menu" title="Board menu" aria-haspopup="menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <span class="bt-saved" id="bSaved" role="status">Saved</span>
   </div>
-  <div class="bt-tools" role="toolbar" aria-label="Tools" id="tools"></div>
+  <span class="bt-space"></span>
   <div class="bt-right">
-    <button type="button" class="bt-btn" id="undoB" aria-label="Undo" title="Undo (Ctrl+Z)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
-    <button type="button" class="bt-btn" id="redoB" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+    <button type="button" class="bt-btn" id="undoB" aria-label="Undo" title="Undo (Ctrl+Z)"></button>
+    <button type="button" class="bt-btn" id="redoB" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"></button>
+    <span class="bt-sep" aria-hidden="true"></span>
+    <button type="button" class="bt-btn bt-find" id="findB" aria-label="Find a tool or action (Ctrl+K)" title="Find a tool or action (Ctrl+K)"></button>
+    <label class="bt-unit" title="Units for sizes and rulers"><span class="sr-only">Units</span><select id="unitSel"><option value="px">px</option><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option><option value="pt">pt</option></select></label>
+    <button type="button" class="bt-btn" id="rulerB" aria-label="Rulers and guides (Shift+R)" title="Rulers and guides (Shift+R)" aria-pressed="true"></button>
     <button type="button" class="bt-btn bt-zoom" id="zoomB" aria-label="Zoom" title="Zoom" aria-haspopup="menu">100%</button>
-    <button type="button" class="bt-btn" id="panelL" aria-label="Layers and add" title="Layers and add" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg></button>
-    <button type="button" class="bt-btn" id="panelR" aria-label="Design panel" title="Design panel" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>
-    <button type="button" class="bt-btn" id="presentB" aria-label="Present" title="Present (full screen)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg></button>
+    <button type="button" class="bt-btn bt-panel" id="panelL" aria-label="Layers and assets" title="Layers and assets" aria-pressed="false"></button>
+    <button type="button" class="bt-btn bt-panel" id="panelR" aria-label="Design panel" title="Design panel" aria-pressed="false"></button>
+    <button type="button" class="bt-btn" id="presentB" aria-label="Present" title="Present (full screen)"></button>
     <button type="button" class="bt-export" id="exportB" title="Export (Ctrl+E)">Export</button>
   </div>
 </header>
 <div class="bw">
-  <aside class="bp bp-left" id="left" aria-label="Layers and add">
-    <div class="bp-tabs" role="tablist"><button type="button" role="tab" id="tabLayers" aria-selected="true" data-tab="layers">Layers</button><button type="button" role="tab" id="tabAdd" aria-selected="false" data-tab="add">Add</button></div>
-    <div class="bp-body" id="layersPane" role="tabpanel" aria-labelledby="tabLayers"><div id="layers" class="layers" role="tree" aria-label="Layers"></div></div>
-    <div class="bp-body" id="addPane" role="tabpanel" aria-labelledby="tabAdd" hidden><label class="add-search"><span class="sr-only">Search</span><input type="search" id="addQ" placeholder="Search shapes, icons…" autocomplete="off"></label><div id="addList"></div></div>
+  <aside class="bp bp-left" id="left" aria-label="Layers and assets">
+    <div class="bp-tabs" role="tablist"><button type="button" role="tab" id="tabLayers" aria-selected="true" data-tab="layers">Layers</button><button type="button" role="tab" id="tabAdd" aria-selected="false" data-tab="add">Assets</button></div>
+    <div class="bp-body" id="layersPane" role="tabpanel" aria-labelledby="tabLayers">
+      <section class="pages" id="pagesSec"><button type="button" class="sec-h" data-fold="pages" aria-expanded="true"><span>Frames</span><span class="sec-n" id="pagesN"></span></button><div class="pages-list" id="pages"></div></section>
+      <section class="lay"><div class="sec-h static"><span>Layers</span></div><div id="layers" class="layers" role="tree" aria-label="Layers"></div></section>
+    </div>
+    <div class="bp-body" id="addPane" role="tabpanel" aria-labelledby="tabAdd" hidden>
+      <div class="add-top"><button type="button" class="ib" id="addBack" aria-label="Back to all assets" hidden></button><label class="add-search"><span class="sr-only">Search assets</span><input type="search" id="addQ" placeholder="Search assets" autocomplete="off"></label></div>
+      <div id="addList"></div>
+    </div>
   </aside>
-  <div class="stage-wrap" id="stageWrap" data-tool="select">
+  <div class="stage-wrap has-rulers" id="stageWrap" data-tool="select">
     <div id="stage"></div>
+    <canvas id="rulerX" class="ruler ruler-x" aria-hidden="true"></canvas>
+    <canvas id="rulerY" class="ruler ruler-y" aria-hidden="true"></canvas>
+    <button type="button" id="rulerC" class="ruler-c" title="Units" aria-label="Change units">px</button>
     <div id="badge" class="b-badge" hidden></div>
+    <div id="qbar" class="qbar" role="toolbar" aria-label="Quick edit" hidden></div>
+    <nav class="dock" id="dock" role="toolbar" aria-label="Tools"></nav>
     <div class="b-corner"><canvas id="mini" class="b-mini" width="180" height="120" aria-label="Map of the board" role="img"></canvas>
       <div class="b-zoom"><button type="button" id="zOut" aria-label="Zoom out">−</button><button type="button" id="zFit" aria-label="Fit everything" title="Fit everything (Shift+1)">Fit</button><button type="button" id="zIn" aria-label="Zoom in">+</button></div></div>
-    <div id="cropBar" class="crop-bar" hidden><span>Drag to move the photo inside its box · scroll or pinch to zoom</span><input type="range" id="cropZ" min="1" max="4" step="0.01" aria-label="Zoom photo"><button type="button" class="bt-export" id="cropDone">Done</button></div>
+    <div id="cropBar" class="crop-bar" hidden><span>Drag to move the photo inside its box · scroll to zoom</span><input type="range" id="cropZ" min="1" max="4" step="0.01" aria-label="Zoom photo"><button type="button" class="bt-export" id="cropDone">Done</button></div>
     <div id="cropPad" class="crop-pad" hidden></div>
-    <div id="dropHint" class="drop-hint" hidden>Drop photos to add them</div>
+    <div id="dropHint" class="drop-hint" hidden>Drop photos, SVG or PDF files</div>
   </div>
-  <aside class="bp bp-right" id="right" aria-label="Design"><div id="props" class="props"></div></aside>
+  <aside class="bp bp-right" id="right" aria-label="Design">
+    <div class="bp-tabs" role="tablist"><button type="button" role="tab" data-rtab="design" aria-selected="true">Design</button><button type="button" role="tab" data-rtab="effects" aria-selected="false">Effects</button><button type="button" role="tab" data-rtab="export" aria-selected="false">Export</button></div>
+    <div class="bp-body"><div id="props" class="props"></div></div>
+  </aside>
 </div>
-<input type="file" id="pickImg" accept="image/*,.heic,.heif" multiple hidden>
+<input type="file" id="pickImg" accept="image/*,.heic,.heif,.svg,.pdf,.ai,.board" multiple hidden>
 <input type="file" id="replaceImg" accept="image/*,.heic,.heif" hidden>
 <input type="file" id="pickBoard" accept=".board,application/json" hidden>
 <div id="bToast" class="b-toast" role="status" hidden></div>
 <div id="menu" class="b-menu" role="menu" hidden></div>
 <div id="pop" class="b-pop" hidden></div>
+<div id="palette" class="palette" role="dialog" aria-label="Find a tool or action" hidden><input type="search" id="palQ" placeholder="Type a tool or action… (e.g. circle, export pdf, mask)" autocomplete="off" aria-label="Search tools and actions"><div id="palList" class="pal-list" role="listbox"></div></div>
 <div id="present" class="present" hidden><img id="presentImg" alt=""><div class="present-bar"><button type="button" id="pPrev" aria-label="Previous">‹</button><span id="pNum"></span><button type="button" id="pNext" aria-label="Next">›</button><button type="button" id="pClose" aria-label="Close">✕</button></div></div>
 <script src="../assets/vendor/konva.min.js"></script>
 <script src="../assets/studio.js"></script>
 <script src="../brands/brands.js"></script>
 <script src="board-lib.js"></script>
 <script src="board.js"></script>
+<script src="board-tools.js"></script>
+<script src="board-io.js"></script>
 <script src="board-ui.js"></script>
+<script src="board-panel.js"></script>
+<script src="board-dialogs.js"></script>
 </body>
 </html>

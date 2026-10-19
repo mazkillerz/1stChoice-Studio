@@ -31,3 +31,10 @@
 .preset .pv{display:block;border:1.5px solid currentColor;border-radius:3px;opacity:.6;margin:6px 0 4px}
 .preset b{font-size:12px}.preset small{color:var(--muted);font-size:11px}
 @media (max-width:620px){.xcard{grid-template-columns:auto 1fr}.xcard .btn{grid-column:1/-1;width:100%}.preset-grid{grid-template-columns:repeat(2,1fr)}.bgrid{grid-template-columns:repeat(2,1fr);gap:10px}}
+
+.b-tools{display:flex;gap:8px;align-items:center;margin-top:10px}
+.b-tools .search{flex:1;display:flex;align-items:center}
+.b-tools .search input{min-height:44px}
+.b-tools .sel{width:auto;min-height:44px}
+.bcard{transition:border-color .15s,transform .15s}.bcard:hover{transform:translateY(-2px)}
+@media (prefers-reduced-motion:reduce){.bcard{transition:none}.bcard:hover{transform:none}}

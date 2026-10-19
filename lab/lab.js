@@ -6,7 +6,11 @@ await Studio.useBrand();
 $('lockB').onclick=()=>{ L.lock(); location.href='../index.html'; };
 const boards=()=>L.store('lab:boards')||[];
 function ago(t){ const s=(Date.now()-t)/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }
-async function paint(){ const list=boards().sort((a,b)=>(b.updated||0)-(a.updated||0)), el=$('boards');
+let bq='', bsort=L.store('lab:bsort')||'recent';
+$('bSort').value=bsort; $('bSort').onchange=e=>{ bsort=e.target.value; L.store('lab:bsort',bsort); paint(); }; $('bQ').oninput=e=>{ bq=e.target.value.trim().toLowerCase(); paint(); };
+async function paint(){ const all=boards(); $('bTools').hidden=all.length<4; const el=$('boards');
+  const list=all.filter(b=>!bq||(b.name||'').toLowerCase().includes(bq)).sort((a,b)=>bsort==='name'?(a.name||'').localeCompare(b.name||''):bsort==='old'?(a.created||0)-(b.created||0):(b.updated||0)-(a.updated||0));
+  if(all.length&&!list.length){ el.innerHTML='<div class="b-empty">No boards match.</div>'; return; }
   if(!list.length){ el.innerHTML='<div class="b-empty">No boards yet. Start one with <b>New board</b>.</div>'; return; }
   el.innerHTML=list.map(b=>`<div class="bcard"><a href="board.html?id=${encodeURIComponent(b.id)}" class="b-link" style="text-decoration:none;color:inherit"><div class="b-th" data-th="${esc(b.id)}"></div><div class="b-meta"><b dir="auto">${esc(b.name||'Untitled board')}</b><small>${b.frames!=null?b.frames+' frame'+(b.frames===1?'':'s')+' · ':''}${ago(b.updated||b.created||Date.now())}</small></div></a><button type="button" class="b-more" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name||'board')}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>`).join('');
   for(const b of list){ const t=await L.idb.get('bthumb:'+b.id); const box=el.querySelector(`[data-th="${CSS.escape(b.id)}"]`); if(t&&box) box.innerHTML=`<img src="${t}" alt="">`; } }

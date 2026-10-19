@@ -3,7 +3,7 @@
    - Code and pages are "network first": when online you always get the newest version.
    - Images (samples, thumbs, assets) are "cache first" and refreshed in the background.
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network. */
-const VERSION='studio-v4-12';
+const VERSION='studio-v4-13';
 const SHELL=[
   './','index.html','manifest.webmanifest',
   'assets/studio.css','assets/studio.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -13,7 +13,7 @@ const SHELL=[
   'tools/cinematic.html','tools/cinematic.js','tools/collage.html','tools/collage.js','tools/split.html','tools/split.js',
   'tools/restock.html','tools/restock.js','tools/offer.html','tools/offer.js',
   'tools/carousel.html','tools/carousel.js',
-  'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-ui.js','assets/vendor/konva.min.js'
+  'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
 ];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VERSION).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1080" viewBox="0 0 810 810" version="1.0">
+<defs>
+  <style>.gold{fill:#d6b078} .ink{fill:#161210;stroke:none}</style>
+  <clipPath id="clip1"><path d="M 60 60 L 750 60 L 750 420 L 60 420 Z"/></clipPath>
+  <clipPath id="clip2"><circle cx="600" cy="620" r="120"/></clipPath>
+  <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7a00"/><stop offset="100%" stop-color="#7a00ff"/></linearGradient>
+  <g id="glyph-0"><path d="M 0 0 L 20 0 L 20 -40 L 0 -40 Z"/></g>
+  <symbol id="star" viewBox="0 0 100 100"><path d="M50 0L61 37H100L68 58L79 100L50 76L21 100L32 58L0 37H39Z"/></symbol>
+</defs>
+<rect x="-81" y="-81" width="972" height="972" fill="#f3eadc"/>
+<g clip-path="url(#clip1)" data-name="Photo block">
+  <image x="0" y="0" width="40" height="30" transform="matrix(20.25,0,0,20.25,0,0)" preserveAspectRatio="none" xlink:href="data:image/png;base64,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"/>
+</g>
+<path data-name="Gradient blob" d="M100 500 C 150 450, 300 450, 350 520 S 300 700, 150 680 Z" fill="url(#grad1)"/>
+<g transform="translate(420, 520)" class="ink" data-name="Outlined text">
+  <use xlink:href="#glyph-0" x="0" y="0"/><use xlink:href="#glyph-0" x="30" y="0"/><use xlink:href="#glyph-0" x="60" y="0"/>
+</g>
+<g clip-path="url(#clip2)"><rect x="460" y="480" width="300" height="300" class="gold"/></g>
+<use xlink:href="#star" x="40" y="720" width="70" height="70" fill="#e5398f"/>
+<circle cx="700" cy="740" r="40" fill="none" stroke="#1a5fd6" stroke-width="6"/>
+<polygon points="520,720 560,790 480,790" fill="#2fa36b" opacity="0.8"/>
+<text x="405" y="470" text-anchor="middle" font-family="Poppins, sans-serif" font-size="36" font-weight="700" fill="#161210">Real <tspan fill="#d6b078">text</tspan></text>
+<text x="700" y="120" font-size="28" font-family="Cairo" fill="#ffffff" text-anchor="end">يسرسح ثلج</text>
+</svg>
