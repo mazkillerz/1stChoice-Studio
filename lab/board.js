@@ -215,7 +215,7 @@ function place(n,opt){ opt=opt||{}; const f=opt.frame!==undefined?opt.frame:targ
   let cx,cy; if(opt.at){ const l=toLocal(parent,toScreen(opt.at)); cx=l.x; cy=l.y; } else if(f){ const s=fsize(f); cx=s.w/2; cy=s.h/2; } else { const c=toLocal(parent,{x:stage.width()/2,y:stage.height()/2}); cx=c.x; cy=c.y; }
   n.position({x:Math.round(pos.x+cx-(r.x+r.width/2)),y:Math.round(pos.y+cy-(r.y+r.height/2))});
   if(kind(n)==='image'||kind(n)==='asset') applyFx(n);
-  applyFill(n); select([n]); changed(); return n; }
+  applyFill(n); select([n]); changed(); emit('doc'); return n; }   // 'doc' so the layer list shows it at once
 BD.place=place; BD.targetFrame=targetFrame;
 
 async function addPhotos(files,at){
@@ -768,6 +768,7 @@ async function restore(s){ const ids=S.sel.map(n=>n.id()); await loadDoc(JSON.pa
 async function undo(){ if(edit) commitEdit(); flushHist(); if(H.i>0){ H.i--; await restore(H.stack[H.i]); } }
 async function redo(){ flushHist(); if(H.i<H.stack.length-1){ H.i++; await restore(H.stack[H.i]); } }
 BD.changed=changed; BD.undo=undo; BD.redo=redo; BD.canUndo=()=>H.i>0||!!H.t; BD.canRedo=()=>H.i<H.stack.length-1;
+BD.resetHistory=()=>{ clearTimeout(H.t); H.t=0; H.stack=[snap()]; H.i=0; emit('history'); };
 
 /* ---------- boards on this device (IndexedDB), with a list in localStorage ---------- */
 const INDEX='lab:boards';
@@ -777,6 +778,7 @@ let saveT=0;
 function scheduleSave(){ if(!S.id) return; clearTimeout(saveT); emit('saving',true); saveT=setTimeout(saveNow,900); }
 async function saveNow(){ clearTimeout(saveT); if(!S.id) return; const view={x:stage.x(),y:stage.y(),k:sc()};
   const d=JSON.parse(docJson()); d.view=view; d.imgs=[...S.imgs]; await L.idb.put('board:'+S.id,JSON.stringify(d));
+  if(BD.cfg&&BD.cfg.onSave){ BD.cfg.onSave(d); S.clean=true; emit('saving',false); return; }   // a host page (Create) keeps its own list
   const list=boards(); let e=list.find(b=>b.id===S.id); if(!e){ e={id:S.id,created:Date.now()}; list.unshift(e); }
   e.name=S.name; e.updated=Date.now(); e.frames=frames().length; saveIndex(list);
   thumbSoon(); S.clean=true; emit('saving',false); }
@@ -790,7 +792,7 @@ async function newBoard(opt){ opt=opt||{}; S.id=uid(); S.name=opt.name||'Untitle
   if(opt.template) await BD.buildTemplate(opt.template);
   else if(BD.startPrint){ const p=BD.startPrint, d=S.dpi||300; makeFrame(0,0,fromUnit(p.w,d,'mm'),fromUnit(p.h,d,'mm'),{label:p.label,print:true,dpi:d,bleed:fromUnit(3,d,'mm'),safe:fromUnit(3,d,'mm')}); S.unit='mm'; }
   else { const p=BD.PRESETS.find(x=>x.id===(opt.preset||'story'))||BD.PRESETS[0]; makeFrame(0,0,p.w,p.h,{label:p.label}); }
-  paintUI(); fitAll(); H.stack=[snap()]; H.i=0; await saveNow(); history.replaceState(null,'','?id='+S.id); emit('history'); emit('doc'); emit('opened'); }
+  paintUI(); fitAll(); H.stack=[snap()]; H.i=0; await saveNow(); history.replaceState(null,'',BD.cfg&&BD.cfg.url?BD.cfg.url(S.id):'?id='+S.id); emit('history'); emit('doc'); emit('opened'); }
 BD.boards=boards; BD.saveIndex=saveIndex; BD.saveNow=saveNow; BD.openBoard=openBoard; BD.newBoard=newBoard; BD.scheduleSave=scheduleSave;
 
 /* ---------- exporting (same quality rules as the studio: lossless PNG at 2×, falling back to 1.5× then 1×) ---------- */
@@ -864,6 +866,7 @@ BD.start=async function(){
   /* when a font finishes loading later, measure and draw the words again */
   if(document.fonts) document.fonts.addEventListener('loadingdone',()=>{ main.find('Text').forEach(t=>{ if(t._setTextData) t._setTextData(); }); main.batchDraw(); if(tr.nodes().length) tr.forceUpdate(); });
   const q=new URLSearchParams(location.search);
+  if(BD.cfg&&BD.cfg.start) return BD.cfg.start(q);   // a host page (Create) decides what opens
   const id=q.get('id');
   if(id&&await openBoard(id)) return;
   await newBoard({template:q.get('template')||null,preset:q.get('preset')||null});

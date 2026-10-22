@@ -5,8 +5,21 @@ Installable as an app (Add to Home Screen on iPhone, Install on Android).
 Built so any brand can plug in. The first brand kit is **1st Choice**.
 
 ## Tools
+### Create
+The tool that can make anything: a free canvas, built on the Board editor, so layers, guides, undo and group work the same here.
+- **Start:** "What are you making?" Blank Story (1080×1920), Post (1080×1350), Square (1080×1080), Carousel (3 slides at 1080×1350, add more with +) or Highlight cover (square, with the circle Instagram keeps shown as a dashed guide). Or pick a template.
+- **Templates:** 21 ready layouts, white look (Bingo and Occasion one word are cream). The words come only from approved phrases; spots marked «اكتب هنا» are for your own words. A template can replace the design or be added as new pages.
+- **Add:** Elements (button, map-in-bio pill, place + pin, Instagram handle, flavour pills, offer tile, dates line, logo, chat bubbles, typing dots, number circle, dividers and more), Brand (logo, HD cans), Text, Photos & files (also SVG and PDF), Shapes, Lines, Icons, Emoji, Barcode & QR, Frame sizes. Elements are normal layers grouped together. Pills and bubbles re-fit when you change the words (double-tap or the Words button). Ungroup to edit one part.
+- **Photo spots:** tap a spot, then Add photo (or the Photo button). The photo takes the spot's size and rounded corners, then crop, zoom or replace it like any photo. Several photos fill the empty spots in order.
+- **Pages:** the strip at the bottom left jumps between pages; + adds one. The ⌄ menu next to the name has new design, page sizes (make this page a story, post, square or highlight), copy as a story or post, story safe zones, present, and more export (PDF, SVG, JPG).
+- **Save:** full-quality 2× PNG (2160×3840 for a story) of every page you tick. Save to the team too, or **Save as a team template** (words and layout; your photos become empty photo spots). Team templates show in Templates for everyone on the team. The PNG falls back to 1.5× or 1× with a message only if the phone runs out of memory.
+- **Drafts:** an unfinished design waits in Continue editing on the hub, one per design. A design saved to the team leaves that list.
+
+On a phone the bottom bar has **Add, Text, Photo, Templates, Layers, Save**. On a computer, the layers and assets panel is on the left, the design panel on the right, the tool dock sits at the bottom, and Templates and Save are in the top bar.
+
 | Tool | What it makes |
 | --- | --- |
+| Create | The free canvas: any size or layout, started blank, from a template, or built from elements. |
 | New place | A new sale point: photo in a window, place name with a pin, button. White / black / photo-on-top / cream. |
 | Photo story | One tall photo, headline, small line, logo. Full photo / cream frame / black frame; words in any of 9 places (top/middle/bottom × right/centre/left). |
 | Cinematic bars | A wide photo shown whole (no crop), logo and words on black, cream or white bars. |
@@ -64,6 +77,8 @@ index.html                 home page with the tool cards
 assets/studio.js           the engine: steps, live preview, layers, photo handling, saving (no brand inside)
 assets/studio.css          the look of the site
 tools/<tool>.html + .js    one tool each; the .js only describes how its story is laid out
+tools/create.html/.js/.css the Create canvas; create-lib.js (elements), create-templates.js (template layouts);
+                           its template words are in brands/<brand>/brand.js under create.templates; tests/create.mjs
 brands/brands.js           the list of brand kits (first = default)
 brands/<brand>/brand.js    logo, fonts, colours, palette (picker order), Instagram handle, writing direction, approved wording (incl. `phrases.bio`), example photos
 brands/<brand>/samples/    example photos the tools open with

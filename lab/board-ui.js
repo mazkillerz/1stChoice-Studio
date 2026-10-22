@@ -40,7 +40,7 @@ const IC={
 };
 const isMac=/Mac|iPhone|iPad/.test(navigator.platform||''), mod=isMac?'⌘':'Ctrl';
 document.documentElement.dataset.dark=matchMedia('(prefers-color-scheme: dark)').matches?'1':'0';
-const UI=BD.UI={IC,$,esc,mod,svg};
+const UI=BD.UI={IC,$,esc,mod,svg,qb:(...a)=>qb(...a)};
 
 /* ---------- toasts ---------- */
 let toastT=0;
@@ -102,7 +102,9 @@ const alphaOf=c=>{ if(typeof c==='string'&&/^#[0-9a-f]{8}$/i.test(c)) return Mat
 const withAlpha=(h,a)=>{ a=clamp(Math.round(a),0,100); return a>=100?h:h+Math.round(a*2.55).toString(16).padStart(2,'0'); };
 Object.assign(UI,{hex6,alphaOf,withAlpha});
 function docColors(){ const set=new Set(); BD.main.find(n=>{ ['fill','stroke'].forEach(k=>{ const v=n.getAttr(k); if(typeof v==='string'&&v.startsWith('#')) set.add(v.slice(0,7).toLowerCase()); }); return false; }); return [...set].slice(0,16); }
-function brandSwatches(){ const c=(BD.B&&BD.B.colors)||{}, out=new Set(Object.values(c).map(v=>String(v).toLowerCase())); ((BD.B&&BD.B.flavours)||[]).forEach(f=>out.add(f.bg.toLowerCase())); return [...out]; }
+function brandSwatches(){ const pal=BD.B&&BD.B.palette; if(pal&&pal.length) return pal.map(p=>p.hex.toLowerCase());   /* the one brand palette, in its order */
+  const c=(BD.B&&BD.B.colors)||{}, out=new Set(Object.values(c).map(v=>String(v).toLowerCase())); ((BD.B&&BD.B.flavours)||[]).forEach(f=>out.add(f.bg.toLowerCase())); return [...out]; }
+const swName=c=>{ const p=((BD.B&&BD.B.palette)||[]).find(x=>x.hex.toLowerCase()===String(c).toLowerCase()); return p?p.name:c; };
 const BASIC=['#ffffff','#f2f2f2','#bdbdbd','#757575','#333333','#000000','#e53935','#fb8c00','#fdd835','#43a047','#00897b','#1e88e5','#3949ab','#8e24aa','#d81b60','#6d4c41'];
 S.recent=L.store('lab:recentColors')||[];
 /* pick a colour straight from the design */
@@ -114,7 +116,7 @@ function canvasPick(cb){ const w=BD.wrap; w.classList.add('picking'); toast('Cli
   w.addEventListener('pointerdown',h,true); window.addEventListener('keydown',k,true); }
 UI.canvasPick=canvasPick;
 function colorPop(anchor,value,onChange,opt){ opt=opt||{}; let h=hex6(value), a=value?alphaOf(value):100;
-  const sw=list=>list.map(c=>`<button type="button" class="sw" data-c="${c}" style="--c:${c}" aria-label="${c}" title="${c}"></button>`).join('');
+  const sw=list=>list.map(c=>`<button type="button" class="sw" data-c="${c}" style="--c:${c}" aria-label="${esc(swName(c))}" title="${esc(swName(c))}"></button>`).join('');
   const saved=(S.styles.colors||[]);
   openPop(anchor,`<div class="cp">
     <div class="cp-row"><input type="color" id="cpNative" value="${h}" aria-label="Pick a colour"><input type="text" id="cpHex" value="${h}" maxlength="7" class="b-in mono" aria-label="Hex colour" spellcheck="false"><button type="button" class="ib" id="cpEye" aria-label="Pick from the design" title="Pick from the design">${IC.drop}</button></div>
@@ -182,6 +184,7 @@ function qsw(key,val,label){ return `<button type="button" class="qb qsw" data-q
 function paintQbar(){ const list=S.sel; if(!list.length||BD.editing()||(S.tool!=='select'&&S.tool!=='hand')||(UI.cropping&&UI.cropping())){ qbar.hidden=true; return; }
   const n=list[0], k=kind(n), one=list.length===1, all=list.every(x=>kind(x)===k), locked=list.every(isLocked); let h='';
   if(locked){ h=qb('unlock',IC.unlock,'Unlock'); }
+  else if(UI.qbarExtra&&UI.qbarExtra(list)){ h=UI.qbarExtra(list); }
   else if(one&&k==='frame'){ const s=fsize(n), dp=BD.units.dpiOf(n); h=`<button type="button" class="qb qtxt" data-q="frameSize" title="Frame size">${BD.units.fmt(s.w,dp)} × ${BD.units.fmt(s.h,dp)}${S.unit==='px'?'':' '+S.unit}</button>`+qsw('bgFill',typeof frameBg(n).fill()==='string'?frameBg(n).fill():'','Background colour')+qb('exportFrame','Export','Export this frame'); }
   else if(all&&(k==='text'||k==='arc')){ const fams=BD.allFonts(); h=`<select class="qsel" data-qs="fontFamily" aria-label="Font">${fams.map(f=>`<option ${f.family===n.fontFamily()?'selected':''}>${esc(f.family)}</option>`).join('')}${fams.some(f=>f.family===n.fontFamily())?'':`<option selected>${esc(n.fontFamily())}</option>`}</select>
       <input class="qnum" type="number" data-qs="fontSize" value="${Math.round(n.fontSize())}" min="4" aria-label="Font size">`+qsw('oFill',typeof n.fill()==='string'?n.fill():'','Text colour')+qb('bold',IC.bold,'Bold',/[6-9]00|bold/.test(n.fontStyle()))+(k==='text'?qb('align',IC[{left:'tl',center:'tc',right:'tr',justify:'tj'}[n.align()]||'tc'],'Alignment'):''); }
@@ -210,7 +213,7 @@ qbar.addEventListener('click',e=>{ const c=e.target.closest('[data-qc]'); if(c){
     align:()=>apply(x=>{ const o=['left','center','right'], i=o.indexOf(x.align()); x.align(o[(i+1)%3]); },{repaint:true}),
     crop:()=>UI.startCrop(n), replace:()=>UI.replacePhoto(n), fillFrame:()=>BD.act.fillFrame(n), looks:()=>looksPop(b), editQR:()=>UI.qrDialog(n), editBarcode:()=>UI.barcodeDialog(n),
     menu:()=>{ const r=b.getBoundingClientRect(); contextMenu(r.left,r.bottom+4); }};
-  if(acts[a]) acts[a](); if(a!=='looks'&&a!=='menu') paintQbar(); });
+  if(acts[a]) acts[a](); else if(UI.qbarAct) UI.qbarAct(a,b); if(a!=='looks'&&a!=='menu') paintQbar(); });
 qbar.addEventListener('change',e=>{ const t=e.target, k=t.dataset.qs; if(!k) return;
   if(k==='fontFamily'){ const fam=t.value; Promise.all(targets().map(n=>BD.ensureFont(fam,n.fontStyle()))).then(()=>apply(n=>{ n.fontFamily(fam); if(kind(n)==='text') BD.prepText(n); },{repaint:true})); }
   if(k==='fontSize'&&+t.value>=1) apply(n=>n.fontSize(+t.value),{repaint:true}); });
@@ -323,13 +326,14 @@ UI.openAssets=openAssets;
 const addList=$('addList'); let addQ='', addCat=null;
 $('addBack').innerHTML=IC.back; $('addBack').onclick=()=>{ addCat=null; paintAdd(); };
 $('addQ').addEventListener('input',e=>{ addQ=e.target.value.trim().toLowerCase(); paintAdd(); });
-const CATS=[['brand','Brand','brand'],['text','Text','text'],['photos','Photos & files','image'],['shapes','Shapes','shapes'],['lines','Lines','line'],['icons','Icons','icons'],['emoji','Emoji','emoji'],['codes','Barcode & QR','qr'],['frames','Frame sizes','frame'],['templates','Templates','tpl']];
+const cats=()=>(BD.extraCats||[]).map(c=>[c.id,c.label,c.icon]).concat([['brand','Brand','brand'],['text','Text','text'],['photos','Photos & files','image'],['shapes','Shapes','shapes'],['lines','Lines','line'],['icons','Icons','icons'],['emoji','Emoji','emoji'],['codes','Barcode & QR','qr'],['frames','Frame sizes','frame'],['templates','Templates','tpl']]).filter(c=>!(BD.cfg&&BD.cfg.hideCats||[]).includes(c[0]));
 function shapeThumb(d,stroke){ return `<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" width="34" height="34" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`; }
 const nativeShape={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',
   star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};
 const pv=(w,h,m)=>{ m=m||18; const k=m/Math.max(w,h); return `width:${Math.max(4,Math.round(w*k))}px;height:${Math.max(4,Math.round(h*k))}px`; };
 UI.pv=pv;
 function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); const B=BD.B||{}, ph=B.phrases||{};
+  const xc=(BD.extraCats||[]).find(c=>c.id===id); if(xc) return xc.body(q,m);
   if(id==='brand'){ const as=L.brandAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
     return (as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
@@ -349,9 +353,10 @@ function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); cons
   if(id==='templates'){ const tp=BD.TEMPLATES.filter(t=>m(t.label)||m('template')); return tp.length?`<div class="tpl">${tp.map(t=>`<button type="button" class="tp" data-tpl="${t.id}"><span class="pv" style="${pv(t.w,t.h,30)}"></span><span>${esc(t.label)}</span></button>`).join('')}</div>`:''; }
   return ''; }
 function paintAdd(){ const q=addQ; $('addBack').hidden=!addCat||!!q;
-  if(!addCat&&!q){ addList.innerHTML=`<div class="cats">${CATS.map(([id,l,ic])=>`<button type="button" class="cat" data-cat="${id}"><span class="cat-ic">${IC[ic]}</span><span>${l}</span></button>`).join('')}</div>`; return; }
-  const ids=q?CATS.map(c=>c[0]):[addCat]; const out=ids.map(id=>{ const body=catBody(id,q); if(!body) return ''; const c=CATS.find(x=>x[0]===id); return `<section class="ps"><h3>${esc(c[1])}</h3>${body}</section>`; }).join('');
+  if(!addCat&&!q){ addList.innerHTML=`<div class="cats">${cats().map(([id,l,ic])=>`<button type="button" class="cat" data-cat="${id}"><span class="cat-ic">${IC[ic]||ic}</span><span>${l}</span></button>`).join('')}</div>`; return; }
+  const CATS=cats(), ids=q?CATS.map(c=>c[0]):[addCat]; const out=ids.map(id=>{ const body=catBody(id,q); if(!body) return ''; const c=CATS.find(x=>x[0]===id); return `<section class="ps"><h3>${esc(c[1])}</h3>${body}</section>`; }).join('');
   addList.innerHTML=out||'<p class="ps-note">Nothing matches. Try another word.</p>';
+  (BD.extraCats||[]).forEach(c=>c.after&&c.after(addList));
   addList.querySelectorAll('canvas[data-thumb]').forEach(c=>{ const im=BD.IMGS.get(c.dataset.thumb); if(!im) return; const x=c.getContext('2d'), k=Math.max(80/im.w,80/im.h); x.drawImage(im.el,(80-im.w*k)/2,(80-im.h*k)/2,im.w*k,im.h*k); }); }
 UI.paintAdd=paintAdd;
 BD.on('photos',()=>{ if(!$('addPane').hidden) paintAdd(); });
@@ -374,6 +379,7 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
 UI.addItem=addItem;
 addList.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]'); if(cat){ addCat=cat.dataset.cat; paintAdd(); $('addPane').scrollTop=0; return; }
+  for(const xc of (BD.extraCats||[])){ const it=xc.sel&&e.target.closest(xc.sel); if(it){ await xc.add(it); if(innerWidth<900) panel('L',false); return; } }
   const a2=e.target.closest('[data-act2]'); if(a2){ if(a2.dataset.act2==='upload') $('pickImg').click(); if(a2.dataset.act2==='printDialog') UI.printFrameDialog(); return; }
   const fr=e.target.closest('[data-addframe]'); if(fr){ UI.addFrame(BD.PRESETS.find(p=>p.id===fr.dataset.addframe)); return; }
   const pr=e.target.closest('[data-addprint]'); if(pr){ const p=BD.PRINT.find(x=>x.id===pr.dataset.addprint); UI.addPrintFrame(p.w,p.h,p.label); return; }

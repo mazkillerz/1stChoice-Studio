@@ -226,5 +226,5 @@ BD.buildTemplate=async function(id,select){
 /* ---------- start ---------- */
 const q=new URLSearchParams(location.search);
 if(q.get('print')){ const p=BD.PRINT.find(x=>x.id===q.get('print')); if(p){ BD.startPrint=p; } }
-UI.boot();
+if(!(BD.cfg&&BD.cfg.manualBoot)) UI.boot();   // a host page (Create) boots it after adding its own parts
 })();

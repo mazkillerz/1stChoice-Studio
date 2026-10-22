@@ -39,10 +39,10 @@ Bug: with an unfinished story in Continue editing, opening the same tool and tap
 
 A free story/post maker that has **everything** from all tools plus more, so the owner can build any post or story he has made with Claude.
 
-- [ ] Start from the Lab's **Board** engine (free canvas, layers, SVG/PDF import, export) but make it a first-class tool on the hub (phone-first like the others, same bottom bar and sheets).
-- [ ] **Sizes**: Story 1080×1920, Post 1080×1350, Square 1080×1080, Carousel (multi-page 1080×1350), Highlight cover; export at 2× lossless PNG like every tool.
-- [ ] **Everything addable**: photos (with crop/zoom/mask shapes), text, every component from 1.2, brand assets (logo, HD cans, pair), shapes, panels, blobs, icons (a small stroke icon set: pin, Instagram, WhatsApp, chat, clock, calendar, star, check, arrow, sparkle, snowflake, sun), dividers, page dots, chat bubbles, number circles.
-- [ ] **Templates** (editable starting points, white look unless noted), built from what we already made:
+- [x] Start from the Lab's **Board** engine (free canvas, layers, SVG/PDF import, export) but make it a first-class tool on the hub (phone-first like the others, same bottom bar and sheets).
+- [x] **Sizes**: Story 1080×1920, Post 1080×1350, Square 1080×1080, Carousel (multi-page 1080×1350), Highlight cover; export at 2× lossless PNG like every tool.
+- [x] **Everything addable**: photos (with crop/zoom/mask shapes), text, every component from 1.2, brand assets (logo, HD cans, pair), shapes, panels, blobs, icons (a small stroke icon set: pin, Instagram, WhatsApp, chat, clock, calendar, star, check, arrow, sparkle, snowflake, sun), dividers, page dots, chat bubbles, number circles.
+- [x] **Templates** (editable starting points, white look unless noted), built from what we already made:
   - Ice cold: headline «يسرسح ثلج», small line, both cans on a #F3F3F1 rounded panel, black pill «الخريطة في البايو», logo
   - Did you know: «تعرف ويش؟», can panel left + 3 numbered rows right (black number circles), pill «جربته؟»
   - Your choice: «اختيارك؟», two panels each with a flavour name + its can, pill «منشن ربعك»
@@ -51,8 +51,12 @@ A free story/post maker that has **everything** from all tools plus more, so the
   - Offer: headline + offer tiles + dates line (Women's Day style)
   - How to order story: list rows with round icons (DM, WhatsApp number, pickup/delivery)
   - Occasion one-word story, Restock, New place, Stock alert
-- [ ] Layers panel, guides/snapping, undo/redo, group/ungroup, duplicate, align/distribute, lock, bring forward/back.
-- [ ] Saved to the team like every tool (recipe JSON + photos), templates saveable by the team.
+- [x] Layers panel, guides/snapping, undo/redo, group/ungroup, duplicate, align/distribute, lock, bring forward/back.
+- [x] Saved to the team like every tool (recipe JSON + photos), templates saveable by the team.
+
+---
+
+Done in Phase 2 (22 Oct 2026): `tools/create.html` (+ create.js / create.css / create-lib.js / create-templates.js), templates' words in `brand.js → create.templates`, tests in `tests/create.mjs`. Added beyond the notes: pages strip with +, "copy as a story/post", photo spots that take a photo's place, pills/bubbles that re-fit their words, team templates keep no personal photos (they become photo spots).
 
 ---
 

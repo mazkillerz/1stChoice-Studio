@@ -76,6 +76,33 @@ Studio.registerBrand({
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',group:'Cans (HD cut-outs)'},
     {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',group:'Cans (HD cut-outs)'}
   ],
+  /* Create: the templates offered for this brand. Layouts live in tools/create-templates.js (no wording there);
+     the words here come only from the approved phrases above. `write` (اكتب هنا) marks a spot for your own words. */
+  create:{
+    templates:[
+      {id:'ice-cold',label:'Ice cold',layout:'hero-panel',size:'story',words:{head:'يسرسح ثلج',small:'خذلك كولد برو',pill:'الخريطة في البايو'},assets:{product:'cans-pair-shadow'}},
+      {id:'did-you-know',label:'Did you know',layout:'did-you-know',size:'story',words:{head:'تعرف ويش؟',pill:'جربته؟'},assets:{product:'can-classic-shadow'}},
+      {id:'your-choice',label:'Your choice',layout:'your-choice',size:'story',words:{head:'اختيارك؟',pill:'منشن ربعك'},assets:{one:'can-classic',two:'can-passion'}},
+      {id:'chat',label:'Chat (late friend)',layout:'chat',size:'post',pages:3,words:{name:'ربيعي',pill:'اطلب الحين'},assets:{photo:'cans-pair'}},
+      {id:'bingo',label:'Bingo 4×4',layout:'bingo',size:'post',look:'cream',words:{},assets:{product:'can-classic'}},
+      {id:'spot',label:'Spot the difference',layout:'spot',size:'story',words:{head:'صبر شوي...'},assets:{product:'cans-pair'}},
+      {id:'tictactoe',label:'Tic-tac-toe',layout:'tictactoe',size:'square',words:{},assets:{x:'can-classic',o:'can-passion'}},
+      {id:'rate',label:'Rate 1–10',layout:'rate',size:'story',words:{head:'جربته؟'},assets:{product:'can-classic-shadow'}},
+      {id:'mood',label:'Mood grid 2×2',layout:'mood',size:'post',words:{head:'أنت أي واحد؟'}},
+      {id:'equation',label:'Equation',layout:'equation',size:'story',words:{},assets:{product:'can-passion-shadow'}},
+      {id:'lockscreen',label:'Lockscreen',layout:'lockscreen',size:'story',words:{}},
+      {id:'battery',label:'Before / after battery',layout:'battery',size:'story',words:{small:'يصحصحك'},assets:{product:'can-classic-shadow'}},
+      {id:'offer',label:'Offer',layout:'offer',size:'story',words:{head:'ما يتفوت',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
+      {id:'order-steps',label:'How to order',layout:'order-steps',size:'story',words:{head:'اطلب الحين',step1:'راسلنا خاص'},assets:{product:'cans-pair-shadow'}},
+      {id:'one-word',label:'Occasion: one word',layout:'one-word',size:'story',look:'cream',words:{head:'روّق'}},
+      {id:'restock',label:'Restock',layout:'restock',size:'story',words:{head:'رجع متوفر',small:'وفرنا كمية جديدة',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
+      {id:'new-place',label:'New place',layout:'new-place',size:'story',words:{head:'نقطة بيع جديدة',place:'اسم المكان',pill:'الخريطة في البايو'}},
+      {id:'stock-alert',label:'Stock alert',layout:'stock-alert',size:'story',words:{head:'الكمية محدودة',pill:'راسلنا خاص'},assets:{product:'can-classic-shadow'}},
+      {id:'highlight-places',label:'Highlight: places',layout:'highlight',size:'square',icon:'pin',words:{}},
+      {id:'highlight-chat',label:'Highlight: chat',layout:'highlight',size:'square',icon:'chat',words:{}},
+      {id:'highlight-reviews',label:'Highlight: reviews',layout:'highlight',size:'square',icon:'star',words:{}}
+    ]
+  },
   /* Example photos each tool opens with (files in samples/). */
   samples:{
     'new-place':['shelf'], 'photo-story':['tall'], 'cinematic':['pair'],

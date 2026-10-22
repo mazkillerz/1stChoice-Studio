@@ -62,6 +62,7 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
 const TOOLS={
+  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.'},
   'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.'},
   'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.'},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
@@ -177,10 +178,18 @@ function migrateDraft(brand,tool){
 }
 function listDrafts(brand,tool){
   migrateDraft(brand,tool); const pre=draftBase(brand,tool)+':', out=[];
-  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue; const d=store(k); if(d&&d.json) out.push({key:k,id,tool,d}); } }catch(_){}
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue; const d=store(k); if(d&&(d.json||d.board)) out.push({key:k,id,tool,d}); } }catch(_){}
   return out.sort((a,b)=>(b.d.at||0)-(a.d.at||0));
 }
-function removeDraft(key){ const d=store(key); if(d){ const pfx=d.pfx||key; (d.keys||[]).forEach(k=>{ if(k) idb.del(pfx+':'+k); }); } idb.del(key+':thumb'); store(key,null); }
+function removeDraft(key){ const d=store(key); if(d){ const pfx=d.pfx||key; (d.keys||[]).forEach(k=>{ if(k) idb.del(pfx+':'+k); });
+    if(d.board){ idb.del('board:'+d.board); idb.del('bthumb:'+d.board); (d.imgs||[]).forEach(i=>idb.del('bimg:'+i)); } }   // a Create draft: its canvas and photos
+  idb.del(key+':thumb'); store(key,null); }
+/* share files with the phone's share sheet: 'shared' | 'cancelled' | 'needtap' (needs a fresh tap) | false (not possible) */
+async function shareFiles(files){
+  if(!(navigator.canShare&&navigator.canShare({files}))) return false;
+  try{ await navigator.share({files}); return 'shared'; }
+  catch(err){ if(err&&err.name==='AbortError') return 'cancelled'; if(err&&err.name==='NotAllowedError') return 'needtap'; return false; }
+}
 async function draftThumbUrl(x){ return x.d.thumb||await idb.get(x.key+':thumb')||null; }
 
 /* ---------- cloud (team saved designs) ---------- */
@@ -1370,11 +1379,6 @@ async function tool(cfg){
   function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
   let lastFiles=null, saving=false;
-  async function shareFiles(files){
-    if(!(navigator.canShare&&navigator.canShare({files}))) return false;
-    try{ await navigator.share({files}); return 'shared'; }
-    catch(err){ if(err&&err.name==='AbortError') return 'cancelled'; if(err&&err.name==='NotAllowedError') return 'needtap'; return false; }
-  }
   async function save(withPhotos,only){
     if(saving) return; saving=true;
     const sel=S.sel; S.sel=null;
@@ -1761,6 +1765,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
