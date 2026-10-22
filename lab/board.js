@@ -215,7 +215,7 @@ function place(n,opt){ opt=opt||{}; const f=opt.frame!==undefined?opt.frame:targ
   let cx,cy; if(opt.at){ const l=toLocal(parent,toScreen(opt.at)); cx=l.x; cy=l.y; } else if(f){ const s=fsize(f); cx=s.w/2; cy=s.h/2; } else { const c=toLocal(parent,{x:stage.width()/2,y:stage.height()/2}); cx=c.x; cy=c.y; }
   n.position({x:Math.round(pos.x+cx-(r.x+r.width/2)),y:Math.round(pos.y+cy-(r.y+r.height/2))});
   if(kind(n)==='image'||kind(n)==='asset') applyFx(n);
-  applyFill(n); select([n]); changed(); return n; }
+  applyFill(n); select([n]); changed(); emit('doc'); return n; }   // 'doc' so the layer list shows it at once
 BD.place=place; BD.targetFrame=targetFrame;
 
 async function addPhotos(files,at){

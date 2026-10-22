@@ -5,8 +5,24 @@ Installable as an app (Add to Home Screen on iPhone, Install on Android).
 Built so any brand can plug in. The first brand kit is **1st Choice**.
 
 ## Tools
+### Create
+The tool that can make anything: its own simple editor made for phones (one page on screen at a time).
+- **Selecting:** tap a thing to select it; tap empty space or **✓** to deselect. Handles are finger-sized: drag a corner to resize, the top circle to turn. Two fingers on a selected thing size and turn it; two fingers elsewhere zoom. Double-tap to change words or crop a photo.
+- **Several at once:** drag across empty space to box-select, long-press a thing to add it, or **Select several** in the edit bar (then tap things). On a computer, Shift-click. Then Align, Group, Colour, Duplicate or Delete them together.
+- **Edit bar** (above the bottom bar): Words, Colour (brand palette + custom), Font, Size (size, turn, opacity, corners), Arrange (align, layer order, flip), Duplicate, Delete, More (lock, hide, group/ungroup, fill the page). With nothing selected: Page, Background, Select several, Select all.
+- **Start:** "What are you making?" Blank Story (1080×1920), Post (1080×1350), Square (1080×1080), Carousel (3 slides at 1080×1350, add more with +) or Highlight cover (square, with the circle Instagram keeps shown as a dashed guide). Or pick a template.
+- **Templates:** 21 ready layouts, white look (Bingo and Occasion one word are cream). The words come only from approved phrases; spots marked «اكتب هنا» are for your own words. A template can replace the design or be added as new pages.
+- **Add:** Elements (button, map-in-bio pill, place + pin, Instagram handle, flavour pills, offer tile, dates line, logo, chat bubbles, typing dots, number circle, dividers and more), Brand (logo, HD cans), Text, Photos & files (also SVG and PDF), Shapes, Lines, Icons, Emoji, Barcode & QR, Frame sizes. Elements are normal layers grouped together. Pills and bubbles re-fit when you change the words (double-tap or the Words button). Ungroup to edit one part.
+- **Photo spots:** tap a spot, then Add photo (or the Photo button). The photo takes the spot's size and rounded corners, then crop, zoom or replace it like any photo. Several photos fill the empty spots in order.
+- **Pages:** the strip above the edit bar jumps between pages; + adds one after the current page; tap the current page's number (or Page) to change its size, copy it as a story/post/square, duplicate, move or delete it.
+- **Save:** full-quality 2× PNG (2160×3840 for a story) of every page you tick. Save to the team too, or **Save as a team template** (words and layout; your photos become empty photo spots). Team templates show in Templates for everyone on the team. The PNG falls back to 1.5× or 1× with a message only if the phone runs out of memory.
+- **Drafts:** an unfinished design waits in Continue editing on the hub, one per design. A design saved to the team leaves that list.
+
+The bottom bar has **Add, Text, Photo, Templates, Layers, Save** on phone and computer. Sheets open from the bottom on a phone and as a panel on the right on a computer; the page moves so a sheet never covers it. Layers lists the page's layers (top first) with hide and lock.
+
 | Tool | What it makes |
 | --- | --- |
+| Create | The free canvas: any size or layout, started blank, from a template, or built from elements. |
 | New place | A new sale point: photo in a window, place name with a pin, button. White / black / photo-on-top / cream. |
 | Photo story | One tall photo, headline, small line, logo. Full photo / cream frame / black frame; words in any of 9 places (top/middle/bottom × right/centre/left). |
 | Cinematic bars | A wide photo shown whole (no crop), logo and words on black, cream or white bars. |
@@ -64,6 +80,8 @@ index.html                 home page with the tool cards
 assets/studio.js           the engine: steps, live preview, layers, photo handling, saving (no brand inside)
 assets/studio.css          the look of the site
 tools/<tool>.html + .js    one tool each; the .js only describes how its story is laid out
+tools/create.html/.js/.css the Create page; create-core.js (its editor); create-lib.js (elements), create-templates.js (layouts);
+                           its template words are in brands/<brand>/brand.js under create.templates; tests/create.mjs
 brands/brands.js           the list of brand kits (first = default)
 brands/<brand>/brand.js    logo, fonts, colours, palette (picker order), Instagram handle, writing direction, approved wording (incl. `phrases.bio`), example photos
 brands/<brand>/samples/    example photos the tools open with

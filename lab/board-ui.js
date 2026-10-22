@@ -102,7 +102,9 @@ const alphaOf=c=>{ if(typeof c==='string'&&/^#[0-9a-f]{8}$/i.test(c)) return Mat
 const withAlpha=(h,a)=>{ a=clamp(Math.round(a),0,100); return a>=100?h:h+Math.round(a*2.55).toString(16).padStart(2,'0'); };
 Object.assign(UI,{hex6,alphaOf,withAlpha});
 function docColors(){ const set=new Set(); BD.main.find(n=>{ ['fill','stroke'].forEach(k=>{ const v=n.getAttr(k); if(typeof v==='string'&&v.startsWith('#')) set.add(v.slice(0,7).toLowerCase()); }); return false; }); return [...set].slice(0,16); }
-function brandSwatches(){ const c=(BD.B&&BD.B.colors)||{}, out=new Set(Object.values(c).map(v=>String(v).toLowerCase())); ((BD.B&&BD.B.flavours)||[]).forEach(f=>out.add(f.bg.toLowerCase())); return [...out]; }
+function brandSwatches(){ const pal=BD.B&&BD.B.palette; if(pal&&pal.length) return pal.map(p=>p.hex.toLowerCase());   /* the one brand palette, in its order */
+  const c=(BD.B&&BD.B.colors)||{}, out=new Set(Object.values(c).map(v=>String(v).toLowerCase())); ((BD.B&&BD.B.flavours)||[]).forEach(f=>out.add(f.bg.toLowerCase())); return [...out]; }
+const swName=c=>{ const p=((BD.B&&BD.B.palette)||[]).find(x=>x.hex.toLowerCase()===String(c).toLowerCase()); return p?p.name:c; };
 const BASIC=['#ffffff','#f2f2f2','#bdbdbd','#757575','#333333','#000000','#e53935','#fb8c00','#fdd835','#43a047','#00897b','#1e88e5','#3949ab','#8e24aa','#d81b60','#6d4c41'];
 S.recent=L.store('lab:recentColors')||[];
 /* pick a colour straight from the design */
@@ -114,7 +116,7 @@ function canvasPick(cb){ const w=BD.wrap; w.classList.add('picking'); toast('Cli
   w.addEventListener('pointerdown',h,true); window.addEventListener('keydown',k,true); }
 UI.canvasPick=canvasPick;
 function colorPop(anchor,value,onChange,opt){ opt=opt||{}; let h=hex6(value), a=value?alphaOf(value):100;
-  const sw=list=>list.map(c=>`<button type="button" class="sw" data-c="${c}" style="--c:${c}" aria-label="${c}" title="${c}"></button>`).join('');
+  const sw=list=>list.map(c=>`<button type="button" class="sw" data-c="${c}" style="--c:${c}" aria-label="${esc(swName(c))}" title="${esc(swName(c))}"></button>`).join('');
   const saved=(S.styles.colors||[]);
   openPop(anchor,`<div class="cp">
     <div class="cp-row"><input type="color" id="cpNative" value="${h}" aria-label="Pick a colour"><input type="text" id="cpHex" value="${h}" maxlength="7" class="b-in mono" aria-label="Hex colour" spellcheck="false"><button type="button" class="ib" id="cpEye" aria-label="Pick from the design" title="Pick from the design">${IC.drop}</button></div>
