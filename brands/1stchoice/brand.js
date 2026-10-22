@@ -29,8 +29,21 @@ Studio.registerBrand({
     accent:'#D6B078',          // gold, for dark grounds
     cream:'#F3EADC',
     brown:'#7A563A',           // secondary text on cream
-    blob:'#E5D5C0'             // soft shape behind products
+    blob:'#E5D5C0',            // soft shape behind products
+    panel:'#F3F3F1',           // the soft card behind cans in posts
+    grey:'#6E6E6E',
+    yellow:'#F6C040',          // Passion fruit yellow
+    berry:'#BE2C5C'            // Passion fruit berry
   },
+  /* One palette for every colour picker (text, pills, shapes, panels, backgrounds, collage gaps), in this order.
+     Every picker also offers "Custom…" for any other colour. */
+  palette:[
+    {id:'white',name:'White',hex:'#FFFFFF'},{id:'ink',name:'Ink',hex:'#161210'},{id:'grey',name:'Grey',hex:'#6E6E6E'},
+    {id:'panel',name:'Panel',hex:'#F3F3F1'},{id:'cream',name:'Cream',hex:'#F3EADC'},{id:'brown',name:'Brown',hex:'#7A563A'},
+    {id:'blob',name:'Blob',hex:'#E5D5C0'},{id:'gold',name:'Gold',hex:'#D6B078'},{id:'yellow',name:'Passion yellow',hex:'#F6C040'},
+    {id:'berry',name:'Passion berry',hex:'#BE2C5C'}
+  ],
+  handle:'@1stchoice.om',      // Instagram handle (the "Instagram handle" component)
   /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
   flavours:[
     {id:'classic',name:'كلاسيك',bg:'#161210',fg:'#FFFFFF'},
@@ -41,6 +54,8 @@ Studio.registerBrand({
     headlines:['يسرسح ثلج','جربته؟','ترا فنان','ما يتفوت','عالميييي','تعرف ويش؟','مشتهيه؟','صبر شوي...','اطلب الحين','وين تلقانا؟','رجع متوفر','وفرنا كمية جديدة','خذلك كولد برو','هذا ولا هذا؟','أنت أي واحد؟','اختيارك؟','منشن ربعك','صباح الخير','روّق','الجو حرّ اليوم؟'],
     small:['خذلك كولد برو','الرابط في البايو','شوف أقرب نقطة بيع لك','راسلنا خاص','كولد برو','كلاسيك / باشن فروت','يسرسح ثلج','ما مر','منعش','يصحصحك','الكمية محدودة','اختيارك الأول، دائماً'],
     buttons:['الرابط في البايو','راسلنا خاص','اطلب الحين','شوف أقرب نقطة بيع لك'],
+    /* the "map in bio" pill (with a pin icon); wording from the owner's PLAN.md template notes */
+    bio:'الخريطة في البايو',
     newPlace:['نقطة بيع جديدة','وين تلقانا؟ هنا','صرنا متوفرين هنا'],
     cut:['وين تلقانا؟','يسرسح ثلج','صبر شوي...','لا تعدّي قبل لا تشوف هذا','ياخذ وقته...','هذا ولا هذا؟','ترا فنان','أنت أي واحد؟','تعرف ويش؟','خذلك كولد برو'],
     restock:['رجع متوفر','وفرنا كمية جديدة'],

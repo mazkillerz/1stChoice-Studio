@@ -137,6 +137,28 @@ body.sheet-open .cta-photo{display:none}
 .sw-btn::after{content:"";position:absolute;inset:-4px}   /* 48px tap area */
 .sw-btn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
 .view:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.add-row{flex-wrap:wrap}
+.add-row .mini{flex:1 1 30%}
+/* one brand palette in every colour picker: swatches + Custom (colour wheel + hex) */
+.pal{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 2px}
+.pal .sw-btn{flex:none}
+.sw-btn .sw-none{position:absolute;inset:8px;border-radius:50%;background:linear-gradient(135deg,transparent 45%,var(--danger) 45%,var(--danger) 55%,transparent 55%)}
+.sw-custom{display:inline-flex;align-items:center;justify-content:center;background:conic-gradient(#e94b4b,#f6c040,#5fc06a,#3b9be0,#9b5de5,#e94b4b);overflow:visible}
+.sw-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.pal .hex{width:92px;min-height:40px;padding:0 10px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:700 var(--fs-s) ui-monospace,monospace;direction:ltr}
+.insp-col{flex-direction:column;align-items:stretch;gap:var(--sp-2)}
+.insp-col>.insp-row,.insp-col>div{width:100%}
+#inspText{width:100%;min-height:var(--tap);max-height:160px;resize:none;padding:10px 12px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);line-height:1.4;overflow:auto}
+#inspTextHint{display:block;margin-top:4px}
+.row.tight{gap:6px}.row.tight .seg{min-height:44px;padding:0 10px}
+#inspAlign{flex:1;flex-wrap:nowrap}#inspAlign .seg{flex:1 1 0;min-width:0}
+/* Add an element: each element drawn for real, small */
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-2);margin:var(--sp-1) 0 var(--sp-2)}
+.comp-tile{display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:8px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--bg);color:var(--fg);font:700 var(--fs-xs) var(--sans);cursor:pointer;text-align:center;min-height:var(--tap)}
+.comp-tile canvas{width:100%;height:auto;aspect-ratio:540/240;border-radius:10px;background:#f3f3f1}
+.comp-tile:active{transform:scale(.97)}
+.cont-note{margin:0 0 var(--sp-2)}
+.cf-thumb{display:block;height:120px;width:auto;border-radius:10px;margin:0 auto var(--sp-2)}
 
 /* layers list */
 .layer-list{list-style:none;margin:0;padding:0 0 4px;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}
@@ -366,7 +388,8 @@ input[type=date]:disabled{opacity:.5}
   .insp-parts{padding:0 14px}
   .insp-part{display:none}
   .insp-part.on{display:flex;padding-bottom:12px;animation:part-in .2s var(--ease)}
-  .insp-part[data-part="text"].on input{width:100%}
+  .insp-part[data-part="text"].on input,.insp-part[data-part="text"].on textarea{width:100%}
+  .insp-part[data-part="text"].on{flex-direction:column}
   .insp-part[data-part="more"].on{flex-direction:column;gap:var(--sp-2)}
   /* while you drag or pinch a layer, the bar steps out of the way */
   body.dragging-layer .sheet.insp.open{opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .15s,transform .15s}

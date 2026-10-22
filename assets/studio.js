@@ -9,6 +9,8 @@ const MANY=8;          // word lists longer than this show a "More…" button
 const EXPORT_SCALE=2;   // saved stories are 2160×3840 so they stay sharp when zoomed; Instagram scales them down cleanly
 const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels (every iPhone/Android main camera photo);
                          // bigger ones (48/50/200 MP modes) are shrunk once, carefully, so phones never run out of memory
+/* canvas letter spacing (Chrome, Edge, Safari 18+); the control is hidden where it isn't supported */
+const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
@@ -56,18 +58,18 @@ function prev(im){
 }
 function rr(ctx,x,y,w,h,r){r=typeof r==='number'?[r,r,r,r]:(r||[0,0,0,0]);const [a,b,c,d]=r.map(v=>Math.max(0,Math.min(v,w/2,h/2)));ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath();}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; }}
+function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); return true; }catch(_){ return null; }}
 
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
 const TOOLS={
   'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.'},
   'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.'},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
-  'collage':{title:'Collage',blurb:'2, 3 or 4 whole photos in different layouts.'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.'},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',tag:'New'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',tag:'New'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',tag:'New'}
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.'},
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.'},
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -118,15 +120,28 @@ const ICON={
 /* ---------- assets: brand files (logo, can cut-outs, stickers) from the brand kit + built-in shapes ----------
    Shapes are drawn in a 200×200 box (or the size given) so they stay sharp at any size and take any brand colour. */
 const SHAPES=[
-  {id:'shape:circle',label:'Circle',w:200,h:200,draw(c){ c.beginPath(); c.arc(100,100,100,0,Math.PI*2); c.fill(); }},
-  {id:'shape:blob',label:'Soft box',w:240,h:200,draw(c){ c.beginPath(); rr(c,0,0,240,200,70); c.fill(); }},
-  {id:'shape:badge',label:'Badge',w:200,h:200,draw(c){ c.beginPath(); for(let i=0;i<32;i++){ const a=i/32*Math.PI*2-Math.PI/2, r=i%2?86:100; c.lineTo(100+Math.cos(a)*r,100+Math.sin(a)*r); } c.closePath(); c.fill(); }},
-  {id:'shape:ring',label:'Ring',w:200,h:200,draw(c){ c.beginPath(); c.arc(100,100,100,0,Math.PI*2); c.arc(100,100,84,0,Math.PI*2,true); c.fill(); }},
-  {id:'shape:arrow',label:'Arrow',w:240,h:120,draw(c){ c.beginPath(); c.moveTo(0,46); c.lineTo(160,46); c.lineTo(160,8); c.lineTo(240,60); c.lineTo(160,112); c.lineTo(160,74); c.lineTo(0,74); c.closePath(); c.fill(); }},
-  {id:'shape:underline',label:'Underline',w:300,h:40,draw(c){ c.beginPath(); c.moveTo(6,30); c.quadraticCurveTo(150,-6,294,24); c.lineWidth=14; c.lineCap='round'; c.strokeStyle=c.fillStyle; c.stroke(); }},
-  {id:'shape:sparkle',label:'Sparkle',w:200,h:200,draw(c){ c.beginPath(); c.moveTo(100,0); c.quadraticCurveTo(112,88,200,100); c.quadraticCurveTo(112,112,100,200); c.quadraticCurveTo(88,112,0,100); c.quadraticCurveTo(88,88,100,0); c.fill(); }},
-  {id:'shape:line',label:'Line',w:300,h:12,draw(c){ c.beginPath(); rr(c,0,0,300,12,6); c.fill(); }}
+  {id:'shape:panel',label:'Rounded panel',w:860,h:900,free:true,radius:56,color:'panel',path(c,w,h,r){ rr(c,0,0,w,h,r); }},
+  {id:'shape:rect',label:'Rectangle',w:400,h:300,free:true,radius:0,path(c,w,h,r){ rr(c,0,0,w,h,r); }},
+  {id:'shape:organic',label:'Blob',w:600,h:520,color:'blob',path(c){ c.moveTo(318,12); c.bezierCurveTo(452,0,588,92,598,236); c.bezierCurveTo(608,372,520,506,360,516); c.bezierCurveTo(214,526,40,470,8,326); c.bezierCurveTo(-22,186,120,24,318,12); c.closePath(); }},
+  {id:'shape:circle',label:'Circle',w:200,h:200,path(c){ c.arc(100,100,100,0,Math.PI*2); }},
+  {id:'shape:blob',label:'Soft box',w:240,h:200,radius:70,path(c,w,h,r){ rr(c,0,0,240,200,r); }},
+  {id:'shape:badge',label:'Badge',w:200,h:200,path(c){ for(let i=0;i<32;i++){ const a=i/32*Math.PI*2-Math.PI/2, r=i%2?86:100; c.lineTo(100+Math.cos(a)*r,100+Math.sin(a)*r); } c.closePath(); }},
+  {id:'shape:ring',label:'Ring',w:200,h:200,path(c){ c.arc(100,100,100,0,Math.PI*2); c.moveTo(184,100); c.arc(100,100,84,0,Math.PI*2,true); }},
+  {id:'shape:arrow',label:'Arrow',w:240,h:120,path(c){ c.moveTo(0,46); c.lineTo(160,46); c.lineTo(160,8); c.lineTo(240,60); c.lineTo(160,112); c.lineTo(160,74); c.lineTo(0,74); c.closePath(); }},
+  {id:'shape:underline',label:'Underline',w:300,h:40,line:14,path(c){ c.moveTo(6,30); c.quadraticCurveTo(150,-6,294,24); }},
+  {id:'shape:sparkle',label:'Sparkle',w:200,h:200,path(c){ c.moveTo(100,0); c.quadraticCurveTo(112,88,200,100); c.quadraticCurveTo(112,112,100,200); c.quadraticCurveTo(88,112,0,100); c.quadraticCurveTo(88,88,100,0); c.closePath(); }},
+  {id:'shape:line',label:'Line',w:300,h:12,radius:6,path(c,w,h,r){ rr(c,0,0,300,12,r); }}
 ];
+/* draw a shape filling a w×h box: fill colour ('none' = no fill), optional outline colour + width, corner radius */
+function drawShape(c,a,w,h,fill,o){
+  o=o||{}; const r=o.r!=null?o.r:(a.radius||0);
+  c.save(); c.beginPath();
+  if(a.free) a.path(c,w,h,r); else { c.scale(w/a.w,h/a.h); a.path(c,a.w,a.h,r); }
+  c.restore();
+  if(a.line){ c.lineWidth=a.line*w/a.w; c.lineCap='round'; c.strokeStyle=fill&&fill!=='none'?fill:'#000'; c.stroke(); return; }
+  if(fill&&fill!=='none'){ c.fillStyle=fill; c.fill(); }
+  if(o.stroke&&o.sw>0){ c.lineWidth=o.sw; c.lineJoin='round'; c.strokeStyle=o.stroke; c.stroke(); }
+}
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
 function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||brandAssets().find(x=>x.id===ref)||null; }
@@ -148,6 +163,25 @@ const idb={
   async tx(mode,fn){ try{ const db=await this.open(); return await new Promise((res,rej)=>{ const t=db.transaction('files',mode), s=t.objectStore('files'); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); }catch(_){ return null; } },
   get(k){ return this.tx('readonly',s=>s.get(k)); }, put(k,v){ return this.tx('readwrite',s=>s.put(v,k)); }, del(k){ return this.tx('readwrite',s=>s.delete(k)); }
 };
+
+/* ---------- drafts: unfinished stories kept on this phone, a LIST per tool ----------
+   Each draft: localStorage 'studio:draft:<brand>:<tool>:<id>' = {json,keys,at,pfx}; its photos in IndexedDB under
+   '<pfx>:<photo key>' (pfx = the draft's own key; drafts moved from the old single slot keep their old prefix) and its
+   preview under '<key>:thumb'. A draft is only ever removed by the person (✕ in Continue editing) or after a team save. */
+const DRAFT_CAP=20;   // more than this per tool: a warning (never silent loss)
+const draftBase=(brand,tool)=>'studio:draft:'+brand+':'+tool;
+function migrateDraft(brand,tool){
+  const old=draftBase(brand,tool), d=store(old); if(!d) return;
+  if(d.json){ const key=old+':m'+(d.at||Date.now()).toString(36); if(!store(key)&&store(key,{...d,pfx:d.pfx||old})===null) return; }   // no room: keep the old slot
+  store(old,null);
+}
+function listDrafts(brand,tool){
+  migrateDraft(brand,tool); const pre=draftBase(brand,tool)+':', out=[];
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue; const d=store(k); if(d&&d.json) out.push({key:k,id,tool,d}); } }catch(_){}
+  return out.sort((a,b)=>(b.d.at||0)-(a.d.at||0));
+}
+function removeDraft(key){ const d=store(key); if(d){ const pfx=d.pfx||key; (d.keys||[]).forEach(k=>{ if(k) idb.del(pfx+':'+k); }); } idb.del(key+':thumb'); store(key,null); }
+async function draftThumbUrl(x){ return x.d.thumb||await idb.get(x.key+':thumb')||null; }
 
 /* ---------- cloud (team saved designs) ---------- */
 async function cloud(){
@@ -244,16 +278,16 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     const l=L(id); const cx=bx.x+bx.w/2+l.dx, cy=bx.y+bx.h/2+l.dy, k=l.k;
     if(l.hidden){ reg.push({id,label,hidden:true,...opt}); return; }
     const rot=(l.rot||0)*Math.PI/180;   // rotation in degrees, around the layer's centre
-    ctx.save(); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
+    ctx.save(); if(l.op!=null&&l.op<1) ctx.globalAlpha*=Math.max(0,l.op); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
     const rw=bx.w*k, rh=bx.h*k, c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot)), ew=rw*c+rh*s, eh=rw*s+rh*c;   // box around the turned layer
     reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
-  const h={W,H,ctx,rr,brand:B,C,dir,
+  const h={W,H,ctx,rr,brand:B,C,dir,isLight,
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
     photoAspect(i,opt){const p=S.photos[ix(i,opt)];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
-      opt=opt||{}; const p=S.photos[ix(i,opt)];
-      ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip();
+      opt=opt||{}; const p=S.photos[ix(i,opt)], rot=(opt.rot||0)*Math.PI/180;   // rot: degrees, around the box centre
+      ctx.save(); if(rot){ ctx.translate(x+w/2,y+hh/2); ctx.rotate(rot); ctx.translate(-x-w/2,-y-hh/2); } ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip();
       if(p&&p.img){
         const im=p.img, mode=opt.mode||'cover';
         const base=mode==='contain'?Math.min(w/im.width,hh/im.height):Math.max(w/im.width,hh/im.height);
@@ -266,53 +300,68 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
       ctx.restore();
-      reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover'});
+      if(rot){ const c=Math.abs(Math.cos(rot)), sn=Math.abs(Math.sin(rot)), ew=w*c+hh*sn, eh=w*sn+hh*c; reg.push({photo:ix(i,opt),x:x+w/2-ew/2,y:y+hh/2-eh/2,w:ew,h:eh,mode:opt.mode||'cover'}); }
+      else reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover'});
     },
     logoH(w){return w*LOGO.height/LOGO.width;},
     /* logo layer; tone 'dark' or 'light' */
     logo(x,y,w,tone,id){
       id=id||'logo'; const hh=h.logoH(w);
-      layer(id,'Logo',{x,y,w,h:hh},color=>{ const t=color?(color==='light'?'light':'dark'):tone; ctx.drawImage(t==='light'?LOGO_LIGHT:LOGO,0,0,w,hh); },{kind:'logo'});
+      layer(id,'Logo',{x,y,w,h:hh},color=>{ if(color&&color[0]==='#'){ ctx.drawImage(tinted(LOGO,color),0,0,w,hh); return; } const t=color?(color==='light'?'light':'dark'):tone; ctx.drawImage(t==='light'?LOGO_LIGHT:LOGO,0,0,w,hh); },{kind:'logo'});
       return L(id).hidden?0:hh;
     },
     measure(str,o){o=o||{}; const fam=o.font==='display'?B.fonts.display:B.fonts.body; const size=fitSize(str,o.size||40,o.weight||'',fam,o.maxW||936); const m=ctx.measureText(str), b=box(m,size); return {w:m.width,h:b.a+b.d,size};},
     /* text layer; align 'center' | 'start' | 'end' relative to x (start = right side in Arabic) */
     text(id,label,str,x,y,o){
       o=o||{}; if(!str) { reg.push({id,label,empty:true}); return 0; }
-      const ff=L(id).font&&fontInfo(L(id).font);
+      const l=L(id), ff=l.font&&fontInfo(l.font);
       const fam=ff?ff.family:(o.font==='display'?B.fonts.display:B.fonts.body), wt=ff?ff.wt:(o.weight||'');
-      const size=fitSize(str,o.size||40,wt,fam,o.maxW||936), m=ctx.measureText(str), b=box(m,size), tw=Math.ceil(m.width), th=Math.ceil(b.a+b.d);
+      const lines=String(str).split('\n'), ls=LS_OK&&l.ls?l.ls:0;   // ls: letter spacing in px (only where the browser supports it)
+      const setLS=v=>{ if(LS_OK) ctx.letterSpacing=(v||0)+'px'; };
+      setLS(ls);
+      const size=Math.min(...lines.map(t=>fitSize(t||' ',o.size||40,wt,fam,o.maxW||936)));
+      ctx.font=(wt?wt+' ':'')+size+'px "'+fam+'"';
+      const ms=lines.map(t=>ctx.measureText(t||' ')), b=box(ms[0],size), bl=box(ms[ms.length-1],size);
+      setLS(0);
+      const adv=size*(l.lh||1.2), tw=Math.ceil(Math.max(...ms.map(m=>m.width))), th=Math.ceil(b.a+(lines.length-1)*adv+bl.d);
       const al=o.align||'center'; const rightish=(al==='start'&&dir==='rtl')||(al==='end'&&dir!=='rtl');
+      const lineAl=l.align||(al==='center'?'center':rightish?'right':'left');
+      const pill=l.bg&&l.bg!=='none'?l.bg:null, px=pill?Math.round(size*.5):0, py=pill?Math.round(size*.28):0;
       const bx=al==='center'?x-tw/2:(rightish?x-tw:x);
-      layer(id,label,{x:bx,y,w:tw,h:th},color=>{
-        ctx.font=(wt?wt+' ':'')+size+'px "'+fam+'"'; ctx.direction=dir; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color||o.color||C.ink;
-        if(o.shadow){ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=24;ctx.shadowOffsetY=2;}
-        ctx.fillText(str,0,b.a);
-      },{kind:'text'});
-      return L(id).hidden?0:th;
+      const shadow=l.shadow!=null?l.shadow:o.shadow;
+      layer(id,label,{x:bx-px,y:y-py,w:tw+px*2,h:th+py*2},color=>{
+        if(pill){ ctx.fillStyle=pill; ctx.beginPath(); rr(ctx,0,0,tw+px*2,th+py*2,lines.length>1?size*.5:(th+py*2)/2); ctx.fill(); }
+        ctx.font=(wt?wt+' ':'')+size+'px "'+fam+'"'; ctx.direction=dir; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color||o.color||C.ink; setLS(ls);
+        if(shadow){ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=24;ctx.shadowOffsetY=2;}
+        lines.forEach((t,i)=>{ const w=ms[i].width, lx=lineAl==='center'?(tw-w)/2:lineAl==='right'?tw-w:0; ctx.fillText(t,px+lx,py+b.a+i*adv); });
+        setLS(0);
+      },{kind:'text',typ:true,shadow:!!o.shadow});
+      return l.hidden?0:th;
     },
     /* rounded button layer */
     pill(id,label,str,cx,y,o){
-      o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; }
+      o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; } str=String(str).replace(/\n/g,' ');
       const ff=L(id).font&&fontInfo(L(id).font), pf=ff?((ff.wt?ff.wt+' ':'')+(o.size||36)+'px "'+ff.family+'"'):('800 '+(o.size||36)+'px "'+B.fonts.body+'"');
-      ctx.font=pf; const m=ctx.measureText(str), ph=o.h||76, pw=Math.ceil(m.width)+(o.pad||88), b=box(m,o.size||36);
+      ctx.font=pf; const m=ctx.measureText(str), ph=o.h||76, ic=o.icon?Math.round((o.size||36)*.95):0, ig=ic?14:0, pw=Math.ceil(m.width)+ic+ig+(o.pad||88), b=box(m,o.size||36);
       layer(id,label,{x:cx-pw/2,y,w:pw,h:ph},color=>{
-        const bg=color||o.bg||C.ink; ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,pw,ph,ph/2); ctx.fill();
-        ctx.font=pf; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color?(isLight(color)?C.ink:C.paper):(o.fg||C.paper); ctx.fillText(str,pw/2,ph/2+(b.a-b.d)/2);
+        const bg=color||o.bg||C.ink, fg=color?(isLight(color)?C.ink:C.paper):(o.fg||C.paper); ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,pw,ph,ph/2); ctx.fill();
+        const tw=Math.ceil(m.width), x0=(pw-tw-ic-ig)/2, textX=dir==='rtl'?x0:x0+ic+ig, icX=dir==='rtl'?x0+tw+ig:x0;
+        ctx.font=pf; ctx.direction=dir; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillStyle=fg; ctx.fillText(str,textX,ph/2+(b.a-b.d)/2);
+        if(ic) glyph(ctx,o.icon,icX,(ph-ic)/2,ic,fg);
       },{kind:'pill'});
       return L(id).hidden?0:ph;
     },
     /* place name with a map pin centred on the letters */
     pin(id,label,str,cx,y,o){
-      o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; }
+      o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; } str=String(str).replace(/\n/g,' ');
       const ff=L(id).font&&fontInfo(L(id).font), fam=ff?ff.family:B.fonts.body, pw8=ff?ff.wt:'800';
       const fs=fitSize(str,o.size||44,pw8,fam,o.maxW||860), m=ctx.measureText(str), b=box(m,fs);
-      const pinH=Math.round(fs*.9), kk=pinH/224, pinW=176*kk, gap=14, tw=Math.ceil(m.width), tot=tw+gap+pinW, th=Math.ceil(b.a+b.d);
+      const pinH=Math.round(fs*.9), kk=pinH/224, pinW=o.icon&&o.icon!=='pin'?pinH:176*kk, gap=14, tw=Math.ceil(m.width), tot=tw+gap+pinW, th=Math.ceil(b.a+b.d);
       layer(id,label,{x:cx-tot/2,y,w:tot,h:th},color=>{
         ctx.font=(pw8?pw8+' ':'')+fs+'px "'+fam+'"'; ctx.direction=dir; ctx.textBaseline='alphabetic'; ctx.textAlign='left'; ctx.fillStyle=color||o.color||C.muted;
         const textX=dir==='rtl'?0:pinW+gap, pinX=dir==='rtl'?tw+gap:0;
         ctx.fillText(str,textX,b.a);
-        const mid=b.a-(b.a-b.d)/2; ctx.translate(pinX-40*kk,mid-pinH/2-16*kk); ctx.scale(kk,kk); ctx.fill(PIN);
+        const mid=b.a-(b.a-b.d)/2; if(o.icon&&o.icon!=='pin'){ glyph(ctx,o.icon,pinX,mid-pinH/2,pinH,ctx.fillStyle); return; } ctx.translate(pinX-40*kk,mid-pinH/2-16*kk); ctx.scale(kk,kk); ctx.fill(PIN);
       },{kind:'text'});
       return L(id).hidden?0:th;
     },
@@ -331,8 +380,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
           ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
         },{kind:'asset'});
       } else {
-        const sw=x.w, sh=x.w*a.h/a.w;
-        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>{ ctx.scale(sw/a.w,sh/a.h); ctx.fillStyle=color||x.color||C.ink; a.draw(ctx); },{kind:'asset'});
+        const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
+        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:'asset'});
       }
     },
     /* numbers in the brand's digits (Arabic brands write ٢٠٪, not 20%) */
@@ -340,24 +389,68 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     /* a row of small pills (e.g. flavours) as one layer; items: [{text,bg,fg,line}] */
     tags(id,label,items,cx,y,o){
       o=o||{}; items=(items||[]).filter(t=>t&&t.text); if(!items.length){ reg.push({id,label,empty:true}); return 0; }
-      const size=o.size||34, ph=o.h||70, pad=o.pad||56, gap=o.gap||18, font='800 '+size+'px "'+B.fonts.body+'"';
+      const tf=L(id).font&&fontInfo(L(id).font), size=o.size||34, ph=o.h||70, pad=o.pad||56, gap=o.gap||18, font=tf?(tf.wt?tf.wt+' ':'')+size+'px "'+tf.family+'"':'800 '+size+'px "'+B.fonts.body+'"';
       ctx.font=font; const ws=items.map(t=>Math.ceil(ctx.measureText(t.text).width)+pad), tot=ws.reduce((a,b)=>a+b,0)+gap*(items.length-1), b0=box(ctx.measureText(items[0].text),size);
       layer(id,label,{x:cx-tot/2,y,w:tot,h:ph},color=>{
         let x=0; const order=dir==='rtl'?items.map((t,i)=>i).reverse():items.map((t,i)=>i);
         order.forEach(i=>{ const t=items[i], w=ws[i]; ctx.beginPath(); rr(ctx,x,0,w,ph,ph/2);
-          if(t.line){ ctx.lineWidth=4; ctx.strokeStyle=color||t.line; ctx.stroke(); } else { ctx.fillStyle=t.bg||C.ink; ctx.fill(); }
-          ctx.font=font; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=t.line?(color||t.fg||t.line):(t.fg||C.paper); ctx.fillText(t.text,x+w/2,ph/2+(b0.a-b0.d)/2); x+=w+gap; });
+          if(t.line){ ctx.lineWidth=4; ctx.strokeStyle=color||t.line; ctx.stroke(); } else { ctx.fillStyle=color||t.bg||C.ink; ctx.fill(); }
+          ctx.font=font; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=t.line?(color||t.fg||t.line):color?(isLight(color)?C.ink:C.paper):(t.fg||C.paper); ctx.fillText(t.text,x+w/2,ph/2+(b0.a-b0.d)/2); x+=w+gap; });
       },{kind:'text'});
       return L(id).hidden?0:ph;
     },
     /* a custom layer drawn by the tool: draw(ctx,color) works in a box from (0,0) to (w,h) */
     block(id,label,x,y,w,hh,draw,kind){ layer(id,label,{x,y,w,h:hh},color=>draw(ctx,color),{kind:kind||'text'}); return L(id).hidden?0:hh; },
+    /* an offer tile: a small top line and a big line (numbers in the brand's digits) on a rounded tile */
+    tile(id,label,small,big,cx,y,o){
+      o=o||{}; small=h.digits(small||''); big=h.digits(big||''); if(!small&&!big){ reg.push({id,label,empty:true}); return 0; }
+      const tw=o.w||400, th=o.h||260, tf=L(id).font&&fontInfo(L(id).font);
+      layer(id,label,{x:cx-tw/2,y,w:tw,h:th},color=>{
+        const bg=color||o.bg||C.ink, dk=!isLight(bg); ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,tw,th,40); ctx.fill();
+        ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+        if(small){ ctx.font='800 44px "'+B.fonts.body+'"'; ctx.fillStyle=o.smallColor||(dk?(C.cream||C.paper):C.ink); ctx.fillText(small,tw/2,big?78:th/2+16,tw-40); }
+        if(big){ const fam=tf?tf.family:B.fonts.display, wt=tf&&tf.wt?tf.wt+' ':''; let fs=150; ctx.font=wt+fs+'px "'+fam+'"'; while(ctx.measureText(big).width>tw-44&&fs>60){ fs-=6; ctx.font=wt+fs+'px "'+fam+'"'; }
+          ctx.fillStyle=o.bigColor||(dk?(C.accent||C.paper):C.ink); ctx.fillText(big,tw/2,small?th-46:th/2+fs*.36); }
+      },{kind:'pill'});
+      return L(id).hidden?0:th;
+    },
     /* page dots for carousels: n dots, i = current. Always left to right, like Instagram's own swipe. */
     dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
   return h;
 }
+/* small icons drawn on the canvas in a size×size box: 'pin' (map pin), 'insta' (Instagram) */
+function glyph(c,kind,x,y,size,color){
+  c.save(); c.translate(x,y);
+  if(kind==='insta'){ const k=size/24; c.scale(k,k); c.strokeStyle=color; c.fillStyle=color; c.lineWidth=2.2; c.beginPath(); rr(c,2.5,2.5,19,19,5.5); c.stroke(); c.beginPath(); c.arc(12,12,4.4,0,Math.PI*2); c.stroke(); c.beginPath(); c.arc(17.4,6.6,1.3,0,Math.PI*2); c.fill(); }
+  else { const k=size/224; c.translate((size-176*k)/2-40*k,-16*k); c.scale(k,k); c.fillStyle=color; c.fill(PIN); }
+  c.restore();
+}
+/* ---------- one brand palette for every colour picker (text, pills, shapes, backgrounds, collage gaps) ----------
+   key: what the picker sets; cur: the current colour ('' = Auto/Original, 'none' = no colour, or #hex);
+   opt.auto: label of the "use the default" swatch (omit for none); opt.none: offer "None" (no fill / no outline). */
+function brandPalette(){ const C=BRAND.colors; return BRAND.palette&&BRAND.palette.length?BRAND.palette:[['White',C.paper],['Ink',C.ink],['Gold',C.accent],['Cream',C.cream],['Grey',C.muted]].filter(x=>x[1]).map(([name,hex])=>({name,hex})); }
+const normHex=v=>{ v=String(v||'').trim(); if(!v) return ''; if(v==='none') return v; if(v[0]!=='#') v='#'+v; if(/^#[0-9a-f]{3}$/i.test(v)) v='#'+v.slice(1).split('').map(c=>c+c).join(''); return /^#[0-9a-f]{6}$/i.test(v)?v.toUpperCase():null; };
+function palettePicker(key,cur,opt){
+  opt=opt||{}; cur=cur==null?'':String(cur); const pal=brandPalette(), up=cur.toUpperCase(), custom=cur&&cur!=='none'&&!pal.some(p=>p.hex.toUpperCase()===up);
+  const b=(v,name,bg,inner)=>`<button type="button" class="sw-btn" data-c="${esc(v)}" aria-pressed="${String(v===''?cur==='':v==='none'?cur==='none':!custom&&v.toUpperCase()===up)}" aria-label="${esc(name)}" title="${esc(name)}"${bg?` style="background:${bg}"`:''}>${inner||''}</button>`;
+  return `<div class="pal" data-pal="${esc(key)}" role="group">${opt.auto?b('',opt.auto,'','A'):''}${opt.none?b('none','None','','<i class="sw-none" aria-hidden="true"></i>'):''}${pal.map(p=>b(p.hex,p.name,p.hex)).join('')}`
+    +`<label class="sw-btn sw-custom" title="Custom colour" aria-pressed="${custom}"${custom?` style="background:${esc(cur)}"`:''}><span class="sr-only">Custom colour</span><input type="color" data-cpick value="${custom?esc(cur):'#888888'}"></label>`
+    +`<input type="text" class="hex" data-chex maxlength="7" placeholder="#hex" aria-label="Custom colour (hex)" value="${custom?esc(cur):''}" spellcheck="false" autocomplete="off"></div>`;
+}
+/* one listener for every palette on the page: onPick(key,value) with value '' | 'none' | #HEX */
+function wirePalettes(root,onPick){
+  root.addEventListener('click',e=>{ const b=e.target.closest('[data-pal] [data-c]'); if(!b) return; onPick(b.closest('[data-pal]').dataset.pal,b.dataset.c); });
+  root.addEventListener('input',e=>{ const t=e.target, pal=t.closest&&t.closest('[data-pal]'); if(!pal) return;
+    if(t.matches('[data-cpick]')){ const v=normHex(t.value); pal.querySelector('[data-chex]').value=v; onPick(pal.dataset.pal,v); }
+    else if(t.matches('[data-chex]')){ const v=normHex(t.value); if(v&&v!=='none'){ pal.querySelector('[data-cpick]').value=v; onPick(pal.dataset.pal,v); } } });
+}
+/* refresh which swatch is pressed without rebuilding (so an open colour picker isn't closed) */
+function syncPalette(el,cur){ if(!el) return; cur=cur==null?'':String(cur); const up=cur.toUpperCase(); let hit=false;
+  el.querySelectorAll('[data-c]').forEach(b=>{ const v=b.dataset.c, on=v===''?cur==='':v==='none'?cur==='none':v.toUpperCase()===up; if(on) hit=true; b.setAttribute('aria-pressed',String(on)); });
+  const cu=el.querySelector('.sw-custom'), custom=!hit&&!!cur; cu.setAttribute('aria-pressed',String(custom)); cu.style.background=custom?cur:'';
+  const hx=el.querySelector('[data-chex]'); if(custom&&document.activeElement!==hx) hx.value=cur; const cp=el.querySelector('[data-cpick]'); if(custom&&document.activeElement!==cp) cp.value=cur; }
 function isLight(hex){ const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return false; const n=parseInt(m[1],16); return ((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000>150; }
 
 /* ---------- the tool page ---------- */
@@ -387,6 +480,8 @@ async function tool(cfg){
     if(f.type==='tiles') return clone(d||[{small:'',big:''}]);
     if(f.type==='place') return d||'bottom-center';
     if(f.type==='note') return null;
+    if(f.type==='range') return d??f.min??0;
+    if(f.type==='color') return d??null;
     if(f.type==='dates'){ const t=today(); return {on:f.on!==false,from:iso(t),to:iso(new Date(t.getTime()+6*864e5))}; }
     return {text:d||'',on:f.on!==false};
   }
@@ -410,7 +505,7 @@ async function tool(cfg){
     nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}</button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
-    <div class="banner" id="draftBar" hidden><span>You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
+    <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
     <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
@@ -429,17 +524,28 @@ async function tool(cfg){
         <button type="button" class="done icon" id="inspClose" aria-label="Done">${ICON.check}</button>
       </div>
       <div class="insp-parts">
-        <div class="insp-part" data-part="text"><input type="text" id="inspText" dir="${B.dir||'ltr'}" aria-label="Edit text" enterkeyhint="done"></div>
-        <div class="insp-part insp-row" data-part="size"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
+        <div class="insp-part" data-part="text"><textarea id="inspText" rows="1" dir="${B.dir||'ltr'}" aria-label="Edit text"></textarea><span class="small" id="inspTextHint">New line: Enter. Done: ✓</span></div>
+        <div class="insp-part insp-col" data-part="size"><div class="insp-row"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
+          <div class="insp-row" id="inspWH" hidden><label class="lbl" for="inspW">Width</label><input type="range" id="inspW" min="40" max="${W}" step="2"><label class="lbl" for="inspH">Height</label><input type="range" id="inspH" min="40" max="${H}" step="2"></div></div>
         <div class="insp-part insp-row" data-part="rotate"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
           <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div>
-        <div class="insp-part insp-row" data-part="font" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
-        <div class="insp-part insp-row" data-part="color" id="inspColors" role="group" aria-label="Colour"></div>
-        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+        <div class="insp-part insp-col" data-part="font"><div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
+          <div id="inspType">
+          <div class="insp-row"><span class="lbl">Align</span><div class="row tight" role="group" aria-label="Align lines" id="inspAlign">${(B.dir==='rtl'?['right','center','left']:['left','center','right']).map(a=>`<button type="button" class="seg" data-align="${a}" aria-pressed="false">${a==='center'?'Centre':a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div></div>
+          <div class="insp-row"><label class="lbl" for="inspLH">Line height</label><input type="range" id="inspLH" min="0.8" max="2" step="0.05" value="1.2"></div>
+          <div class="insp-row" id="inspLSRow"${LS_OK?'':' hidden'}><label class="lbl" for="inspLS">Spacing</label><input type="range" id="inspLS" min="-6" max="40" step="1" value="0"></div>
+          <label class="check"><input type="checkbox" id="inspShadow"> Soft shadow</label>
+          <label class="check"><input type="checkbox" id="inspPill"> Background pill</label><div id="inspPillPal"></div></div></div>
+        <div class="insp-part insp-col" data-part="color"><div id="inspColors" role="group" aria-label="Colour"></div>
+          <div id="inspShape" hidden><span class="lbl">Outline</span><div id="inspStroke"></div><div class="insp-row" id="inspSWRow"><label class="lbl" for="inspSW">Outline width</label><input type="range" id="inspSW" min="0" max="40" step="1" value="0"></div>
+            <div class="insp-row" id="inspRRow"><label class="lbl" for="inspR">Corners</label><input type="range" id="inspR" min="0" max="300" step="2" value="0"></div></div>
+          <div class="insp-row"><label class="lbl" for="inspOp">Opacity</label><input type="range" id="inspOp" min="0.05" max="1" step="0.05" value="1"></div></div>
+        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
           <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
     <section class="sheet" id="sh-assets" data-sheet="assets" aria-labelledby="h-assets">${sheetHead('assets','Add an asset')}<div class="sheet-body" id="assetList"></div></section>
+    <section class="sheet" id="sh-comps" data-sheet="comps" aria-labelledby="h-comps">${sheetHead('comps','Add an element')}<div class="sheet-body"><div class="comp-grid" id="compList"></div><p class="small">Each one is a normal layer: move, size, turn, recolour, change the font, hide or delete it.</p></div></section>
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
@@ -454,7 +560,7 @@ async function tool(cfg){
   if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
-    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
+    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
     <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
@@ -503,7 +609,7 @@ async function tool(cfg){
   function openSheet(n,opt){
     const el=sheetEl(n); if(!el) return;
     if(!isPhone()){   // desktop: cards are always there; bring this one into view
-      if(n==='assets'||n==='insp') el.classList.add('active');
+      if(n==='assets'||n==='comps'||n==='insp') el.classList.add('active');
       if(!(opt&&opt.quiet)) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       return;
     }
@@ -516,7 +622,7 @@ async function tool(cfg){
   /* move focus into a sheet opened from the bar (screen readers land on its title), and back to the bar on close */
   function focusSheet(n){ const h=sheetEl(n)?.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); setTimeout(()=>h.focus({preventScroll:true}),60); } }
   function closeSheet(n){
-    if(!isPhone()){ if(n==='assets'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
+    if(!isPhone()){ if(n==='assets'||n==='comps'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
     if(n&&n!==openName) return; if(!openName) return;
     const el=sheetEl(openName); el.classList.remove('open'); el.setAttribute('inert',''); el.style.transform='';
     if(openName==='insp'&&S.sel){ S.sel=null; render(); }
@@ -583,6 +689,8 @@ async function tool(cfg){
         inner=`<span class="lbl">${esc(f.label)}</span><div class="place-pick${f.cols===false?' one':''}" role="group" aria-label="${esc(f.label)}" data-place="${f.id}">${['top','middle','bottom'].map(r=>cols.map(c=>`<button type="button" class="pp" data-v="${r}-${c}" aria-pressed="false" aria-label="${r==='middle'?'Middle':r[0].toUpperCase()+r.slice(1)}${f.cols===false?'':', '+side(c)}"><i></i></button>`).join('')).join('')}</div>`; }
       else if(f.type==='dates') inner=`<label class="check"><input type="checkbox" data-don="${f.id}"> ${esc(f.label)}</label><div class="row dates-ed"><label class="field"><span class="lbl">From</span><input type="date" data-date="${f.id}:from"></label><label class="field"><span class="lbl">To</span><input type="date" data-date="${f.id}:to"></label></div>`;
       else if(f.type==='note') inner=`<h3 class="fgroup">${esc(f.label)}</h3>`;
+      else if(f.type==='range') inner=`<label class="lbl" for="r_${f.id}">${esc(f.label)} <output data-rout="${f.id}"></output></label><input type="range" id="r_${f.id}" data-range="${f.id}" min="${f.min??0}" max="${f.max??100}" step="${f.step??1}">`;
+      else if(f.type==='color') inner=`<span class="lbl">${esc(f.label)}</span>`+palettePicker('f:'+f.id,null,{auto:f.auto||'Auto'});
       else inner=(f.toggle?`<label class="check"><input type="checkbox" data-on="${f.id}"> ${esc(f.label)}</label>`:`<label class="lbl" for="t_${f.id}">${esc(f.label)}</label>`)+`<input type="text" dir="${B.dir||'ltr'}" id="t_${f.id}" data-text="${f.id}" placeholder="${esc(opts(f.placeholder)||'')}" ${f.toggle?`aria-label="${esc(f.label)}"`:''}>`;
       return `<div class="field" data-fw="${f.id}">${inner}</div>`;
     }).join('');
@@ -603,13 +711,16 @@ async function tool(cfg){
       if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value;
       else if(t.dataset.tile){ const [id,i,k]=t.dataset.tile.split(':'); S.values[id][+i][k]=t.value; }
       else if(t.dataset.date){ const [id,k]=t.dataset.date.split(':'); if(t.value) S.values[id][k]=t.value; }
+      else if(t.dataset.range){ S.values[t.dataset.range]=+t.value; const o=document.querySelector(`[data-rout="${t.dataset.range}"]`); if(o) o.textContent=t.value+(fields.find(x=>x.id===t.dataset.range).unit||''); }
+      else return;
       remember(); render(); syncInspector(); });
+    wirePalettes(box,(key,v)=>{ if(!key.startsWith('f:')) return; S.values[key.slice(2)]=v||null; syncUI(); remember(); render(); });
     box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; if(t.dataset.don) S.values[t.dataset.don].on=t.checked; syncUI(); remember(); render(); });
   });
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
-    if(f.type==='seg'||f.type==='toggle'||f.type==='place') return v;
+    if(f.type==='seg'||f.type==='toggle'||f.type==='place'||f.type==='range'||f.type==='color') return v;
     if(f.type==='multi') return f.options.filter(o=>v.picks.includes(o.v)).map(o=>o.l);
     if(f.type==='tiles') return v.filter(t=>String(t.small||'').trim()||String(t.big||'').trim()).map(t=>({small:String(t.small||'').trim(),big:String(t.big||'').trim()}));
     if(f.type==='dates') return v.on?dateRange(v.from,v.to):'';
@@ -714,13 +825,16 @@ async function tool(cfg){
       else if(f.type==='multi') document.querySelectorAll(`[data-mf="${f.id}"] .chip`).forEach(b=>b.setAttribute('aria-pressed',String(v.picks.includes(b.dataset.v))));
       else if(f.type==='tiles') paintTiles(f);
       else if(f.type==='note'){}
+      else if(f.type==='range'){ const r=document.querySelector(`[data-range="${f.id}"]`); if(document.activeElement!==r) r.value=v; document.querySelector(`[data-rout="${f.id}"]`).textContent=v+(f.unit||''); }
+      else if(f.type==='color') syncPalette(document.querySelector(`[data-pal="f:${f.id}"]`),v);
       else if(f.type==='place'){ const cur=String(v).includes('-')?v:v+'-start'; document.querySelectorAll(`[data-place="${f.id}"] .pp`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===cur||(f.cols===false&&b.dataset.v.split('-')[0]===cur.split('-')[0])))); }
       else if(f.type==='dates'){ document.querySelector(`[data-don="${f.id}"]`).checked=v.on; document.querySelectorAll(`[data-date^="${f.id}:"]`).forEach(inp=>{ const k=inp.dataset.date.split(':')[1]; inp.value=v[k]; inp.disabled=!v.on; }); }
       else { const t=document.querySelector(`[data-text="${f.id}"]`); if(t.value!==v.text&&document.activeElement!==t) t.value=v.text; if(f.toggle){const c=document.querySelector(`[data-on="${f.id}"]`);c.checked=v.on;t.disabled=!v.on;} }
     });
     slotsUI(); syncZoom(); syncCta();
   }
-  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample; $('zoomRow').hidden=!real||cfg.noZoom; if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&S.count>1)); }
+  /* whole photos (contain) can't zoom, so the slider hides for them */
+  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&S.count>1)); }
   const status=(t,ms)=>{ $('status').textContent=t; if(isPhone()&&openName!=='save') toast(t,ms); else if(!t) toast(''); };
 
   /* ---- drawing ---- */
@@ -728,6 +842,7 @@ async function tool(cfg){
   function drawExtras(h){
     S.extras.forEach(x=>{
       if(x.type==='asset') h.asset(x);
+      else if(x.type==='comp') drawComp(h,x);
       else h.text(x.id,'Your text',x.text,W/2,x.y,{font:x.font,weight:x.font==='display'?'':'800',size:x.size,color:x.color,shadow:x.shadow});
     });
   }
@@ -740,7 +855,7 @@ async function tool(cfg){
     if(preview&&dragging) drawGuides(ctx);
     if(preview&&lift&&lift.on){ ctx.save(); r.forEach(b=>{ if(b.photo===lift.i){ ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.setLineDash([18,12]); ctx.lineWidth=6; ctx.strokeStyle='rgba(61,107,255,.9)'; ctx.strokeRect(b.x+3,b.y+3,b.w-6,b.h-6); }
       if(b.photo!=null&&b.photo===lift.over){ ctx.setLineDash([]); ctx.lineWidth=12; ctx.strokeStyle='#3d6bff'; ctx.strokeRect(b.x+6,b.y+6,b.w-12,b.h-12); } }); ctx.restore(); }
-    ctx.restore(); if(preview){ reg=r; paintLayers(); }
+    ctx.restore(); if(preview){ const had=!S.sel||reg.some(x=>x.id===S.sel&&!x.empty); reg=r; paintLayers(); if(!had&&r.some(x=>x.id===S.sel&&!x.empty)) syncInspector(); }   // a just-added layer: its edit bar can now show every tab
   }
   /* ---- alignment guides: while dragging, the story's safe zones show and snap lines appear ---- */
   const SAFE=cfg.safe||(H===1920?{top:250,bottom:300}:null);
@@ -808,27 +923,35 @@ async function tool(cfg){
   function syncUndo(){ $('undo').disabled=hist.i<=0; $('redo').disabled=hist.i>=hist.stack.length-1; }
   function startHistory(){ hist.stack=[snap()]; hist.i=0; hist.ready=true; syncUndo(); }
 
-  /* ---- drafts: the unfinished story is kept on this phone, photos included ---- */
-  const DKEY='studio:draft:'+B.id+':'+cfg.id; let draftTimer=0, dirty=false;
+  /* ---- drafts: every unfinished story is kept on this phone (photos included), as a list per tool ----
+     This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
+  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, dirty=false, capWarned=false;
+  const DKEY=()=>DBASE+':'+draftId;
   function saveDraft(s){
-    if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing (and never replaces your unfinished story)
+    if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing
     if(hist.i>0) dirty=true; if(!dirty) return;
+    if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
+      $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
+      if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this phone. Remove old ones in Continue editing.',6000); } }
     clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
-      if(design) return;   // it was saved to the team meanwhile
-      const keys=[];
-      for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(!p.draftSaved){ const blob=await photoBlob(p); if(blob){ await idb.put(DKEY+':'+p.key,blob); p.draftSaved=true; } } } else keys[i]=null; }
-      if(design) return;
-      const old=store(DKEY); store(DKEY,{json:s.json,keys,at:Date.now(),thumb:draftThumb()});
-      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(DKEY+':'+k); });
+      if(design||!draftId) return;   // saved to the team meanwhile
+      const key=DKEY(), pfx=draftPfx||key, keys=[];
+      for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } } else keys[i]=null; }
+      if(design||!draftId||key!==DKEY()) return;
+      const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
+      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); });
     },800);
   }
   function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
-  function clearDraft(){ clearTimeout(draftTimer); const old=store(DKEY); if(old&&old.keys) old.keys.forEach(k=>{ if(k) idb.del(DKEY+':'+k); }); store(DKEY,null); dirty=false; }
-  async function loadDraft(d){
-    const slots=[];
-    for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(DKEY+':'+k); if(blob) slots[i]=await photoFromBlob(blob,k,true); }
+  /* the draft this page was writing is done (saved to the team): only that one goes */
+  function clearDraft(){ clearTimeout(draftTimer); if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
+  async function loadDraft(x){
+    const d=x.d, pfx=d.pfx||x.key, slots=[];
+    for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(pfx+':'+k); if(blob){ slots[i]=await photoFromBlob(blob,k,true); slots[i].draftSaved=pfx; } }
     const r=JSON.parse(d.json); await fontsOf(r); applyRecipe(r,slots);
-    dirty=true;
+    draftId=x.id; draftPfx=pfx; dirty=true;
+    if(new URLSearchParams(location.search).get('draft')!==x.id) history.replaceState(null,'',location.pathname+'?draft='+x.id);
   }
   async function photoFromBlob(blob,key,draftSaved){
     const img=await loadFile(blob); const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
@@ -941,8 +1064,8 @@ async function tool(cfg){
 
   /* ---- selecting and editing layers ---- */
   const extra=id=>S.extras.find(x=>x.id===id);
-  const textExtra=id=>{ const x=extra(id); return x&&x.type!=='asset'?x:null; };
-  function layerText(id){ const x=extra(id); if(x) return x.type==='asset'?null:x.text; const f=fields.find(f=>f.id===id); if(!f) return null; const t=value(id); return typeof t==='string'?t:null; }
+  const textExtra=id=>{ const x=extra(id); return x&&!x.type?x:null; };   // "Add text" layers (they keep their own size)
+  function layerText(id){ const x=extra(id); if(x) return x.type==='asset'||(x.type==='comp'&&x.text==null)?null:x.text; const f=fields.find(f=>f.id===id); if(!f) return null; const t=value(id); return typeof t==='string'?t:null; }
   let inspPart=null;   // phone: which one control of the layer bar is open (none = slim bar only)
   function select(id){
     if(id!==S.sel) inspPart=null;
@@ -952,38 +1075,72 @@ async function tool(cfg){
   function syncInspector(){
     const id=S.sel, b=reg.find(x=>x.id===id); if(!id) return;
     const l=S.layers[id]||{k:1,color:null,hidden:false}; const t=layerText(id), x=extra(id);
-    $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):'Your text'):(b&&b.label)||'Layer';
+    $('inspName').textContent=x?(x.type==='asset'?((assetDef(x.ref)||{}).label||'Asset'):x.type==='comp'?(COMP(x.comp)||{}).label||'Element':'Your text'):(b&&b.label)||'Layer';
     const ti=$('inspText'); if(t!==null&&document.activeElement!==ti) ti.value=t;
     const isAsset=!!(x&&x.type==='asset'), ad=isAsset&&assetDef(x.ref);
-    $('inspSize').min=isAsset?'0.2':'0.4'; $('inspSize').max=isAsset?'4':'2.5';
-    $('inspSize').value=x&&!isAsset?x.size/60:l.k;
-    $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspHide').hidden=!!x; $('inspDelete').hidden=!x; $('inspOrder').hidden=!x;
+    $('inspSize').min=x&&x.type?'0.2':'0.4'; $('inspSize').max=x&&x.type?'4':'2.5';
+    $('inspSize').value=x&&!x.type?x.size/60:l.k;
+    $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspDelete').hidden=!x; $('inspDup').hidden=!x; $('inspOrder').hidden=!x;
     if(x){ const i=S.extras.indexOf(x); $('inspBack').disabled=i<=0; $('inspFwd').disabled=i>=S.extras.length-1; }
-    const C=B.colors, kind=b&&b.kind;
-    const palette=[[C.ink,'Dark',C.ink],[C.paper,'White',C.paper],[C.accent,'Gold',C.accent],...(C.cream?[[C.cream,'Cream',C.cream]]:[]),...(C.muted?[[C.muted,'Grey',C.muted]]:[])];
-    const sw=kind==='logo'?[['dark','Dark',C.ink],['light','Light','#ffffff']]:isAsset?(ad&&(ad.tint||!ad.file)?[[null,'Original',null],...palette]:[]):[[null,'Auto',null],[C.paper,'White',C.paper],[C.ink,'Dark',C.ink],[C.accent,'Gold',C.accent]];
-    $('inspColors').hidden=!sw.length;
-    $('inspFontRow').hidden=!(kind==='text'||kind==='pill');
-    if(kind==='text'||kind==='pill'){
+    const C=B.colors, kind=b&&b.kind, isShape=isAsset&&ad&&!ad.file, comp=x&&x.type==='comp'?COMP(x.comp):null;
+    /* colour: the brand palette (+ Custom) for everything that can take a colour; photos and cut-outs keep theirs */
+    const canColor=!(isAsset&&ad&&ad.file&&!ad.tint);
+    const cur=x&&!x.type?x.color:isShape?(l.color||x.color):l.color;
+    $('inspColors').innerHTML=canColor?`<span class="lbl">${isShape?'Fill':kind==='pill'&&!comp?'Button colour':'Colour'}</span>`+palettePicker('col',cur,{auto:x&&!x.type?null:isShape?null:(isAsset?'Original':'Auto'),none:isShape&&!ad.line}):'';
+    $('inspShape').hidden=!isShape||!!ad.line;
+    if(isShape&&!ad.line){ if(!$('inspStroke').firstChild||$('inspStroke').dataset.for!==id){ $('inspStroke').innerHTML=palettePicker('stroke',x.stroke||'none',{none:true}); $('inspStroke').dataset.for=id; } else syncPalette($('inspStroke').firstChild,x.stroke||'none');
+      if(document.activeElement!==$('inspSW')) $('inspSW').value=x.sw||0; $('inspRRow').hidden=ad.radius==null; if(document.activeElement!==$('inspR')) $('inspR').value=x.r!=null?x.r:ad.radius||0; }
+    if(document.activeElement!==$('inspOp')) $('inspOp').value=l.op!=null?l.op:1;
+    $('inspWH').hidden=!(isShape&&ad.free); if(isShape&&ad.free){ $('inspW').value=x.w; $('inspH').value=x.h||Math.round(x.w*ad.h/ad.w); }
+    const textish=kind==='text'||kind==='pill';
+    $('inspFontRow').hidden=!textish;
+    if(textish){
       const opt=f=>`<option value="${esc(f.family)}" style="font-family:'${esc(f.family)}'">${esc(f.label||f.family)}</option>`;
       const html=`<option value="">Brand font (default)</option><optgroup label="${esc(B.name)} fonts">${brandFonts().map(opt).join('')}</optgroup><optgroup label="More fonts">${MORE_FONTS.map(opt).join('')}</optgroup>`;
       if($('inspFont').dataset.built!=='1'){ $('inspFont').innerHTML=html; $('inspFont').dataset.built='1'; }
       $('inspFont').value=l.font||'';
     }
-    const cur=x&&!isAsset?x.color:l.color;
-    const has={text:t!==null,size:true,rotate:true,color:!!sw.length,font:kind==='text'||kind==='pill',more:true};
+    /* line options (align, line height, spacing, shadow, background pill): plain text layers only */
+    const typ=kind==='text'&&b&&b.typ; $('inspType').hidden=!typ;
+    if(typ){ const al=l.align||''; document.querySelectorAll('#inspAlign [data-align]').forEach(bt=>bt.setAttribute('aria-pressed',String(bt.dataset.align===al)));
+      if(document.activeElement!==$('inspLH')) $('inspLH').value=l.lh||1.2; if(document.activeElement!==$('inspLS')) $('inspLS').value=l.ls||0;
+      $('inspShadow').checked=l.shadow!=null?!!l.shadow:!!b.shadow; const pill=!!(l.bg&&l.bg!=='none'); $('inspPill').checked=pill;
+      if($('inspPillPal').dataset.for!==id||!$('inspPillPal').firstChild){ $('inspPillPal').innerHTML=palettePicker('pill',l.bg||C.ink); $('inspPillPal').dataset.for=id; } else syncPalette($('inspPillPal').firstChild,l.bg||C.ink);
+      $('inspPillPal').hidden=!pill; }
+    $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
+    const has={text:t!==null,size:true,rotate:true,color:true,font:textish,more:true};
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
     if(inspPart&&!has[inspPart]) inspPart=null;
     document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
     document.querySelectorAll('#sh-insp .insp-part').forEach(pt=>{ pt.classList.toggle('on',pt.dataset.part===inspPart); pt.hidden=!has[pt.dataset.part]; });
-    $('inspColors').innerHTML='<span class="lbl">Colour</span>'+sw.map(([v,n,c])=>`<button type="button" class="sw-btn" data-color="${v??''}" aria-pressed="${String((cur??'')===(v??''))}" aria-label="${n}" title="${n}" style="${c?'background:'+c:''}">${c?'':'A'}</button>`).join('');
+    autoGrow();
   }
   $('inspClose').addEventListener('click',()=>select(null));
   document.querySelector('#sh-insp .insp-tabs').addEventListener('click',e=>{ const tb=e.target.closest('.itab'); if(!tb) return; inspPart=inspPart===tb.dataset.part?null:tb.dataset.part; syncInspector();
     if(inspPart==='text') setTimeout(()=>{ $('inspText').focus(); },30); });
   $('inspRot').addEventListener('input',e=>{ if(S.sel) setRot(S.sel,snapRot(+e.target.value)); });
   document.querySelector('#sh-insp .rot-btns').addEventListener('click',e=>{ const b=e.target.closest('[data-rot]'); if(!b||!S.sel) return; const d=+b.dataset.rot, cur=(S.layers[S.sel]||{}).rot||0; setRot(S.sel,d?Math.round((cur+d)/15)*15:0); });
-  $('inspText').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+  /* the text box grows with its lines; Enter makes a new line (one-line layers: Enter = done) */
+  function autoGrow(){ const t=$('inspText'); t.style.height='auto'; t.style.height=Math.min(160,t.scrollHeight+2)+'px'; }
+  $('inspText').addEventListener('keydown',e=>{ if(e.key!=='Enter') return; if(oneLine(S.sel)||e.ctrlKey||e.metaKey){ e.preventDefault(); e.target.blur(); } });
+  const LL=id=>S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
+  const setL=(k,v)=>{ const id=S.sel; if(!id) return; const l=LL(id); if(v==null) delete l[k]; else l[k]=v; syncInspector(); render(); };
+  $('inspAlign').addEventListener('click',e=>{ const b=e.target.closest('[data-align]'); if(b) setL('align',(S.layers[S.sel]||{}).align===b.dataset.align?null:b.dataset.align); });
+  $('inspLH').addEventListener('input',e=>setL('lh',+e.target.value===1.2?null:+e.target.value));
+  $('inspLS').addEventListener('input',e=>setL('ls',+e.target.value||null));
+  $('inspShadow').addEventListener('change',e=>setL('shadow',e.target.checked));
+  $('inspPill').addEventListener('change',e=>setL('bg',e.target.checked?B.colors.ink:null));
+  $('inspOp').addEventListener('input',e=>setL('op',+e.target.value>=1?null:+e.target.value));
+  $('inspSW').addEventListener('input',e=>{ const x=extra(S.sel); if(!x) return; x.sw=+e.target.value; if(x.sw&&!x.stroke) x.stroke=B.colors.ink; syncInspector(); render(); });
+  $('inspR').addEventListener('input',e=>{ const x=extra(S.sel); if(x){ x.r=+e.target.value; render(); } });
+  $('inspW').addEventListener('input',e=>{ const x=extra(S.sel), a=x&&assetDef(x.ref); if(!a) return; if(!x.h) x.h=Math.round(x.w*a.h/a.w); x.w=+e.target.value; render(); });
+  $('inspH').addEventListener('input',e=>{ const x=extra(S.sel); if(x){ x.h=+e.target.value; render(); } });
+  /* every colour in the layer bar comes from the same palette picker */
+  wirePalettes($('sh-insp'),(key,v)=>{ const id=S.sel; if(!id) return; const x=extra(id);
+    if(key==='col'){ const tx=textExtra(id); if(tx){ tx.color=v||B.colors.paper; tx.shadow=!(v&&!isLight(v)); } else LL(id).color=v||null; }
+    else if(key==='stroke'&&x){ x.stroke=v==='none'?null:v; if(x.stroke&&!x.sw) x.sw=6; }
+    else if(key==='pill') LL(id).bg=v||B.colors.ink;
+    syncInspector(); render(); });
   $('inspFont').addEventListener('change',async e=>{ const id=S.sel; if(!id) return; const fam=e.target.value||null; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false});
     if(fam){ status('Loading font…'); await ensureFont(fam); status(''); } l.font=fam; render(); });
   let snapOn=!!store('studio:snap');   // off unless you turn it on; remembered on this phone
@@ -992,26 +1149,73 @@ async function tool(cfg){
   $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
   document.addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)||e.altKey) return; const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
     const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
-  $('draftFresh').addEventListener('click',()=>{ clearDraft(); $('draftBar').hidden=true; });
-  $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const d=store(DKEY); if(d){ await loadDraft(d); syncUI(); draw(vctx,true); startHistory(); } });
-  $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); render(); });
+  /* Start fresh = a new story; the unfinished ones stay in Continue editing */
+  $('draftFresh').addEventListener('click',()=>{ $('draftBar').hidden=true; status('Your unfinished stories stay in Continue editing.',3000); });
+  $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const x=listDrafts(B.id,cfg.id)[0]; if(x){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); } });
+  $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); autoGrow(); render(); });
   $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=textExtra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
-  $('inspColors').addEventListener('click',e=>{ const b=e.target.closest('[data-color]'); if(!b) return; const v=b.dataset.color||null, id=S.sel, x=textExtra(id); if(x){ x.color=v||B.colors.paper; x.shadow=!(v&&!isLight(v)); } else (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).color=v; syncInspector(); render(); });
   $('inspCenter').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id); if(!b||b.hidden) return; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.dx+=W/2-(b.x+b.w/2); render(); });
   $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=textExtra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
   $('inspHide').addEventListener('click',()=>{ const id=S.sel; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.hidden=!l.hidden; syncInspector(); render(); });
   $('inspDelete').addEventListener('click',()=>{ S.extras=S.extras.filter(x=>x.id!==S.sel); delete S.layers[S.sel]; select(null); });
+  /* duplicate an added layer: same look, a little lower */
+  $('inspDup').addEventListener('click',()=>{ const x=extra(S.sel); if(!x) return; const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const c=clone(x); c.id=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n;
+    const l=S.layers[x.id]; S.layers[c.id]=l?{...clone(l),dy:(l.dy||0)+60}:{dx:0,dy:60,k:1,color:null,hidden:false}; S.extras.splice(S.extras.indexOf(x)+1,0,c); select(c.id); });
   let extraN=0;
   $('addText').addEventListener('click',()=>{
-    const id='extra'+(++extraN);
+    const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='extra'+n;
     // new text starts in the middle, light with a soft shadow so it reads on photos; change colour in the panel
     S.extras.push({id,text:B.phrases.write||'Text',font:'display',size:72,color:B.colors.paper,shadow:true,y:H/2-60+(S.extras.length%4)*90});
     select(id); inspPart='text'; syncInspector(); setTimeout(()=>{ $('inspText').focus(); $('inspText').select(); },30);
   });
+  /* ---- elements: every piece a tool has (button, place line, flavour pills, offer tile, dates, small line, logo,
+     "map in bio" pill, Instagram handle) can be added to ANY tool as a normal layer. Words come from the brand kit. ---- */
+  const COMPS=[
+    {id:'button',label:'Button',oneLine:true,text:()=>(B.phrases.buttons||[])[0]||B.phrases.write||'Button'},
+    {id:'bio',label:'Map in bio',oneLine:true,text:()=>B.phrases.bio||(B.phrases.buttons||[])[0]||'Map in bio'},
+    {id:'place',label:'Place + pin',oneLine:true,text:()=>B.phrases.placeName||'Place'},
+    {id:'flavours',label:'Flavour pills',when:()=>(B.flavours||[]).length},
+    {id:'tile',label:'Offer tile',text:()=>'×3\n20%'},
+    {id:'dates',label:'Dates line',oneLine:true,text:()=>dateRange(iso(today()),iso(new Date(Date.now()+6*864e5)))},
+    {id:'small',label:'Small line',text:()=>(B.phrases.small||[])[0]||B.phrases.write||'Text'},
+    {id:'handle',label:'Instagram handle',oneLine:true,when:()=>!!B.handle,text:()=>B.handle},
+    {id:'logo',label:'Logo',asset:'logo'}
+  ];
+  function COMP(id){ return COMPS.find(c=>c.id===id)||null; }
+  function drawComp(h,x){
+    const c=COMP(x.comp); if(!c){ return; } const C=B.colors, t=x.text, id=x.id, lb=c.label;
+    if(x.comp==='button') h.pill(id,lb,t,x.x,x.y-38);
+    else if(x.comp==='bio') h.pill(id,lb,t,x.x,x.y-38,{icon:'pin'});
+    else if(x.comp==='place') h.pin(id,lb,t,x.x,x.y-22,{color:C.muted});
+    else if(x.comp==='handle') h.pin(id,lb,t,x.x,x.y-22,{icon:'insta',color:C.ink});
+    else if(x.comp==='flavours') h.tags(id,lb,(B.flavours||[]).map(f=>({text:f.name,bg:f.bg,fg:f.fg})),x.x,x.y-36,{size:36,h:72});
+    else if(x.comp==='tile'){ const ln=String(t||'').split('\n'); h.tile(id,lb,ln.length>1?ln[0]:'',ln.length>1?ln.slice(1).join(' '):ln[0],x.x,x.y-130); }
+    else if(x.comp==='dates') h.text(id,lb,t,x.x,x.y-22,{weight:'800',size:40,color:C.muted,maxW:960});
+    else if(x.comp==='small') h.text(id,lb,t,x.x,x.y-20,{weight:'800',size:38,color:C.muted,maxW:960});
+  }
+  /* the Element sheet shows each one drawn for real, small */
+  function paintComps(){
+    const list=COMPS.filter(c=>!c.when||c.when());
+    $('compList').innerHTML=list.map(c=>`<button type="button" class="comp-tile" data-comp="${c.id}"><canvas width="540" height="240" aria-hidden="true"></canvas><span>${esc(c.label)}</span></button>`).join('');
+    list.forEach(c=>{ const cv=$('compList').querySelector(`[data-comp="${c.id}"] canvas`), cx=cv.getContext('2d'); cx.scale(.75,.75);   // a 720×320 window onto the story
+      if(c.asset){ const hh=LOGO.height/LOGO.width*380; cx.drawImage(LOGO,170,160-hh/2,380,hh); return; }
+      const fake={layers:{},photos:[]}, hh=makeHelpers(cx,fake,true,[],.75,0,1); drawComp(hh,{id:'p',comp:c.id,text:c.text?c.text():null,x:360,y:160}); });
+  }
+  function addComp(cid){
+    const c=COMP(cid); if(!c) return; closeSheet('comps');
+    if(c.asset) return addAsset(c.asset);
+    const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='comp'+n;
+    S.extras.push({id,type:'comp',comp:cid,text:c.text?c.text():null,x:W/2,y:H/2+(S.extras.length%4)*90});
+    select(id);
+  }
+  $('addComp').addEventListener('click',()=>{ paintComps(); openSheet('comps'); });
+  $('compList').addEventListener('click',e=>{ const t=e.target.closest('[data-comp]'); if(t) addComp(t.dataset.comp); });
+  const oneLine=id=>{ const b=reg.find(r=>r.id===id), x=extra(id); if(x&&x.type==='comp'){ const c=COMP(x.comp); return !c||!!c.oneLine; } return !!(b&&b.kind!=='text'); };
+
   /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
   function assetThumb(a){
     if(a.file) return `<img alt="" src="${esc(assetUrl(a))}"${a.tint?' data-logo':''} loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
-    const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); x.fillStyle=getComputedStyle(document.body).color||'#161210'; a.draw(x);
+    const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); drawShape(x,a,a.w,a.h,getComputedStyle(document.body).color||'#161210');
     return `<img alt="" src="${c.toDataURL()}">`;
   }
   function paintAssets(){
@@ -1024,9 +1228,9 @@ async function tool(cfg){
     const a=assetDef(ref); if(!a) return;
     if(a.file){ const got=await loadAsset(ref); if(!got||got.missing){ status('“'+a.label+'” is not in the brand kit yet ('+a.file+').'); return; } }
     /* starting size: logo 320 wide; photos/cut-outs about 700 tall (so a pair of cans starts big enough), never wider than 960 */
-    let w=a.w0; if(!w){ if(a.file){ const im=ASSET_IMG.get(ref).img; w=a.tint||a.group==='Logo'?320:Math.min(960,Math.round(700*im.width/im.height)); } else w=a.w>a.h*2?420:260; }
-    const id='asset'+(++assetN);
-    S.extras.push({id,type:'asset',ref,w,x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:(a.color||B.colors.accent||B.colors.ink)});
+    let w=a.w0; if(!w){ if(a.file){ const im=ASSET_IMG.get(ref).img; w=a.tint||a.group==='Logo'?320:Math.min(960,Math.round(700*im.width/im.height)); } else w=a.free?a.w:a.w>a.h*2?420:260; }
+    const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='asset'+n;
+    const ch=a.free?a.h:undefined; S.extras.push({id,type:'asset',ref,w,...(ch?{h:ch}:{}),x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:((a.color&&B.colors[a.color])||B.colors.ink)});
     closeSheet('assets'); select(id);
   }
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
@@ -1046,7 +1250,7 @@ async function tool(cfg){
     if(isPhone()&&openName!=='layers'){ layersSig=''; return; }   // only keep the list up to date while it's on screen
     const seen=new Set(), items=[];
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(!b.id||b.empty||seen.has(b.id)) continue; seen.add(b.id); items.push(b); }
-    const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x&&x.type!=='asset'?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
+    const rows=items.map(b=>{ const t=layerText(b.id), x=extra(b.id); return {id:b.id,name:x&&!x.type?'Your text':b.label||KIND[b.kind]||'Layer',kind:KIND[b.kind]||'',text:t&&t!==b.label?t:'',hidden:!!b.hidden,sel:S.sel===b.id}; });
     const sig=JSON.stringify(rows); if(sig===layersSig) return; layersSig=sig;
     $('layerList').innerHTML=rows.length?rows.map(r=>`<li class="lyr${r.sel?' sel':''}${r.hidden?' off':''}"><button type="button" class="lyr-pick" data-pick="${esc(r.id)}" aria-current="${r.sel}"><b>${esc(r.name)}</b>${r.text?`<span dir="auto">${esc(r.text)}</span>`:(r.kind&&r.kind!==r.name?`<span>${esc(r.kind)}</span>`:'')}</button><button type="button" class="lyr-eye" data-eye="${esc(r.id)}" aria-pressed="${!r.hidden}" aria-label="${r.hidden?'Show':'Hide'} ${esc(r.name)}" title="${r.hidden?'Show':'Hide'}">${r.hidden?EYE_OFF:EYE}</button></li>`).join(''):'<li class="small">No layers yet.</li>';
   }
@@ -1130,7 +1334,7 @@ async function tool(cfg){
       } else if(target.photo!=null&&!target.pick){ if(keepSel){ keepSel=null; select(null); } if(target.mode==='cover'){ const p=S.photos[target.photo]; p.ox=st.ox+ddx; p.oy=st.oy+ddy; } }
     } else if(pts.size>=2&&st.pts.size>=2){
       moved=true; const a=[...pts.values()], c=[...st.pts.values()]; const r=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)/(Math.hypot(c[0].x-c[1].x,c[0].y-c[1].y)||1);
-      if(target.layer){ const x=extra(target.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(x?.2:.4,Math.min(x?4:2.5,st.k*r));
+      if(target.layer){ const x=extra(target.layer); if(x&&!x.type) x.size=Math.max(20,Math.min(220,st.size*r)); else S.layers[target.layer].k=Math.max(x?.2:.4,Math.min(x?4:2.5,st.k*r));
         /* two-finger twist turns the layer; it settles on straight and right angles when close */
         const ang=(p,q)=>Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; let rot=st.rot+ang(a[0],a[1])-ang(c[0],c[1]); S.layers[target.layer].rot=snapRot(rot); syncInspector(); }
       else if(target.mode==='cover'&&!target.pick){ const p=S.photos[target.photo]; p.zoom=Math.max(1,Math.min(3,st.zoom*r)); $('zoom').value=p.zoom; }
@@ -1150,7 +1354,7 @@ async function tool(cfg){
   }
   view.addEventListener('pointerup',endPtr); view.addEventListener('pointercancel',endPtr);
   view.addEventListener('wheel',e=>{ const t=hit(toCanvas(e)); if(!t) return; e.preventDefault();
-    if(t.layer){ const x=extra(t.layer); if(x&&x.type!=='asset') x.size=Math.max(20,Math.min(220,x.size*(1-e.deltaY*.0015))); else { const l=S.layers[t.layer]||(S.layers[t.layer]={dx:0,dy:0,k:1}); l.k=Math.max(x?.2:.4,Math.min(x?4:2.5,l.k*(1-e.deltaY*.0015))); } if(S.sel!==t.layer) select(t.layer); else syncInspector(); }
+    if(t.layer){ const x=extra(t.layer); if(x&&!x.type) x.size=Math.max(20,Math.min(220,x.size*(1-e.deltaY*.0015))); else { const l=S.layers[t.layer]||(S.layers[t.layer]={dx:0,dy:0,k:1}); l.k=Math.max(x?.2:.4,Math.min(x?4:2.5,l.k*(1-e.deltaY*.0015))); } if(S.sel!==t.layer) select(t.layer); else syncInspector(); }
     else if(t.mode==='cover'){ const p=S.photos[t.photo]; if(!p.img||p.sample) return; p.zoom=Math.max(1,Math.min(3,p.zoom-e.deltaY*.0015)); S.active=t.photo; syncZoom(); }
     render(); },{passive:false});
   view.addEventListener('keydown',e=>{ if(!S.sel) return; const l=S.layers[S.sel]||(S.layers[S.sel]={dx:0,dy:0,k:1}); const st=e.shiftKey?20:4; const m={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key]; if(m){ e.preventDefault(); l.dx+=m[0]; l.dy+=m[1]; render(); }
@@ -1275,7 +1479,7 @@ async function tool(cfg){
   function insertPage(at,page,photos){ S.P.splice(at,0,page); S.photos.splice(at*perPage,0,...(photos||Array.from({length:perPage},blankPhoto))); S.photos.length=nPhotos; for(let i=0;i<nPhotos;i++) if(!S.photos[i]) S.photos[i]=blankPhoto(); }
   function removePage(at){ S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); }
   function movePage(from,to){ if(to<0||to>=S.P.length||from===to) return; const pg=S.P[from], ph=S.photos.slice(from*perPage,from*perPage+perPage); removePage(from); insertPage(to,pg,ph); S.page=to; paintPager(); goPage(to); }
-  function dupPage(at){ if(S.P.length>=PG.max) return status('A carousel can have up to '+PG.max+' slides.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const nid=x.type==='asset'?'asset'+(++assetN):'extra'+(++extraN); if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
+  function dupPage(at){ if(S.P.length>=PG.max) return status('A carousel can have up to '+PG.max+' slides.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const nid=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n; if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
     insertPage(at+1,pg,S.photos.slice(at*perPage,at*perPage+perPage).map(p=>({...p}))); paintPager(); goPage(at+1); status('Slide '+(at+1)+' duplicated.'); }
   function deletePage(at){ if(S.P.length<=PG.min) return status('A carousel needs at least '+PG.min+' slides.'); removePage(at); paintPager(); goPage(Math.min(at,S.P.length-1)); status('Slide deleted. Undo brings it back.'); }
   /* add a slide: pick its type (or duplicate this one); panoramas add 2 or 3 slides that share one wide photo */
@@ -1326,17 +1530,20 @@ async function tool(cfg){
   const names=(B.samples&&B.samples[cfg.id])||[];
   const imgs=await Promise.all(names.map(n=>load(B.base+'samples/'+n+'.jpg').catch(()=>null)));
   imgs.forEach((img,i)=>{ const k=PG?i*perPage:i; if(img&&S.photos[k]) S.photos[k]={img,zoom:1,ox:0,oy:0,sample:true}; });
+  /* a tool with more photo boxes than example photos (Collage up to 9) shows the examples again, in turn */
+  const got=imgs.filter(Boolean); if(!PG&&got.length) for(let i=got.length;i<nPhotos;i++) if(S.photos[i]&&!S.photos[i].img) S.photos[i]={img:got[i%got.length],zoom:1,ox:0,oy:0,sample:true};
   syncUI(); draw(vctx,true);
 
   /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), or offer the unfinished story ---- */
-  const q=new URLSearchParams(location.search), draft=store(DKEY);
+  const q=new URLSearchParams(location.search), drafts=listDrafts(B.id,cfg.id), want=q.get('draft');
   try{
     if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
-    else if(draft&&q.get('draft')==='1') await loadDraft(draft);
-    else if(draft&&(draft.keys||[]).some(Boolean)||(draft&&draft.json!==JSON.stringify(recipe()))) $('draftBar').hidden=false;
+    else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this phone.'); } }
+    else { const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
+      if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); syncSaveOpts();
-  Studio.debug={S,reg:()=>reg,recipe,render};   // used by the automated tests
+  Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
 }
@@ -1376,22 +1583,29 @@ async function home(){
     window.addEventListener('appinstalled',()=>{ bar.hidden=true; });
   })();
 
-  /* continue editing: unfinished stories kept on this phone */
-  const cont=Object.keys(TOOLS).map(id=>({id,d:store('studio:draft:'+B.id+':'+id)})).filter(x=>x.d).sort((a,b)=>b.d.at-a.d.at);
+  /* continue editing: every unfinished story kept on this phone, newest first (several per tool) */
+  const cont=Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
+  const thumbs={};
   function paintCont(){
     const list=cont.filter(x=>!x.gone);
     $('continueSec').hidden=$('hubCont').hidden=!list.length;
-    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${x.id}"><a href="${toolPage(x.id)}?draft=1" class="rlink"><span class="cthumb">${x.d.thumb?`<img alt="" src="${x.d.thumb}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.id].title)}</b><span dir="auto">${x.d.design?esc(x.d.design.name)+' · ':''}${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${x.id}" aria-label="Remove ${esc(TOOLS[x.id].title)} from Continue editing">✕</button></div>`).join('');
+    const per={}; list.forEach(x=>{ per[x.tool]=(per[x.tool]||0)+1; });
+    const many=Object.entries(per).filter(([,n])=>n>=DRAFT_CAP).map(([t,n])=>n+' '+TOOLS[t].title);
+    const note=$('contNote')||(()=>{ const p=document.createElement('p'); p.id='contNote'; p.className='small cont-note'; $('continueList').before(p); return p; })();
+    note.hidden=!many.length; note.textContent=many.length?'Lots of unfinished stories ('+many.join(', ')+'). The oldest are at the end: remove the ones you don’t need with ✕.':'';
+    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[x.key]?`<img alt="" src="${thumbs[x.key]}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.tool].title)}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
+    list.forEach(x=>{ if(thumbs[x.key]!==undefined) return; thumbs[x.key]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[x.key]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
     spy();
   }
-  /* remove an unfinished story: it disappears at once; Undo brings it back; after a few seconds its photos are deleted from the phone */
   const hubToast=(msg,undo)=>{ let t=document.getElementById('hubToast'); if(!t){ t=document.createElement('div'); t.id='hubToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
     t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="toast-btn">Undo</button>':''}`; t.hidden=false; t.style.pointerEvents='auto';
     clearTimeout(t._h); t._h=setTimeout(()=>{ t.hidden=true; },5000); if(undo) t.querySelector('button').onclick=()=>{ t.hidden=true; undo(); }; };
-  $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.id===b.dataset.rm); if(!x) return;
-    x.gone=true; paintCont(); const key='studio:draft:'+B.id+':'+x.id, d=x.d;
-    store(key,null); const timer=setTimeout(()=>{ (d.keys||[]).forEach(k=>{ if(k) idb.del(key+':'+k); }); },5200);
-    hubToast(TOOLS[x.id].title+' removed.',()=>{ clearTimeout(timer); store(key,d); x.gone=false; paintCont(); }); });
+  /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
+  $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.key===b.dataset.rm); if(!x) return;
+    const d=dialog(`<div class="dlg-body">${thumbs[x.key]?`<img class="cf-thumb" src="${thumbs[x.key]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this phone. This can't be undone.</p>
+      <div class="dlg-actions"><button type="button" class="mini" id="rmNo">Keep it</button><button type="button" class="btn danger" id="rmYes">Remove</button></div></div>`);
+    d.querySelector('#rmNo').onclick=()=>d.close();
+    d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont(); requestAnimationFrame(spy);
 
   /* account + saved */
