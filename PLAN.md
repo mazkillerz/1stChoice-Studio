@@ -56,7 +56,7 @@ A free story/post maker that has **everything** from all tools plus more, so the
 
 ---
 
-Done in Phase 2 (22 Oct 2026): `tools/create.html` (+ create.js / create.css / create-lib.js / create-templates.js), templates' words in `brand.js → create.templates`, tests in `tests/create.mjs`. Added beyond the notes: pages strip with +, "copy as a story/post", photo spots that take a photo's place, pills/bubbles that re-fit their words, team templates keep no personal photos (they become photo spots).
+Done in Phase 2 (22 Oct 2026): `tools/create.html` (+ create-core.js = its own phone-first editor, replacing Board after the owner found Board's selection fiddly; create.js / create.css / create-lib.js / create-templates.js), templates' words in `brand.js → create.templates`, tests in `tests/create.mjs`. Added beyond the notes: pages strip with +, "copy as a story/post", photo spots that take a photo's place, pills/bubbles that re-fit their words, team templates keep no personal photos (they become photo spots).
 
 ---
 

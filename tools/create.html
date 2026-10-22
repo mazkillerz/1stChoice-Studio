@@ -4,83 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <title>Create · Studio</title>
-<link rel="apple-touch-icon" href="../assets/icon-180.png">
-<meta name="apple-mobile-web-app-title" content="Studio">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="../assets/icon.png">
 <link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="Studio">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="../assets/studio.css">
-<link rel="stylesheet" href="../lab/board.css">
 <link rel="stylesheet" href="create.css">
 </head>
-<body class="board-app create-app">
-<header class="bt" id="topbar">
-  <a class="bt-btn bt-back" href="../index.html" aria-label="All tools" title="All tools"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span class="back-txt">All tools</span></a>
-  <div class="bt-file">
-    <input id="bName" class="bt-name" type="text" maxlength="60" aria-label="Design name" dir="auto" spellcheck="false">
-    <button type="button" class="bt-btn bt-caret" id="fileMenu" aria-label="Design menu" title="Design menu" aria-haspopup="menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-    <span class="bt-saved" id="bSaved" role="status">Saved</span>
-  </div>
-  <span class="bt-space"></span>
-  <div class="bt-right">
-    <button type="button" class="bt-btn" id="undoB" aria-label="Undo" title="Undo (Ctrl+Z)"></button>
-    <button type="button" class="bt-btn" id="redoB" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"></button>
-    <span class="bt-sep" aria-hidden="true"></span>
-    <button type="button" class="bt-btn bt-find" id="findB" aria-label="Find a tool or action (Ctrl+K)" title="Find a tool or action (Ctrl+K)"></button>
-    <label class="bt-unit" title="Units for sizes and rulers"><span class="sr-only">Units</span><select id="unitSel"><option value="px">px</option><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option><option value="pt">pt</option></select></label>
-    <button type="button" class="bt-btn" id="rulerB" aria-label="Rulers and guides (Shift+R)" title="Rulers and guides (Shift+R)" aria-pressed="true"></button>
-    <button type="button" class="bt-btn bt-zoom" id="zoomB" aria-label="Zoom" title="Zoom" aria-haspopup="menu">100%</button>
-    <button type="button" class="bt-btn bt-panel" id="panelL" aria-label="Layers and assets" title="Layers and assets" aria-pressed="false"></button>
-    <button type="button" class="bt-btn bt-panel" id="panelR" aria-label="Design panel" title="Design panel" aria-pressed="false"></button>
-    <button type="button" class="bt-btn" id="presentB" aria-label="Present" title="Present (full screen)"></button>
-    <button type="button" class="bt-btn cr-top" id="crTplTop" title="Templates">Templates</button>
-    <button type="button" class="bt-export cr-top" id="crSaveTop" title="Save (Ctrl+S)">Save</button>
-    <button type="button" class="bt-export" id="exportB" hidden>Export</button>
+<body class="cr">
+<header class="cr-top">
+  <a class="icon-btn cr-back" href="../index.html" aria-label="All tools" title="All tools"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span class="back-txt">All tools</span></a>
+  <div class="cr-name"><input id="crName" type="text" maxlength="60" dir="auto" spellcheck="false" placeholder="Untitled design" aria-label="Design name"><button type="button" class="icon-btn sm" id="crMenu" aria-label="Design menu" title="Design menu" aria-haspopup="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+  <span class="cr-saved" id="crSaved" role="status"></span>
+  <div class="cr-acts">
+    <button type="button" class="icon-btn" id="crUndo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+    <button type="button" class="icon-btn" id="crRedo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
   </div>
 </header>
-<div class="bw">
-  <aside class="bp bp-left" id="left" aria-label="Layers and assets">
-    <div class="bp-tabs" role="tablist"><button type="button" role="tab" id="tabLayers" aria-selected="true" data-tab="layers">Layers</button><button type="button" role="tab" id="tabAdd" aria-selected="false" data-tab="add">Assets</button></div>
-    <div class="bp-body" id="layersPane" role="tabpanel" aria-labelledby="tabLayers">
-      <section class="pages" id="pagesSec"><button type="button" class="sec-h" data-fold="pages" aria-expanded="true"><span>Frames</span><span class="sec-n" id="pagesN"></span></button><div class="pages-list" id="pages"></div></section>
-      <section class="lay"><div class="sec-h static"><span>Layers</span></div><div id="layers" class="layers" role="tree" aria-label="Layers"></div></section>
-    </div>
-    <div class="bp-body" id="addPane" role="tabpanel" aria-labelledby="tabAdd" hidden>
-      <div class="add-top"><button type="button" class="ib" id="addBack" aria-label="Back to all assets" hidden></button><label class="add-search"><span class="sr-only">Search assets</span><input type="search" id="addQ" placeholder="Search assets" autocomplete="off"></label></div>
-      <div id="addList"></div>
-    </div>
-  </aside>
-  <div class="stage-wrap has-rulers" id="stageWrap" data-tool="select">
-    <div id="stage"></div>
-    <canvas id="rulerX" class="ruler ruler-x" aria-hidden="true"></canvas>
-    <canvas id="rulerY" class="ruler ruler-y" aria-hidden="true"></canvas>
-    <button type="button" id="rulerC" class="ruler-c" title="Units" aria-label="Change units">px</button>
-    <div id="badge" class="b-badge" hidden></div>
-    <div id="qbar" class="qbar" role="toolbar" aria-label="Quick edit" hidden></div>
-    <nav class="dock" id="dock" role="toolbar" aria-label="Tools"></nav>
-    <div class="b-corner"><canvas id="mini" class="b-mini" width="180" height="120" aria-label="Map of the design" role="img"></canvas>
-      <div class="b-zoom"><button type="button" id="zOut" aria-label="Zoom out">−</button><button type="button" id="zFit" aria-label="Fit everything" title="Fit everything (Shift+1)">Fit</button><button type="button" id="zIn" aria-label="Zoom in">+</button></div></div>
-    <div id="cropBar" class="crop-bar" hidden><span>Drag to move the photo inside its box · scroll to zoom</span><input type="range" id="cropZ" min="1" max="4" step="0.01" aria-label="Zoom photo"><button type="button" class="bt-export" id="cropDone">Done</button></div>
-    <div id="cropPad" class="crop-pad" hidden></div>
-    <div id="dropHint" class="drop-hint" hidden>Drop photos, SVG or PDF files</div>
-  </div>
-  <aside class="bp bp-right" id="right" aria-label="Design">
-    <div class="bp-tabs" role="tablist"><button type="button" role="tab" data-rtab="design" aria-selected="true">Design</button><button type="button" role="tab" data-rtab="effects" aria-selected="false">Effects</button><button type="button" role="tab" data-rtab="export" aria-selected="false">Export</button></div>
-    <div class="bp-body"><div id="props" class="props"></div></div>
-  </aside>
-</div>
-<input type="file" id="pickImg" accept="image/*,.heic,.heif,.svg,.pdf,.ai,.board" multiple hidden>
-<input type="file" id="replaceImg" accept="image/*,.heic,.heif" hidden>
-<input type="file" id="pickBoard" accept=".board,application/json" hidden>
-<input type="file" id="crPick" accept="image/*,.heic,.heif" multiple hidden>
-<div class="cr-pages" id="crPages" hidden></div>
-<nav class="bar cr-bar" id="crBar" aria-label="Create">
+<main class="cr-main" id="crMain">
+  <div id="crStage" class="cr-stage" aria-label="Your design. Tap a thing to select it, tap empty space to deselect, drag on empty space to select several."></div>
+  <div class="cr-cropbar" id="crCrop" hidden><span>Drag the photo to move it · pinch or slide to zoom</span><input type="range" id="crCropZ" min="1" max="5" step="0.01" aria-label="Zoom the photo"><button type="button" class="btn sm" id="crCropDone">Done</button></div>
+  <div class="cr-busy" id="crBusy" hidden><i class="spin" aria-hidden="true"></i><span></span></div>
+</main>
+<div class="cr-pages" id="crPages" aria-label="Pages"></div>
+<div class="cr-ctx" id="crCtx" role="toolbar" aria-label="Edit"></div>
+<nav class="cr-bar" id="crBar" aria-label="Create">
   <button type="button" class="tab" data-cr="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Add</span></button>
   <button type="button" class="tab" data-cr="text"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/></svg><span>Text</span></button>
   <button type="button" class="tab" data-cr="photo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Photo</span></button>
@@ -89,26 +44,19 @@
   <button type="button" class="tab save" data-cr="save"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Save</span></button>
 </nav>
 <div class="cr-scrim" id="crScrim" hidden></div>
-<section class="cr-sheet" id="crSheet" role="dialog" aria-modal="false" aria-labelledby="crSheetT" hidden>
-  <header class="cr-sh-head"><span class="grab" aria-hidden="true"></span><h2 id="crSheetT">Templates</h2><button type="button" class="done" id="crSheetX">Done</button></header>
+<section class="cr-sheet" id="crSheet" role="dialog" aria-labelledby="crSheetT" hidden>
+  <header class="cr-sh-head"><span class="grab" aria-hidden="true"></span><h2 id="crSheetT" tabindex="-1">Templates</h2><button type="button" class="done" id="crSheetX">Done</button></header>
   <div class="cr-sh-body" id="crSheetB"></div>
 </section>
-<div id="bToast" class="b-toast" role="status" hidden></div>
-<div id="menu" class="b-menu" role="menu" hidden></div>
-<div id="pop" class="b-pop" hidden></div>
-<div id="palette" class="palette" role="dialog" aria-label="Find a tool or action" hidden><input type="search" id="palQ" placeholder="Type a tool or action… (e.g. circle, export pdf, mask)" autocomplete="off" aria-label="Search tools and actions"><div id="palList" class="pal-list" role="listbox"></div></div>
-<div id="present" class="present" hidden><img id="presentImg" alt=""><div class="present-bar"><button type="button" id="pPrev" aria-label="Previous">‹</button><span id="pNum"></span><button type="button" id="pNext" aria-label="Next">›</button><button type="button" id="pClose" aria-label="Close">✕</button></div></div>
-<script>window.BD={cfg:{manualBoot:true,hideCats:["templates"]}};</script>
+<div class="cr-menu" id="crMenuBox" role="menu" hidden></div>
+<div class="cr-toast" id="crToast" role="status" hidden></div>
+<input type="file" id="crPick" accept="image/*,.heic,.heif" multiple hidden>
+<input type="file" id="crReplace" accept="image/*,.heic,.heif" hidden>
 <script src="../assets/vendor/konva.min.js"></script>
 <script src="../assets/studio.js"></script>
 <script src="../brands/brands.js"></script>
 <script src="../lab/board-lib.js"></script>
-<script src="../lab/board.js"></script>
-<script src="../lab/board-tools.js"></script>
-<script src="../lab/board-io.js"></script>
-<script src="../lab/board-ui.js"></script>
-<script src="../lab/board-panel.js"></script>
-<script src="../lab/board-dialogs.js"></script>
+<script src="create-core.js"></script>
 <script src="create-lib.js"></script>
 <script src="create-templates.js"></script>
 <script src="create.js"></script>
