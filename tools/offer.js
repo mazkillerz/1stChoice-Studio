@@ -5,6 +5,7 @@ Studio.tool({
   id:'offer', title:'Offer', fileName:'offer',
   photos:{count:1}, sampleNote:'Example photo. Use a clear product photo (cans not touching).',
   styles:[
+    {id:'white',label:'White',swatch:osw('#fff','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
     {id:'cream',label:'Cream',swatch:osw('#F3EADC','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
     {id:'black',label:'Black',swatch:osw('#000','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
     {id:'photo',label:'Full photo',swatch:osw('#b8a58f','inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.65))')}
@@ -16,10 +17,11 @@ Studio.tool({
     {id:'dates',type:'dates',label:'Show the dates'},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,default:'__none'},
     {id:'place',type:'place',in:'style',cols:false,label:'Words place',default:'bottom-center',when:{style:'photo'}},
+    {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',when:{style:['white','cream','black']}},
     {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>b.phrases.buttons.find(x=>x==='اطلب الحين')||b.phrases.buttons[0]}
   ],
   draw(h,o){
-    const {ctx,W,H,C}=h, st=o.style, full=st==='photo', dark=st==='black';
+    const {ctx,W,H,C}=h, st=o.style, full=st==='photo', bgc=full?null:o.value('bg'), ground=bgc||(st==='black'?C.night:st==='white'?C.paper:(C.cream||C.paper)), dark=bgc?!h.isLight(ground):st==='black';
     const ink=full||dark?C.paper:C.ink, muted=full?'rgba(255,255,255,.9)':dark?C.mutedOnDark:(C.brown||C.muted);
     const head=o.value('head')||h.brand.phrases.headlines[0], tiles=o.value('tiles'), dates=o.value('dates'), small=o.value('small'), pill=o.value('pill');
     const tileBg=full?C.paper:dark?C.accent:C.ink, tileSmall=full?C.ink:dark?C.ink:(C.cream||C.paper), tileBig=full?C.ink:dark?C.ink:C.accent;
@@ -50,7 +52,7 @@ Studio.tool({
       h.pill('pill','Button',pill,W/2,y,{bg:C.paper,fg:C.ink});
       return;
     }
-    ctx.fillStyle=dark?C.night:(C.cream||C.paper); ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
     const ar=h.photoAspect(0), pw=880; let ph=Math.round(pw/ar); ph=Math.max(480,Math.min(640,ph));
     const lw=220, lh=h.logoH(lw);
     const total=lh+50+hm.h+40+ph+44+(n?th+40:0)+(dates?56:0)+(small?56:0)+(pill?76+30:0);

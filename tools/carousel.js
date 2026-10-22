@@ -17,7 +17,7 @@ Studio.tool({
   pages:{min:2,max:10,start:4},
   photos:{count:2}, sampleNote:'Example photos. Add your photos (pick several at once to fill the slides); keep the important part in the middle (the grid shows 3:4).',
   stylesTitle:'All slides',
-  styles:[{id:'cream',label:'Cream',swatch:csw('#F3EADC')},{id:'white',label:'White',swatch:csw('#fff')},{id:'black',label:'Black',swatch:csw('#000')}],
+  styles:[{id:'white',label:'White',swatch:csw('#fff')},{id:'cream',label:'Cream',swatch:csw('#F3EADC')},{id:'black',label:'Black',swatch:csw('#000')}],
   /* photos each slide takes */
   pagePhotos:(value,c)=>{ const k=value('kind'); if(k==='two') return 2; if(k==='words'||k==='number'||k==='end') return 0;
     if(k==='pano'){ const info=panoInfo(c.page,i=>{ try{ return c.pageValue(i,'kind'); }catch(_){ return null; } }); return info&&info.part?0:1; } return 1; },
@@ -32,6 +32,7 @@ Studio.tool({
     {id:'dots',type:'seg',in:'style',label:'Slide counter',options:[{v:'dots',l:'Dots'},{v:'num',l:'1 / 5'},{v:'none',l:'None'}],global:true},
     {id:'dotsPos',type:'seg',in:'style',label:'Counter place',options:[{v:'bottom',l:'Bottom'},{v:'top',l:'Top'}],global:true,when:{field:'dots',is:['dots','num']}},
     {id:'grid',type:'toggle',in:'style',label:'Show the feed-grid guide (preview only)',default:false,global:true},
+    {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',global:true},
     {id:'gThis',type:'note',in:'style',label:'This slide'},
     {id:'kind',type:'seg',in:'style',label:'Slide type',options:[{v:'cover',l:'Cover'},{v:'photo',l:'Photo + words'},{v:'full',l:'Full photo'},{v:'two',l:'Two photos'},{v:'words',l:'Words only'},{v:'number',l:'Big number'},{v:'pano',l:'Panorama'},{v:'end',l:'End slide'}],pageDefault:pg=>pg===0?'cover':'photo'},
     {id:'two',type:'seg',in:'style',label:'Two photos',options:[{v:'stack',l:'Stacked'},{v:'side',l:'Side by side'}],when:{field:'kind',is:'two'}},
@@ -42,7 +43,7 @@ Studio.tool({
     {id:'pill',type:'text',label:'Button',toggle:true,default:b=>b.phrases.buttons[0],when:{field:'kind',is:'end'}}
   ],
   draw(h,o){
-    const {ctx,W,H,C}=h, kind=o.value('kind'), st=o.style, dark=st==='black', ground=dark?C.night:st==='white'?C.paper:(C.cream||C.paper);
+    const {ctx,W,H,C}=h, kind=o.value('kind'), st=o.style, bgc=o.value('bg'), ground=bgc||(st==='black'?C.night:st==='white'?C.paper:(C.cream||C.paper)), dark=bgc?!h.isLight(ground):st==='black';
     const head=o.value('head'), small=o.value('small'), ink=dark?C.paper:C.ink, muted=dark?C.mutedOnDark:(C.brown||C.muted);
     const everyLogo=o.value('logo'), rtl=h.dir==='rtl', M=80;
     const counter=o.value('dots')||'dots', cTop=o.value('dotsPos')==='top';
@@ -112,7 +113,7 @@ Studio.tool({
       if(side){ const w=(pw-g)/2; h.photo(0,M,80,w,avail,{r:36,mode:'cover'}); h.photo(1,M+w+g,80,w,avail,{r:36,mode:'cover'}); }
       else { const hh=(avail-g)/2; h.photo(0,M,80,pw,hh,{r:36,mode:'cover'}); h.photo(1,M,80+hh+g,pw,hh,{r:36,mode:'cover'}); }
     } else {
-      if(C.blob&&st==='cream'){ ctx.fillStyle=C.blob; ctx.beginPath(); h.rr(ctx,M-22,80-22,pw+44,avail+44,62); ctx.fill(); }
+      if(C.blob&&st==='cream'&&!bgc){ ctx.fillStyle=C.blob; ctx.beginPath(); h.rr(ctx,M-22,80-22,pw+44,avail+44,62); ctx.fill(); }
       h.photo(0,M,80,pw,avail,{r:44,mode:'cover'});
     }
     if(everyLogo) h.logo((W-160)/2,124,160,'light');

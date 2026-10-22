@@ -3,19 +3,20 @@ Studio.tool({
   id:'cinematic', title:'Cinematic bars', fileName:'story',
   photos:{count:1}, sampleNote:'Example photo. Made for wide photos: the whole photo shows, nothing is cut.',
   styles:[
-    {id:'black',label:'Black bars',swatch:'<span class="swatch" style="background:#000"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
+    {id:'white',label:'White bars',swatch:'<span class="swatch" style="background:#fff"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
     {id:'cream',label:'Cream bars',swatch:'<span class="swatch" style="background:#F3EADC"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
-    {id:'white',label:'White bars',swatch:'<span class="swatch" style="background:#fff"><i style="left:0;right:0;top:15px;height:16px"></i></span>'}
+    {id:'black',label:'Black bars',swatch:'<span class="swatch" style="background:#000"><i style="left:0;right:0;top:15px;height:16px"></i></span>'}
   ],
   lightBackground:style=>style!=='black',
   fields:[
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true},
+    {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour'},
     {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>b.phrases.buttons[0],on:false}
   ],
   draw(h,o){
-    const {ctx,W,H,C}=h, light=o.style==='cream'||o.style==='white';
-    ctx.fillStyle=o.style==='cream'?(C.cream||C.paper):o.style==='white'?C.paper:C.night; ctx.fillRect(0,0,W,H);
+    const {ctx,W,H,C}=h, bgc=o.value('bg'), ground=bgc||(o.style==='cream'?(C.cream||C.paper):o.style==='white'?C.paper:C.night), light=bgc?h.isLight(ground):o.style==='cream'||o.style==='white';
+    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
     const ink=light?C.ink:C.paper, soft=light?(C.brown||C.muted):'rgba(255,255,255,.8)';
     const ar=h.photoAspect(0); let ph=Math.round(W/ar); const maxH=1000, mode=ph>maxH?'cover':'contain'; ph=Math.min(ph,maxH);
     const py=Math.round(870-ph/2);

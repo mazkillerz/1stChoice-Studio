@@ -4,16 +4,19 @@ Studio.tool({
   photos:{count:2}, sampleNote:'Example photos. Close-up on top, wide below. Drag each photo to move it.',
   styles:[
     {id:'white',label:'White label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#fff"></i></span>'},
+    {id:'cream',label:'Cream label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#F3EADC"></i></span>'},
     {id:'black',label:'Black label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#000"></i></span>'},
     {id:'gold',label:'Gold label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#D6B078"></i></span>'}
   ],
   fields:[
     {id:'cut',type:'seg',in:'style',label:'Where the cut is',options:[{v:'50',l:'Middle'},{v:'60',l:'Lower'},{v:'40',l:'Higher'}]},
+    {id:'bg',type:'color',in:'style',label:'Label colour',default:null,auto:'Style colour'},
     {id:'head',type:'chips',label:'Words on the cut',options:b=>b.phrases.cut}
   ],
   draw(h,o){
     const {ctx,W,H,C}=h, half=Math.round(H*(+(o.value('cut')||50))/100), st=o.style||'white';
-    const band=st==='black'?C.night:st==='gold'?C.accent:C.paper, bandInk=st==='black'?C.paper:C.ink, rule=st==='black'?'rgba(255,255,255,.3)':st==='gold'?'rgba(0,0,0,.25)':'#d9d8d4';
+    const band=o.value('bg')||(st==='black'?C.night:st==='gold'?C.accent:st==='cream'?(C.cream||C.paper):C.paper), dark=o.value('bg')?!h.isLight(band):st==='black';
+    const bandInk=dark?C.paper:C.ink, rule=dark?'rgba(255,255,255,.3)':st==='gold'?'rgba(0,0,0,.25)':'#d9d8d4';
     h.photo(0,0,0,W,half,{mode:'cover'}); h.photo(1,0,half,W,H-half,{mode:'cover'});
     h.shade(0,300,.35,0); h.shade(H,H-300,.35,0);
     const head=o.value('head')||h.brand.phrases.cut[0];
@@ -25,6 +28,6 @@ Studio.tool({
     const textX=rtl?px+pw-52-m.w:px+52, lineX=rtl?textX-28-3:textX+m.w+28, logoX=rtl?lineX-28-lw:lineX+3+28;
     h.text('head','Words',head,textX,py+(ph-m.h)/2,{font:'display',size:fs,color:bandInk,align:rtl?'end':'start',maxW:9999});
     ctx.fillStyle=rule; ctx.fillRect(lineX,py+ph/2-27,3,54);
-    h.logo(logoX,py+(ph-lh)/2,lw,st==='black'?'light':'dark');
+    h.logo(logoX,py+(ph-lh)/2,lw,dark?'light':'dark');
   }
 });
