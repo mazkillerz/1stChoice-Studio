@@ -38,7 +38,14 @@ Studio is a phone-first story maker (static GitHub Pages site, no build step) fo
 3. Merge to `main` only when the owner says so (Pages publishes `main` immediately).
 4. End with a short list: what changed, what the owner must do, any wording that needs approval.
 
-## Saving usage
+## Saving usage: split work across models
+The owner wants the work divided by difficulty. Use subagents (Agent tool, `model` set) for the routine parts and keep the main model for decisions:
+| Job | Who |
+| --- | --- |
+| Planning, architecture, UI/UX design, tricky bugs, final review of a change | Main model (you) |
+| Writing a well-specified feature or tool from your plan, refactors | `sonnet` subagent |
+| Finding code, listing files, grepping, running tests and reporting pass/fail, screenshots + short visual notes, README/changelog updates | `haiku` subagent |
+Give each subagent a precise brief (files, expected result, rules above), and ask it for a short summary back, not file dumps. Run independent subagents in parallel.
 - Read only the files you need; `studio.js` is large, so grep before reading it whole.
 - Don't re-run the full test suite after every tiny change; run it before each push.
 - Don't take screenshots unless checking a visual change.
