@@ -47,9 +47,9 @@ The hub remembers per phone how you like Tools (list / grid / compact) and Saved
 - Rotate text, buttons, the logo and assets with two fingers (twist), the Rotate slider or ±15° buttons; it settles on straight and right angles. With a layer selected, a two-finger pinch or twist anywhere on the preview acts on it. On a computer: [ and ] (Shift = 15°).
 - Tap outside a pop-up to close it, or an empty spot beside the preview to close the open panel.
 - Drag to move. Guide lines show when things line up and the safe zones (top 250px, bottom 300px) show while you drag. The magnet button (top bar) turns gentle snapping on or off; it starts off. Pinch or scroll to resize. Arrow keys nudge the selected item.
-- **Add text** puts your own text on the story. **Add asset** adds the logo, the HD can cut-outs or a shape as a movable layer. **Reset layout** puts everything back.
+- **Add text** puts your own text on the story. **Add asset** adds the logo, the HD can cut-outs or a shape as a movable layer. **Layers → Put everything back where it started** resets the layout (Undo brings it back).
 - **Layers → Element** adds any piece to any tool as a normal layer: Button, Map in bio (pill with pin), Place + pin, Flavour pills, Offer tile (top line + big line; type them on two lines), Dates line, Small line, Instagram handle, Logo. The words come from the brand kit.
-- Every colour picker shows the same brand palette (White, Ink, Grey, Panel, Cream, Brown, Blob, Gold, Passion yellow, Passion berry) plus **Custom** (colour wheel or #hex). Every layer has **Opacity** (Colour tab).
+- Every colour picker shows the same brand palette (White, Ink, Grey, Panel, Cream, Brown, Blob, Gold, Passion yellow, Passion berry) plus **Custom** (colour wheel or #hex). Custom colours you pick show after the brand swatches as **recent colours** (last 6, kept on this phone, in every tool and in Create). Every layer has **Opacity** (Colour tab).
 - **Text layers** (Font tab): several lines (Enter = new line), align right / centre / left, line height, letter spacing (browsers that support it), soft shadow, and a background pill with its own colour.
 - **Shapes** (Asset → Shapes): a new **Rounded panel** (the soft #F3F3F1 card behind cans) and **Blob**. Shapes have Fill (or none), Outline colour and width, Corners (panel, rectangle, soft box, line) and Opacity. Panel and Rectangle have free Width and Height.
 - Added layers can be duplicated: **More → Duplicate**.
@@ -86,6 +86,7 @@ brands/brands.js           the list of brand kits (first = default)
 brands/<brand>/brand.js    logo, fonts, colours, palette (picker order), Instagram handle, writing direction, approved wording (incl. `phrases.bio`), example photos
 brands/<brand>/samples/    example photos the tools open with
 brands/<brand>/assets/     files for Add asset (HD can cut-outs…), listed in brand.js 'assets'
+brands/<brand>/assets/prev/  light copies (~1000px WebP, ~100 KB) of the HD files, listed as `prev:` in brand.js 'assets'
 manifest.webmanifest, sw.js  installable app; the service worker caches the app shell, never Supabase
 _archive/                  old files kept for reference (never deleted)
 assets/thumbs/<brand>/     home page pictures for that brand
@@ -106,5 +107,10 @@ Then add it to `TOOLS` in `assets/studio.js` (the hub is built from that list), 
 sample photos in `brand.js`, and its two files to `SHELL` in `sw.js`.
 Options: `size:{w,h}` for another canvas size, `pages:{min,max}` for slides, field types `chips`, `text`, `seg`, `toggle`, `multi`, `tiles`, `dates`, `place`, `range` (slider), `color` (palette picker; `null` = the style's own colour)
 (`in:'style'` puts a field in the Style sheet).
+
+### Speed
+- Big brand pictures have a light copy (`prev:` in brand.js). Pickers, template previews and on-screen editing use it, so a page opens with about 1 MB instead of 40 MB. The HD file loads quietly behind it and replaces it; **Save always waits for the HD file**, so saved quality is the same. To add a light copy for a new asset: a ~1000px WebP of the PNG in `assets/prev/`, then `prev:'assets/prev/<name>.webp'` on its line.
+- Create keeps its template previews on the phone (IndexedDB) after the first visit, so the start sheet fills at once. If you change how templates are drawn (create-templates.js / create-lib.js), change `TPL_LOOK` in create.js so phones redraw them.
+- HEIC reader, PDF reader and QR maker load only the first time they're needed.
 
 Fonts load from Google Fonts, so the site needs internet. Hosted with GitHub Pages (main branch, root).
