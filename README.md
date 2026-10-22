@@ -10,17 +10,19 @@ Built so any brand can plug in. The first brand kit is **1st Choice**.
 | New place | A new sale point: photo in a window, place name with a pin, button. White / black / photo-on-top / cream. |
 | Photo story | One tall photo, headline, small line, logo. Full photo / cream frame / black frame; words in any of 9 places (top/middle/bottom × right/centre/left). |
 | Cinematic bars | A wide photo shown whole (no crop), logo and words on black, cream or white bars. |
-| Collage | 2, 3 or 4 whole photos in 17 layouts (incl. side by side, big + small, 2×2, big + 3, film strip, polaroids), black / white / cream, optional rounded corners. |
+| Collage | 2 to 9 photos: whole-photo layouts (2–4), edge-to-edge grids and mosaics (2×2, 3×3, Big + 3, L-shape, Bento, Hero + frame, Mosaic, Top hero + grid…) and **Scattered prints** (replaces Polaroids). Controls: Gap 0–60 px (0 = photos touch), gap and background colour, outer margin on or off (off = full-bleed), corner radius, show the logo. Grid photos can be dragged and zoomed; drag one photo onto another to swap. |
 | Two-photo split | Close-up on top, wide below, words + logo on a label across the cut. White / black / gold label, cut in the middle, higher or lower. |
 | Restock | Back in stock: cans photo, approved headline, flavour pills, button. Cream / white / full photo. |
 | Offer | Discount story: offer tiles (e.g. ×3 / ٢٠٪), dates line, product photo, button. Cream / black / full photo. |
 | Carousel | 1080×1350 Instagram carousel, 2–10 slides: Cover, Photo + words, Full photo, Two photos, Words only, Big number, Panorama (one wide photo across 2–3 slides), End slide. Filmstrip to switch / reorder (long-press), See all, swipe the preview edges. Saves numbered PNGs (2160×2700) or just one slide. |
 
+Every tool has a **White** look (the main look, now first) and a **Cream** look. Each also has a **Background colour** from the brand palette (Split: "Label colour"; Photo story: "Frame colour").
+
 ## On a phone
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
 Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch with the name filled in. The switch starts off every time, so nothing is saved to the team by accident. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
 
-Continue editing (hub) only keeps new stories you haven't saved to the team; tap ✕ to remove one. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
+Continue editing (hub) is a list of your unfinished stories. Every one is kept, several per tool. **Start fresh** starts a new one and keeps the old ones; a reload continues the same draft; tap ✕ to remove one (Studio asks first). Drafts saved to the team leave the list. Over 20 drafts of one tool shows a reminder; nothing is deleted on its own. The "New" labels on the hub are gone. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
 The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
 
@@ -30,6 +32,11 @@ The hub remembers per phone how you like Tools (list / grid / compact) and Saved
 - Tap outside a pop-up to close it, or an empty spot beside the preview to close the open panel.
 - Drag to move. Guide lines show when things line up and the safe zones (top 250px, bottom 300px) show while you drag. The magnet button (top bar) turns gentle snapping on or off; it starts off. Pinch or scroll to resize. Arrow keys nudge the selected item.
 - **Add text** puts your own text on the story. **Add asset** adds the logo, the HD can cut-outs or a shape as a movable layer. **Reset layout** puts everything back.
+- **Layers → Element** adds any piece to any tool as a normal layer: Button, Map in bio (pill with pin), Place + pin, Flavour pills, Offer tile (top line + big line; type them on two lines), Dates line, Small line, Instagram handle, Logo. The words come from the brand kit.
+- Every colour picker shows the same brand palette (White, Ink, Grey, Panel, Cream, Brown, Blob, Gold, Passion yellow, Passion berry) plus **Custom** (colour wheel or #hex). Every layer has **Opacity** (Colour tab).
+- **Text layers** (Font tab): several lines (Enter = new line), align right / centre / left, line height, letter spacing (browsers that support it), soft shadow, and a background pill with its own colour.
+- **Shapes** (Asset → Shapes): a new **Rounded panel** (the soft #F3F3F1 card behind cans) and **Blob**. Shapes have Fill (or none), Outline colour and width, Corners (panel, rectangle, soft box, line) and Opacity. Panel and Rectangle have free Width and Height.
+- Added layers can be duplicated: **More → Duplicate**.
 - Photos: drag to move, pinch / slider to zoom. With two or more photos, hold one and drop it on another to swap them (in Collage a plain drag swaps). The same works with the boxes in the Photo sheet.
 - iPhone HEIC photos work everywhere: a HEIC reader (`assets/vendor/heic-to.js`, LGPL) loads the first time one is picked; Safari opens them itself.
 
@@ -58,7 +65,7 @@ assets/studio.js           the engine: steps, live preview, layers, photo handli
 assets/studio.css          the look of the site
 tools/<tool>.html + .js    one tool each; the .js only describes how its story is laid out
 brands/brands.js           the list of brand kits (first = default)
-brands/<brand>/brand.js    logo, fonts, colours, writing direction, approved wording, example photos
+brands/<brand>/brand.js    logo, fonts, colours, palette (picker order), Instagram handle, writing direction, approved wording (incl. `phrases.bio`), example photos
 brands/<brand>/samples/    example photos the tools open with
 brands/<brand>/assets/     files for Add asset (HD can cut-outs…), listed in brand.js 'assets'
 manifest.webmanifest, sw.js  installable app; the service worker caches the app shell, never Supabase
@@ -76,10 +83,10 @@ Tools never name a brand: they ask the kit for `phrases.headlines`, `colors.ink`
 
 ### Add a tool
 Copy a tool's `.html` and `.js`, give it a new `id`, and write its `draw(h, o)`:
-`h.photo()`, `h.text(id,label,…)`, `h.pill()`, `h.pin()`, `h.logo()`, `h.tags()`, `h.block()` each create a layer people can move and edit.
+`h.photo()`, `h.text(id,label,…)`, `h.pill()`, `h.pin()`, `h.logo()`, `h.tags()`, `h.block()` each create a layer people can move and edit. `h.isLight(hex)` tells whether a colour is light.
 Then add it to `TOOLS` in `assets/studio.js` (the hub is built from that list), add a thumb in `assets/thumbs/<brand>/<id>.jpg` plus a 320px-wide `<id>-sm.jpg` for the hub,
 sample photos in `brand.js`, and its two files to `SHELL` in `sw.js`.
-Options: `size:{w,h}` for another canvas size, `pages:{min,max}` for slides, field types `chips`, `text`, `seg`, `toggle`, `multi`, `tiles`, `dates`, `place`
+Options: `size:{w,h}` for another canvas size, `pages:{min,max}` for slides, field types `chips`, `text`, `seg`, `toggle`, `multi`, `tiles`, `dates`, `place`, `range` (slider), `color` (palette picker; `null` = the style's own colour)
 (`in:'style'` puts a field in the Style sheet).
 
 Fonts load from Google Fonts, so the site needs internet. Hosted with GitHub Pages (main branch, root).

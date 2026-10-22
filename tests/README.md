@@ -11,3 +11,5 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
 
     node tests/lab.mjs                  # Lab: passcode gate and the Board editor (drawing, text, photos, snapping, undo, export, board files, phone)
     node tests/lab-pro.mjs              # Lab: SVG and PDF files in, print sizes (mm, bleed, guides), PDF/SVG/PNG/ZIP out, masks, barcode, QR and other tools
+
+    node tests/v5.mjs   # Phase 1 of v5: drafts list, elements in every tool, palette, shapes, text options, Collage grids
