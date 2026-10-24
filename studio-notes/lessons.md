@@ -34,6 +34,22 @@ What worked, what failed, and process tweaks. Newest session first.
 **Process tweaks**
 - Count taps in the What's New note (two → one) so the gain is visible to the team.
 
+## Session 5 · 0.5.0 · 24 Oct 2026 (Simplify session)
+
+**Worked**
+- Comparing the phone and computer flows found the biggest cut: the computer already saved in one tap, the phone needed two. Making the phone match the computer is an easy reason to give in What's New.
+- Keeping the order of work "image first, then team" let the team step become a follow-up on the same sheet (switch + "Add to the team") without a second picture, so the one-tap change didn't remove anything.
+- A single `imgDone` flag, cleared on the next edit (commit/undo) and when the sheet is reopened, was enough to switch the button between Save again / Add to the team.
+- Moving the hub order into `TOOLS` (with a `group` per tool) kept the hub code one map; other lists (tool filter) follow the same order for free.
+
+**Didn't work / watch out**
+- A `let` used by a function that init code calls early (`syncSaveOpts` via `showDesignBar`) must be declared above that function, or it hits the temporal dead zone. Declare shared flags next to their first reader.
+- Four suites tapped Save twice (bar, then sheet). A flow change means grepping every test for the old taps (`#barSave`, `#save`, `#teamOnly`) before running them.
+- Don't `git stash` for "before" shots while a background test run uses the working tree; take before shots first (as the skill says) or wait for the run to end.
+
+**Process tweaks**
+- For a Simplify session, walk each common job on both phone and computer and list where they differ; the extra steps are usually on the phone.
+
 ## Session 2 · 0.2.0 · 24 Oct 2026 (Mazoon session)
 
 **Worked**

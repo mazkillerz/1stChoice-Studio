@@ -52,7 +52,7 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
       await pg.setInputFiles('#pick',Array.from({length:per},(_,i)=>SAMPLES+['pair','closeup','hand','window','tall'][(p+i)%5]+'.jpg')); await pg.waitForTimeout(700); }
     // save PNG(s)
     const dls=[]; pg.on('download',d=>dls.push(d));
-    if(mob){ await pg.tap('#barSave'); await pg.waitForTimeout(450); await pg.tap('#save'); } else await pg.click('#save');
+    if(mob) await pg.tap('#barSave'); else await pg.click('#save');   // one tap saves
     for(let i=0;i<60&&dls.length<pages;i++) await pg.waitForTimeout(300);
     const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/'+tag+'-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
     const want=t==='carousel'?'2160x2700':'2160x3840';
@@ -61,10 +61,9 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     ok('success message',await pg.isVisible('#doneBox'),await pg.textContent('#doneTitle'));
     // save the design to the team (fake cloud) and reopen it in a fresh page
     const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
-    /* the Save sheet's team option: Only save to the team */
-    if(mob&&!(await pg.isVisible('#teamOnly'))){ await pg.tap('#barSave'); await pg.waitForTimeout(450); }
-    if(await pg.isVisible('#teamOnly')){ if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName','Test '+t); await tap('#teamOnly'); }
-    /* else: the team switch was already on, so Save just sent it to the team too */
+    /* one tap saved the picture; the team switch + the sheet's button ("Add to the team") then adds it to the team */
+    ok('button offers Add to the team',await (async()=>{ if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); return /Add to the team/.test(await pg.textContent('#saveTxt')); })(),await pg.textContent('#saveTxt'));
+    await pg.fill('#teamName','Test '+t); await tap('#save');
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
     const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
     const p2=await ctx.newPage(); p2.on('pageerror',e=>R.errors.push('reopen: '+e));

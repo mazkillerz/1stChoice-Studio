@@ -37,7 +37,7 @@ ok('photo cover has its photo',await pg.evaluate(()=>!!Studio.debug.S.photos[3].
 ok('look is shared by every cover',await pg.evaluate(()=>{ const P=Studio.debug.S.P; return P.every(p=>p.values.shape===P[0].values.shape); }));
 // save: one PNG per cover at 2×
 const dls=[]; pg.on('download',d=>dls.push(d));
-await pg.tap('#barSave'); await pg.waitForTimeout(450); await pg.tap('#save');
+await pg.tap('#barSave');   // one tap saves
 for(let i=0;i<60&&dls.length<5;i++) await pg.waitForTimeout(300);
 const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/hl-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
 ok('saves 5 full-size PNGs',dls.length===5&&sizes.every(s=>s==='2160x3840'),sizes.join(', '));
@@ -45,8 +45,7 @@ await pg.waitForSelector('#doneBox',{state:'visible',timeout:5000}).catch(()=>{}
 ok('success message names covers',/covers/.test(await pg.textContent('#doneBox')||''),(await pg.textContent('#doneBox')||'').trim().slice(0,80));
 // team save + reopen
 const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
-if(!(await pg.isVisible('#teamOnly'))){ await pg.tap('#barSave'); await pg.waitForTimeout(450); }
-if(await pg.isVisible('#teamOnly')){ if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName','Test covers'); await pg.tap('#teamOnly'); }
+if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName','Test covers'); await pg.tap('#save');
 await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
 const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
 const p2=await ctx.newPage(); p2.on('pageerror',e=>errs.push('reopen: '+e));

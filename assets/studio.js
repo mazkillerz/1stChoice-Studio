@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.4.0';
+const VERSION='0.5.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -65,17 +65,19 @@ function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); return true; }catch(_){ return null; }}
 
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
+/* the hub lists tools in this order, under their group's heading: the most used first */
+const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
 const TOOLS={
-  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.'},
-  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.'},
-  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',qi:2},
-  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
-  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',multi:true,qi:3},
-  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.'},
-  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.'}
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1,group:'story'},
+  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',qi:2,group:'story'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',multi:true,qi:3,group:'story'},
+  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story'},
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story'},
+  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story'},
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',group:'post'},
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',group:'post'},
+  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',group:'post'},
+  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -600,7 +602,7 @@ async function tool(cfg){
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
     <div class="team-status" id="teamStatus" role="status" aria-live="polite" hidden></div>
     <div class="save-opts" id="saveOpts">
-      <div class="opt-row"><span class="opt-ic">${ICON.download}</span><span class="opt-txt"><b>Save to Photos</b><small>Full-quality PNG${cfg.pages?' for every '+PN.one:''}</small></span><span class="opt-always">Always</span></div>
+      <div class="opt-row" id="photosRow"><span class="opt-ic">${ICON.download}</span><span class="opt-txt"><b>Save to Photos</b><small>Full-quality PNG${cfg.pages?' for every '+PN.one:''}</small></span><span class="opt-always">Always</span></div>
       <label class="opt-row"><span class="opt-ic">${ICON.bookmark}</span><span class="opt-txt"><b id="teamLbl">Also save to the team</b><small id="teamSub">Find and reuse it in Saved</small></span><input type="checkbox" class="switch" id="teamOn" role="switch"></label>
       <div class="team-box" id="teamBox" hidden>
         <label class="sr-only" for="teamName">Name for the team</label><input type="text" id="teamName" dir="auto" maxlength="80" placeholder="Name, e.g. Restock – Al Khoud">
@@ -946,9 +948,10 @@ async function tool(cfg){
     if(pts.size) return scheduleCommit();                      // still dragging
     const s=snap(); if(same(s,hist.stack[hist.i])) return;
     hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
-    syncUndo(); saveDraft(s);
+    syncUndo(); saveDraft(s); designChanged();
   }
-  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); }
+  function designChanged(){ if(imgDone&&!saving){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
+  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); designChanged(); }
   function flush(){ if(hist.timer){ clearTimeout(hist.timer); hist.timer=0; if(!pts.size) commit(); } }   // record an edit made just before Undo
   function undo(){ flush(); if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
   function redo(){ flush(); if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
@@ -1025,6 +1028,7 @@ async function tool(cfg){
     return name;
   }
   /* the Save sheet's options: remembered switch, name, collections, keep photos */
+  let imgDone=false;   // the picture as it is now is already in Photos: the team switch then only adds it to the team
   function syncSaveOpts(){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
@@ -1033,7 +1037,8 @@ async function tool(cfg){
     $('teamAsNewRow').hidden=!design;
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save '+PN.many:'Save story');
+    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save '+PN.many:'Save story');
+    $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
   }
   /* the team switch always starts off: you turn it on for the saves you want in the team, so nothing goes there by accident */
   store('studio:teamSave',null);   // forget the old remembered setting
@@ -1449,7 +1454,7 @@ async function tool(cfg){
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
     } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
-  function finish(title,txt,keepBar){ if(!keepBar) setTimeout(()=>progress(null),400); done(title,txt); }
+  function finish(title,txt,keepBar){ if(!keepBar) setTimeout(()=>progress(null),400); done(title,txt); imgDone=true; }
   function showResult(files,offerShare){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
@@ -1457,12 +1462,12 @@ async function tool(cfg){
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
-  /* Save on the bar opens the Save sheet first (Photos + optional team); the sheet's Save button does it */
+  /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   function saveTapped(){
-    if(isPhone()&&openName!=='save'){ resetSaveSheet(); openSheet('save'); focusSheet('save'); return; }
+    if(isPhone()&&openName!=='save') resetSaveSheet();
     doSave();
   }
-  function resetSaveSheet(){ $('teamOn').checked=false; $('saveOpts').hidden=false; $('teamOnly').hidden=false; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
+  function resetSaveSheet(){ imgDone=false; $('teamOn').checked=false; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); }
   async function doSave(only){
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
@@ -1471,12 +1476,14 @@ async function tool(cfg){
       return;
     }
     const team=$('teamOn').checked;
+    /* the picture is already in Photos: the switch is on, so this tap only adds it to the team */
+    if(imgDone&&team&&only==null){ $('save').disabled=true; await runTeamSave(); $('save').disabled=false; $('teamOn').checked=false; $('teamOnly').dataset.off='1'; syncSaveOpts(); return; }
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
-    $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
+    imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     await save(true,only);
     if(team){ await runTeamSave(); $('teamOn').checked=false; }
-    $('save').hidden=false; $('saveTxt').textContent='Save again';
-    if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; $('teamOnly').hidden=team; syncSaveOpts(); $('saveTxt').textContent='Save again';
+    if(team) $('teamOnly').dataset.off='1';
+    $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts();
   }
   $('save').addEventListener('click',()=>doSave());
   /* Quick start: "Looks good · Save" saves straight away (one tap); Change words opens Words; any other tab just hides the bar */
@@ -1596,9 +1603,10 @@ function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) retur
 async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
   /* tools: one compact row per entry in TOOLS, with a small real preview made with the brand's sample photos */
-  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t],i)=>`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb"><img alt="" loading="lazy" decoding="async" src="${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'"></span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`).join('');
-  /* how tools are shown: list, grid or compact; each phone remembers its own choice */
-  let toolsView=store('studio:toolsView')||'list';
+  let lastGroup=null;
+  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t],i)=>(t.group!==lastGroup&&TOOL_GROUPS[lastGroup=t.group]?`<h3 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h3>`:'')+`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb"><img alt="" loading="lazy" decoding="async" src="${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'"></span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`).join('');
+  /* how tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
+  let toolsView=store('studio:toolsView')==='list'||!store('studio:toolsView')?'list':'grid';
   function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView; document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
   paintToolsView();
   /* Quick start: pick (or take) a photo first, then the tool opens with it in. The file input sits inside the label,
@@ -1718,7 +1726,7 @@ async function home(){
     const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,6);
     $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!toolFilter&&!q);
     $('recentList').innerHTML=recent.map(d=>`<a class="rcard" href="${toolPage(d.tool)}?design=${d.id}"><span class="rthumb">${thumbImg(d)}</span><span class="rtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}</span></span></a>`).join('');
-    if(!has){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, then tap <b>Save</b> and switch on <b>Also save to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
+    if(!has){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, tap <b>Save</b>, then switch on <b>Also save to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
     $('savedGrid').innerHTML=list.map((d,i)=>{ const cn=d.collections.map(colName).filter(Boolean);
       return `<div class="sitem" data-id="${d.id}" style="--i:${Math.min(i,12)}"><button type="button" class="dcard" data-open="${d.id}" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}. Opens options."><span class="dthumb">${thumbImg(d)}${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}${cn.length?' · '+esc(cn.join(', ')):''} · ${ago(d.updated_at)}</span></span></button><button type="button" class="dmore" data-open="${d.id}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; }).join('');

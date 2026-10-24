@@ -20,6 +20,7 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
 
     node tests/whatsnew.mjs   # 0.1.0: Quick start from a photo (hub → tool with the photo in, as a draft), What's New page + badge
     node tests/highlight.mjs  # Highlight covers: covers per page, icon/word/photo, + adds a cover, 2× PNG per cover, team save + reopen
+    node tests/simplify.mjs   # 0.5.0: one-tap Save on a phone, then Add to the team (no second picture); hub groups + order, two views
     node tests/quicksave.mjs  # Quick start ready bar: one-tap "Looks good · Save" (2× PNG), Change words, hides on edit; text-place pad size
     node tests/tapscan.mjs    # (helper) lists visible controls under 44px at 390×844, per sheet
     node tests/shot.mjs       # (helper) phone screenshot for What's New

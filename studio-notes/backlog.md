@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 4 (0.4.0) was a **Mazoon** session → next one is a **team** session.
-**Simplify session:** every 5th version. **The next release (0.5.0) is a Simplify session** (no new feature).
+**Last session:** 5 (0.5.0) was a **Simplify** session. Session 4 (0.4.0) was a Mazoon session → the next one (0.6.0) is a **team** session.
+**Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -24,15 +24,17 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
-- tapscan flags `.sw-btn` (40px) and the hex input: both already have a 48px hidden hit area / are fine; teach tapscan to count `::after` hit areas so it stops reporting them.
+- tapscan still reports the custom-colour `input[type=color]` (38px) inside `.sw-btn`: its parent's `::after` gives the hit area. Teach tapscan to check the parent's `::after` too.
+- Save sheet: the green check in "Saved!" is faint (dark green tick on a green circle); raise its contrast.
+- Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
 - Inspector (layer editor) Done is still 40px tall visually; since 0.2.0 every Done has an invisible 48px hit area. Only enlarge it visibly if full.mjs stays green.
-- Hub: the tool list is long on a phone (10 rows since Highlight covers); consider grouping (Photo stories / Promotions / Free canvas) once there are more tools.
 - Create: Templates already show a shimmer while loading (checked 0.2.0); only pre-rendered thumbnails would improve it further.
 - Create top bar: the "Untitled design" title gets little room on a phone; check long names.
 - What's New screenshots: consider WebP (smaller) once Safari support is confirmed for the team's phones (it is on iOS 14+).
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.5.0 (Simplify): one-tap Save on a phone (two taps → one; sheet then offers Add to the team, no second picture), hub tools grouped (Stories / Posts and covers / Make anything) with Restock first, two tool views instead of three, shorter hub intro, tapscan counts `::after` hit areas and skips screen-reader-only inputs.
 - 0.4.0: Board gets two Penpot ideas: Combine shapes (union/subtract/intersect/exclude, live and editable, Combine in the quick bar) and Components (main + copies that follow it, words kept per copy, detach/reset/go to main).
 - 0.3.0: Quick start ready bar ("Looks good · Save" saves in one tap; Change words), bigger Text place pad on phones (cells 30 → 45px).
 - 0.2.0: Highlight covers tool (icon / word / photo, shared look, one PNG per cover), pager wording per tool (`pageNoun`), `cols` on seg fields, bigger Done on the main sheets + 48px hit area on every Done, hex box 44px.

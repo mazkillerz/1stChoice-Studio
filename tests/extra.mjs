@@ -15,7 +15,7 @@ await pg.goto(BASE+'tools/photo-story.html'); await pg.waitForTimeout(900);
 await pg.setInputFiles('#pick',[HEIC]);
 const got=await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p.img&&!p.sample?[p.img.width,p.img.height]:false; },null,{timeout:30000}).then(h=>h.jsonValue()).catch(()=>null);
 ok('HEIC photo opens at full size',got&&got[0]===972&&got[1]===1728,got&&got.join('x'));
-const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:30000}),(async()=>{ await pg.tap('#barSave'); await pg.waitForTimeout(400); await pg.tap('#save'); })()]);
+const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:30000}),pg.tap('#barSave')]);
 const f=await dl.path(); const buf=fs.readFileSync(f); ok('HEIC story saves full-size PNG',buf.readUInt32BE(16)===2160&&buf.readUInt32BE(20)===3840);
 // swap photos (Split): hold + drag top onto bottom
 await pg.goto(BASE+'tools/split.html'); await pg.waitForTimeout(900);
@@ -27,9 +27,9 @@ await pg.mouse.move(v.x+bx[0].x*k,v.y+bx[0].y*k); await pg.mouse.down(); await p
 const k1=await keys(); ok('hold + drag swaps photos',k1[0]===k0[1]&&k1[1]===k0[0]);
 // Saved: only collections as chips, tools in the menu
 for(const [t,n,col] of [['new-place','Shop A',''],['restock','Restock Oct','Ramadan']]){ await pg.goto(BASE+'tools/'+t+'.html'); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(500);
-  await pg.tap('#barSave'); await pg.waitForTimeout(400); await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName',n);
+  await pg.tap('#barSave'); await pg.waitForSelector('#doneBox',{state:'visible',timeout:20000}); await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName',n);
   if(col){ await pg.tap('#teamMore'); await pg.waitForTimeout(400); await pg.fill('#teamNewCol',col); await pg.tap('#teamAddCol'); }
-  await pg.tap('#teamOnly'); await pg.waitForTimeout(1500); }
+  await pg.tap('#save'); await pg.waitForTimeout(1500); }
 await pg.goto(BASE+'index.html#saved'); await pg.waitForTimeout(1800);
 const chips=await pg.$$eval('#colChips .chip',cs=>cs.map(c=>c.textContent.replace(/\s+\d+$/,'').trim()));
 ok('chips are only collections',JSON.stringify(chips)==='["All","Ramadan"]',chips.join(', '));

@@ -37,7 +37,7 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 
 ## On a phone
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
-Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch with the name filled in. The switch starts off every time, so nothing is saved to the team by accident. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
+Save makes the full-quality PNG in one tap and opens the share sheet (choose “Save Image”). The Save sheet then shows the picture and an **Also save to the team** switch with the name filled in; turn it on and tap **Add to the team** (no second picture is made). The switch starts off every time, so nothing is saved to the team by accident. Edit the story after saving and the next Save makes a fresh picture. On a computer the same panels sit beside the preview.
 
 **Start from a photo** (top of the hub): tap Restock, Photo story or Collage, take or pick the photo(s), and the tool opens with them already in (Collage takes 2–9 and sets the number of boxes). It starts a new draft, so it is in Continue editing at once.
 
@@ -45,7 +45,7 @@ Save opens a short Save sheet: the full-quality PNG always, plus an optional **A
 
 Continue editing (hub) is a list of your unfinished stories. Every one is kept, several per tool. **Start fresh** starts a new one and keeps the old ones; a reload continues the same draft; tap ✕ to remove one (Studio asks first). Drafts saved to the team leave the list. Over 20 drafts of one tool shows a reminder; nothing is deleted on its own. The "New" labels on the hub are gone. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
-The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
+The hub lists tools in three groups (Stories, Posts and covers, Make anything), most used first. It remembers per phone how you like Tools (list / grid) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
 
 ## Editing on the preview
 - Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Rotate, Colour, Font, More) and the preview stays big; it fades away while you drag.

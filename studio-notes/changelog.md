@@ -8,6 +8,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Anything above the first `##` (this intro) is not shown.
 
+## 0.5.0 · 24 Oct 2026
+
+### Save in one tap
+On a phone, Save in the bottom bar now makes the full-quality picture straight away, like it already did on a computer. Before, it opened a sheet and you tapped Save a second time. That is one tap instead of two for every story. The sheet then shows your picture and the Also save to the team switch: turn it on and tap Add to the team, and it goes to Saved without making a second picture.
+![before](assets/whatsnew/0.5.0-save-before.jpg)
+![after](assets/whatsnew/0.5.0-save-after.jpg)
+
+### Tools in groups, most used first
+The home page lists tools under three small headings: Stories, Posts and covers, and Make anything. Restock, the job the team does most, moved from seventh to first, followed by Photo story and Collage. Create moved to the end because it is the free-design tool. The tools view now has two choices (list and grid) instead of three; if you had picked the small grid, you now see the grid. The line under the title is shorter too.
+![before](assets/whatsnew/0.5.0-hub-before.jpg)
+![after](assets/whatsnew/0.5.0-hub-after.jpg)
+
 ## 0.4.0 · 24 Oct 2026
 
 ### Combine shapes in Board

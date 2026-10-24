@@ -98,8 +98,7 @@ const HD=/brands\/1stchoice\/assets\/[^/]+\.png$/;
   ok('classic can added as a layer',await pg.evaluate(()=>JSON.stringify(Studio.debug.recipe()).includes('can-classic')));
   await pg.tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(400);
   await pg.setInputFiles('#pick',[SAMPLES+'pair.jpg']); await pg.waitForTimeout(1500);
-  await pg.tap('#barSave'); await pg.waitForTimeout(500);
-  const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:90000}),pg.tap('#save')]); const f=OUT+'/np-'+dl.suggestedFilename(); await dl.saveAs(f);
+  const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:90000}),pg.tap('#barSave')]); const f=OUT+'/np-'+dl.suggestedFilename(); await dl.saveAs(f);
   ok('regular tool save with a light-copy can = 2160x3840 PNG',JSON.stringify(pngSize(f))==='[2160,3840]',pngSize(f));
   /* collage grid */
   await pg.goto(BASE+'tools/collage.html'); await pg.waitForTimeout(1500);

@@ -509,17 +509,14 @@ html,body{background:var(--bg)}
 .vswitch button::after{content:"";position:absolute;inset:-4px -1px}
 .vswitch button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .vswitch button:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
-/* tools: grid and compact views reuse the same rows */
+/* tools: the grid view reuses the same rows; a small heading starts each group */
+.grid .tgroup{grid-column:1/-1;margin:var(--sp-3) 2px 0;font:700 var(--fs-xs)/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.grid .tgroup:first-child{margin-top:0}
 .grid.view-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .grid.view-grid .tool-row{flex-direction:column;align-items:stretch;padding:0;gap:0;overflow:hidden}
 .grid.view-grid .tthumb{width:100%;aspect-ratio:4/5;border-radius:0;box-shadow:none}
 .grid.view-grid .ttxt{padding:8px 10px 10px}
 .grid.view-grid .chev{display:none}
-.grid.view-compact{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
-.grid.view-compact .tool-row{flex-direction:column;align-items:stretch;padding:6px;gap:6px;border-radius:var(--r-m)}
-.grid.view-compact .tthumb{width:100%;aspect-ratio:1;border-radius:8px}
-.grid.view-compact .ttxt span,.grid.view-compact .chev,.grid.view-compact .tag{display:none}
-.grid.view-compact .ttxt b{font-size:var(--fs-xs);line-height:1.2;display:block;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Continue editing: short, wide cards */
 .ccard{position:relative;flex:0 0 auto;width:216px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);animation:rise .35s var(--ease) both;transition:transform .12s var(--ease)}
 .ccard:active{transform:scale(.98)}
