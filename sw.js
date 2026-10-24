@@ -3,7 +3,7 @@
    - Code and pages are "network first": when online you always get the newest version.
    - Images (samples, thumbs, assets) are "cache first" and refreshed in the background.
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network. */
-const VERSION='studio-v5-5';   // Studio 0.1.0
+const VERSION='studio-v5-6';   // Studio 0.2.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -12,7 +12,7 @@ const SHELL=[
   'tools/new-place.html','tools/new-place.js','tools/photo-story.html','tools/photo-story.js',
   'tools/cinematic.html','tools/cinematic.js','tools/collage.html','tools/collage.js','tools/split.html','tools/split.js',
   'tools/restock.html','tools/restock.js','tools/offer.html','tools/offer.js',
-  'tools/carousel.html','tools/carousel.js',
+  'tools/carousel.html','tools/carousel.js','tools/highlight.html','tools/highlight.js',
   'tools/create.html','tools/create.js','tools/create.css','tools/create-core.js','tools/create-lib.js','tools/create-templates.js','brands/1stchoice/brand.js',
   'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
 ];

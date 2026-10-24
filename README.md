@@ -31,6 +31,7 @@ The bottom bar has **Add, Text, Photo, Templates, Layers, Save** on phone and co
 | Restock | Back in stock: cans photo, approved headline, flavour pills, button. Cream / white / full photo. |
 | Offer | Discount story: offer tiles (e.g. ×3 / ٢٠٪), dates line, product photo, button. Cream / black / full photo. |
 | Carousel | 1080×1350 Instagram carousel, 2–10 slides: Cover, Photo + words, Full photo, Two photos, Words only, Big number, Panorama (one wide photo across 2–3 slides), End slide. Filmstrip to switch / reorder (long-press), See all, swipe the preview edges. Saves numbered PNGs (2160×2700) or just one slide. |
+| Highlight covers | A set of round covers for Instagram story highlights, 1–12 covers, one PNG each (1080×1920; the circle Instagram shows is the middle). Each cover is an **icon** (24 line icons, optional small word under it), a **word**, or a **photo**. The look is shared so the set matches: White / Cream / Black, circle / ring / nothing behind the icon, line weight, background and icon colours. A dashed circle (preview only) shows what Instagram crops to. |
 
 Every tool has a **White** look (the main look, now first) and a **Cream** look. Each also has a **Background colour** from the brand palette (Split: "Label colour"; Photo story: "Frame colour").
 

@@ -109,7 +109,8 @@ body.sheet-open .cta-photo{display:none}
 .sheet-head h2{margin:0;font:800 var(--fs-l) var(--sans);display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .sheet-body{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3) 18px 18px;min-width:0}
 .grab{display:none}
-.done{min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font:800 var(--fs-m) var(--sans);cursor:pointer}
+.done{min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font:800 var(--fs-m) var(--sans);cursor:pointer;position:relative}
+.done::after{content:"";position:absolute;inset:-4px 0}   /* 48px tap area without moving the layout (the inspector's Done stays 40px tall) */
 .sheet[data-sheet="photo"] .done,.sheet[data-sheet="style"] .done,.sheet[data-sheet="words"] .done,.sheet[data-sheet="layers"] .done,.sheet[data-sheet="save"] .done,.sheet[data-sheet="save"] .sheet-head{display:none}
 .sheet.insp,.sheet[data-sheet="assets"]{display:none;max-width:400px}
 .sheet.insp.active,.sheet[data-sheet="assets"].active{display:flex}
@@ -147,7 +148,7 @@ body.sheet-open .cta-photo{display:none}
 .sw-btn .sw-none{position:absolute;inset:8px;border-radius:50%;background:linear-gradient(135deg,transparent 45%,var(--danger) 45%,var(--danger) 55%,transparent 55%)}
 .sw-custom{display:inline-flex;align-items:center;justify-content:center;background:conic-gradient(#e94b4b,#f6c040,#5fc06a,#3b9be0,#9b5de5,#e94b4b);overflow:visible}
 .sw-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
-.pal .hex{width:92px;min-height:40px;padding:0 10px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:700 var(--fs-s) ui-monospace,monospace;direction:ltr}
+.pal .hex{width:92px;min-height:44px;padding:0 10px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:700 var(--fs-s) ui-monospace,monospace;direction:ltr}
 .insp-col{flex-direction:column;align-items:stretch;gap:var(--sp-2)}
 .insp-col>.insp-row,.insp-col>div{width:100%}
 #inspText{width:100%;min-height:var(--tap);max-height:160px;resize:none;padding:10px 12px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);line-height:1.4;overflow:auto}
@@ -257,6 +258,7 @@ body.sheet-open .cta-photo{display:none}
   .sheet-head h2{padding-top:10px}
   .sheet-head .num{display:none}
   .sheet .done,.sheet[data-sheet] .done{display:inline-flex;align-items:center;margin-top:8px}
+  .sheet:is([data-sheet="photo"],[data-sheet="style"],[data-sheet="words"],[data-sheet="layers"]) .done{min-height:48px;margin-top:6px}
   .sheet[data-sheet="save"] .sheet-head{display:flex}
   .sheet-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--sp-2) 16px 16px}
   .save-sheet #save{display:none}

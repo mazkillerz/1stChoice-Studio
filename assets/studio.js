@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.1.0';
+const VERSION='0.2.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -74,7 +74,8 @@ const TOOLS={
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
   'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1},
   'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.'}
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.'},
+  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -492,6 +493,7 @@ async function tool(cfg){
   const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
   if(cfg.size){ W=cfg.size.w; H=cfg.size.h; }
   const PG=cfg.pages||null;   // carousels: {min,max,start}
+  const PN=Object.assign({one:'slide',many:'slides',set:'carousel'},cfg.pageNoun||{}), UC=t=>t.charAt(0).toUpperCase()+t.slice(1);   // what a page is called: a carousel's slide, a highlight cover
   const perPage=cfg.photos.max||cfg.photos.count||1, minPhotos=cfg.photos.min||cfg.photos.count||1;
   const nPhotos=PG?PG.max*perPage:perPage;
   /* state. A story is one page; a carousel has several. values / layers / extras always mean "the page you're on". */
@@ -583,7 +585,7 @@ async function tool(cfg){
     for(let k=cfg.photos.min;k<=cfg.photos.max;k++) html+=`<button type="button" class="seg" data-count="${k}" aria-pressed="false">${k}</button>`;
     html+=`</div>`;
   }
-  html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this slide':''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
+  html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this '+PN.one:''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div></div></section>`;
   if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
@@ -597,7 +599,7 @@ async function tool(cfg){
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
     <div class="team-status" id="teamStatus" role="status" aria-live="polite" hidden></div>
     <div class="save-opts" id="saveOpts">
-      <div class="opt-row"><span class="opt-ic">${ICON.download}</span><span class="opt-txt"><b>Save to Photos</b><small>Full-quality PNG${cfg.pages?' for every slide':''}</small></span><span class="opt-always">Always</span></div>
+      <div class="opt-row"><span class="opt-ic">${ICON.download}</span><span class="opt-txt"><b>Save to Photos</b><small>Full-quality PNG${cfg.pages?' for every '+PN.one:''}</small></span><span class="opt-always">Always</span></div>
       <label class="opt-row"><span class="opt-ic">${ICON.bookmark}</span><span class="opt-txt"><b id="teamLbl">Also save to the team</b><small id="teamSub">Find and reuse it in Saved</small></span><input type="checkbox" class="switch" id="teamOn" role="switch"></label>
       <div class="team-box" id="teamBox" hidden>
         <label class="sr-only" for="teamName">Name for the team</label><input type="text" id="teamName" dir="auto" maxlength="80" placeholder="Name, e.g. Restock – Al Khoud">
@@ -612,7 +614,7 @@ async function tool(cfg){
     </div>
     <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no image)</button>
-    ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this slide only</button>':''}
+    ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
     <div class="status" id="status" role="status" aria-live="polite"></div>
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
   </div></section>
@@ -710,7 +712,7 @@ async function tool(cfg){
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
-      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid" style="--c:${segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
+      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid" style="--c:${f.cols||segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='tiles') inner=`<span class="lbl">${esc(f.label)}</span><div class="tiles-ed" data-tiles="${f.id}"></div><button type="button" class="mini" data-addtile="${f.id}">${ICON.plus} ${esc(f.addLabel||'Add one')}</button>${f.hint?`<span class="small">${esc(f.hint)}</span>`:''}`;
@@ -789,7 +791,7 @@ async function tool(cfg){
     let s=''; const off=photoOffset(), n=slotCount();
     for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
       s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
-    $('slots').innerHTML=n?s:'<p class="small">This slide has no photo. Change it in Style → This slide.</p>';
+    $('slots').innerHTML=n?s:'<p class="small">This '+PN.one+' has no photo. Change it in Style → This '+PN.one+'.</p>';
   }
   $('slots').addEventListener('change',e=>{const t=e.target; if(t.dataset.file!=null){ setPhoto(+t.dataset.file,t.files&&t.files[0]); t.value=''; }});
   $('slots').addEventListener('click',e=>{ if(slotDrag&&slotDrag.used){ e.preventDefault(); e.stopPropagation(); slotDrag=null; return; } const l=e.target.closest('[data-slot]'); if(l){S.active=+l.dataset.slot; syncZoom();}},true);
@@ -828,7 +830,7 @@ async function tool(cfg){
     fs.slice(0,t.length).forEach((f,k)=>setPhoto(t[k],f));
     /* carousels: more photos than this slide takes fill the next slides, adding slides if needed */
     if(PG&&fs.length>t.length){ let pg=S.page; for(const f of fs.slice(t.length)){ pg++; while(pg<S.P.length&&!pagePhotoCount(pg)) pg++; if(pg>=S.P.length){ if(S.P.length>=PG.max) break; insertPage(S.P.length,newPage(S.P.length)); pg=S.P.length-1; } setPhoto(pg*perPage,f); }
-      paintPager(); status(fs.length+' photos added across the slides.'); }
+      paintPager(); status(fs.length+' photos added across the '+PN.many+'.'); }
     e.target.value=''; });
   $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
   function syncCta(){ const n=slotCount(); $('pick').multiple=!!PG||n>1; const off=photoOffset(); let any=false; for(let i=0;i<n;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=n>1||PG?'Add your photos':'Add your photo'; }
@@ -1030,7 +1032,7 @@ async function tool(cfg){
     $('teamAsNewRow').hidden=!design;
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save slides':'Save story');
+    $('saveTxt').textContent=on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save '+PN.many:'Save story');
   }
   /* the team switch always starts off: you turn it on for the saves you want in the team, so nothing goes there by accident */
   store('studio:teamSave',null);   // forget the old remembered setting
@@ -1408,7 +1410,7 @@ async function tool(cfg){
     const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
     try{
       for(const [li,pg] of list.entries()){
-        const tag=pages>1?'Slide '+(li+1)+' of '+pages+': ':'';
+        const tag=pages>1?UC(PN.one)+' '+(li+1)+' of '+pages+': ':'';
         progress((li+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
         /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
         async function renderAt(K){
@@ -1431,7 +1433,7 @@ async function tool(cfg){
       }
       progress(1,'Done');
       const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
-      const what=pages>1?files.length+' slides':(withPhotos?'Your story':'The frame');
+      const what=pages>1?files.length+' '+PN.many:(withPhotos?'Your story':'The frame');
       lastFiles=files;
       if(downloads){ try{ for(const f of files) await downloads.save({filename:f.name,data:f}); finish(what+' saved.',small); return; }catch(err){ if(err&&err.code==='declined'){ progress(null); status('Not saved.'); return; } } }
       const touch=matchMedia('(pointer:coarse)').matches;
@@ -1443,7 +1445,7 @@ async function tool(cfg){
       }
       if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
       showResult(files,false);
-      finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your slides are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
+      finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
     } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
   function finish(title,txt,keepBar){ if(!keepBar) setTimeout(()=>progress(null),400); done(title,txt); }
@@ -1451,7 +1453,7 @@ async function tool(cfg){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
-  $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?'slides are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
+  $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar opens the Save sheet first (Photos + optional team); the sheet's Save button does it */
@@ -1464,7 +1466,7 @@ async function tool(cfg){
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
       openSheet('photo');
-      status(cfg.pages?'Add a photo to slide '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
+      status(cfg.pages?'Add a photo to '+PN.one+' '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
       return;
     }
     const team=$('teamOn').checked;
@@ -1487,8 +1489,8 @@ async function tool(cfg){
   const TH_W=60, TH_H=Math.round(TH_W*H/W);
   function paintPager(){
     if(!PG) return; const n=S.P.length, el=$('pager'); el.hidden=false;
-    el.innerHTML=`<div class="strip" id="strip" role="group" aria-label="Slides. Long-press a slide for options or to move it.">${S.P.map((_,i)=>`<button type="button" class="sthumb" data-pg="${i}" aria-current="${i===S.page}" aria-label="Slide ${i+1}"><canvas width="${TH_W*2}" height="${TH_H*2}"></canvas><span>${i+1}</span></button>`).join('')}<button type="button" class="sadd" data-pg="add" aria-label="Add a slide" ${n>=PG.max?'disabled':''}>${ICON.plus}</button></div>
-      <button type="button" class="mini icon sall" data-pg="all" aria-label="See all slides" title="See all slides">${ICON.grid}</button>`;
+    el.innerHTML=`<div class="strip" id="strip" role="group" aria-label="${UC(PN.many)}. Long-press a ${PN.one} for options or to move it.">${S.P.map((_,i)=>`<button type="button" class="sthumb" data-pg="${i}" aria-current="${i===S.page}" aria-label="${UC(PN.one)} ${i+1}"><canvas width="${TH_W*2}" height="${TH_H*2}"></canvas><span>${i+1}</span></button>`).join('')}<button type="button" class="sadd" data-pg="add" aria-label="Add a ${PN.one}" ${n>=PG.max?'disabled':''}>${ICON.plus}</button></div>
+      <button type="button" class="mini icon sall" data-pg="all" aria-label="See all ${PN.many}" title="See all ${PN.many}">${ICON.grid}</button>`;
     S.P.forEach((_,i)=>drawThumb(i));
     const cur=el.querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest'});
     fit();
@@ -1504,21 +1506,22 @@ async function tool(cfg){
   function insertPage(at,page,photos){ S.P.splice(at,0,page); S.photos.splice(at*perPage,0,...(photos||Array.from({length:perPage},blankPhoto))); S.photos.length=nPhotos; for(let i=0;i<nPhotos;i++) if(!S.photos[i]) S.photos[i]=blankPhoto(); }
   function removePage(at){ S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); }
   function movePage(from,to){ if(to<0||to>=S.P.length||from===to) return; const pg=S.P[from], ph=S.photos.slice(from*perPage,from*perPage+perPage); removePage(from); insertPage(to,pg,ph); S.page=to; paintPager(); goPage(to); }
-  function dupPage(at){ if(S.P.length>=PG.max) return status('A carousel can have up to '+PG.max+' slides.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const nid=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n; if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
-    insertPage(at+1,pg,S.photos.slice(at*perPage,at*perPage+perPage).map(p=>({...p}))); paintPager(); goPage(at+1); status('Slide '+(at+1)+' duplicated.'); }
-  function deletePage(at){ if(S.P.length<=PG.min) return status('A carousel needs at least '+PG.min+' slides.'); removePage(at); paintPager(); goPage(Math.min(at,S.P.length-1)); status('Slide deleted. Undo brings it back.'); }
+  function dupPage(at){ if(S.P.length>=PG.max) return status('A '+PN.set+' can have up to '+PG.max+' '+PN.many+'.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const nid=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n; if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
+    insertPage(at+1,pg,S.photos.slice(at*perPage,at*perPage+perPage).map(p=>({...p}))); paintPager(); goPage(at+1); status(UC(PN.one)+' '+(at+1)+' duplicated.'); }
+  function deletePage(at){ if(S.P.length<=PG.min) return status('A '+PN.set+' needs at least '+PG.min+' '+(PG.min===1?PN.one:PN.many)+'.'); removePage(at); paintPager(); goPage(Math.min(at,S.P.length-1)); status(UC(PN.one)+' deleted. Undo brings it back.'); }
   /* add a slide: pick its type (or duplicate this one); panoramas add 2 or 3 slides that share one wide photo */
   function addMenu(){
+    if(!(cfg.slideKinds||[]).length){ if(S.P.length>=PG.max) return; const at=S.page+1; insertPage(at,newPage(at)); paintPager(); goPage(at); return status(UC(PN.one)+' '+(at+1)+' added.'); }   // one kind of page: add it straight away
     const kinds=(cfg.slideKinds||[]).filter(k=>S.P.length+(k.slides||1)<=PG.max);
-    const d=dialog(`<div class="dlg-body"><h3>Add a slide</h3><div class="kind-grid">${kinds.map(k=>`<button type="button" class="kind" data-kind="${k.v}" data-n="${k.slides||1}">${k.ic||''}<b>${esc(k.l)}</b>${k.d?`<span>${esc(k.d)}</span>`:''}</button>`).join('')}</div>
-      <div class="dlg-actions"><button type="button" class="mini" data-dup="1">Duplicate this slide</button><button type="button" class="mini" data-x="1">Cancel</button></div></div>`);
+    const d=dialog(`<div class="dlg-body"><h3>Add a ${PN.one}</h3><div class="kind-grid">${kinds.map(k=>`<button type="button" class="kind" data-kind="${k.v}" data-n="${k.slides||1}">${k.ic||''}<b>${esc(k.l)}</b>${k.d?`<span>${esc(k.d)}</span>`:''}</button>`).join('')}</div>
+      <div class="dlg-actions"><button type="button" class="mini" data-dup="1">Duplicate this ${PN.one}</button><button type="button" class="mini" data-x="1">Cancel</button></div></div>`);
     d.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) return d.close(); if(e.target.closest('[data-dup]')){ d.close(); return dupPage(S.page); }
       const k=e.target.closest('[data-kind]'); if(!k) return; d.close(); let at=S.page+1; const n=+k.dataset.n;
       for(let j=0;j<n;j++){ const pg=newPage(at+j); if(pg.values.kind!==undefined) pg.values.kind=k.dataset.kind; if(cfg.slideDefaults) cfg.slideDefaults(k.dataset.kind,pg.values,B); insertPage(at+j,pg); }
-      paintPager(); goPage(at); status(n>1?n+' panorama slides added. Add one wide photo to the first.':'Slide '+(at+1)+' added.'); });
+      paintPager(); goPage(at); status(n>1?n+' panorama slides added. Add one wide photo to the first.':UC(PN.one)+' '+(at+1)+' added.'); });
   }
   function slideMenu(i){
-    const d=dialog(`<div class="dlg-body"><h3>Slide ${i+1}</h3><div class="menu-list">
+    const d=dialog(`<div class="dlg-body"><h3>${UC(PN.one)} ${i+1}</h3><div class="menu-list">
       <button type="button" class="mini" data-a="open">Open</button><button type="button" class="mini" data-a="dup" ${S.P.length>=PG.max?'disabled':''}>Duplicate</button>
       <button type="button" class="mini" data-a="left" ${i===0?'disabled':''}>Move left</button><button type="button" class="mini" data-a="right" ${i>=S.P.length-1?'disabled':''}>Move right</button>
       <button type="button" class="mini danger" data-a="del" ${S.P.length<=PG.min?'disabled':''}>Delete</button></div><button type="button" class="link" data-a="x">Close</button></div>`);
@@ -1526,7 +1529,7 @@ async function tool(cfg){
       if(a==='open') goPage(i); else if(a==='dup') dupPage(i); else if(a==='left') movePage(i,i-1); else if(a==='right') movePage(i,i+1); else if(a==='del') deletePage(i); });
   }
   function seeAll(){
-    const d=dialog(`<div class="dlg-body see-all"><h3>All slides</h3><p class="small">How the carousel flows. Tap a slide to open it.</p><div class="sa-row">${S.P.map((_,i)=>`<button type="button" class="sa-slide" data-i="${i}" aria-label="Open slide ${i+1}"><canvas width="${Math.round(W/4)}" height="${Math.round(H/4)}"></canvas><span>${i+1}</span></button>`).join('')}</div><button type="button" class="btn slim" data-x="1">Close</button></div>`,'wide');
+    const d=dialog(`<div class="dlg-body see-all"><h3>All ${PN.many}</h3><p class="small">How the ${PN.set} flows. Tap a ${PN.one} to open it.</p><div class="sa-row">${S.P.map((_,i)=>`<button type="button" class="sa-slide" data-i="${i}" aria-label="Open ${PN.one} ${i+1}"><canvas width="${Math.round(W/4)}" height="${Math.round(H/4)}"></canvas><span>${i+1}</span></button>`).join('')}</div><button type="button" class="btn slim" data-x="1">Close</button></div>`,'wide');
     d.querySelectorAll('.sa-slide canvas').forEach((c,i)=>drawThumb(i,c));
     d.addEventListener('click',e=>{ if(e.target.closest('[data-x]')) return d.close(); const b=e.target.closest('[data-i]'); if(b){ d.close(); goPage(+b.dataset.i); } });
   }

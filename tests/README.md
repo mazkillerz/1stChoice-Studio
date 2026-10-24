@@ -18,3 +18,6 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/polish.mjs   # Phase 3: light WebP copies (HD swaps in, saves stay 2×), kept template previews, even option grids, Reset layout, recent colours, dark-mode element previews
 
     node tests/whatsnew.mjs   # 0.1.0: Quick start from a photo (hub → tool with the photo in, as a draft), What's New page + badge
+    node tests/highlight.mjs  # Highlight covers: covers per page, icon/word/photo, + adds a cover, 2× PNG per cover, team save + reopen
+    node tests/tapscan.mjs    # (helper) lists visible controls under 44px at 390×844, per sheet
+    node tests/shot.mjs       # (helper) phone screenshot for What's New
