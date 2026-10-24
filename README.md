@@ -39,13 +39,19 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
 Save makes the full-quality PNG in one tap and opens the share sheet (choose “Save Image”). The Save sheet then shows the picture and an **Also save to the team** switch with the name filled in; turn it on and tap **Add to the team** (no second picture is made). The switch starts off every time, so nothing is saved to the team by accident. Edit the story after saving and the next Save makes a fresh picture. On a computer the same panels sit beside the preview.
 
-**Start from a photo** (top of the hub): tap Restock, Photo story or Collage, take or pick the photo(s), and the tool opens with them already in (Collage takes 2–9 and sets the number of boxes). It starts a new draft, so it is in Continue editing at once.
+**Search** (top of the hub): one box finds everything in Studio: tools, templates (the brand's Create templates and team templates), saved designs and collections, unfinished stories, and settings and actions (All tools, Sign in / Account, What's new, Install Studio, list or grid, the fresh look, Experimental). Arabic matches with or without harakat and alef/teh marbuta forms. Before you type it shows your last 6 searches (kept on this phone) and shortcuts (the first pinned tool from a photo, Continue, All tools, Templates, Saved designs, What's new). On a phone it opens full screen and Back closes it; on a computer it is a dropdown (arrows + Enter, Esc). Built in `assets/search.js/.css`; the hub hands it the data (`searchEntries` in `home()`).
+
+**Your tools** (hub): only the tools pinned on this phone. **All tools** lists every tool in its group with a star to pin or unpin it (also the star in search results). Pins live in this phone's storage (`studio:pins`), not with the team login. A new phone starts with Restock; a phone that used Studio before 0.6.0 keeps Restock, Photo story and Collage.
+
+**Start from a photo** (top of the hub): one button per pinned tool that can start from a photo (Restock, Photo story, Collage). Take or pick the photo(s) and the tool opens with them already in (Collage takes 2–9 and sets the number of boxes). It starts a new draft, so it is in Continue editing at once.
+
+**Fresh look (preview, off by default)**: livelier motion (press and spring back, pages fade into each other, the home page settles in), soft shadows, one bold blue accent, a big tick and a short haptic when you save (Android buzz; iPhone iOS 18+ switch tick). Per phone: switch it on the What's New card, by searching "fresh look", or with `?look=fresh` (`?look=classic` turns it off). Lives in `studio.css` under `:root[data-look="fresh"]`; `setLook`, `haptic`, `celebrate` in `studio.js`.
 
 **What's new** (✦ button at the top of the hub, and the version line at the bottom): a page with a card for every Studio update, with before/after screenshots. A dot on the button means there is an update you haven't opened yet. The cards come from `studio-notes/changelog.md`; the version is `VERSION` in `assets/studio.js`.
 
 Continue editing (hub) is a list of your unfinished stories. Every one is kept, several per tool. **Start fresh** starts a new one and keeps the old ones; a reload continues the same draft; tap ✕ to remove one (Studio asks first). Drafts saved to the team leave the list. Over 20 drafts of one tool shows a reminder; nothing is deleted on its own. The "New" labels on the hub are gone. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
-The hub lists tools in three groups (Stories, Posts and covers, Make anything), most used first. It remembers per phone how you like Tools (list / grid) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
+All tools lists tools in three groups (Stories, Posts and covers, Make anything), most used first. The hub remembers per phone how you like Your tools (list / grid) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips in Saved are only your team's collections; filter by tool with the menu next to Saved.
 
 ## Editing on the preview
 - Tap any layer to select it. On a phone a slim bar opens (Edit, Size, Rotate, Colour, Font, More) and the preview stays big; it fades away while you drag.
@@ -83,7 +89,8 @@ The passcode only hides the area from everyday use; it is not security. Nothing 
 
 ## How it is built
 ```
-index.html                 home page with the tool cards
+index.html                 home page: search, Start from a photo, Continue editing, Your tools (pinned) + All tools, Saved
+assets/search.js/.css      the hub's universal search (brand-agnostic; the hub passes in the entries)
 whats-new.html             What's New (assets/whatsnew.js/.css) built from studio-notes/changelog.md; screenshots in assets/whatsnew/
 studio-notes/              backlog.md, lessons.md, changelog.md (the studio-improver skill's memory, .claude/skills/studio-improver)
 assets/studio.js           the engine: steps, live preview, layers, photo handling, saving (no brand inside)

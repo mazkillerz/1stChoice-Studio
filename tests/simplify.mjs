@@ -15,11 +15,15 @@ await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javas
 const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(String(e)));
 await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:toolsView','"compact"'); }); await pg.reload(); await pg.waitForTimeout(800);
 /* hub */
-const order=await pg.$$eval('#toolGrid a',as=>as.map(a=>a.getAttribute('href').replace(/^.*tools\/|\.html$/g,'')));
-ok('hub: Restock is the first tool',order[0]==='restock',order.join(','));
-ok('hub: every tool is still listed',order.length===10&&['create','new-place','photo-story','cinematic','collage','split','restock','offer','carousel','highlight'].every(t=>order.includes(t)));
-const groups=await pg.$$eval('#toolGrid .tgroup',h=>h.map(x=>x.textContent));
-ok('hub: tools are grouped',groups.length===3,groups.join(' / '));
+/* 0.6.0: the home page shows the pinned tools (Restock on a new device); All tools lists every tool in its group */
+ok('hub: Restock is pinned first',(await pg.$$eval('#toolGrid a',as=>as.map(a=>a.getAttribute('href').replace(/^.*tools\/|\.html$/g,''))))[0]==='restock');
+await pg.click('#allTools'); await pg.waitForTimeout(300);
+const order=await pg.$$eval('.lib-row a',as=>as.map(a=>a.getAttribute('href').replace(/^.*tools\/|\.html$/g,'')));
+ok('All tools: Restock is the first tool',order[0]==='restock',order.join(','));
+ok('All tools: every tool is listed',order.length===10&&['create','new-place','photo-story','cinematic','collage','split','restock','offer','carousel','highlight'].every(t=>order.includes(t)));
+const groups=await pg.$$eval('.lib .tgroup',h=>h.map(x=>x.textContent));
+ok('All tools: tools are grouped',groups.length===3,groups.join(' / '));
+await pg.click('#libDone'); await pg.waitForTimeout(300);
 ok('hub: two view choices',await pg.$$eval('[data-view="tools"] button',bs=>bs.length)===2);
 ok('hub: an old "compact" choice shows as grid',await pg.$eval('#toolGrid',g=>g.classList.contains('view-grid')));
 /* one-tap save */

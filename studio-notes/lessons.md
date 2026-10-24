@@ -2,6 +2,25 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 6 · 0.6.0 · 24 Oct 2026 (owner-directed: search, pins, Fresh look)
+
+**Worked**
+- Putting search in its own files (`assets/search.js/.css`) with a written data contract (entries, shortcuts, init/refresh) let a Sonnet subagent build it in parallel with no file conflicts; the hub only hands it data.
+- One root attribute (`:root[data-look="fresh"]`) for the whole new look, plus three ways to switch it (What's New card `[try:fresh]`, a search action, `?look=fresh|classic`), made a big visual change safe to merge (off by default) and one tap for Mazoon to try.
+- Reading the owner's words literally solved a clash with the simplicity gate: "new devices start with Restock" left room for devices that already used Studio to keep their Start-from-a-photo tools, so Photo story and Collage stayed one tap there.
+- The faint "Saved!" tick was a specificity bug (`.done-box span` beat `.done-ic`), not a colour choice. Check computed styles before redesigning.
+
+**Didn't work / watch out**
+- A filled entrance animation (`animation-fill-mode:both` with a transform) on an ancestor made the full-screen search (`position:fixed`) a box inside the hero, so taps hit the page behind. Use `backwards` for entrance animations and never animate an ancestor of a fixed layer. Only the end-to-end test on the real page caught it, not the subagent's harness.
+- An early `<head>` snippet that sets an attribute must be undone by the engine when a URL switch turns it off (`?look=classic` failed first).
+- The search star and the page's pin code both buzzed on one tap. When a module and the page react to the same action, only one gives the feedback.
+- The tool page removes `?quick=1` after loading the photo: check the ready bar, not the URL.
+- Three old suites expected every tool on the home page (`#toolGrid`). A home-page change means grepping every suite for `#toolGrid`, `.tgroup`, `.qbtn`.
+
+**Process tweaks**
+- Screenshots with real fonts in the sandbox: launch Chromium with `proxy:{server:process.env.HTTPS_PROXY}` and the context with `ignoreHTTPSErrors:true`.
+- New suites: `tests/pins.mjs`, `tests/search.mjs`, `tests/fresh.mjs`.
+
 ## Session 4 · 0.4.0 · 24 Oct 2026 (Mazoon session)
 
 **Worked**

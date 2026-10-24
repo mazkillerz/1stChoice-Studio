@@ -2,16 +2,21 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 5 (0.5.0) was a **Simplify** session. Session 4 (0.4.0) was a Mazoon session → the next one (0.6.0) is a **team** session.
+**Last session:** 6 (0.6.0) was **owner-directed** (search at the top, pinned home + All tools, Fresh look preview). It counts as the **team** session (search and pins help the team find and adopt tools) → the next one (0.7.0) is a **Mazoon** session.
 **Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
+| 17 | **Fresh look: make it the default** once Mazoon approves (drop the `data-look` scoping, keep a "Classic look" switch for one version, then archive it) | 4 | 5 | 4 | 2 | 11 | Waiting on approval (0.6.0 preview). |
+| 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
+| 19 | Reorder pinned tools (drag in All tools, or "Move up") | 3 | 3 | 2 | 2 | 6 | Today pins follow the TOOLS order. |
+| 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
+| 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
 | 4 | Share target: share photos from the phone's gallery straight into Studio (PWA `share_target`) | 5 | 3 | 5 | 4 | 9 | Needs a service-worker POST handler; Android only, iPhone no. |
 | 5 | Batch export: save every slide/page or several drafts in one go (ZIP or share sheet with many files) | 3 | 4 | 3 | 3 | 7 | |
-| 6 | Template search and collections in Create (search by word, favourites) | 2 | 4 | 3 | 3 | 6 | |
+| 6 | Template search and collections in Create (search by word, favourites) | 2 | 4 | 3 | 3 | 6 | Hub search finds templates since 0.6.0; inside Create there is still no search box. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
 | 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | |
 | 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
@@ -25,7 +30,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 
 ## UX audit findings (open)
 - tapscan still reports the custom-colour `input[type=color]` (38px) inside `.sw-btn`: its parent's `::after` gives the hit area. Teach tapscan to check the parent's `::after` too.
-- Save sheet: the green check in "Saved!" is faint (dark green tick on a green circle); raise its contrast.
 - Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
 - Inspector (layer editor) Done is still 40px tall visually; since 0.2.0 every Done has an invisible 48px hit area. Only enlarge it visibly if full.mjs stays green.
 - Create: Templates already show a shimmer while loading (checked 0.2.0); only pre-rendered thumbnails would improve it further.
@@ -34,6 +38,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.6.0 (owner-directed): universal search at the top of the hub (tools, templates, saved designs, collections, unfinished stories, settings and actions; recent searches + shortcuts; Arabic-aware), pinned home + All tools library with stars (per device; Restock on a new device, the three photo-first tools on a device that used Studio before), Fresh look preview behind a switch (motion, soft depth, one bold blue accent, save tick + haptics), white "Saved!" tick for everyone.
 - 0.5.0 (Simplify): one-tap Save on a phone (two taps → one; sheet then offers Add to the team, no second picture), hub tools grouped (Stories / Posts and covers / Make anything) with Restock first, two tool views instead of three, shorter hub intro, tapscan counts `::after` hit areas and skips screen-reader-only inputs.
 - 0.4.0: Board gets two Penpot ideas: Combine shapes (union/subtract/intersect/exclude, live and editable, Combine in the quick bar) and Components (main + copies that follow it, words kept per copy, detach/reset/go to main).
 - 0.3.0: Quick start ready bar ("Looks good · Save" saves in one tap; Change words), bigger Text place pad on phones (cells 30 → 45px).

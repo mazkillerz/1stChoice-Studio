@@ -467,7 +467,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   syncT(); }
 function line(t,ok,spin){ const el=$('crSt'); if(!el) return; el.classList.toggle('ok',!!ok); el.innerHTML=t?(spin?'<span class="spin" aria-hidden="true"></span>':'')+'<span>'+esc(t)+'</span>':''; }
 async function runTeam(o){ st.saving=true; line(o.kind==='template'?'Saving the team template…':'Saving to the team…',false,true);
-  try{ const r=await teamSave(o); line(r.kind==='template'?'Saved as a team template: “'+r.name+'”':'Saved to the team as “'+r.name+'”',true); }
+  try{ const r=await teamSave(o); line(r.kind==='template'?'Saved as a team template: “'+r.name+'”':'Saved to the team as “'+r.name+'”',true); L.celebrate&&L.celebrate(); }
   catch(err){ line(err.message||'Could not save to the team.'); } finally{ st.saving=false; } }
 async function saveImages(list){ if(st.saving) return; st.saving=true; const btn=$('crGo'); if(btn) btn.disabled=true; const keep=S.sel.slice(); BD.select([],{quiet:true});
   const files=[], stamp=new Date(); let low=false;
@@ -476,11 +476,11 @@ async function saveImages(list){ if(st.saving) return; st.saving=true; const btn
     const small=low?' This phone was low on memory, so '+(files.length>1?'some pages are':'it is')+' a little smaller. Close other tabs for full size.':'';
     const what=files.length>1?files.length+' pages':'Your design';
     if(matchMedia('(pointer:coarse)').matches){ const r=await L.shareFiles(files);
-      if(r==='shared'){ line('Saved! Choose “Save Image” if you haven’t yet.'+small,true); showResult(files); return; }
+      if(r==='shared'){ line('Saved! Choose “Save Image” if you haven’t yet.'+small,true); showResult(files); L.celebrate&&L.celebrate(); return; }
       if(r==='cancelled'){ line('Not saved. Tap Save again when you are ready.'); showResult(files); return; }
       if(r==='needtap'){ line('Ready! Tap a picture below to save it.'+small,true); showResult(files,true); return; } }
     for(const f of files){ const url=URL.createObjectURL(f), a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000); await tick(250); }
-    line(what+' saved to your downloads'+(files.length>1?', numbered in order.':'.')+small,true); showResult(files); }
+    line(what+' saved to your downloads'+(files.length>1?', numbered in order.':'.')+small,true); showResult(files); L.celebrate&&L.celebrate(); }
   catch(err){ line(err.message||'Could not make the image. Close other apps or tabs and try again.'); }
   finally{ st.saving=false; if(btn) btn.disabled=false; BD.select(keep.filter(n=>n.getStage()),{quiet:true}); paintCtx(); } }
 function showResult(files,tapToShare){ const el=$('crRes'); if(!el) return; el.hidden=false; el.innerHTML=files.map((f,i)=>`<img alt="Page ${i+1}" data-i="${i}" src="${URL.createObjectURL(f)}">`).join('');

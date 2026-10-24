@@ -8,6 +8,29 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Anything above the first `##` (this intro) is not shown.
 
+## 0.6.0 · 24 Oct 2026
+
+### Search everything, right at the top
+The search box moved from the bottom of Saved to the top of the home page, so it is the first thing you see. It now finds everything in Studio: tools, templates, saved designs and collections, unfinished stories, and settings like Install Studio or Sign in. Arabic names work with or without harakat. Before you type, it shows your last searches and shortcuts such as Restock from a photo. On a phone it opens full screen and the Back button closes it.
+![before](assets/whatsnew/0.6.0-search-before.jpg)
+![after](assets/whatsnew/0.6.0-search-after.jpg)
+
+### Your tools, pinned
+The home page now shows only the tools you pin. Tap All tools to see every tool, and tap the star to pin or unpin one. Pins are saved on this phone, not with the team login, so everyone can set up their own home. A new phone starts with Restock. A phone that already used Studio keeps Restock, Photo story and Collage, so their Start from a photo buttons are still one tap. Restock stays one tap from the top of the home page.
+![before](assets/whatsnew/0.6.0-pins-before.jpg)
+![after](assets/whatsnew/0.6.0-pins-after.jpg)
+
+### Try the fresh look (preview)
+A livelier Studio, for you to try before it becomes the default. Taps press in and spring back, pages fade into each other, and cards lift off the page on soft shadows. One bold blue marks the main button on every screen. When you save, a big tick pops over your story, and phones that support it give a short buzz. It stays off until you switch it on here, and it only changes this phone. You can also search "fresh look" to switch it on or off.
+[try:fresh] Use the fresh look
+![before](assets/whatsnew/0.6.0-fresh-before.jpg)
+![after](assets/whatsnew/0.6.0-fresh-after.jpg)
+
+### A clearer “Saved!” tick
+The tick in the green circle after you save was grey and hard to see. It is white now.
+![before](assets/whatsnew/0.6.0-tick-before.jpg)
+![after](assets/whatsnew/0.6.0-tick-after.jpg)
+
 ## 0.5.0 · 24 Oct 2026
 
 ### Save in one tap

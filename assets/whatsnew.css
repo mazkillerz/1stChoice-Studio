@@ -45,3 +45,10 @@
   .wn-card,.wn-vhead{animation:none}
   .wn-skel{animation:none}
 }
+/* "Try it" switch on a card (the Fresh look preview) */
+.wn-try{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-4);padding:12px 14px;min-height:64px;border-radius:var(--r-m);background:var(--bg);border:1px solid var(--line);cursor:pointer}
+.wn-try-txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.wn-try-txt b{font:800 var(--fs-m) var(--sans)}
+.wn-try-txt span{font-size:var(--fs-xs);color:var(--muted)}
+:root[data-look="fresh"] .wn-card{border-color:transparent;box-shadow:var(--shadow-1);border-radius:var(--r-xl)}
+:root[data-look="fresh"] .wn-try{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent) 6%,var(--surface))}

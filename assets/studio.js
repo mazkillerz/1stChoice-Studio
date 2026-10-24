@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.5.0';
+const VERSION='0.6.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -68,18 +68,55 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 /* the hub lists tools in this order, under their group's heading: the most used first */
 const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
 const TOOLS={
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1,group:'story'},
-  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',qi:2,group:'story'},
-  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',multi:true,qi:3,group:'story'},
-  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story'},
-  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story'},
-  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',group:'post'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',group:'post'},
-  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',group:'post'},
-  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free'}
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1,group:'story',keys:'available again stock'},
+  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',qi:2,group:'story',keys:'picture single'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',multi:true,qi:3,group:'story',keys:'grid mosaic several pictures'},
+  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story',keys:'shop store location map opening'},
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',keys:'two pictures half'},
+  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',keys:'film movie wide letterbox'},
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',group:'post',keys:'sale deal promo price percent'},
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',group:'post',keys:'slides swipe feed post'},
+  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',group:'post',keys:'circle icons profile'},
+  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',keys:'design blank free templates canvas'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
+
+/* ---------- Pinned tools: the home page shows only the tools pinned on this device; All tools has every tool.
+   Kept on the device (localStorage), not with the team login, so each phone has its own home. A new device starts with Restock;
+   a device that used Studio before pins came keeps its Start-from-a-photo tools, so those stay one tap away. ---------- */
+const PINS_KEY='studio:pins', DEFAULT_PINS=['restock'];
+function usedBefore(){ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||''; if(k.startsWith('studio:')&&!/^studio:(look|pins|recentSearches)$/.test(k)) return true; } }catch(_){} return false; }
+function getPins(){ let p=store(PINS_KEY);
+  if(!Array.isArray(p)){ p=usedBefore()?Object.keys(TOOLS).filter(id=>TOOLS[id].quick):DEFAULT_PINS; store(PINS_KEY,p); }
+  return p.filter(id=>TOOLS[id]); }
+function setPin(id,on){ const p=new Set(getPins()); if(on) p.add(id); else p.delete(id); store(PINS_KEY,Object.keys(TOOLS).filter(t=>p.has(t))); return !!on; }
+
+/* ---------- Fresh look (preview): livelier motion, soft depth and one bold accent colour, on top of the same neutral design.
+   Off by default; each device keeps its own choice. Turn it on from What's New, by searching "fresh look", or with ?look=fresh (?look=classic turns it off). ---------- */
+const LOOK_KEY='studio:look';
+const fresh=()=>document.documentElement.dataset.look==='fresh';
+function setLook(on){ store(LOOK_KEY,on?'fresh':null); if(on) document.documentElement.dataset.look='fresh'; else delete document.documentElement.dataset.look; pageMotion(); }
+/* smooth page changes: pages fade into each other where the browser can (cross-page view transitions); elsewhere the new page fades in */
+function pageMotion(){ let st=document.getElementById('vtStyle'); const on=fresh();
+  if(on&&!st){ st=document.createElement('style'); st.id='vtStyle'; st.textContent='@view-transition{navigation:auto}'; document.head.appendChild(st); }
+  if(!on&&st) st.remove();
+  document.documentElement.classList.toggle('no-vt',on&&!('onpagereveal' in window)); }
+(function(){ try{ const q=new URLSearchParams(location.search).get('look'); if(q==='fresh'||q==='classic') store(LOOK_KEY,q==='fresh'?'fresh':null); }catch(_){}
+  if(store(LOOK_KEY)==='fresh') document.documentElement.dataset.look='fresh'; else delete document.documentElement.dataset.look;   // the home page's head may have set it early
+  pageMotion(); })();
+/* haptics (fresh look only): a short buzz on Android; on iPhone (iOS 18+) the system switch tick, which is the only haptic Safari allows */
+let hapEl=null;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function haptic(kind){ if(!fresh()) return;
+  try{ if(navigator.vibrate){ navigator.vibrate(kind==='success'?[12,70,22]:kind==='warn'?[30,60,30]:8); return; } }catch(_){}
+  if(!isIOS()) return;
+  if(!hapEl){ hapEl=document.createElement('label'); hapEl.setAttribute('aria-hidden','true'); hapEl.style.cssText='position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none'; hapEl.innerHTML='<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(hapEl); }
+  hapEl.click(); if(kind==='success') setTimeout(()=>hapEl&&hapEl.click(),110); }
+/* a satisfying "saved": a check that pops over the preview with a soft ring, plus a haptic (fresh look only) */
+function celebrate(){ if(!fresh()) return; haptic('success');
+  const host=document.querySelector('.phone')||document.querySelector('.cr-stage')||document.body, b=document.createElement('div');
+  b.className='save-burst'+(host===document.body?' fixed':''); b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+  host.appendChild(b); setTimeout(()=>b.remove(),1500); }
 
 /* ---------- fonts: the brand's fonts first (used by default), then a hand-picked list ---------- */
 const MORE_FONTS=[
@@ -123,7 +160,18 @@ const ICON={
   shapes:svg('<circle cx="7.5" cy="7.5" r="4.5"/><rect x="12" y="12" width="9" height="9" rx="2"/>',20),
   back:svg('<path d="m15 18-6-6 6-6"/>'),
   next:svg('<path d="m9 18 6-6-6-6"/>'),
-  trash:svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/>',20)
+  trash:svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/>',20),
+  search:svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',20),
+  star:svg('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',22),
+  starFill:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  clock:svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',18),
+  sparkle:svg('<path d="M10 3.5l1.6 4.4L16 9.5l-4.4 1.6L10 15.5l-1.6-4.4L4 9.5l4.4-1.6z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/>',20),
+  template:svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18"/><path d="M9 9v12"/>',20),
+  user:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',20),
+  look:svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>',20),
+  lab:svg('<path d="M9 3h6"/><path d="M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',20),
+  install:svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/>',20),
+  list:svg('<rect x="3" y="4" width="5" height="5" rx="1"/><path d="M11 6.5h10"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 17.5h10"/>',20)
 };
 
 /* ---------- assets: brand files (logo, can cut-outs, stickers) from the brand kit + built-in shapes ----------
@@ -1059,7 +1107,7 @@ async function tool(cfg){
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
   async function runTeamSave(){
     teamLine('Saving to the team…');
-    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); }
+    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); celebrate(); }
     catch(err){ teamLine(''); status(err.message||'Could not save to the team.'); }
   }
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
@@ -1454,12 +1502,12 @@ async function tool(cfg){
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
     } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
-  function finish(title,txt,keepBar){ if(!keepBar) setTimeout(()=>progress(null),400); done(title,txt); imgDone=true; }
+  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); } done(title,txt); imgDone=true; }
   function showResult(files,offerShare){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
-  $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; } });
+  $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; celebrate(); } });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
@@ -1602,26 +1650,55 @@ const quickKey=(brand,tool)=>'studio:quick:'+brand+':'+tool;
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
-  /* tools: one compact row per entry in TOOLS, with a small real preview made with the brand's sample photos */
-  let lastGroup=null;
-  $('toolGrid').innerHTML=Object.entries(TOOLS).map(([id,t],i)=>(t.group!==lastGroup&&TOOL_GROUPS[lastGroup=t.group]?`<h3 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h3>`:'')+`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb"><img alt="" loading="lazy" decoding="async" src="${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'"></span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`).join('');
-  /* how tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
+  /* saved designs + account: declared first because the search can read them before the team list has loaded */
+  let all=[], cols=[], filter='all', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
+  const urls={}, toolName=t=>(TOOLS[t]||{}).title||t, colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
+  const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hubToast=(msg,undo)=>{ let t=document.getElementById('hubToast'); if(!t){ t=document.createElement('div'); t.id='hubToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
+    t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="toast-btn">Undo</button>':''}`; t.hidden=false; t.style.pointerEvents='auto';
+    clearTimeout(t._h); t._h=setTimeout(()=>{ t.hidden=true; },5000); if(undo) t.querySelector('button').onclick=()=>{ t.hidden=true; undo(); }; };
+  /* Your tools: only the tools pinned on this device, each a compact row with a small real preview; every tool is in All tools */
+  const toolThumb=id=>`${ROOT}assets/thumbs/${B.id}/${id}-sm.jpg`;
+  const thumbImg0=id=>`<img alt="" loading="lazy" decoding="async" src="${toolThumb(id)}" onerror="this.onerror=null;this.src='${ROOT}assets/thumbs/${B.id}/${id}.jpg'">`;
+  const toolRow=(id,t,i)=>`<a class="tool-row" href="${toolPage(id)}" style="--i:${i}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>`;
+  const quickTools=()=>Object.entries(TOOLS).filter(([,t])=>t.quick).sort((a,b)=>(a[1].qi||9)-(b[1].qi||9));
+  function paintTools(){
+    const pins=getPins(), n=Object.keys(TOOLS).length;
+    $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
+    $('allToolsSub').textContent=pins.length>=n?'All '+n+' tools are pinned':n+' tools · tap a star to pin one here';
+    /* Quick start: pick (or take) a photo first, then the tool opens with it in (pinned tools only). The file input sits inside
+       the label, so one tap opens the phone's camera / photo picker directly. */
+    const quick=quickTools().filter(([id])=>pins.includes(id));
+    $('quickSec').hidden=!quick.length; $('quickList').dataset.n=quick.length;
+    $('quickList').innerHTML=quick.map(([id,t])=>`<label class="qbtn"><span class="qic" aria-hidden="true">${ICON.camera}</span><span class="qtxt"><b>${esc(t.title)}</b><span>${esc(t.quick)}</span></span><input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi?' multiple':''}></label>`).join('');
+  }
+  paintTools();
+  /* how your tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
   let toolsView=store('studio:toolsView')==='list'||!store('studio:toolsView')?'list':'grid';
   function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView; document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
   paintToolsView();
-  /* Quick start: pick (or take) a photo first, then the tool opens with it in. The file input sits inside the label,
-     so one tap opens the phone's camera / photo picker directly. */
-  const quick=Object.entries(TOOLS).filter(([,t])=>t.quick).sort((a,b)=>(a[1].qi||9)-(b[1].qi||9));
-  if(quick.length&&$('quickList')){
-    $('quickList').innerHTML=quick.map(([id,t])=>`<label class="qbtn"><span class="qic" aria-hidden="true">${ICON.camera}</span><span class="qtxt"><b>${esc(t.title)}</b><span>${esc(t.quick)}</span></span><input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi?' multiple':''}></label>`).join('');
-    $('quickSec').hidden=false;
-    $('quickList').addEventListener('change',async e=>{ const inp=e.target, id=inp.dataset&&inp.dataset.quick; if(!id) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
-      const lbl=inp.closest('.qbtn'); lbl.classList.add('busy');
-      const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
-      if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ lbl.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
-      location.href=toolPage(id)+'?quick=1'; });
-    addEventListener('pageshow',()=>document.querySelectorAll('.qbtn.busy').forEach(l=>l.classList.remove('busy')));   // back button from the tool
+  /* a photo picked in any Quick start button (home or search) goes to its tool through IndexedDB */
+  document.addEventListener('change',async e=>{ const inp=e.target, id=inp&&inp.dataset&&inp.dataset.quick; if(!id||!TOOLS[id]) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
+    const lbl=inp.closest('label'); if(lbl) lbl.classList.add('busy');
+    const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
+    if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ if(lbl) lbl.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
+    if(window.StudioSearch) await StudioSearch.close();   // picked from the search: let it close (and its Back entry go) first
+    location.href=toolPage(id)+'?quick=1'; });
+  addEventListener('pageshow',()=>document.querySelectorAll('label.busy').forEach(l=>l.classList.remove('busy')));   // back button from the tool
+  /* All tools: every tool in its group, with a star to pin or unpin it (this device only) */
+  const pinBtn=id=>{ const on=getPins().includes(id), t=esc(TOOLS[id].title); return `<button type="button" class="pin-btn" data-pin="${id}" aria-pressed="${on}" aria-label="${on?'Unpin '+t+' from home':'Pin '+t+' to home'}">${on?ICON.starFill:ICON.star}</button>`; };
+  function togglePin(id,fromSearch){ const on=setPin(id,!getPins().includes(id)), t=esc(TOOLS[id].title);
+    document.querySelectorAll(`.lib-row [data-pin="${id}"]`).forEach(b=>{ b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label',on?'Unpin '+t+' from home':'Pin '+t+' to home'); b.innerHTML=on?ICON.starFill:ICON.star; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
+    paintTools(); paintToolsView(); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
+  function openLibrary(){
+    let last=null;
+    const rows=Object.entries(TOOLS).map(([id,t])=>(t.group!==last&&TOOL_GROUPS[last=t.group]?`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`:'')
+      +`<div class="lib-row"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${pinBtn(id)}</div>`).join('');
+    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="lib-list">${rows}</div></div>`,'lib-dlg');
+    d.querySelector('#libDone').onclick=()=>d.close();
+    d.querySelector('.lib-list').addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
   }
+  $('allTools').onclick=openLibrary;
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
@@ -1664,9 +1741,6 @@ async function home(){
     list.forEach(x=>{ if(thumbs[x.key]!==undefined) return; thumbs[x.key]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[x.key]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
     spy();
   }
-  const hubToast=(msg,undo)=>{ let t=document.getElementById('hubToast'); if(!t){ t=document.createElement('div'); t.id='hubToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
-    t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="toast-btn">Undo</button>':''}`; t.hidden=false; t.style.pointerEvents='auto';
-    clearTimeout(t._h); t._h=setTimeout(()=>{ t.hidden=true; },5000); if(undo) t.querySelector('button').onclick=()=>{ t.hidden=true; undo(); }; };
   /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
   $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.key===b.dataset.rm); if(!x) return;
     const d=dialog(`<div class="dlg-body">${thumbs[x.key]?`<img class="cf-thumb" src="${thumbs[x.key]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this phone. This can't be undone.</p>
@@ -1675,13 +1749,52 @@ async function home(){
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont(); requestAnimationFrame(spy);
 
+  /* ---------- universal search (assets/search.js): tools, templates, saved designs, unfinished stories, settings and actions ---------- */
+  const goSaved=()=>{ const t=$('saved'); if(t) window.scrollTo({top:t.getBoundingClientRect().top+scrollY-8,behavior:reduce()?'auto':'smooth'}); };
+  const tplSize={story:'Story',post:'Post',square:'Square'};
+  let tq=null;   // saved-design thumbnails are asked for in one batch
+  const thumbFor=p=>{ if(!p||!C) return Promise.resolve(null); if(urls[p]) return Promise.resolve(urls[p]);
+    if(!tq){ const q=tq={paths:new Set()}; q.p=new Promise(r=>setTimeout(async()=>{ tq=null; try{ Object.assign(urls,await C.fileUrls([...q.paths])); }catch(_){} r(); },30)); }
+    tq.paths.add(p); return tq.p.then(()=>urls[p]||null); };
+  function searchEntries(){
+    const pins=getPins(), out=[];
+    Object.entries(TOOLS).forEach(([id,t])=>out.push({kind:'tool',id:'tool:'+id,title:t.title,sub:t.blurb,keys:[TOOL_GROUPS[t.group],t.quick,t.keys].filter(Boolean).join(' '),thumb:toolThumb(id),href:toolPage(id),pinned:pins.includes(id),togglePin:()=>togglePin(id,true)}));
+    cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:TOOLS[x.tool].title,sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
+    if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:'template create '+(d.size||'story'),icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id)}));
+    all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
+      out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
+    cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; paint(); goSaved(); }}));
+    return out.concat(searchActions());
+  }
+  function searchActions(){ const a=[];
+    a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
+    a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
+    a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
+             :{kind:'action',id:'act:signin',title:'Sign in',sub:'See and save your team’s designs',keys:'sign in log in login account team password saved designs',icon:ICON.user,run:()=>$('acct').click()});
+    a.push({kind:'action',id:'act:new',title:'What’s new',sub:'Studio '+VERSION+' · every update',keys:"what's new whats news update updates changelog version release notes",icon:ICON.sparkle,href:ROOT+'whats-new.html'});
+    a.push({kind:'action',id:'act:look',title:fresh()?'Turn off the fresh look':'Try the fresh look',sub:fresh()?'Back to the classic look on this phone':'Preview: motion, depth and one bold colour. Only on this phone.',keys:'fresh look new design theme preview motion animation colour color haptics vibration style appearance classic',icon:ICON.look,
+      run:()=>{ setLook(!fresh()); haptic('tick'); hubToast(fresh()?'Fresh look on. Search “fresh look” to turn it off.':'The classic look is back.'); }});
+    a.push({kind:'action',id:'act:view',title:toolsView==='list'?'Show your tools as a grid':'Show your tools as a list',sub:'How your pinned tools look',keys:'view layout grid list tools display',icon:toolsView==='list'?ICON.grid:ICON.list,run:()=>{ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); }});
+    if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
+      const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
+    a.push({kind:'action',id:'act:lab',title:'Experimental',sub:'New things being tested (passcode)',keys:'experimental lab labs board beta passcode test',icon:ICON.lab,run:openLab});
+    return a; }
+  function searchShortcuts(){ const pins=getPins(), q=quickTools(), first=q.find(([id])=>pins.includes(id))||q[0], s=[];
+    if(first) s.push({kind:'tool',id:'sc:quick',title:first[1].title+' from a photo',sub:first[1].quick,icon:ICON.camera,quick:{tool:first[0],multi:!!first[1].multi}});
+    const last=cont.filter(x=>!x.gone)[0]; if(last) s.push({kind:'draft',id:'sc:cont',title:'Continue '+TOOLS[last.tool].title,sub:ago(last.d.at),icon:ICON.text,href:toolPage(last.tool)+'?draft='+encodeURIComponent(last.id)});
+    s.push({kind:'action',id:'sc:all',title:'All tools',icon:ICON.grid,run:openLibrary});
+    if(TOOLS.create) s.push({kind:'action',id:'sc:tpl',title:'Templates',icon:ICON.template,href:toolPage('create')});
+    s.push({kind:'action',id:'sc:saved',title:'Saved designs',icon:ICON.bookmark,run:goSaved});
+    s.push({kind:'action',id:'sc:new',title:'What’s new',icon:ICON.sparkle,href:ROOT+'whats-new.html'});
+    return s.slice(0,6); }
+  if(window.StudioSearch&&$('uq')) StudioSearch.init({input:$('uq'),root:$('uSearch'),panel:$('usPanel'),cancel:$('usCancel'),esc,store,icons:ICON,entries:searchEntries,shortcuts:searchShortcuts,haptic});
+
   /* account + saved */
-  const C=await cloud(); await C.client();
-  let all=[], cols=[], filter='all', me=null, owner=false, loading=null, loadedFor=undefined;
+  C=await cloud(); await C.client();
   const pref=(k,d)=>store('studio:'+k)||d;
   let savedView=pref('savedView','list'), sortBy=pref('savedSort','recent'), toolFilter='';
   async function refreshAccount(){
-    const s=await C.session(); me=s&&s.user; const member=me&&await C.isMember();
+    const s=await C.session(); me=s&&s.user; member=!!(me&&await C.isMember());
     $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
     owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
     return member;
@@ -1690,7 +1803,7 @@ async function home(){
   function loadSaved(force){ if(loading&&!force) return loading; loading=doLoad().finally(()=>{ loading=null; }); return loading; }
   async function doLoad(){
     const member=await refreshAccount(); loadedFor=me?me.id:null;
-    if(!member){ $('qWrap').hidden=true; $('colChips').hidden=true; $('colTools').hidden=true; $('savedCtl').hidden=true; $('recentWrap').hidden=true; $('savedGrid').innerHTML='';
+    if(!member){ all=[]; cols=[]; if(window.StudioSearch) StudioSearch.refresh(); $('colChips').hidden=true; $('colTools').hidden=true; $('savedCtl').hidden=true; $('recentWrap').hidden=true; $('savedGrid').innerHTML='';
       $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=`<p>${me?'This email is not on the team yet. Ask the owner to add you.':'Sign in to see the designs your team saved.'}</p>${me?'':'<button type="button" class="btn slim" id="savedSignIn">Sign in</button>'}`;
       const b=$('savedSignIn'); if(b) b.onclick=async()=>{ if(await ensureMember()) loadSaved(true); };
       return; }
@@ -1698,14 +1811,13 @@ async function home(){
     try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }catch(err){ $('savedGrid').innerHTML=`<p class="small">${esc(err.message)}</p>`; return; }
     paint();
   }
-  const toolName=t=>(TOOLS[t]||{}).title||t, colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
-  const urls={};
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('#saved img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
   function paint(){
-    const has=!!all.length; $('qWrap').hidden=!has; $('savedCtl').hidden=!has;
+    if(window.StudioSearch) StudioSearch.refresh();
+    const has=!!all.length; $('savedCtl').hidden=!has;
     $('sort').value=sortBy; document.querySelectorAll('[data-view="saved"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===savedView)));
     $('savedGrid').className='dgrid view-'+savedView;
     /* chips: only the collections your team made. Filtering by tool lives in the menu next to Saved. */
@@ -1718,13 +1830,11 @@ async function home(){
     $('toolFilter').innerHTML=`<option value="">All tools</option>`+tools.map(t=>`<option value="${esc(t)}">${esc(toolName(t))}</option>`).join('');
     $('toolFilter').value=toolFilter; $('toolFilter').hidden=tools.length<2;
     $('colTools').hidden=!filter.startsWith('c:');
-    const q=$('q').value.trim().toLowerCase();
-    let list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&(!toolFilter||d.tool===toolFilter)
-      &&(!q||d.name.toLowerCase().includes(q)||d.collections.some(c=>colName(c).toLowerCase().includes(q))||toolName(d.tool).toLowerCase().includes(q)));
+    let list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&(!toolFilter||d.tool===toolFilter));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='tool'?(a,b)=>toolName(a.tool).localeCompare(toolName(b.tool))||lastUse(b)-lastUse(a):(a,b)=>lastUse(b)-lastUse(a));
     /* Recent: the last designs you used or saved, one tap to reopen (only when you're not searching or filtering) */
     const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,6);
-    $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!toolFilter&&!q);
+    $('recentWrap').hidden=!(all.length>=4&&filter==='all'&&!toolFilter);
     $('recentList').innerHTML=recent.map(d=>`<a class="rcard" href="${toolPage(d.tool)}?design=${d.id}"><span class="rthumb">${thumbImg(d)}</span><span class="rtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}</span></span></a>`).join('');
     if(!has){ $('savedEmpty').hidden=false; $('savedEmpty').innerHTML='<p>Nothing saved yet. Make a story with any tool, tap <b>Save</b>, then switch on <b>Also save to the team</b>.</p>'; $('savedGrid').innerHTML=''; return; }
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<p>No saved design matches that.</p>';
@@ -1732,7 +1842,6 @@ async function home(){
       return `<div class="sitem" data-id="${d.id}" style="--i:${Math.min(i,12)}"><button type="button" class="dcard" data-open="${d.id}" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}. Opens options."><span class="dthumb">${thumbImg(d)}${d.kind==='template'?'<em>Template</em>':''}</span><span class="dtxt"><b dir="auto">${esc(d.name)}</b><span>${esc(toolName(d.tool))}${cn.length?' · '+esc(cn.join(', ')):''} · ${ago(d.updated_at)}</span></span></button><button type="button" class="dmore" data-open="${d.id}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; }).join('');
     fillThumbs([...list,...recent]);
   }
-  $('q').addEventListener('input',paint);
   $('sort').addEventListener('change',e=>{ sortBy=e.target.value; store('studio:savedSort',sortBy); paint(); });
   $('toolFilter').addEventListener('change',e=>{ toolFilter=e.target.value; paint(); });
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f; paint(); } });
@@ -1828,7 +1937,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
-  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,setLook,getPins,setPin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

@@ -103,7 +103,9 @@ const selLabels=pg=>pg.evaluate(()=>BD.S.sel.map(n=>n.getAttr('label')||BD.util.
   ok('reload keeps the draft (pages, photo, words)',await pg.evaluate(()=>BD.util.frames().length===4&&BD.main.find('Image').some(n=>BD.util.kind(n)==='image'&&n.image())&&BD.main.find('Text').some(t=>t.text()==='يسرسح ثلج'))&&pg.url()===url);
   await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1500);
   ok('the hub lists Create in Continue editing',await pg.evaluate(()=>[...document.querySelectorAll('#continueList .ccard a')].some(a=>/create\.html\?draft=/.test(a.href))));
-  ok('the hub lists the Create tool',await pg.evaluate(()=>[...document.querySelectorAll('#toolGrid a')].some(a=>/create\.html$/.test(a.href))));
+  await pg.click('#allTools'); await pg.waitForTimeout(300);
+  ok('All tools lists the Create tool',await pg.evaluate(()=>[...document.querySelectorAll('.lib-row a')].some(a=>/create\.html$/.test(a.href))));
+  await pg.click('#libDone'); await pg.waitForTimeout(200);
   await pg.goto(url); await ready(pg);
   /* team save, reopen */
   await pg.tap('#crBar [data-cr="save"]'); await pg.waitForTimeout(400);

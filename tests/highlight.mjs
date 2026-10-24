@@ -54,6 +54,7 @@ const after=await p2.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page
 ok('saved set reopens the same',!!id&&before===after,id||'no id');
 // hub lists the tool
 const p3=await ctx.newPage(); await p3.goto(BASE+'index.html'); await p3.waitForTimeout(1200);
-ok('hub lists Highlight covers',await p3.$('#toolGrid a[href$="tools/highlight.html"]')!==null);
+await p3.click('#allTools'); await p3.waitForTimeout(300);
+ok('All tools lists Highlight covers',await p3.$('.lib-row a[href$="tools/highlight.html"]')!==null);
 ok('no page errors',!errs.length,errs.join(' | ').slice(0,300));
 console.log(out.join('\n')); await b.close(); process.exit(out.some(l=>l.startsWith('FAIL'))?1:0);
