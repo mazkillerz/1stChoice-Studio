@@ -22,7 +22,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Read `CLAUDE.md` first.** Its hard rules and brand rules apply on top of this skill.
 - **Archive folder:** in this repo `/archive` means `_archive/<what> (<date>)/` (CLAUDE.md). `_archive/` is in `.gitignore`, so add moved files with `git add -f`.
 - **Tap targets:** CLAUDE.md asks for 48px (`--tap`). Treat 44px as the absolute floor, 48px as the goal.
-- **Branches:** work on the session's assigned branch (or `claude/<topic>`). Pages publishes `main` immediately, so only Mazoon merges to `main`. A pushed branch counts as the "preview branch" for big changes.
+- **Branches and merging:** work on the session's assigned branch (or `claude/<topic>`), then **merge to `main` at the end of every session** once every test passes (Mazoon's standing instruction, 24 Oct 2026: "Merge always"). Pages publishes `main` immediately. Because everything merges, big redesigns or experiments ship behind a toggle that is off by default (locked core rule 3) until Mazoon approves them.
 - **Version:** `VERSION` at the top of `assets/studio.js` (shown on the hub and used for the What's New dot). Also bump the cache name in `sw.js` whenever shipped files change.
 - **What's New:** `whats-new.html` + `assets/whatsnew.js/.css` read `studio-notes/changelog.md` directly (format in that file's intro). Screenshots go in `assets/whatsnew/<version>-<name>-before|after.jpg`, 390px-wide phone crops at 2×, JPEG quality ~72 (keep each under ~80 KB). Take the "before" shots **before** changing anything.
 - **Tests:** `npx http-server -p 8080 -c-1 .`, then `node tests/full.mjs`, `v5.mjs`, `create.mjs`, `extra.mjs`, `whatsnew.mjs` (and `lab.mjs` / `lab-pro.mjs` when Board changes). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
@@ -47,7 +47,7 @@ Everything else in this skill can be rewritten by the skill itself.
    - It looks right and works well at phone size, then at desktop size.
    - Saved designs in Supabase still load, save and delete correctly.
    - Nothing loads noticeably slower than before.
-6. **Release.** Bump the version, update the What's New page, then commit and push.
+6. **Release.** Bump the version, update the What's New page, then commit, push and merge to `main` (see Repo notes).
 7. **Reflect and self-improve.** Record what worked and what didn't in `lessons.md`. Add new ideas to the backlog. Edit this skill to work better next time, without touching the locked core.
 
 ## Mobile-first UX checklist

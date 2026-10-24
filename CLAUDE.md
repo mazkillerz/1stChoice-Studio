@@ -35,7 +35,7 @@ Studio is a phone-first story maker (static GitHub Pages site, no build step) fo
 ## Workflow
 1. Work on a branch `claude/<topic>`; small commits that each work.
 2. Run the tests before pushing: `npx http-server -p 8080 -c-1 .`, then `node tests/full.mjs` (and `tests/lab.mjs` when Board changes). Google Fonts failing inside a sandbox is a known false failure.
-3. Merge to `main` only when the owner says so (Pages publishes `main` immediately).
+3. **Merge to `main` at the end of every session** once all tests pass (owner's standing instruction, 24 Oct 2026). Pages publishes `main` immediately, so never merge with a failing test. Big redesigns/experiments still ship behind a toggle (off by default) until the owner approves them.
 4. End with a short list: what changed, what the owner must do, any wording that needs approval.
 
 ## Saving usage: split work across models
