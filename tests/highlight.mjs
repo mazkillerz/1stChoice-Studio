@@ -35,19 +35,23 @@ await pg.tap('[data-seg="kind"] [data-v="photo"]'); await pg.waitForTimeout(200)
 await pg.setInputFiles('#pick',[SAMPLES+'pair.jpg']); await pg.waitForTimeout(800);
 ok('photo cover has its photo',await pg.evaluate(()=>!!Studio.debug.S.photos[3].img&&!Studio.debug.S.photos[3].sample));
 ok('look is shared by every cover',await pg.evaluate(()=>{ const P=Studio.debug.S.P; return P.every(p=>p.values.shape===P[0].values.shape); }));
-// save: one PNG per cover at 2×
+// save: one PNG per cover at 2×, and the set goes to the team in the same tap (0.7.0: the bar opens the Save sheet, Save in it saves)
 const dls=[]; pg.on('download',d=>dls.push(d));
-await pg.tap('#barSave');   // one tap saves
+const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
+await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
+ok('bar Save opens the Save sheet, nothing saved yet',!dls.length&&!(await pg.isVisible('#doneBox')));
+await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
+ok('team switch is on and the button says Save & add to team',await pg.isChecked('#teamOn')&&/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await pg.fill('#teamName','Test covers'); await pg.tap('#save');
 for(let i=0;i<60&&dls.length<5;i++) await pg.waitForTimeout(300);
 const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/hl-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
 ok('saves 5 full-size PNGs',dls.length===5&&sizes.every(s=>s==='2160x3840'),sizes.join(', '));
 await pg.waitForSelector('#doneBox',{state:'visible',timeout:5000}).catch(()=>{});
 ok('success message names covers',/covers/.test(await pg.textContent('#doneBox')||''),(await pg.textContent('#doneBox')||'').trim().slice(0,80));
 // team save + reopen
-const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
-if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName','Test covers'); await pg.tap('#save');
 await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
 const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
+ok('the same tap saved the set to the team',!!id&&/Saved to the team/.test(await pg.textContent('#teamStatus')||''));
 const p2=await ctx.newPage(); p2.on('pageerror',e=>errs.push('reopen: '+e));
 await p2.goto(BASE+'tools/highlight.html?design='+id); await p2.waitForTimeout(2500);
 const after=await p2.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });

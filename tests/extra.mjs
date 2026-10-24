@@ -15,7 +15,8 @@ await pg.goto(BASE+'tools/photo-story.html'); await pg.waitForTimeout(900);
 await pg.setInputFiles('#pick',[HEIC]);
 const got=await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p.img&&!p.sample?[p.img.width,p.img.height]:false; },null,{timeout:30000}).then(h=>h.jsonValue()).catch(()=>null);
 ok('HEIC photo opens at full size',got&&got[0]===972&&got[1]===1728,got&&got.join('x'));
-const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:30000}),pg.tap('#barSave')]);
+await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});   // 0.7.0: the bar opens the Save sheet, Save in it saves
+const [dl]=await Promise.all([pg.waitForEvent('download',{timeout:30000}),pg.tap('#save')]);
 const f=await dl.path(); const buf=fs.readFileSync(f); ok('HEIC story saves full-size PNG',buf.readUInt32BE(16)===2160&&buf.readUInt32BE(20)===3840);
 // swap photos (Split): hold + drag top onto bottom
 await pg.goto(BASE+'tools/split.html'); await pg.waitForTimeout(900);
@@ -25,18 +26,23 @@ const bx=await pg.evaluate(()=>Studio.debug.reg().filter(b=>b.photo!=null).map(b
 const v=await pg.locator('#view').boundingBox(), k=v.width/1080, k0=await keys();
 await pg.mouse.move(v.x+bx[0].x*k,v.y+bx[0].y*k); await pg.mouse.down(); await pg.waitForTimeout(500); await pg.mouse.move(v.x+bx[1].x*k,v.y+bx[1].y*k,{steps:10}); await pg.mouse.up(); await pg.waitForTimeout(400);
 const k1=await keys(); ok('hold + drag swaps photos',k1[0]===k0[1]&&k1[1]===k0[0]);
-// Saved: only collections as chips, tools in the menu
+// Saved: collections as chips (new collection typed in the Save sheet), the page filters by them
 for(const [t,n,col] of [['new-place','Shop A',''],['restock','Restock Oct','Ramadan']]){ await pg.goto(BASE+'tools/'+t+'.html'); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(500);
-  await pg.tap('#barSave'); await pg.waitForSelector('#doneBox',{state:'visible',timeout:20000}); await pg.evaluate(()=>document.getElementById('teamOn').click()); await pg.fill('#teamName',n);
-  if(col){ await pg.tap('#teamMore'); await pg.waitForTimeout(400); await pg.fill('#teamNewCol',col); await pg.tap('#teamAddCol'); }
-  await pg.tap('#save'); await pg.waitForTimeout(1500); }
-await pg.goto(BASE+'index.html#saved'); await pg.waitForTimeout(1800);
+  await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});   // opens the Save sheet (team switch is on when signed in)
+  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}); await pg.fill('#teamName',n);
+  if(col){ await pg.waitForSelector('#teamCols [data-newcol]'); await pg.tap('#teamCols [data-newcol]'); await pg.waitForTimeout(300); await pg.fill('#teamNewCol',col); await pg.tap('#teamAddCol'); }
+  await pg.tap('#save'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:30000}); }
+await pg.goto(BASE+'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(500);
 const chips=await pg.$$eval('#colChips .chip',cs=>cs.map(c=>c.textContent.replace(/\s+\d+$/,'').trim()));
-ok('chips are only collections',JSON.stringify(chips)==='["All","Ramadan"]',chips.join(', '));
-await pg.selectOption('#toolFilter','restock'); await pg.waitForTimeout(300);
-const names=await pg.$$eval('#savedGrid .dtxt b',bs=>bs.map(b=>b.textContent)); ok('tool menu filters',JSON.stringify(names)==='["Restock Oct"]',names.join(', '));
+ok('chips are only collections',JSON.stringify(chips)==='["Ramadan"]',chips.join(', '));
+const all2=await pg.$$eval('#savedGrid .sv-txt b',bs=>bs.map(b=>b.textContent).sort());
+ok('both designs are listed before filtering',JSON.stringify(all2)==='["Restock Oct","Shop A"]',all2.join(', '));
+await pg.tap('#colChips .chip[data-f="c:Ramadan"]'); await pg.waitForTimeout(300);
+const names=await pg.$$eval('#savedGrid .sv-txt b',bs=>bs.map(b=>b.textContent)); ok('collection chip filters',JSON.stringify(names)==='["Restock Oct"]',names.join(', '));
+await pg.tap('#colChips .chip[data-f="c:Ramadan"]'); await pg.waitForTimeout(300);
+ok('tapping the chip again shows everything',await pg.$$eval('#savedGrid .sv-card',c=>c.length)===2);
 // tapping outside: a pop-up closes, a busy one doesn't; an empty spot closes the open panel
-await pg.tap('.dcard'); await pg.waitForTimeout(500);
+await pg.tap('#savedGrid .sv-more'); await pg.waitForSelector('dialog[open] .design-sheet'); await pg.waitForTimeout(400);
 await pg.mouse.click(10,10); await pg.waitForTimeout(400); ok('tap outside closes a pop-up',!(await pg.locator('dialog[open]').count()));
 await pg.goto(BASE+'tools/carousel.html'); await pg.waitForTimeout(1200); await pg.evaluate(()=>document.getElementById('draftFresh')?.click());
 await pg.tap('[data-pg="add"]'); await pg.waitForTimeout(400); await pg.evaluate(()=>document.querySelectorAll('dialog[open] button').forEach(b=>b.disabled=true));

@@ -1,5 +1,5 @@
 /* Studio 0.6.0: universal search at the top of the home page. Finds tools, templates, saved designs, collections,
-   unfinished stories, settings and actions; recent searches + shortcuts before typing; Arabic with or without harakat.
+   unfinished stories, settings and actions (0.7.0: no "fresh look" action any more); recent searches + shortcuts before typing; Arabic with or without harakat.
    Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -26,7 +26,7 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   const type=async q=>{ await pg.fill('#uq',q); await pg.waitForTimeout(250); };
   await pg.goto(BASE+'index.html'); await pg.evaluate(db=>{ localStorage.clear(); localStorage.setItem('fakecloud',db); },db); await pg.reload(); await pg.waitForTimeout(1500);
   /* at the top, visible at once; the old saved-designs search is gone */
-  const f=await pg.$eval('#uq',e=>e.getBoundingClientRect()); const q0=await pg.$eval('#quickSec',e=>e.getBoundingClientRect().top);
+  const f=await pg.$eval('#uq',e=>e.getBoundingClientRect()); const q0=await pg.$eval('#tools',e=>e.getBoundingClientRect().top);
   ok(N+'search is near the top, above everything else',f.top<260&&f.top<q0&&f.height>=44,JSON.stringify({top:f.top,h:f.height}));
   ok(N+'the old search at the bottom is gone',!(await pg.$('#q'))&&!(await pg.$('#qWrap')));
   /* before typing: shortcuts (no recent searches yet) */
@@ -66,13 +66,15 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   await pg.waitForTimeout(500);
   ok(N+(vp.touch?'Cancel':'Escape')+' closes',!(await pg.isVisible('#usPanel')));
   ok(N+'the pinned tool is on the home page',(await pg.$$eval('#toolGrid a.tool-row',a=>a.map(x=>x.getAttribute('href')))).some(h=>/collage/.test(h)));
-  /* an action: the fresh look switch */
-  await tap('#uq'); await type('fresh look'); await tap('#usPanel .us-sec[data-k="action"] .us-row'); await pg.waitForTimeout(700);
-  ok(N+'"fresh look" switches the preview on',await pg.evaluate(()=>document.documentElement.dataset.look)==='fresh');
+  /* the fresh look is the default for everyone since 0.7.0: no switch, so search has no "fresh look" action */
   await tap('#uq'); await type('fresh look');
-  ok(N+'and offers to switch it off',(await titles('action'))[0]==='Turn off the fresh look');
-  await tap('#usPanel .us-sec[data-k="action"] .us-row'); await pg.waitForTimeout(700);
-  ok(N+'switched off again',!(await pg.evaluate(()=>document.documentElement.dataset.look)));
+  const flt=await pg.$$eval('#usPanel .us-t',t=>t.map(x=>x.textContent));
+  ok(N+'no "fresh look" result (the switch is gone)',!flt.some(x=>/fresh|classic look/i.test(x)),flt.join(' | '));
+  /* the Saved designs action opens the Saved page (its own history entry: Back returns home) */
+  await type('saved designs'); await tap('#usPanel .us-sec[data-k="action"] .us-row'); await pg.waitForTimeout(700);
+  ok(N+'the "Saved designs" action opens the Saved page',await pg.isVisible('#saved')&&!(await pg.isVisible('#homeView'))&&/#saved$/.test(pg.url()),pg.url());
+  await pg.goBack(); await pg.waitForTimeout(500);
+  ok(N+'Back returns to the home page',await pg.isVisible('#homeView')&&!(await pg.isVisible('#saved')));
   if(vp.touch){
     /* Android Back closes the search instead of leaving Studio */
     await tap('#uq'); await pg.waitForTimeout(300); await pg.goBack(); await pg.waitForTimeout(500);

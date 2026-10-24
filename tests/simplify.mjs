@@ -1,4 +1,4 @@
-/* Studio 0.5.0 checks (Simplify session): on a phone the bar's Save makes the full-size PNG in one tap;
+/* Studio 0.5.0 checks (Simplify session), updated for 0.7.0: on a phone the bar's Save opens the Save sheet and Save in it makes the full-size PNG in one tap;
    the sheet then offers "Add to the team" (no second picture); an edit after saving makes the next Save a new picture.
    The hub lists tools in groups, most used first, with two view choices. Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
@@ -30,7 +30,14 @@ ok('hub: an old "compact" choice shows as grid',await pg.$eval('#toolGrid',g=>g.
 await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900);
 await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1200);
 const dls=[]; pg.on('download',d=>dls.push(d));
-await pg.tap('#barSave');
+/* 0.7.0: the bar's Save opens the small Save sheet (nothing saved yet); the switch is on when signed in, so turn it off here to test the picture alone */
+await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
+await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000});
+ok('bar Save opens the sheet and saves nothing yet',!dls.length&&!(await pg.isVisible('#doneBox')));
+ok('team switch on: the button says Save & add to team',/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await pg.evaluate(()=>document.getElementById('teamOn').click());
+ok('team switch off: the button says Save story',/Save story/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await pg.tap('#save');
 for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
 await pg.waitForSelector('#doneBox',{state:'visible',timeout:8000}).catch(()=>{});
 let size=''; if(dls[0]){ const f=os.tmpdir()+'/simp-'+dls[0].suggestedFilename(); await dls[0].saveAs(f); size=pngSize(f); }
@@ -46,13 +53,17 @@ ok('Add to the team saves the design',/design=/.test(await pg.evaluate(()=>locat
 await pg.waitForTimeout(800);
 ok('Add to the team does not make a second picture',dls.length===1,String(dls.length));
 ok('team status says it was saved',/Saved to the team/.test(await pg.textContent('#teamStatus')||''));
-/* an edit after saving: the next Save makes a new picture */
-await pg.evaluate(()=>document.getElementById('teamOn').click());
+/* an edit after saving: the next Save makes a new picture (and updates the saved design) */
 await pg.tap('#sh-save .done, #sh-save [data-close]').catch(()=>{}); await pg.waitForTimeout(400);
 await pg.tap('#bar [data-open="words"]'); await pg.waitForTimeout(400);
 const inp=pg.locator('#sh-words input[type="text"]:visible, #sh-words textarea:visible').first(); const was=await inp.inputValue(); await inp.fill(was+' '); await pg.waitForTimeout(300); await inp.fill(was);
 await pg.waitForTimeout(900);
-await pg.tap('#barSave');
+await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
+/* an open saved design: the team switch starts OFF so nobody overwrites a team design by accident; switching it on gives Save & update */
+ok('a saved design is open: the team switch starts off, the button says Save story',!(await pg.isChecked('#teamOn'))&&/Save story/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await pg.evaluate(()=>document.getElementById('teamOn').click());
+ok('switching it on: the button says Save & update',/Save & update/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await pg.tap('#save');
 for(let i=0;i<60&&dls.length<2;i++) await pg.waitForTimeout(300);
 ok('Save after an edit makes a new picture',dls.length===2,String(dls.length));
 ok('no page errors',!errs.length,errs.slice(0,3).join(' | '));

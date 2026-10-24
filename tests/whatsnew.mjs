@@ -1,4 +1,4 @@
-/* Studio 0.1.0 checks: Quick start on the hub (photo first, the tool opens with it in, as a new draft),
+/* Studio 0.1.0 checks: Quick start on the hub (photo first, via the camera button on a tool row; the tool opens with it in, as a new draft),
    the What's New page (hero card, closed groups, filters, screenshots from studio-notes/changelog.md; error state) and its badge on the hub.
    Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
@@ -16,9 +16,10 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   const real=()=>pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length);
   /* since 0.6.0 Start from a photo shows pinned tools only: pin the three photo-first tools (what a phone that used Studio before gets) */
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:pins','["restock","photo-story","collage"]'); }); await pg.reload(); await pg.waitForTimeout(800);
-  ok(vp.name+': Quick start shows Restock first',await pg.isVisible('#quickSec')&&(await pg.textContent('.qbtn:first-child b'))==='Restock');
-  const tb=await pg.$$eval('.qbtn',l=>l.map(x=>x.getBoundingClientRect()).every(r=>r.height>=48&&r.width>=48&&r.right<=innerWidth+1));
-  ok(vp.name+': Quick start buttons are finger-sized and fit the screen',tb);
+  /* 0.7.0: no Start-from-a-photo block; each pinned photo-first tool row has a camera button */
+  ok(vp.name+': the photo-first rows have a camera button, Restock first',!(await pg.$('#quickSec'))&&(await pg.$$eval('#toolGrid .tool-item.has-cam .row-cam input[data-quick]',l=>l.map(x=>x.dataset.quick))).join(',')==='restock,photo-story,collage');
+  const tb=await pg.$$eval('#toolGrid .row-cam',l=>l.map(x=>x.getBoundingClientRect()).every(r=>r.height>=44&&r.width>=44&&r.right<=innerWidth+1));
+  ok(vp.name+': the camera buttons are finger-sized and fit the screen',tb);
   ok(vp.name+': What\'s New dot shows for a new version',await pg.evaluate(()=>document.getElementById('wnBtn').classList.contains('has-new')));
   await Promise.all([pg.waitForURL(/restock\.html/),pg.setInputFiles('input[data-quick="restock"]',S+'pair.jpg')]); await pg.waitForTimeout(2500);
   ok(vp.name+': Restock opens with the photo in',await real()===1);
@@ -61,7 +62,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   /* filters */
   ok(vp.name+': filter chips are finger-sized buttons with counts',await pg.$$eval('.wn-f',l=>l.length>=2&&l.every(b=>b.getBoundingClientRect().height>=48&&b.hasAttribute('aria-pressed')&&/\d/.test(b.textContent))));
   const chipTxt=await pg.$$eval('.wn-f',l=>l.map(b=>b.textContent.replace(/\s+/g,' ').trim()));
-  ok(vp.name+': chips count each kind (and no chip for an empty kind)',chipTxt[0]==='All'+allCards.length&&[['feature','New features'],['fix','Fixes'],['design','Design']].every(([t,l])=>cnt(t)?chipTxt.includes(l+cnt(t)):!chipTxt.some(x=>x.startsWith(l))),chipTxt.join(' | '));
+  ok(vp.name+': chips count each kind (and no chip for an empty kind)',chipTxt[0]==='All'+allCards.length&&[['feature','Features'],['fix','Fixes'],['design','Design']].every(([t,l])=>cnt(t)?chipTxt.includes(l+cnt(t)):!chipTxt.some(x=>x.startsWith(l))),chipTxt.join(' | '));
   const open0=await pg.$$eval('details.wn-group',l=>l.map(d=>d.open));
   const shownCards=()=>pg.$$eval('.wn-card:not([hidden])',l=>l.map(c=>c.dataset.type));
   await pg.click('.wn-f[data-filter="fix"]'); await pg.waitForTimeout(600);

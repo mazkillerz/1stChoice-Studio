@@ -1,6 +1,6 @@
 /* Studio 0.3.0 checks: after Quick start, "Looks good · Save" saves the full-size PNG in one tap;
    Change words opens Words; tapping a bar tab hides the bar; a normal visit never shows it.
-   Also: the text-place pad cells are thumb-sized on a phone. Run like tests/full.mjs (server on :8080, or BASE=...). */
+   Since 0.7.0 it also saves to the team when signed in. Also: the text-place pad cells are thumb-sized on a phone. Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
 import fs from 'fs'; import os from 'os';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
@@ -27,6 +27,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   for(let i=0;i<40&&!dls.length;i++) await pg.waitForTimeout(300);
   let size=''; if(dls[0]){ const f=os.tmpdir()+'/qs-'+dls[0].suggestedFilename(); await dls[0].saveAs(f); size=pngSize(f); }
   ok(vp.name+': one tap saves the full-size PNG',dls.length===1&&size==='2160x3840',size);
+  await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
+  ok(vp.name+': the same tap also saves it to the team (signed in)',/design=/.test(pg.url())&&/Saved to the team/.test(await pg.textContent('#teamStatus')||''),pg.url());
   ok(vp.name+': the bar is gone after saving',!(await pg.isVisible('#readyBar')));
   await quick();
   await tap('#readyEdit'); await pg.waitForTimeout(500);

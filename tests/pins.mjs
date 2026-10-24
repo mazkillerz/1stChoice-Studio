@@ -13,9 +13,11 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(vp.name+': '+e));
   const tap=s=>vp.touch?pg.tap(s):pg.click(s);
   const home=async()=>(await pg.$$eval('#toolGrid a.tool-row',as=>as.map(a=>a.getAttribute('href').replace(/^.*tools\/|\.html$/g,'')))).join(',');
+  /* since 0.7.0 a pinned photo-first tool has a camera button on its row (no separate Start-from-a-photo block) */
+  const cams=async()=>(await pg.$$eval('#toolGrid .tool-item.has-cam .row-cam input[data-quick]',l=>l.map(x=>x.dataset.quick))).join(',');
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear()); await pg.reload(); await pg.waitForTimeout(900);
   ok(vp.name+': a new device has only Restock pinned',await home()==='restock',await home());
-  ok(vp.name+': Quick start shows only pinned tools',(await pg.$$eval('.qbtn b',l=>l.map(x=>x.textContent))).join(',')==='Restock');
+  ok(vp.name+': a camera button only on the pinned photo-first tool',await cams()==='restock'&&!(await pg.$('#quickSec')),await cams());
   const at=await pg.$eval('#allTools',e=>{ const r=e.getBoundingClientRect(); return {h:r.height,top:r.top}; });
   ok(vp.name+': All tools button is finger-sized',at.h>=48,JSON.stringify(at));
   await tap('#allTools'); await pg.waitForTimeout(450);
@@ -29,15 +31,15 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   await tap('dialog[open] [data-pin="restock"]'); await pg.waitForTimeout(250);
   await tap('#libDone'); await pg.waitForTimeout(400);
   ok(vp.name+': unpinning removes the tool from home',await home()==='collage',await home());
-  ok(vp.name+': Quick start follows the pins',(await pg.$$eval('.qbtn b',l=>l.map(x=>x.textContent))).join(',')==='Collage');
+  ok(vp.name+': the camera buttons follow the pins',await cams()==='collage',await cams());
   await pg.reload(); await pg.waitForTimeout(800);
   ok(vp.name+': pins are kept after a reload',await home()==='collage'&&JSON.stringify(await pg.evaluate(()=>JSON.parse(localStorage.getItem('studio:pins'))))==='["collage"]');
   /* nothing pinned: a friendly note, Quick start hidden */
   await tap('#allTools'); await pg.waitForTimeout(400); await tap('dialog[open] [data-pin="collage"]'); await pg.waitForTimeout(200); await tap('#libDone'); await pg.waitForTimeout(400);
-  ok(vp.name+': nothing pinned shows a note and hides Quick start',await pg.isVisible('.pin-empty')&&!(await pg.isVisible('#quickSec')));
+  ok(vp.name+': nothing pinned shows a note and no camera buttons, the + button stays',await pg.isVisible('.pin-empty')&&await cams()===''&&await pg.isVisible('#fab'));
   /* a phone that used Studio before pins came keeps its Start-from-a-photo tools */
   await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:toolsView','"list"'); }); await pg.reload(); await pg.waitForTimeout(800);
-  ok(vp.name+': an existing device keeps Restock, Photo story and Collage',await home()==='restock,photo-story,collage'&&(await pg.$$eval('.qbtn',l=>l.length))===3,await home());
+  ok(vp.name+': an existing device keeps Restock, Photo story and Collage',await home()==='restock,photo-story,collage'&&await cams()==='restock,photo-story,collage',await home()+' / '+await cams());
   /* a tool opens from All tools */
   await tap('#allTools'); await pg.waitForTimeout(400);
   await Promise.all([pg.waitForURL(/offer\.html/),tap('dialog[open] .lib-row a[href$="tools/offer.html"]')]);

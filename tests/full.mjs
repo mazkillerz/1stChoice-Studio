@@ -50,22 +50,26 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     // photos on every page
     for(let p=0;p<pages;p++){ if(pages>1){ await tap(`[data-pg="${p}"]`); await pg.waitForTimeout(200); }
       await pg.setInputFiles('#pick',Array.from({length:per},(_,i)=>SAMPLES+['pair','closeup','hand','window','tall'][(p+i)%5]+'.jpg')); await pg.waitForTimeout(700); }
-    // save PNG(s)
+    // save PNG(s) and the design to the team (fake cloud) in one go
     const dls=[]; pg.on('download',d=>dls.push(d));
-    if(mob) await pg.tap('#barSave'); else await pg.click('#save');   // one tap saves
+    if(mob){   // phone: the bar's Save opens the small Save sheet (no picture yet); Save in the sheet saves
+      await pg.tap('#barSave'); await pg.waitForTimeout(600);
+      ok('bar Save opens the Save sheet without saving',await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))&&!(await pg.isVisible('#doneBox'))&&!dls.length);
+    }
+    await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
+    ok('team switch is on (signed in) and the button offers Save & add to team',await pg.isChecked('#teamOn')&&/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+    const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
+    await pg.fill('#teamName','Test '+t); await tap('#save');   // one tap: the 2× PNG(s), then the team
     for(let i=0;i<60&&dls.length<pages;i++) await pg.waitForTimeout(300);
     const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/'+tag+'-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
     const want=t==='carousel'?'2160x2700':'2160x3840';
     ok('save makes full-size PNG'+(pages>1?'s':''),dls.length===pages&&sizes.every(s=>s===want),sizes.join(', ')+(pages>1?' · '+dls.map(d=>d.suggestedFilename().replace(/^.*-(\d+)\.png$/,'#$1')).join(' '):''));
     await pg.waitForSelector('#doneBox',{state:'visible',timeout:5000}).catch(()=>{});
     ok('success message',await pg.isVisible('#doneBox'),await pg.textContent('#doneTitle'));
-    // save the design to the team (fake cloud) and reopen it in a fresh page
-    const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
-    /* one tap saved the picture; the team switch + the sheet's button ("Add to the team") then adds it to the team */
-    ok('button offers Add to the team',await (async()=>{ if(!(await pg.isChecked('#teamOn'))) await pg.evaluate(()=>document.getElementById('teamOn').click()); return /Add to the team/.test(await pg.textContent('#saveTxt')); })(),await pg.textContent('#saveTxt'));
-    await pg.fill('#teamName','Test '+t); await tap('#save');
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
     const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
+    ok('the same tap saved it to the team',!!id&&/Saved to the team/.test(await pg.textContent('#teamStatus')||''),await pg.textContent('#teamStatus'));
+    ok('afterwards the switch is off and the button says Save again',!(await pg.isChecked('#teamOn'))&&/Save again/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
     const p2=await ctx.newPage(); p2.on('pageerror',e=>R.errors.push('reopen: '+e));
     await p2.goto(''+BASE+'tools/'+t+'.html?design='+id); await p2.waitForTimeout(2500);
     const after=await p2.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
@@ -73,8 +77,9 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     ok('saved design reopens the same',!!id&&before===after,id?(before===after?'identical recipe':'recipe differs'):'no id');
     const wantPh=JSON.parse(before).photos.filter(p=>p&&p.has).length;
     ok('saved photos come back',photosBack===wantPh,photosBack+' of '+wantPh+' photos');
-    if(mob&&t==='new-place'){ await p2.goto(BASE+'index.html#saved'); await p2.waitForTimeout(1500); await p2.tap('.dcard'); await p2.waitForTimeout(700);
-      ok('saved design opens on tap (visible)',await p2.locator('dialog[open] .design-sheet').isVisible()); }
+    if(mob&&t==='new-place'){ await p2.goto(BASE+'index.html#saved'); await p2.waitForSelector('#savedGrid .sv-open',{timeout:8000}).catch(()=>{});
+      await p2.tap('#savedGrid .sv-open'); await p2.waitForURL(/new-place\.html\?design=/,{timeout:8000}).catch(()=>{});
+      ok('a saved design opens in its tool on tap',/new-place\.html\?design=/.test(p2.url())&&!(await p2.locator('dialog[open]').count()),p2.url()); }
     await p2.close(); await pg.close();
     R.errors=[...new Set(R.errors)];
     ok('no console errors',!R.errors.length,R.errors.slice(0,3).join(' | '));
