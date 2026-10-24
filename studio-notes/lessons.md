@@ -18,5 +18,6 @@ What worked, what failed, and process tweaks. Newest session first.
 - The skill text says `/archive` and 44px; this repo uses `_archive/` and 48px. Repo conventions win; noted in the skill.
 
 **Process tweaks**
+- `main` moved during the session (another branch merged Phase 3). Before merging: fetch `main`, merge it into the branch, bump `sw.js` past both cache names, re-run every suite, then fast-forward `main`.
 - Keep the changelog format strict (`## version · date`, `### title`, note, `![before]`/`![after]`). The page parses it directly.
 - Write a small Playwright test for every feature (`tests/whatsnew.mjs` is the pattern) and run it with the old suites before pushing.
