@@ -3,9 +3,9 @@
    - Code and pages are "network first": when online you always get the newest version.
    - Images (samples, thumbs, assets) are "cache first" and refreshed in the background.
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network. */
-const VERSION='studio-v5-3';
+const VERSION='studio-v5-4';   // Studio 0.1.0
 const SHELL=[
-  './','index.html','manifest.webmanifest',
+  './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
   'assets/icon.png','assets/icon-192.png','assets/icon-512.png',
   'brands/brands.js',
@@ -29,7 +29,7 @@ self.addEventListener('fetch',e=>{
   if(/supabase\.(co|in)$/.test(url.hostname)||url.pathname.includes('/auth/v1/')||url.pathname.includes('/rest/v1/')||url.pathname.includes('/storage/v1/')) return;   // never cached
   if(FONT_HOSTS.includes(url.hostname)){ e.respondWith(cacheFirst(req)); return; }
   if(url.origin!==self.location.origin) return;
-  if(req.mode==='navigate'||/\.(html|js|css|json|webmanifest)$/.test(url.pathname)||url.pathname.endsWith('/')){ e.respondWith(networkFirst(req)); return; }
+  if(req.mode==='navigate'||/\.(html|js|css|json|webmanifest|md)$/.test(url.pathname)||url.pathname.endsWith('/')){ e.respondWith(networkFirst(req)); return; }
   if(/\.(png|jpe?g|webp|gif|svg|woff2?)$/.test(url.pathname)){ e.respondWith(cacheFirst(req,true)); return; }
 });
 async function networkFirst(req){

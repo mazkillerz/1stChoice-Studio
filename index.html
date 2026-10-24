@@ -21,12 +21,16 @@
 </head>
 <body class="hub">
 <a class="sr-only" href="#tools">Skip to tools</a>
-<nav class="top"><a class="home" href="index.html" aria-label="Studio home"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a><span class="spacer"></span><button type="button" class="acct" id="acct">Sign in</button></nav>
+<nav class="top"><a class="home" href="index.html" aria-label="Studio home"><img data-brand-logo src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><span class="studio">Studio</span></a><span class="spacer"></span><a class="wn-btn" href="whats-new.html" id="wnBtn" aria-label="What's new"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5l1.6 4.4L16 9.5l-4.4 1.6L10 15.5l-1.6-4.4L4 9.5l4.4-1.6z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></svg><span class="wn-dot" aria-hidden="true"></span></a><button type="button" class="acct" id="acct">Sign in</button></nav>
 <main>
 <header class="hero">
   <h1>Make a story in a minute</h1>
   <p>Pick a tool, add a photo, save. Wording and logo come from the <b data-brand-name>brand</b> kit.</p>
 </header>
+<section class="hub-sec quick" id="quickSec" aria-labelledby="quickH" hidden>
+  <h2 id="quickH">Start from a photo</h2>
+  <div class="quick-row" id="quickList"></div>
+</section>
 <div class="install" id="installBar" role="region" aria-label="Install Studio" hidden><span class="install-ic" aria-hidden="true"><img src="assets/icon-192.png" alt=""></span><span class="install-txt" id="installTxt"><b>Install Studio</b><span>Open it from your home screen like an app.</span></span><button type="button" class="mini solid" id="installGo">Install</button><button type="button" class="mini icon" id="installX" aria-label="Hide this">✕</button></div>
 
 <section class="hub-sec" id="continueSec" aria-labelledby="continueH" hidden>
@@ -50,7 +54,7 @@
   <div class="dgrid view-list" id="savedGrid" aria-live="polite"></div>
   <div class="empty" id="savedEmpty" hidden></div>
 </section>
-<p class="foot">Studio keeps your unfinished stories on this phone. Saved designs are shared with your team.</p>
+<p class="foot">Studio keeps your unfinished stories on this phone. Saved designs are shared with your team.<br><a href="whats-new.html" class="foot-ver"><span id="footVer">Studio</span> · What's new</a></p>
 <div class="lab-entry"><button type="button" class="lab-btn" id="labBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/></svg>Experimental</button></div>
 </main>
 <nav class="hubbar" aria-label="Sections"><span class="pill" aria-hidden="true"></span>

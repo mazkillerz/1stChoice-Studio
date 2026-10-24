@@ -38,6 +38,10 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, Save**; each opens a sheet over the preview so you see every change.
 Save opens a short Save sheet: the full-quality PNG always, plus an optional **Also save to the team** switch with the name filled in. The switch starts off every time, so nothing is saved to the team by accident. One tap makes the image, opens the share sheet (choose “Save Image”), then saves to the team. On a computer the same panels sit beside the preview.
 
+**Start from a photo** (top of the hub): tap Restock, Photo story or Collage, take or pick the photo(s), and the tool opens with them already in (Collage takes 2–9 and sets the number of boxes). It starts a new draft, so it is in Continue editing at once.
+
+**What's new** (✦ button at the top of the hub, and the version line at the bottom): a page with a card for every Studio update, with before/after screenshots. A dot on the button means there is an update you haven't opened yet. The cards come from `studio-notes/changelog.md`; the version is `VERSION` in `assets/studio.js`.
+
 Continue editing (hub) is a list of your unfinished stories. Every one is kept, several per tool. **Start fresh** starts a new one and keeps the old ones; a reload continues the same draft; tap ✕ to remove one (Studio asks first). Drafts saved to the team leave the list. Over 20 drafts of one tool shows a reminder; nothing is deleted on its own. The "New" labels on the hub are gone. A saved design you open never goes there: if you change it and leave, Studio asks to Update it or Discard the changes.
 
 The hub remembers per phone how you like Tools (list / grid / compact) and Saved (list / photo grid, sort). Long-press or ⋯ on a saved design for its options. The chips under search are only your team's collections; filter by tool with the menu next to Saved.
@@ -77,6 +81,8 @@ The passcode only hides the area from everyday use; it is not security. Nothing 
 ## How it is built
 ```
 index.html                 home page with the tool cards
+whats-new.html             What's New (assets/whatsnew.js/.css) built from studio-notes/changelog.md; screenshots in assets/whatsnew/
+studio-notes/              backlog.md, lessons.md, changelog.md (the studio-improver skill's memory, .claude/skills/studio-improver)
 assets/studio.js           the engine: steps, live preview, layers, photo handling, saving (no brand inside)
 assets/studio.css          the look of the site
 tools/<tool>.html + .js    one tool each; the .js only describes how its story is laid out

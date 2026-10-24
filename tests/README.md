@@ -15,3 +15,5 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/v5.mjs   # Phase 1 of v5: drafts list, elements in every tool, palette, shapes, text options, Collage grids
 
     node tests/create.mjs   # Phase 2: Create — start sheet, sizes, every template, elements, photo spots, pages, drafts, PNG 2×, team save + team templates
+
+    node tests/whatsnew.mjs   # 0.1.0: Quick start from a photo (hub → tool with the photo in, as a draft), What's New page + badge

@@ -12,6 +12,8 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 /* canvas letter spacing (Chrome, Edge, Safari 18+); the control is hidden where it isn't supported */
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
+/* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
+const VERSION='0.1.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -64,11 +66,11 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 const TOOLS={
   'create':{title:'Create',blurb:'Make anything: templates, every element, pages.'},
   'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.'},
-  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.'},
+  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',qi:2},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.'},
-  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',multi:true,qi:3},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.'},
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.'},
+  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',qi:1},
   'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.'},
   'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.'}
 };
@@ -94,6 +96,7 @@ async function ensureFont(fam){
 /* ---------- icons (inline SVG, follow the text colour) ---------- */
 const svg=(d,w)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICON={
+  camera:svg('<path d="M14.5 4h-5L7.5 6.5H5A2 2 0 0 0 3 8.5v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2.5z"/><circle cx="12" cy="13" r="3.5"/>'),
   undo:svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'),
   redo:svg('<path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>'),
   photo:svg('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>'),
@@ -1543,15 +1546,23 @@ async function tool(cfg){
   try{
     if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this phone.'); } }
-    else { const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
+    else if(q.get('quick')!=='1'){ const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
       if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); syncSaveOpts();
+  /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
+  if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
+    if(fs&&fs.length){ if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
+      const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
+      status(fs.length>1?'Your photos are in. Check the words, then Save.':'Your photo is in. Check the words, then Save.',4000); }
+    else status('That photo did not come through. Tap Add your photo.'); }
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
 }
 
+/* ---------- Quick start: the hub hands photos to a tool through IndexedDB (too big for the URL) ---------- */
+const quickKey=(brand,tool)=>'studio:quick:'+brand+':'+tool;
 /* ---------- home: continue editing, saved designs + collections, tools ---------- */
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
@@ -1562,6 +1573,22 @@ async function home(){
   let toolsView=store('studio:toolsView')||'list';
   function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView; document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
   paintToolsView();
+  /* Quick start: pick (or take) a photo first, then the tool opens with it in. The file input sits inside the label,
+     so one tap opens the phone's camera / photo picker directly. */
+  const quick=Object.entries(TOOLS).filter(([,t])=>t.quick).sort((a,b)=>(a[1].qi||9)-(b[1].qi||9));
+  if(quick.length&&$('quickList')){
+    $('quickList').innerHTML=quick.map(([id,t])=>`<label class="qbtn"><span class="qic" aria-hidden="true">${ICON.camera}</span><span class="qtxt"><b>${esc(t.title)}</b><span>${esc(t.quick)}</span></span><input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi?' multiple':''}></label>`).join('');
+    $('quickSec').hidden=false;
+    $('quickList').addEventListener('change',async e=>{ const inp=e.target, id=inp.dataset&&inp.dataset.quick; if(!id) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
+      const lbl=inp.closest('.qbtn'); lbl.classList.add('busy');
+      const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
+      if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ lbl.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
+      location.href=toolPage(id)+'?quick=1'; });
+    addEventListener('pageshow',()=>document.querySelectorAll('.qbtn.busy').forEach(l=>l.classList.remove('busy')));   // back button from the tool
+  }
+  /* What's New: a dot on the button until this version's notes have been opened */
+  const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
+  const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
   /* bottom bar (phone): the tab you tap lights up at once and stays lit while the page scrolls there;
      when you scroll by hand it follows the section whose top is nearest the top of the screen */
   const secLinks=[...document.querySelectorAll('.hubbar a')]; let lockUntil=0;
@@ -1767,5 +1794,5 @@ async function home(){
 const lab={ROOT,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
