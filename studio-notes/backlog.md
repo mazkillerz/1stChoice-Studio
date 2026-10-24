@@ -3,6 +3,7 @@
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
 **Last session:** 2 (0.2.0) was a **Mazoon** session → next one is a **team** session.
+**Simplify session:** every 5th version. Next one is **0.5.0** (two more feature sessions first).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |

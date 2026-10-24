@@ -14,6 +14,7 @@ Make Studio the best mobile-first design toolkit for the 1st Choice team and for
 1. Protect data. Never break, migrate or delete saved designs, images or the Supabase schema without asking.
 2. Never delete files. Move old or unused files into `/archive`.
 3. Preview big changes. Major redesigns or experiments go on a preview branch or behind a toggle until Mazoon approves. Small polish can ship directly.
+4. Simplicity gate. Every change must make Studio easier, never more confusing (see Quality gates). This gate can't be removed or weakened.
 
 Everything else in this skill can be rewritten by the skill itself.
 
@@ -41,7 +42,7 @@ Everything else in this skill can be rewritten by the skill itself.
 
 1. **Load context.** Read `studio-notes/backlog.md`, `studio-notes/lessons.md` and the latest entry in the changelog.
 2. **Audit.** Do a mobile-first UX audit of the live site using the checklist below. Add any findings to the backlog. (A quick Playwright script that lists every visible control under 44px at 390×844 finds most tap-target problems in seconds.)
-3. **Pick work.** Choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
+3. **Pick work.** First check the session count at the top of `backlog.md`: if this release is the 5th, 10th, 15th… version, it's a **Simplify session** (see below) and there's no new feature. Otherwise choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
    - Team session: speed up restock photos and other team workflows, and make it easier for the team to adopt more tools.
    - Mazoon session: power tools like post makers, story makers, highlight covers, and anything else useful.
 4. **Build.** Keep the scope small enough to finish and test in one session.
@@ -50,8 +51,23 @@ Everything else in this skill can be rewritten by the skill itself.
    - It looks right and works well at phone size, then at desktop size.
    - Saved designs in Supabase still load, save and delete correctly.
    - Nothing loads noticeably slower than before.
+   - **Simplicity gate (locked core):** every change makes Studio easier, never more confusing.
+     - New features stay out of the way until they're needed (behind a tap, a sheet or a "More", not on the first screen).
+     - Common tasks never take more taps than before (count them before and after: restock story, photo story, save).
+     - Familiar buttons don't move without a good reason, and the reason goes in the What's New card.
+     - If a change adds complexity, simplify it or move it to the backlog instead of shipping it.
 6. **Release.** Bump the version, update the What's New page, then commit, push and merge to `main` (see Repo notes).
 7. **Reflect and self-improve.** Record what worked and what didn't in `lessons.md`. Add new ideas to the backlog. Edit this skill to work better next time, without touching the locked core.
+
+## Simplify session (every 5th version)
+
+Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole session is a pass to make Studio cleaner, simpler and more convenient for the team and Mazoon:
+- Walk the common jobs on a phone (restock story, photo story, offer, carousel, saving, finding a saved design) and count taps; cut every one that isn't needed.
+- Merge or hide rarely used options, shorten long sheets and labels, remove duplicate ways to do the same thing, and make defaults match what people actually pick.
+- Tidy the hub (grouping, order by use) and fix the open UX audit findings in `backlog.md`.
+- Clean up code and CSS that the cuts leave unused (move removed files to `_archive/`, never delete).
+- Still follow the locked core: nothing that changes saved designs, and big layout changes ship behind a toggle until Mazoon approves.
+- What's New gets one card per simplification, with before/after screenshots and the tap counts.
 
 ## Mobile-first UX checklist
 
