@@ -353,3 +353,13 @@
 @container canvas (max-width:860px){ .b-mini{display:none} .b-corner{bottom:calc(76px + var(--safe-b))} }
 @media (max-width:620px){ .dk-fly{display:none} .dk-sep{margin:0 2px} .bt-btn{min-width:32px;padding:0 5px} .bt-file{flex:1 1 90px} }
 @media (max-width:400px){ #redoB{display:none} }
+
+/* combine shapes and components (ideas from Penpot) */
+.board-app{--comp:#7b4ed8}
+:root[data-theme="dark"] .board-app{--comp:#b495ff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .board-app{--comp:#b495ff}}
+.seg2.bool-ops{display:grid;grid-template-columns:repeat(4,1fr)}
+.seg2.bool-ops button{height:auto;min-height:48px;flex-direction:column;gap:2px;padding:5px 2px;font-size:11px}
+.lr-n.lr-comp{color:var(--comp);font-weight:700}
+.lr-ic.lr-comp{color:var(--comp)}
+@media (pointer:coarse){.ps .mini[data-act^="comp"],.ps .mini[data-act="boolRelease"]{min-height:44px}}

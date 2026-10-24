@@ -313,6 +313,7 @@ function linePath(n){ const p=n.points(); if(n.tension&&n.tension()&&p.length>4&
 async function nodeSvg(n,defs,fontsUsed){ if(!n.visible()) return ''; const cls=n.getClassName(), k=kind(n), c=common(n,defs);
   if(k==='mask'){ const id='c'+uid(); const ms=n.getChildren(x=>x.getAttr('isMask')); let cp=''; for(const m of ms){ const mm=m.clone({opacity:1}); cp+=await nodeSvg(mm,defs,fontsUsed); } defs.push(`<clipPath id="${id}">${cp}</clipPath>`);
     let inner=''; for(const ch of n.getChildren(x=>!x.getAttr('isMask'))) inner+=await nodeSvg(ch,defs,fontsUsed); return `<g${c} clip-path="url(#${id})">${inner}</g>`; }
+  if(k==='bool') return boolSvg(n,c,defs,fontsUsed);
   if(cls==='Group'){ let inner=''; for(const ch of n.getChildren()) inner+=await nodeSvg(ch,defs,fontsUsed); return `<g${c}>${inner}</g>`; }
   if(cls==='Rect'){ const w=n.width(), h=n.height(), r=n.cornerRadius(); if(Array.isArray(r)&&r.some(Boolean)){ const [a,b,cc,d]=r.map(v=>Math.min(v||0,w/2,h/2)); return `<path${c} d="M${a} 0H${w-b}Q${w} 0 ${w} ${b}V${h-cc}Q${w} ${h} ${w-cc} ${h}H${d}Q0 ${h} 0 ${h-d}V${a}Q0 0 ${a} 0Z"${paintAttrs(n,defs)}/>`; }
     return `<rect${c} width="${num(w)}" height="${num(h)}"${r?` rx="${num(Math.min(r,w/2,h/2))}"`:''}${paintAttrs(n,defs)}/>`; }
@@ -340,6 +341,16 @@ async function nodeSvg(n,defs,fontsUsed){ if(!n.visible()) return ''; const cls=
     const r=cl.getClientRect(); let url=''; try{ url=cl.toDataURL({pixelRatio:pr,x:r.x,y:r.y,width:r.width,height:r.height}); }catch(_){} cl.destroy();
     return `<image${c} x="${num(r.x)}" y="${num(r.y)}" width="${num(r.width)}" height="${num(r.height)}" preserveAspectRatio="none" href="${url}"/>`; }
   return ''; }
+/* combined shapes: the bottom shape's paint over the result, using SVG clip paths and masks */
+async function boolSvg(n,c,defs,fontsUsed){ const kids=n.getChildren(x=>x.visible()&&!!x._sceneFunc), base=kids[0]; if(!base) return '';
+  const op=n.getAttr('boolOp')||'union', others=kids.slice(1), BIG='x="-100000" y="-100000" width="200000" height="200000"';
+  const ink=async(o,col)=>nodeSvg(o.clone({fill:col,fillPriority:'color',stroke:undefined,strokeWidth:0,shadowEnabled:false,opacity:1,strokeAlign:undefined}),defs,fontsUsed);
+  const painted=async o=>{ const p=o===base?base:o.clone({fill:base.fill(),fillPriority:'color',stroke:undefined,strokeWidth:0,strokeAlign:undefined}); return nodeSvg(p,defs,fontsUsed); };
+  if(op==='union') { let o=''; for(const k2 of kids) o+=await painted(k2); return `<g${c}>${o}</g>`; }
+  if(op==='intersect'){ let o=await nodeSvg(base,defs,fontsUsed); for(const x of others){ const id='c'+uid(); defs.push(`<clipPath id="${id}">${await ink(x,'#000000')}</clipPath>`); o=`<g clip-path="url(#${id})">${o}</g>`; } return `<g${c}>${o}</g>`; }
+  const cut=async list=>{ const id='m'+uid(); let m=`<rect ${BIG} fill="#ffffff"/>`; for(const x of list) m+=await ink(x,'#000000'); defs.push(`<mask id="${id}" maskUnits="userSpaceOnUse" ${BIG}>${m}</mask>`); return id; };
+  if(op==='subtract'){ const id=await cut(others); return `<g${c}><g mask="url(#${id})">${await nodeSvg(base,defs,fontsUsed)}</g></g>`; }
+  let o=''; for(const x of kids){ const id=await cut(kids.filter(y=>y!==x)); o+=`<g mask="url(#${id})">${await painted(x)}</g>`; } return `<g${c}>${o}</g>`; }
 IO.svg=async function(f,opt){ opt=opt||{}; const s=fsize(f), b=opt.bleed?U.bleedOf(f):0, defs=[], fonts=new Set(); let body='';
   const bg=frameBg(f); if(!opt.transparent) body+=`<rect x="${-b}" y="${-b}" width="${num(s.w+2*b)}" height="${num(s.h+2*b)}"${paintAttrs(bg,defs)}/>`;
   for(const ch of items(f)) body+=await nodeSvg(ch,defs,fonts);

@@ -36,6 +36,9 @@ const IC={
   history:svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>'),findr:svg('<circle cx="10" cy="10" r="6"/><path d="m20 20-5.5-5.5M7 10h6"/>'),palette:svg('<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.9-4.5-8.6-10-8.6z"/>'),
   print:svg('<path d="M6 9V2h12v7"/><rect x="2" y="9" width="20" height="8" rx="2"/><path d="M6 14h12v8H6z"/>'),emoji:svg('<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>'),
   icons:svg('<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/>'),tpl:svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>'),
+  union:svg('<path d="M4 4h10v6h6v10H10v-6H4z"/>'),subtract:svg('<path d="M4 4h10v6h-4v4H4z"/><path d="M10 14v6h10V10h-6" stroke-dasharray="2 2.5"/>'),
+  intersect:svg('<path d="M4 14V4h10M20 10v10H10" stroke-dasharray="2 2.5"/><path d="M10 10h4v4h-4z" fill="currentColor"/>'),exclude:svg('<path d="M4 4h10v6h-4v4H4zM20 20H10v-6h4v-4h6z"/>'),
+  comp:svg('<path d="M12 2.5l3 3-3 3-3-3zM12 15.5l3 3-3 3-3-3zM5.5 9l3 3-3 3-3-3zM18.5 9l3 3-3 3-3-3z"/>'),compCopy:svg('<path d="M12 3l9 9-9 9-9-9z"/>'),
   bold:'<b class="qb-b">B</b>',plus:svg('<path d="M12 5v14M5 12h14"/>',16),close:svg('<path d="M18 6 6 18M6 6l12 12"/>',15),check:svg('<path d="M20 6 9 17l-5-5"/>',15)
 };
 const isMac=/Mac|iPhone|iPad/.test(navigator.platform||''), mod=isMac?'⌘':'Ctrl';
@@ -173,7 +176,8 @@ function brandPop(anchor){ const as=L.brandAssets(), ph=(BD.B&&BD.B.phrases)||{}
   pop.onclick=e=>{ const it=e.target.closest('[data-asset],[data-phrase]'); if(it){ addItem(it); closePop(); } if(e.target.id==='bpAll'){ closePop(); openAssets('brand'); } }; }
 function morePop(anchor){ const r=anchor.getBoundingClientRect(); openMenu(r.left-120,r.top,[
   {label:'Barcode (EAN / UPC)…',icon:IC.barcode,run:()=>UI.barcodeDialog()},{label:'QR code…',icon:IC.qr,run:()=>UI.qrDialog()},{label:'Curved text',icon:IC.arc,run:()=>BD.tools.makeArc()},'-',
-  {label:'Mask (photo inside a shape)',icon:IC.mask,run:()=>BD.tools.mask(),disabled:!BD.tools.canMask(S.sel)},{label:'Repeat in a grid…',icon:IC.repeat,run:()=>UI.repeatDialog(),disabled:!S.sel.some(n=>!isFrame(n))},'-',
+  {label:'Mask (photo inside a shape)',icon:IC.mask,run:()=>BD.tools.mask(),disabled:!BD.tools.canMask(S.sel)},{label:'Combine shapes…',icon:IC.union,run:()=>boolMenu(r.left-120,r.top),disabled:!BD.bool.can(S.sel)},
+  {label:'Make component',icon:IC.comp,run:()=>BD.comps.make(),disabled:!BD.comps.can(S.sel)},{label:'Components…',icon:IC.comp,run:()=>compMenu(r.left-120,r.top),disabled:!BD.comps.mains().length},'-',{label:'Repeat in a grid…',icon:IC.repeat,run:()=>UI.repeatDialog(),disabled:!S.sel.some(n=>!isFrame(n))},'-',
   {label:'Find and replace…',icon:IC.findr,key:mod+'+F',run:()=>UI.findDialog()},{label:'Replace a colour…',icon:IC.palette,run:()=>UI.colorsDialog()},{label:'Versions…',icon:IC.history,run:()=>UI.versionsDialog()},'-',
   {label:'Rulers and guides',icon:IC.ruler,check:S.rulers,run:()=>setRulers(!S.rulers)},{label:'Quick find…',icon:IC.search,key:mod+' K',run:openPalette}],{above:true}); }
 
@@ -192,7 +196,7 @@ function paintQbar(){ const list=S.sel; if(!list.length||BD.editing()||(S.tool!=
   else if(all&&(k==='barcode'||k==='qr')){ h=qb(k==='qr'?'editQR':'editBarcode','Edit '+(k==='qr'?'QR code':'barcode'),'Change it'); }
   if(!locked&&!(one&&k==='frame')){ const r=unionRect(list), dp=BD.units.dpiOf(n); h+=`<span class="qsep"></span><button type="button" class="qb qtxt" data-q="size" title="Width × height (change it in the Design panel)">${BD.units.fmt(r.width,dp)} × ${BD.units.fmt(r.height,dp)}</button>`;
     if(list.length>1) h+=qb('group',IC.group,'Group ('+mod+'+G)'); if(list.some(x=>kind(x)==='group')) h+=qb('ungroup',IC.group+'<span>Ungroup</span>','Ungroup');
-    if(BD.tools.canMask(list)) h+=qb('mask',IC.mask+'<span>Mask</span>','Mask (put inside the shape)'); if(list.some(x=>kind(x)==='mask')) h+=qb('unmask','Unmask','Release the mask'); }
+    if(BD.bool.can(list)) h+=qb('combine',IC.union+'<span>Combine</span>','Combine shapes'); if(BD.tools.canMask(list)) h+=qb('mask',IC.mask+'<span>Mask</span>','Mask (put inside the shape)'); if(list.some(x=>kind(x)==='mask')) h+=qb('unmask','Unmask','Release the mask'); }
   if(!locked) h+=`<span class="qsep"></span>`+qb('dup',IC.dup,'Duplicate ('+mod+'+D)')+qb('del',IC.trash,'Delete');
   h+=qb('menu',IC.more,'More');
   qbar.innerHTML=h; qbar.hidden=qHide; placeQbar(); }
@@ -206,7 +210,7 @@ BD.wrap.addEventListener('pointerdown',e=>{ if(e.target.closest('.qbar,.dock,.b-
 window.addEventListener('pointerup',()=>{ if(qHide){ qHide=false; setTimeout(paintQbar,30); } });
 BD.tr.on('transformstart',()=>{ qbar.hidden=true; }); BD.tr.on('transformend',()=>setTimeout(paintQbar,30));
 qbar.addEventListener('click',e=>{ const c=e.target.closest('[data-qc]'); if(c){ qColor(c); return; } const b=e.target.closest('[data-q]'); if(!b) return; const a=b.dataset.q, n=S.sel[0];
-  const acts={unlock:()=>BD.act.lock(false),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),group:()=>BD.act.group(),ungroup:()=>BD.act.ungroup(),mask:()=>BD.tools.mask(),unmask:()=>BD.tools.unmask(),
+  const acts={unlock:()=>BD.act.lock(false),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),group:()=>BD.act.group(),ungroup:()=>BD.act.ungroup(),mask:()=>BD.tools.mask(),combine:()=>{ const r=b.getBoundingClientRect(); boolMenu(r.left,r.bottom+4); },unmask:()=>BD.tools.unmask(),
     frameSize:()=>{ panel('R',true); UI.focusField&&UI.focusField('w'); }, size:()=>{ panel('R',true); UI.focusField&&UI.focusField('w'); }, exportFrame:()=>UI.exportDialog([n]),
     bold:()=>apply(x=>{ const w=(x.fontStyle().match(/\d{3}/)||[/bold/.test(x.fontStyle())?'700':'400'])[0], it=/italic/.test(x.fontStyle()); const nb=+w>=600?'400':'700'; BD.ensureFont(x.fontFamily(),nb).then(()=>{ if(kind(x)==='text'&&x._setTextData) x._setTextData(); BD.main.batchDraw(); }); x.fontStyle(((it?'italic ':'')+nb)); if(kind(x)==='text') BD.prepText(x); },{repaint:true}),
     align:()=>apply(x=>{ const o=['left','center','right'], i=o.indexOf(x.align()); x.align(o[(i+1)%3]); },{repaint:true}),
@@ -226,6 +230,16 @@ function looksPop(anchor){ if(!S.sel[0]) return;
   openPop(anchor,`<div class="looks">${BD.LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}">${esc(l.label)}</button>`).join('')}</div>`,{cls:'pop-looks'});
   pop.onclick=e=>{ const b=e.target.closest('[data-look]'); if(!b) return; const l=BD.LOOKS.find(x=>x.id===b.dataset.look); apply(x=>{ x.setAttr('fx',Object.assign({},l.fx)); BD.applyFx(x); },{repaint:true}); }; }
 
+/* ---------- combine shapes and components (ideas from Penpot) ---------- */
+function boolMenu(x,y){ setTimeout(()=>openMenu(x,y,[{head:'Combine shapes'},...BD.bool.OPS.map(([op,l,h])=>({label:l+'  ·  '+h,icon:IC[op],run:()=>BD.bool.make(op)}))]),0); }
+function compMenu(x,y){ const f=BD.targetFrame&&BD.targetFrame(); setTimeout(()=>openMenu(x,y,[{head:'Add a copy of'},...BD.comps.mains().map(m=>({label:nameOf(m),icon:IC.comp,run:()=>BD.comps.addCopy(m,f&&f!==frameOf(m)?f:null)}))]),0); }
+function compItems(sel){ const C=BD.comps, one=sel.length===1?sel[0]:null, out=[];
+  if(C.can(sel)) out.push({label:'Make component',icon:IC.comp,run:C.make});
+  if(one&&C.isMain(one)) out.push({label:'Add a copy of this component',icon:IC.comp,run:()=>C.addCopy(one)});
+  if(one&&C.isCopy(one)) out.push({label:'Go to main component',run:()=>C.goMain(one)},{label:'Detach from component',run:()=>C.detach([one])});
+  return out; }
+UI.boolMenu=boolMenu; UI.compMenu=compMenu;
+
 /* ---------- right-click menu ---------- */
 function contextMenu(x,y,world){ const sel=S.sel, one=sel[0], k=one&&kind(one), objs=sel.filter(n=>!isFrame(n)); const e=[];
   if(!sel.length){ e.push({label:'Paste',key:mod+'+V',run:()=>BD.paste()},{label:'Upload photos, SVG or PDF…',run:()=>$('pickImg').click()},{label:'Add a frame here',run:()=>{ const w=world||U.toWorld({x:BD.stage.width()/2,y:BD.stage.height()/2}); const f=BD.makeFrame(w.x,w.y,1080,1920,{label:'Frame '+(frames().length+1)}); BD.select([f]); BD.changed(); BD.paintUI(); }},'-',{label:'Select all',key:mod+'+A',run:BD.act.selectAll},{label:'Fit everything',key:'Shift+1',run:BD.view.fitAll},{label:'Quick find…',key:mod+' K',run:openPalette}); openMenu(x,y,e); return; }
@@ -234,6 +248,8 @@ function contextMenu(x,y,world){ const sel=S.sel, one=sel[0], k=one&&kind(one), 
   e.push({label:'Bring to front',key:mod+'+Shift+]',run:()=>BD.act.order('front')},{label:'Bring forward',key:mod+'+]',run:()=>BD.act.order('up')},{label:'Send backward',key:mod+'+[',run:()=>BD.act.order('down')},{label:'Send to back',key:mod+'+Shift+[',run:()=>BD.act.order('back')},'-');
   if(objs.length>1) e.push({label:'Group',key:mod+'+G',run:BD.act.group}); if(sel.some(n=>kind(n)==='group')) e.push({label:'Ungroup',key:mod+'+Shift+G',run:BD.act.ungroup});
   if(BD.tools.canMask(sel)) e.push({label:'Mask (put inside the shape)',run:BD.tools.mask}); if(sel.some(n=>kind(n)==='mask')) e.push({label:'Release mask',run:BD.tools.unmask});
+  if(BD.bool.can(sel)) e.push({label:'Combine shapes…',icon:IC.union,run:()=>boolMenu(x,y)}); if(sel.some(n=>kind(n)==='bool')) e.push({label:'Release combined shapes',run:BD.bool.release});
+  compItems(sel).forEach(i=>e.push(i));
   e.push({label:sel.every(isLocked)?'Unlock':'Lock',key:mod+'+Shift+L',run:()=>BD.act.lock()},{label:'Hide',key:mod+'+Shift+H',run:()=>BD.act.hide(true)});
   if(objs.length) e.push({label:'Flip horizontal',key:'Shift+H',run:()=>BD.act.flip('x')},{label:'Flip vertical',key:'Shift+V',run:()=>BD.act.flip('y')},{label:'Repeat in a grid…',run:()=>UI.repeatDialog()});
   if(objs.length===1&&frameOf(one)) e.push('-',{label:'Fill the frame',run:()=>BD.act.fillFrame(one)});
@@ -273,14 +289,14 @@ if(L.store('lab:fold:pages')){ document.querySelector('[data-fold="pages"]').set
 const layersEl=$('layers'); const open=new Set(); let layT=0;
 function paintLayersSoon(){ clearTimeout(layT); layT=setTimeout(()=>{ paintLayers(); paintPages(); },60); }
 UI.paintLayersSoon=paintLayersSoon;
-function kindIcon(n){ if(n.getAttr('isMask')) return IC.mask; const k=kind(n); return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
+function kindIcon(n){ if(n.getAttr('isMask')) return IC.mask; if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; const k=kind(n); if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
 function autoOpen(){ const s=S.sel[0]; if(!s){ const f=BD.activeFrame&&BD.activeFrame(); if(f) open.add(f.id()); return; } let p=isFrame(s)?s:s.getParent(); while(p&&p!==BD.main){ open.add(p.id()); p=p.getParent(); } }
-function row(n,d){ const box=isFrame(n)||['group','mask'].includes(kind(n)), kids=box?items(n):[], on=box&&open.has(n.id()), lk=isLocked(n), vis=n.visible();
+function row(n,d){ const box=isFrame(n)||['group','mask','bool'].includes(kind(n)), kids=box?items(n):[], on=box&&open.has(n.id()), lk=isLocked(n), vis=n.visible();
   return `<div class="lr${isFrame(n)?' lr-frame':''}${vis?'':' off'}${n.getAttr('isMask')?' lr-mask':''}" role="treeitem" draggable="true" data-id="${n.id()}" style="--d:${d}" aria-selected="${S.sel.includes(n)}" ${box?`aria-expanded="${on}"`:''}>
-    ${box&&kids.length?`<button type="button" class="lr-caret" data-caret aria-label="${on?'Collapse':'Expand'}">${IC.caretR}</button>`:'<span class="lr-caret"></span>'}<span class="lr-ic">${kindIcon(n)}</span><span class="lr-n" dir="auto">${esc(n.getAttr('isMask')?'Mask shape':nameOf(n))}</span>
+    ${box&&kids.length?`<button type="button" class="lr-caret" data-caret aria-label="${on?'Collapse':'Expand'}">${IC.caretR}</button>`:'<span class="lr-caret"></span>'}<span class="lr-ic${n.getAttr('comp')?' lr-comp':''}">${kindIcon(n)}</span><span class="lr-n${n.getAttr('comp')?' lr-comp':''}" dir="auto">${esc(n.getAttr('isMask')?'Mask shape':nameOf(n))}</span>
     <button type="button" class="lr-b${lk?' on':''}" data-lock aria-label="${lk?'Unlock':'Lock'}" title="${lk?'Unlock':'Lock'}">${lk?IC.lock:IC.unlock}</button><button type="button" class="lr-b${vis?'':' on'}" data-eye aria-label="${vis?'Hide':'Show'}" title="${vis?'Hide':'Show'}">${vis?IC.eye:IC.eyeOff}</button></div>`; }
 function paintLayers(){ autoOpen(); const rows=[];
-  const walk=(c,d)=>{ items(c).slice().reverse().forEach(n=>{ rows.push(row(n,d)); if((isFrame(n)||['group','mask'].includes(kind(n)))&&open.has(n.id())) walk(n,d+1); }); };
+  const walk=(c,d)=>{ items(c).slice().reverse().forEach(n=>{ rows.push(row(n,d)); if((isFrame(n)||['group','mask','bool'].includes(kind(n)))&&open.has(n.id())) walk(n,d+1); }); };
   walk(BD.main,0);
   layersEl.innerHTML=rows.join('')||'<p class="ps-note">Nothing here yet. Add a frame, text or a photo with the tools below.</p>'; }
 UI.paintLayers=paintLayers;
@@ -305,7 +321,7 @@ layersEl.addEventListener('mouseleave',()=>BD.hoverNode&&BD.hoverNode(null));
 let dragRow=null;
 layersEl.addEventListener('dragstart',e=>{ const r=e.target.closest('.lr'); if(!r) return; dragRow=r; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',r.dataset.id); r.classList.add('dragging'); });
 layersEl.addEventListener('dragend',()=>{ if(dragRow) dragRow.classList.remove('dragging'); dragRow=null; layersEl.querySelectorAll('.drop-a,.drop-b,.drop-in').forEach(x=>x.classList.remove('drop-a','drop-b','drop-in')); });
-function dropPos(r,e){ const b=r.getBoundingClientRect(), y=(e.clientY-b.top)/b.height, t=nodeOf(r); const box=t&&(isFrame(t)||['group','mask'].includes(kind(t))); if(box&&y>.3&&y<.7) return 'in'; return y<.5?'a':'b'; }
+function dropPos(r,e){ const b=r.getBoundingClientRect(), y=(e.clientY-b.top)/b.height, t=nodeOf(r); const box=t&&(isFrame(t)||['group','mask','bool'].includes(kind(t))); if(box&&y>.3&&y<.7) return 'in'; return y<.5?'a':'b'; }
 layersEl.addEventListener('dragover',e=>{ const r=e.target.closest('.lr'); if(!r||!dragRow||r===dragRow) return; e.preventDefault(); layersEl.querySelectorAll('.drop-a,.drop-b,.drop-in').forEach(x=>x.classList.remove('drop-a','drop-b','drop-in')); r.classList.add('drop-'+dropPos(r,e)); });
 layersEl.addEventListener('drop',e=>{ const r=e.target.closest('.lr'); if(!r||!dragRow) return; e.preventDefault(); const n=nodeOf(dragRow), t=nodeOf(r); if(!n||!t||n===t||n.isAncestorOf(t)) return; const pos=dropPos(r,e);
   if(pos==='in'){ if(isFrame(n)) return; U.reparent(n,t); n.moveToTop(); }
@@ -506,6 +522,8 @@ function commands(){ const c=[], sel=S.sel, has=sel.length>0, objs=sel.filter(n=
     if(objs.length){ ['left','hcenter','right','top','vcenter','bottom'].forEach(a=>add('Align '+({hcenter:'centre',vcenter:'middle'}[a]||a),()=>BD.act.align(a),{group:'Selection'})); add('Flip horizontal',()=>BD.act.flip('x'),{group:'Selection'}); add('Flip vertical',()=>BD.act.flip('y'),{group:'Selection'}); add('Repeat in a grid…',()=>UI.repeatDialog(),{group:'Selection'}); add('Fill the frame',()=>BD.act.fillFrame(objs[0]),{group:'Selection'}); }
     if(objs.length>1) add('Group',BD.act.group,{key:mod+'+G',group:'Selection'}); if(sel.some(n=>kind(n)==='group')) add('Ungroup',BD.act.ungroup,{group:'Selection'});
     if(objs.length>2){ add('Space evenly across',()=>BD.act.distribute('x'),{group:'Selection'}); add('Space evenly down',()=>BD.act.distribute('y'),{group:'Selection'}); }
+    if(BD.bool.can(sel)) BD.bool.OPS.forEach(([op,l,h])=>add('Combine shapes: '+l,()=>BD.bool.make(op),{group:'Selection'})); if(sel.some(n=>kind(n)==='bool')) add('Release combined shapes',BD.bool.release,{group:'Selection'});
+    compItems(sel).forEach(i=>add(i.label,i.run,{group:'Component'}));
     if(BD.tools.canMask(sel)) add('Mask photo inside shape',BD.tools.mask,{group:'Selection'}); if(sel.some(n=>kind(n)==='mask')) add('Release mask',BD.tools.unmask,{group:'Selection'}); }
   return c; }
 function openPalette(){ palette.hidden=false; palQ.value=''; palSel=0; paintPalette(); setTimeout(()=>palQ.focus(),10); }
@@ -557,7 +575,7 @@ window.addEventListener('keydown',e=>{
   if(e.shiftKey&&K==='p'){ S.pen.mode='marker'; lastDraw='marker'; BD.setTool('pen'); return; }
   if(k==='Delete'||k==='Backspace'){ e.preventDefault(); BD.act.del(); return; }
   if(k==='Escape'){ closeMenu(); closePop(); if(S.tool!=='select'){ BD.setTool('select'); return; } if(S.entered){ const g=S.entered; S.entered=null; BD.select([g]); return; } BD.select([]); return; }
-  if(k==='Enter'){ const n=S.sel[0]; if(!n) return; e.preventDefault(); if(kind(n)==='text') BD.startEdit(n); else if(['group','mask'].includes(kind(n))){ S.entered=n; BD.select(items(n)); BD.paintUI(); } else if(isFrame(n)) BD.select(items(n).filter(x=>!isLocked(x))); return; }
+  if(k==='Enter'){ const n=S.sel[0]; if(!n) return; e.preventDefault(); if(kind(n)==='text') BD.startEdit(n); else if(['group','mask','bool'].includes(kind(n))){ S.entered=n; BD.select(items(n)); BD.paintUI(); } else if(isFrame(n)) BD.select(items(n).filter(x=>!isLocked(x))); return; }
   if(k.startsWith('Arrow')){ e.preventDefault(); const s=e.shiftKey?10:1; BD.act.nudge(k==='ArrowLeft'?-s:k==='ArrowRight'?s:0,k==='ArrowUp'?-s:k==='ArrowDown'?s:0); return; }
   if(k==='?'){ UI.shortcuts(); return; }
   const map={v:'select',h:'hand',f:'frame',a:'frame',r:'rect',o:'ellipse',y:'poly',s:'star',l:e.shiftKey?'arrow':'line',p:'pen',t:'text',e:'eraser'};

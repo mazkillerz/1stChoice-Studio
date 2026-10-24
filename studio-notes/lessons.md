@@ -2,6 +2,23 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 4 · 0.4.0 · 24 Oct 2026 (Mazoon session)
+
+**Worked**
+- "Use this ready repo" (Penpot) did not mean embedding it: Penpot needs its own servers (Clojure backend, Postgres, Redis) and can't run on GitHub Pages. Porting its two signature ideas into the existing Konva Board gave the value with no new library and no server.
+- Combine shapes as a live group: only the bottom shape draws, using canvas clips (subtract = evenodd clip with a huge rect, intersect = nested clips, exclude = one evenodd clip). Hit-testing stays normal by checking `ctx.canvas.hitCanvas`. Exports, undo and saving worked with no extra code because the result is drawn, not stored.
+- Components synced in `commit()` (just before each undo step) by comparing a JSON signature of main vs copy children, so every way of editing (panel, drag, find & replace, undo) is covered by one hook.
+- A pixel test on the exported frame (`BD.exportFrame(...,{canvas:true})`) checks drawing results exactly.
+
+**Didn't work / watch out**
+- My first union check used a point outside the circle; check test geometry before doubting the code.
+- Panel/seg clicks within 250 ms merge into one undo step (debounced commit). Tests that undo must wait ≥400 ms between steps.
+- `scrollIntoView` on the phone panel scrolls the whole page in a screenshot; don't use it in shot scripts.
+- Touch wording: say "double-tap" on coarse pointers (`matchMedia('(pointer:coarse)')`).
+
+**Process tweaks**
+- `tests/board-penpot.mjs` added to the suite.
+
 ## Session 3 · 0.3.0 · 24 Oct 2026 (team session)
 
 **Worked**

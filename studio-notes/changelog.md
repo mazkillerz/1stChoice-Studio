@@ -8,6 +8,16 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Anything above the first `##` (this intro) is not shown.
 
+## 0.4.0 · 24 Oct 2026
+
+### Combine shapes in Board
+Two new Board tools borrowed from Penpot, the open-source design app. Pick two or more shapes and tap Combine in the bar above them: Union joins them, Subtract cuts the top shape out, Intersect keeps only the overlap, Exclude removes it. The shapes stay editable (double-tap to move one), the bottom shape gives the colour, and Release gives them back.
+![after](assets/whatsnew/0.4.0-combine-after.jpg)
+
+### Components in Board
+Make a badge, price tag or logo lock-up once, then Add a copy wherever you need it. Change the main one and every copy updates. Words you type into a copy stay that copy's own, so one badge can say different things on each slide. Detach a copy to change it freely. Find it in the Design panel, the right-click menu and More › Components.
+![after](assets/whatsnew/0.4.0-components-after.jpg)
+
 ## 0.3.0 · 24 Oct 2026
 
 ### Save in one tap after Quick start

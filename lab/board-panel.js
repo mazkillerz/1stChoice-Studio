@@ -29,7 +29,7 @@ const weightOf=n=>{ const s=n.fontStyle()||''; const m=s.match(/\d{3}/); return 
 const italicOf=n=>/italic/.test(n.fontStyle()||'');
 const setStyle=(n,w,it)=>n.fontStyle(((it?'italic ':'')+(w||'400')).trim());
 const num=(v,d)=>Math.round((+v||0)*(d||1))/(d||1);
-const kindLabel=n=>n.getAttr('isMask')?'Mask shape':({frame:n.getAttr('print')?'Print frame':'Frame',text:'Text',arc:'Curved text',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Brand asset',group:'Group',mask:'Mask',stroke:'Line',barcode:'Barcode',qr:'QR code'})[kind(n)]||'';
+const kindLabel=n=>n.getAttr('isMask')?'Mask shape':n.getAttr('comp')?(n.getAttr('compMain')?'Main component':'Component copy'):({frame:n.getAttr('print')?'Print frame':'Frame',text:'Text',arc:'Curved text',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Brand asset',group:'Group',bool:'Combined shape',mask:'Mask',stroke:'Line',barcode:'Barcode',qr:'QR code'})[kind(n)]||'';
 function geomOf(){ const list=S.sel; if(!list.length) return null; const n=list[0];
   if(list.length===1){ if(isFrame(n)){ const s=fsize(n); return {x:n.x(),y:n.y(),w:s.w,h:s.h,r:null}; } const p=frameOf(n), r=wrect(n); return {x:r.x-(p?p.x():0),y:r.y-(p?p.y():0),w:r.width,h:r.height,r:num(n.rotation(),10)}; }
   const r=unionRect(list), p=frameOf(n); const same=list.every(x=>frameOf(x)===p&&!isFrame(x)); return {x:r.x-(same&&p?p.x():0),y:r.y-(same&&p?p.y():0),w:r.width,h:r.height,r:null}; }
@@ -59,9 +59,22 @@ function paintProps(){
   if(all&&k==='image') h+=photoPanel(list);
   if(list.some(x=>kind(x)==='mask')) h+=sec('mask','Mask',`<p class="hint">Double-click to move or change what's inside. The mask shape is in the layers list.</p><button type="button" class="mini" data-act="unmask">Release mask</button>`);
   else if(BD.tools.canMask(list)) h+=sec('mask','Mask',`<p class="hint">Put the other things inside the top shape.</p><button type="button" class="mini" data-act="mask">${IC.mask} Mask</button>`);
+  if(list.length===1&&k==='bool') h+=boolPanel(n);
+  else if(BD.bool.can(list)) h+=sec('bool','Combine shapes',`<div class="seg2 bool-ops" role="group">${BD.bool.OPS.map(([op,l,t])=>`<button type="button" data-act="bool:${op}" title="${esc(t)}" aria-label="${esc(l)}">${IC[op]}<span>${esc(l)}</span></button>`).join('')}</div>`);
+  h+=compPanel(list);
   props.innerHTML=h;
 }
-function kindIconFor(n){ const k=n.getAttr('isMask')?'mask':kind(n); return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
+function boolPanel(g){ const op=g.getAttr('boolOp')||'union', base=BD.bool.base(g), f=base&&typeof base.fill()==='string'?base.fill():'';
+  return sec('bool','Combine shapes',`<div class="seg2 bool-ops" role="group">${BD.bool.OPS.map(([v,l,t])=>`<button type="button" data-seg="boolOp" data-v="${v}" aria-pressed="${op===v}" title="${esc(t)}" aria-label="${esc(l)}">${IC[v]}<span>${esc(l)}</span></button>`).join('')}</div>
+    <div class="row">${swatch('boolFill',f,'Colour')}</div><p class="hint">The bottom shape gives the colour. ${matchMedia('(pointer:coarse)').matches?'Double-tap':'Double-click'} to move a shape inside.</p><button type="button" class="mini" data-act="boolRelease">Release shapes</button>`); }
+function compPanel(list){ const C=BD.comps, n=list.length===1?list[0]:null;
+  if(n&&C.isMain(n)){ const cs=C.copiesOf(n.getAttr('comp')).length;
+    return sec('comp','Component',`<p class="hint">${cs?cs+' cop'+(cs===1?'y follows':'ies follow')+' every change you make here.':'Add copies; they follow every change you make here.'}</p><div class="row"><button type="button" class="mini" data-act="compCopy">${IC.comp} Add a copy</button>${cs?'<button type="button" class="mini" data-act="compSel">Select copies</button>':''}</div><button type="button" class="link" data-act="compDetach">Stop being a component</button>`); }
+  if(n&&C.isCopy(n)){ const m=C.mainOf(n.getAttr('comp')), ov=n.find(x=>x.getAttr('ovr')).length;
+    return sec('comp','Component',`<p class="hint">${m?'A copy of <b>'+esc(nameOf(m))+'</b>. It follows the main one; words you type into it stay.':'The main component is not on this board, so this copy works like a group.'}</p><div class="row">${m?'<button type="button" class="mini" data-act="compMain">Go to main</button>':''}${ov?'<button type="button" class="mini" data-act="compReset">Reset words</button>':''}<button type="button" class="mini" data-act="compDetach">Detach</button></div>`); }
+  if(C.can(list)&&!list.some(x=>x.getAttr('comp')||C.compOf(x))) return sec('comp','Component',`<p class="hint">Use it again and again: copies update when you change it.</p><button type="button" class="mini" data-act="compMake">${IC.comp} Make component</button>`,{cls:'ps-quiet'});
+  return ''; }
+function kindIconFor(n){ const k=n.getAttr('isMask')?'mask':kind(n); if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
 UI.paintProps=paintProps;
 UI.focusField=k=>{ tab='design'; paintProps(); setTimeout(()=>{ const i=props.querySelector(`input[data-k="${k}"]`); if(i){ i.focus(); i.select(); } },30); };
 
@@ -170,7 +183,7 @@ function rerot(n,r){ const b=wrect(n), c={x:b.x+b.width/2,y:b.y+b.height/2}; n.r
 function setW(n,w,h){ const k=kind(n), r=wrect(n);
   if(k==='frame'){ BD.setFrameSize(n,w??fsize(n).w,h??fsize(n).h); return; }
   let kx=w!=null?w/r.width:null, ky=h!=null?h/r.height:null; if(S.lockRatio){ if(kx!=null) ky=kx; else if(ky!=null) kx=ky; } kx=kx??1; ky=ky??1;
-  if(n.rotation()||['group','mask','barcode','qr','path','icon','stroke','star','poly','ring','pen','arc'].includes(k)){ n.scaleX(n.scaleX()*kx); n.scaleY(n.scaleY()*ky); return; }
+  if(n.rotation()||['group','mask','bool','barcode','qr','path','icon','stroke','star','poly','ring','pen','arc'].includes(k)){ n.scaleX(n.scaleX()*kx); n.scaleY(n.scaleY()*ky); return; }
   if(k==='text'){ if(kx!==1&&ky===1){ n.width(Math.max(10,n.width()*kx)); n.setAttr('autoW',false); } else { n.fontSize(n.fontSize()*ky); if(!n.getAttr('autoW')) n.width(n.width()*kx); } return; }
   if(k==='rect'||k==='image'||k==='asset'){ n.width(n.width()*kx); n.height(n.height()*ky); if(k!=='rect'){ BD.applyCrop(n); BD.applyFx(n); } return; }
   if(k==='ellipse'){ n.radiusX(n.radiusX()*kx); n.radiusY(n.radiusY()*ky); return; }
@@ -265,7 +278,7 @@ props.addEventListener('click',e=>{
   const xf=e.target.closest('[data-xfmt]'); if(xf){ quickExport(xf.dataset.xfmt); return; }
   const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act, n=n0();
   const acts={dup:()=>BD.act.duplicate(),front:()=>BD.act.order('front'),back:()=>BD.act.order('back'),flipX:()=>BD.act.flip('x'),flipY:()=>BD.act.flip('y'),lock:()=>BD.act.lock(),group:BD.act.group,ungroup:BD.act.ungroup,del:BD.act.del,
-    ratio:()=>{ S.lockRatio=!S.lockRatio; b.setAttribute('aria-pressed',String(S.lockRatio)); }, mask:BD.tools.mask, unmask:BD.tools.unmask,
+    ratio:()=>{ S.lockRatio=!S.lockRatio; b.setAttribute('aria-pressed',String(S.lockRatio)); }, mask:BD.tools.mask, unmask:BD.tools.unmask, boolRelease:BD.bool.release, compMake:()=>BD.comps.make(), compCopy:()=>BD.comps.addCopy(n), compSel:()=>BD.comps.selectCopies(n), compMain:()=>BD.comps.goMain(n), compReset:()=>{ BD.comps.reset(n); paintProps(); }, compDetach:()=>{ BD.comps.detach([n]); paintProps(); },
     printFrame:()=>UI.printFrameDialog(), bgReset:()=>{ S.bg=null; BD.wrap.style.backgroundColor=''; BD.scheduleSave(); paintProps(); },
     swapWH:()=>apply(f=>{ const s=fsize(f); BD.setFrameSize(f,s.h,s.w); },{repaint:true}),
     fitContent:()=>{ const f=n, list=items(f); if(!list.length) return; const r=unionRect(list); const dx=r.x-f.x(), dy=r.y-f.y(); f.position({x:Math.round(r.x),y:Math.round(r.y)}); list.forEach(c=>{ c.x(c.x()-dx); c.y(c.y()-dy); }); BD.setFrameSize(f,r.width,r.height); BD.tr.forceUpdate(); BD.paintUI(); BD.changed(); paintProps(); },
@@ -282,6 +295,7 @@ props.addEventListener('click',e=>{
     natural:()=>apply(m=>{ const im=BD.IMGS.get(m.getAttr('imgId')); if(!im) return; const f=frameOf(m), box=f?fsize(f):{w:im.w,h:im.h}, k=Math.min(1,box.w/im.w,box.h/im.h); m.setAttrs({width:Math.round(im.w*k),height:Math.round(im.h*k),cropZ:1,focX:.5,focY:.5,stretch:undefined}); BD.applyCrop(m); BD.applyFx(m); },{repaint:true}),
     fxReset:()=>apply(m=>{ m.setAttr('fx',{}); BD.applyFx(m); },{repaint:true}),
     expSel:()=>UI.exportSel(), exportMore:()=>UI.exportDialog()};
+  if(a.startsWith('bool:')){ BD.bool.make(a.slice(5)); return; }
   if(acts[a]) acts[a](); });
 function quickExport(fmt){ const sel=S.sel, fs=[...new Set(sel.map(n=>isFrame(n)?n:frameOf(n)).filter(Boolean))], list=fs.length?fs:frames();
   const print=list.some(f=>f.getAttr('print'));
@@ -289,6 +303,7 @@ function quickExport(fmt){ const sel=S.sel, fs=[...new Set(sel.map(n=>isFrame(n)
 function segSet(key,v){
   if(key==='align') return apply(m=>m.align(v),{repaint:true});
   if(key==='penMode'){ S.pen.mode=v; return paintProps(); }
+  if(key==='boolOp'){ targets().filter(m=>kind(m)==='bool').forEach(m=>BD.bool.setOp(m,v)); return apply(()=>{},{repaint:true}); }
   if(key==='dash') return apply(m=>{ m.setAttr('dashV',v); if(v!=='solid'&&!m.strokeWidth()) m.strokeWidth(4); if(v!=='solid'&&!m.stroke()) m.stroke(BD.brandColors().ink); m.dash(dashFor(m,v)); if(v==='dot') m.lineCap('round'); },{repaint:true});
   if(key==='strokeAlign') return apply(m=>{ m.setAttr('strokeAlign',v==='center'?undefined:v); if(v!=='center'&&!m.strokeWidth()){ m.strokeWidth(8); if(!m.stroke()) m.stroke(BD.brandColors().ink); } BD.decorate(m); },{repaint:true});
   if(key==='bgFillType') return apply(f=>setFillType(frameBg(f),v),{repaint:true});
@@ -300,12 +315,13 @@ function segSet(key,v){
 function setFillType(n,v){ if(v!=='solid'){ if(!n.getAttr('gradA')) n.setAttr('gradA',typeof n.fill()==='string'&&n.fill()?UI.hex6(n.fill()):'#ffffff'); if(!n.getAttr('gradB')) n.setAttr('gradB',BD.brandColors().ink); if(n.getAttr('gradAngle')==null) n.setAttr('gradAngle',180); }
   n.setAttr('fillType',v); if(v==='solid'){ n.fillPriority('color'); if(!n.fill()) n.fill(n.getAttr('gradA')||'#ffffff'); } BD.applyFill(n); }
 function colorFor(btn){ const key=btn.dataset.color, n=n0();
-  const get={workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff'};
+  const get={boolFill:()=>{ const b=BD.bool.base(n); return b&&b.fill(); },workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff'};
   let cur=(get[key]||(()=>''))()||'';
   UI.colorPop(btn,(typeof cur==='string'&&cur)||'#000000',v=>{
     const set={workspace:()=>{ S.bg=v||null; BD.wrap.style.backgroundColor=S.bg||''; BD.scheduleSave(); }, pen:()=>{ S.pen.color=v; },
       bgFill:()=>apply(f=>{ const bg=frameBg(f); bg.fill(v||'#ffffff'); bg.setAttr('fillType','solid'); BD.applyFill(bg); }),
       bgGradA:()=>apply(f=>{ const bg=frameBg(f); bg.setAttr('gradA',v); BD.applyFill(bg); }), bgGradB:()=>apply(f=>{ const bg=frameBg(f); bg.setAttr('gradB',v); BD.applyFill(bg); }),
+      boolFill:()=>apply(m=>{ const b=kind(m)==='bool'&&BD.bool.base(m); if(b){ b.fill(v||'#000000'); b.setAttr('fillType','solid'); BD.applyFill(b); } },{repaint:true}),
       oFill:()=>apply(m=>{ m.fill(v); if(kind(m)==='arrow') m.stroke(v||m.stroke()); }), oGradA:()=>apply(m=>m.setAttr('gradA',v)), oGradB:()=>apply(m=>m.setAttr('gradB',v)),
       stroke:()=>apply(m=>{ m.stroke(v); if(v&&!m.strokeWidth()) m.strokeWidth(kind(m)==='text'?4:6); if(kind(m)==='arrow') m.fill(v); }),
       tbg:()=>apply(m=>{ m.setAttr('tbg',v||undefined); if(v&&!m.padding()) m.padding(Math.round(m.fontSize()*.3)); }), shadowColor:()=>apply(m=>m.shadowColor(v)),

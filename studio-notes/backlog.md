@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 3 (0.3.0) was a **team** session → next one is a **Mazoon** session.
-**Simplify session:** every 5th version. Next one is **0.5.0** (one more feature session first: 0.4.0).
+**Last session:** 4 (0.4.0) was a **Mazoon** session → next one is a **team** session.
+**Simplify session:** every 5th version. **The next release (0.5.0) is a Simplify session** (no new feature).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -18,6 +18,9 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 10 | Highlight covers: a **Product** cover type that puts a brand asset (HD can cut-out) in the circle; emoji covers | 2 | 4 | 3 | 2 | 7 | Follow-up to 0.2.0. Use the brand's `assets` list, never a drawn can. |
 | 12 | Quick start for Highlight covers / Carousel (several photos → one page each) | 3 | 3 | 3 | 2 | 7 | Ready bar from 0.3.0 works for any tool with `quick`. |
 | 13 | Ready bar: "Save to team too" toggle so the restock lands in Saved designs in the same tap | 4 | 2 | 2 | 2 | 6 | Team save needs a name; default to tool + date. |
+| 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
+| 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
+| 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
@@ -30,6 +33,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.4.0: Board gets two Penpot ideas: Combine shapes (union/subtract/intersect/exclude, live and editable, Combine in the quick bar) and Components (main + copies that follow it, words kept per copy, detach/reset/go to main).
 - 0.3.0: Quick start ready bar ("Looks good · Save" saves in one tap; Change words), bigger Text place pad on phones (cells 30 → 45px).
 - 0.2.0: Highlight covers tool (icon / word / photo, shared look, one PNG per cover), pager wording per tool (`pageNoun`), `cols` on seg fields, bigger Done on the main sheets + 48px hit area on every Done, hex box 44px.
 - 0.1.0: Quick start from a photo (Restock / Photo story / Collage), What's New page + badge, tap targets (hub view switch, Experimental, Create back / Design menu / page + / Done).

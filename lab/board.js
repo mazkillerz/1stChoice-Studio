@@ -62,7 +62,7 @@ function reparent(n,to,index){ const m=n.getAbsoluteTransform().copy(); n.moveTo
 function moveByWorld(n,dx,dy){ const p=n.absolutePosition(), k=sc(); n.absolutePosition({x:p.x+dx*k,y:p.y+dy*k}); }
 function nameOf(n){ const l=n.getAttr('label'); if(l) return l; const k=kind(n);
   if(k==='text'){ const t=(n.text()||'').replace(/\s+/g,' ').trim(); return t.slice(0,28)||'Text'; }
-  return ({frame:'Frame',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Asset',group:'Group',stroke:'Line'})[k]||'Layer'; }
+  return ({frame:'Frame',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Asset',group:'Group',bool:'Combined shape',stroke:'Line'})[k]||'Layer'; }
 /* units: everything is stored in pixels; print frames know their DPI, so sizes can be shown and typed in mm, cm, inches or points */
 const UNITS={mm:25.4,cm:2.54,in:1,pt:72};
 function dpiOf(n){ const f=n&&(isFrame(n)?n:frameOf(n)); return (f&&f.getAttr('dpi'))||S.dpi||300; }
@@ -139,9 +139,27 @@ function alignedScene(ctx,shape){ const mode=shape.getAttr('strokeAlign'), p=Obj
     if(mode==='outside'){ sh.attrs.strokeWidth=w*2; ctx.strokeShape(sh); sh.attrs.strokeWidth=w; ctx.fillShape(sh); }
     else { ctx.fillShape(sh); ctx._context.save(); ctx._context.clip(); sh.attrs.strokeWidth=w*2; ctx.strokeShape(sh); sh.attrs.strokeWidth=w; ctx._context.restore(); } };
   Object.getPrototypeOf(shape)._sceneFunc.call(shape,p,shape); }
+/* boolean shapes (Penpot-style): a 'bool' group keeps its shapes editable; the bottom shape draws the result in its own colour */
+function ownScene(ctx,s){ const a=s.getAttr('strokeAlign'); if(a==='inside'||a==='outside') alignedScene(ctx,s); else Object.getPrototypeOf(s)._sceneFunc.call(s,ctx,s); }
+function pathInto(ctx,base,o){ const t=base.getTransform().copy().invert(); t.multiply(o.getTransform()); const M=t.getMatrix(), c=ctx._context;
+  c.save(); c.transform(M[0],M[1],M[2],M[3],M[4],M[5]); const p=Object.create(ctx); p.beginPath=()=>{}; p.fillStrokeShape=()=>{}; p.fillShape=()=>{}; p.strokeShape=()=>{};
+  Object.getPrototypeOf(o)._sceneFunc.call(o,p,o); c.restore(); }
+function boolScene(ctx,shape){ const g=shape.getParent();
+  if(!g||kind(g)!=='bool'||(ctx.canvas&&ctx.canvas.hitCanvas)){ ownScene(ctx,shape); return; }
+  const kids=g.getChildren(c=>c.visible()&&!!c._sceneFunc), base=kids[0]; if(shape!==base) return;
+  const op=g.getAttr('boolOp')||'union', others=kids.slice(1), c=ctx._context; c.save();
+  if(op==='subtract'||op==='intersect'){ others.forEach(o=>{ c.beginPath(); if(op==='subtract') c.rect(-1e7,-1e7,2e7,2e7); pathInto(ctx,base,o); c.clip(op==='subtract'?'evenodd':'nonzero'); }); ownScene(ctx,base); }
+  else { if(op==='exclude'){ c.beginPath(); kids.forEach(o=>pathInto(ctx,base,o)); c.clip('evenodd'); }
+    kids.forEach(o=>{ c.beginPath(); pathInto(ctx,base,o); ctx.fillShape(base); }); }
+  c.restore(); }
+BD.boolScene=boolScene;
 function decorate(n){
+  if(kind(n)==='bool'){ n.getChildren().forEach(ch=>{ if(ch._sceneFunc&&ch.sceneFunc) ch.sceneFunc(boolScene); }); return; }
   if(kind(n)==='mask'){ n.clipFunc(maskClip); const ms=n.getChildren(c=>c.getAttr('isMask')); if(ms.length){ let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; ms.forEach(m=>{ const r=m.getClientRect({relativeTo:n,skipStroke:true}); a=Math.min(a,r.x); b=Math.min(b,r.y); c=Math.max(c,r.x+r.width); d=Math.max(d,r.y+r.height); }); n.setAttrs({clipX:a,clipY:b,clipWidth:Math.max(1,c-a),clipHeight:Math.max(1,d-b)}); } }
   const a=n.getAttr('strokeAlign');
+  const par=n.getParent&&n.getParent();
+  if(par&&kind(par)==='bool'&&n._sceneFunc&&n.sceneFunc){ n.sceneFunc(boolScene); return; }
+  if(n.getAttr('sceneFunc')===boolScene) n.setAttr('sceneFunc',undefined);
   if(n.getClassName()!=='Text'&&n.getClassName()!=='Image'&&n._sceneFunc&&n.sceneFunc){ if(a==='inside'||a==='outside') n.sceneFunc(alignedScene); else if(n.getAttr('sceneFunc')===alignedScene) n.setAttr('sceneFunc',undefined); }
 }
 BD.decorate=decorate;
@@ -509,7 +527,7 @@ wrap.addEventListener('dblclick',e=>{ if(e.target.closest(OVER)) return;
   if(hit.label){ emit('rename',hit.node); return; }
   const n=hit.node; if(!n) return;
   if(kind(n)==='text'){ startEdit(n); return; }
-  if(kind(n)==='group'||kind(n)==='mask'){ S.entered=n; let inner=pick(shape,true); /* go one level in at a time */ if(inner&&inner.node){ let c=inner.node; while(c.getParent()&&c.getParent()!==n) c=c.getParent(); select([c]); } paintUI(); return; }
+  if(kind(n)==='group'||kind(n)==='mask'||kind(n)==='bool'){ S.entered=n; let inner=pick(shape,true); /* go one level in at a time */ if(inner&&inner.node){ let c=inner.node; while(c.getParent()&&c.getParent()!==n) c=c.getParent(); select([c]); } paintUI(); return; }
   if(kind(n)==='barcode'||kind(n)==='qr'||kind(n)==='arc'){ emit('editspecial',n); return; }
   if(kind(n)==='image') emit('crop',n);
 });
@@ -648,7 +666,7 @@ function placeEditor(){ if(!edit) return; const {n,ta}=edit, k=n.getAbsoluteScal
   if(n.getAttr('autoW')){ ta.style.width='1px'; ta.style.width=Math.max(fs*.6,ta.scrollWidth+2)+'px'; } else ta.style.width=n.width()*k+'px';
   ta.style.height='1px'; ta.style.height=ta.scrollHeight+'px'; }
 function commitEdit(){ if(!edit) return; const {n,ta}=edit; edit=null; ta.remove();
-  const v=ta.value; if(!v.trim()){ n.destroy(); select([]); } else { n.text(v); prepText(n); if(n.getAttr('autoW')) n.width(undefined); n.show(); select([n]); }
+  const v=ta.value; if(!v.trim()){ n.destroy(); select([]); } else { n.text(v); prepText(n); if(n.getAttr('autoW')) n.width(undefined); n.show(); if(BD.comps) BD.comps.markText(n); select([n]); }
   main.batchDraw(); changed(); emit('doc'); }
 BD.startEdit=startEdit; BD.commitEdit=commitEdit; BD.editing=()=>!!edit;
 
@@ -762,7 +780,7 @@ BD.docJson=docJson;
 const H={stack:[],i:-1,t:0};
 function snap(){ return docJson(); }
 function changed(){ S.clean=false; clearTimeout(H.rc); H.rc=setTimeout(refreshCaches,120); clearTimeout(H.t); H.t=setTimeout(commit,250); scheduleSave(); emit('changed'); }
-function commit(){ H.t=0; if(edit){ H.t=setTimeout(commit,250); return; } const s=snap(); if(H.stack[H.i]===s) return; H.stack=H.stack.slice(0,H.i+1); H.stack.push(s); if(H.stack.length>120) H.stack.shift(); H.i=H.stack.length-1; emit('history'); }
+function commit(){ H.t=0; if(edit){ H.t=setTimeout(commit,250); return; } if(BD.comps) BD.comps.sync(); const s=snap(); if(H.stack[H.i]===s) return; H.stack=H.stack.slice(0,H.i+1); H.stack.push(s); if(H.stack.length>120) H.stack.shift(); H.i=H.stack.length-1; emit('history'); }
 function flushHist(){ if(H.t){ clearTimeout(H.t); commit(); } }
 async function restore(s){ const ids=S.sel.map(n=>n.id()); await loadDoc(JSON.parse(s)); select(ids.map(id=>main.findOne('#'+id)).filter(Boolean)); scheduleSave(); emit('doc'); emit('history'); }
 async function undo(){ if(edit) commitEdit(); flushHist(); if(H.i>0){ H.i--; await restore(H.stack[H.i]); } }

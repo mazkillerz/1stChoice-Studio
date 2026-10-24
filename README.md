@@ -74,6 +74,8 @@ The passcode only hides the area from everyday use; it is not security. Nothing 
 - **Opening files:** photos (HEIC too); **SVG** files open as layers you can change (groups, shapes, paths, gradients, clip masks, text and embedded pictures, layer names; Canva text that was turned into shapes stays shapes); **PDF** pages (also .ai) become print frames at their real size, with the page artwork underneath and the text editable where the file has real text; board files.
 - **Editing:** snapping to edges, centres, guides, grid columns and equal gaps; Alt to measure; Alt+drag to copy; groups; masks (a photo inside any shape); outline inside/centre/outside; corners one by one; layer blur; shadows; blend modes; gradients; text background boxes; saved text styles and colours; eyedropper on the design.
 - **Photos:** crop/move inside the box, zoom, corners or a circle, fill the frame, make background, replace, 10 looks and 11 adjustments, spread across frames.
+- **Combine shapes** (idea from [Penpot](https://github.com/penpot/penpot)): union, subtract, intersect or exclude two or more shapes. They stay editable (double-click to move one); the bottom shape gives the colour; Release gives them back. Quick bar › Combine, right-click, or the Design panel.
+- **Components** (also from Penpot): make anything a main component, add copies (Design panel, right-click, More › Components…), and every copy follows changes to the main. Words typed into a copy stay that copy's own; Reset words, Go to main, Detach. Copies can be sized on their own.
 - **Barcodes (EAN-13, UPC-A, check digit added for you) and QR codes** are made as sharp shapes.
 - **Export:** PNG (lossless, see-through possible), JPG, WebP, **PDF** (every frame as a page at its exact size; print frames keep mm and DPI, with bleed and crop marks), **SVG** (layers kept, opens again in Board, Figma, Illustrator), one **ZIP** of many frames. Print PNG/JPG files carry their DPI so printers read the real size. Screen frames save at 2× (falling back to 1.5× then 1× only if the device can't make it that big).
 - Layers panel with frames list (thumbnails, drag to reorder), hide, lock, rename, drag to reorder; folding Design / Effects / Export panels; right-click menu; copy/paste between boards; undo/redo; versions; find and replace; keyboard shortcuts (press ?).
@@ -98,7 +100,7 @@ manifest.webmanifest, sw.js  installable app; the service worker caches the app 
 _archive/                  old files kept for reference (never deleted)
 assets/thumbs/<brand>/     home page pictures for that brand
 lab/                       experimental area (passcode): lab home + Board editor — board.js (canvas engine), board-tools.js (mask, curved text,
-                           barcode, QR, repeat, versions…), board-io.js (SVG/PDF in, PDF/SVG/ZIP out), board-ui.js (bars, layers, assets),
+                           barcode, QR, repeat, versions…), board-comp.js (combine shapes, components), board-io.js (SVG/PDF in, PDF/SVG/ZIP out), board-ui.js (bars, layers, assets),
                            board-panel.js (Design/Effects/Export panel), board-dialogs.js (export and other dialogs), board-lib.js (sizes, shapes, icons)
 ```
 
