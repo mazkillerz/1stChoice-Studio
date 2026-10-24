@@ -62,11 +62,18 @@ Done in Phase 2 (22 Oct 2026): `tools/create.html` (+ create-core.js = its own p
 
 ## Phase 3: Polish everything
 
-- [ ] Go through the whole Studio on a phone (390×844) and desktop: spacing, type scale, consistency of sheets, buttons, empty states, loading, error messages, dark mode, RTL.
-- [ ] Speed: first load, photo open, save time on a mid-range Android; lazy-load heavy vendors (pdf.js, HEIC).
-- [ ] Your own improvements: anything you'd add as a senior product designer (examples: recent colours, favourite templates, quick "duplicate as story/post" resize, share sheet polish). List them in the summary.
-- [ ] Update README.md and the hub thumbnails; bump the service-worker cache.
-- [ ] Full test run, before/after screenshots of the hub and every tool.
+- [x] Go through the whole Studio on a phone (390×844) and desktop: spacing, type scale, consistency of sheets, buttons, empty states, loading, error messages, dark mode, RTL.
+- [x] Speed: first load, photo open, save time on a mid-range Android; lazy-load heavy vendors (pdf.js, HEIC).
+- [x] Your own improvements: anything you'd add as a senior product designer (examples: recent colours, favourite templates, quick "duplicate as story/post" resize, share sheet polish). List them in the summary.
+- [x] Update README.md and the hub thumbnails; bump the service-worker cache.
+- [x] Full test run, before/after screenshots of the hub and every tool.
+
+Done in Phase 3 (22 Oct 2026):
+- **Speed:** Create opened with ~40 MB (all six HD can PNGs, just for the template previews) and took ~65 s on a simulated mid-range Android on 4G. Each HD can now has a light copy (`brands/1stchoice/assets/prev/*.webp`, ~100 KB): pickers, template previews and on-screen editing use it, the HD file loads behind it and replaces it, and **Save always waits for the HD file** (saves stay 2160×3840 lossless). Create now opens with ~1.3 MB (start sheet ~3 s, a template lands on the page in ~0.5 s). Template previews are kept on the phone (IndexedDB), so a second visit fills the start sheet at once. Same light copies in every tool's Add asset. HEIC / PDF / QR readers were already loaded only when needed. Other tools: ~0.55 MB, ready ~2 s, photo open ~0.15 s, save ~2 s.
+- **Layout polish:** option buttons sit in even grids (4 looks → 2×2, 8 photo counts → 4×2) instead of one stretched lone button; Layers sheet: Reset moved under the list as "Put everything back where it started" with an Undo hint (it was a big button next to Add); computer: the sticky Save card is half as tall so it covers less; Create: template names no longer wrap and push cards out of line; dark mode: Create's Add sheet showed dark elements (handle, dates, logo…) on a dark tile, now on a light "page".
+- **Added (designer's picks):** recent colours (last 6 custom colours after the brand swatches, in every tool and in Create).
+- Hub thumbnails re-made from today's White looks (Collage shows a 4-photo bento); old ones in `_archive/thumbs-v4/`. Service worker cache → `studio-v5-4`. README updated.
+- Tests: new `tests/polish.mjs` (23 checks); all suites pass. Before/after screenshots: `docs/screens-phase3/`.
 
 ---
 

@@ -15,3 +15,4 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/v5.mjs   # Phase 1 of v5: drafts list, elements in every tool, palette, shapes, text options, Collage grids
 
     node tests/create.mjs   # Phase 2: Create — start sheet, sizes, every template, elements, photo spots, pages, drafts, PNG 2×, team save + team templates
+    node tests/polish.mjs   # Phase 3: light WebP copies (HD swaps in, saves stay 2×), kept template previews, even option grids, Reset layout, recent colours, dark-mode element previews

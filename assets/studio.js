@@ -22,6 +22,8 @@ let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 
 /* ---------- small utilities ---------- */
 function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+/* option buttons sit in an even grid: no lone button stretched across a row (4 → 2×2, 8 → 4×2) */
+function segCols(opts){ const n=opts.length, max=opts.some(o=>o.ic)?3:4; if(n<=max) return n; return n%max===0?max:(n%(max-1)===0?max-1:max); }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 /* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
    loaded the first time someone picks one. Safari opens them itself, so it's only used when needed. */
@@ -147,12 +149,18 @@ const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
 function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||brandAssets().find(x=>x.id===ref)||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
+function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
 function loadAsset(ref){
   const hit=ASSET_IMG.get(ref); if(hit) return hit.then?hit:Promise.resolve(hit);
   const a=assetDef(ref); if(!a||!a.file){ return Promise.resolve(null); }
-  const p=load(assetUrl(a)).then(img=>{ const v={img}; ASSET_IMG.set(ref,v); return v; }).catch(()=>{ const v={missing:true}; ASSET_IMG.set(ref,v); return v; });
+  const hd=()=>load(assetUrl(a)).then(img=>{ const v={img,hd:true}; ASSET_IMG.set(ref,v); return v; }).catch(()=>{ const v={missing:true}; ASSET_IMG.set(ref,v); return v; });
+  /* a light copy first (a.prev) so the can shows at once; the HD file loads behind it and takes over. Saving waits for it. */
+  const p=a.prev?load(assetPrevUrl(a)).then(img=>{ const v={img,hd:false}; ASSET_IMG.set(ref,v);
+      ASSET_HD.set(ref,hd().then(h=>{ if(h&&h.missing) ASSET_IMG.set(ref,v); else if(onAssetLoad) onAssetLoad(); return h; })); return v; }).catch(hd):hd();
   ASSET_IMG.set(ref,p); return p;
 }
+const ASSET_HD=new Map();   // ref -> promise of the HD file (only for assets that have a light copy)
+const assetsHD=()=>Promise.all([...ASSET_HD.values()]);
 const TINTS=new Map();
 function tinted(img,color){ const key=color; let m=TINTS.get(img); if(!m){ m={}; TINTS.set(img,m); } if(m[key]) return m[key];
   const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d'); x.drawImage(img,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height); return m[key]=c; }
@@ -441,10 +449,17 @@ function glyph(c,kind,x,y,size,color){
    opt.auto: label of the "use the default" swatch (omit for none); opt.none: offer "None" (no fill / no outline). */
 function brandPalette(){ const C=BRAND.colors; return BRAND.palette&&BRAND.palette.length?BRAND.palette:[['White',C.paper],['Ink',C.ink],['Gold',C.accent],['Cream',C.cream],['Grey',C.muted]].filter(x=>x[1]).map(([name,hex])=>({name,hex})); }
 const normHex=v=>{ v=String(v||'').trim(); if(!v) return ''; if(v==='none') return v; if(v[0]!=='#') v='#'+v; if(/^#[0-9a-f]{3}$/i.test(v)) v='#'+v.slice(1).split('').map(c=>c+c).join(''); return /^#[0-9a-f]{6}$/i.test(v)?v.toUpperCase():null; };
+/* recent colours: the last custom colours picked (not already brand swatches), kept on this phone per brand */
+const RECENT_N=6;
+function recentColours(){ const pal=brandPalette().map(p=>p.hex.toUpperCase()); return (store('studio:recent-colours:'+(BRAND&&BRAND.id))||[]).filter(h=>!pal.includes(h)).slice(0,RECENT_N); }
+function addRecentColour(hex){ hex=normHex(hex); if(!hex||hex==='none'||!BRAND) return; if(brandPalette().some(p=>p.hex.toUpperCase()===hex)) return;
+  const k='studio:recent-colours:'+BRAND.id; store(k,[hex,...(store(k)||[]).filter(h=>h!==hex)].slice(0,RECENT_N)); }
 function palettePicker(key,cur,opt){
   opt=opt||{}; cur=cur==null?'':String(cur); const pal=brandPalette(), up=cur.toUpperCase(), custom=cur&&cur!=='none'&&!pal.some(p=>p.hex.toUpperCase()===up);
   const b=(v,name,bg,inner)=>`<button type="button" class="sw-btn" data-c="${esc(v)}" aria-pressed="${String(v===''?cur==='':v==='none'?cur==='none':!custom&&v.toUpperCase()===up)}" aria-label="${esc(name)}" title="${esc(name)}"${bg?` style="background:${bg}"`:''}>${inner||''}</button>`;
+  const rec=recentColours(), recHit=custom&&rec.includes(up);
   return `<div class="pal" data-pal="${esc(key)}" role="group">${opt.auto?b('',opt.auto,'','A'):''}${opt.none?b('none','None','','<i class="sw-none" aria-hidden="true"></i>'):''}${pal.map(p=>b(p.hex,p.name,p.hex)).join('')}`
+    +(rec.length?`<span class="sw-sep" aria-hidden="true"></span>`+rec.map(h=>`<button type="button" class="sw-btn sw-recent" data-c="${h}" aria-pressed="${String(recHit&&h===up)}" aria-label="Recent colour ${h}" title="Recent ${h}" style="background:${h}"></button>`).join(''):'')
     +`<label class="sw-btn sw-custom" title="Custom colour" aria-pressed="${custom}"${custom?` style="background:${esc(cur)}"`:''}><span class="sr-only">Custom colour</span><input type="color" data-cpick value="${custom?esc(cur):'#888888'}"></label>`
     +`<input type="text" class="hex" data-chex maxlength="7" placeholder="#hex" aria-label="Custom colour (hex)" value="${custom?esc(cur):''}" spellcheck="false" autocomplete="off"></div>`;
 }
@@ -454,6 +469,7 @@ function wirePalettes(root,onPick){
   root.addEventListener('input',e=>{ const t=e.target, pal=t.closest&&t.closest('[data-pal]'); if(!pal) return;
     if(t.matches('[data-cpick]')){ const v=normHex(t.value); pal.querySelector('[data-chex]').value=v; onPick(pal.dataset.pal,v); }
     else if(t.matches('[data-chex]')){ const v=normHex(t.value); if(v&&v!=='none'){ pal.querySelector('[data-cpick]').value=v; onPick(pal.dataset.pal,v); } } });
+  root.addEventListener('change',e=>{ const t=e.target; if(t.closest&&t.closest('[data-pal]')&&t.matches('[data-cpick],[data-chex]')) addRecentColour(t.value); });
 }
 /* refresh which swatch is pressed without rebuilding (so an open colour picker isn't closed) */
 function syncPalette(el,cur){ if(!el) return; cur=cur==null?'':String(cur); const up=cur.toUpperCase(); let hit=false;
@@ -560,17 +576,18 @@ async function tool(cfg){
   <div class="banner" id="designBar" hidden></div>
   <section class="sheet" id="sh-photo" data-sheet="photo" aria-labelledby="h-photo">${sheetHead('photo',nPhotos>1&&!cfg.pages?'Photos':'Photo',step++)}<div class="sheet-body">`;
   if(cfg.photos.min&&cfg.photos.max>cfg.photos.min){
-    html+=`<span class="lbl">How many photos</span><div class="row" role="group" aria-label="How many photos">`;
+    html+=`<span class="lbl">How many photos</span><div class="row seg-grid" style="--c:${segCols(Array(cfg.photos.max-cfg.photos.min+1).fill({}))}" role="group" aria-label="How many photos">`;
     for(let k=cfg.photos.min;k<=cfg.photos.max;k++) html+=`<button type="button" class="seg" data-count="${k}" aria-pressed="false">${k}</button>`;
     html+=`</div>`;
   }
   html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this slide':''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div></div></section>`;
-  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
+  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
-    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button><button type="button" class="mini" id="resetLayout" title="Put every layer back where it started">${ICON.undo} Reset</button></div>
-    <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul></div></section>
+    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button></div>
+    <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul>
+    <button type="button" class="link reset-layout" id="resetLayout">${ICON.undo} Put everything back where it started</button></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
     <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
     <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
@@ -690,7 +707,7 @@ async function tool(cfg){
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
-      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
+      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid" style="--c:${segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='tiles') inner=`<span class="lbl">${esc(f.label)}</span><div class="tiles-ed" data-tiles="${f.id}"></div><button type="button" class="mini" data-addtile="${f.id}">${ICON.plus} ${esc(f.addLabel||'Add one')}</button>${f.hint?`<span class="small">${esc(f.hint)}</span>`:''}`;
@@ -1223,7 +1240,7 @@ async function tool(cfg){
 
   /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
   function assetThumb(a){
-    if(a.file) return `<img alt="" src="${esc(assetUrl(a))}"${a.tint?' data-logo':''} loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
+    if(a.file) return `<img alt="" src="${esc(assetPrevUrl(a))}"${a.tint?' data-logo':''} loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
     const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); drawShape(x,a,a.w,a.h,getComputedStyle(document.body).color||'#161210');
     return `<img alt="" src="${c.toDataURL()}">`;
   }
@@ -1248,7 +1265,7 @@ async function tool(cfg){
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
   onAssetLoad=()=>render();
 
-  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); });
+  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); toast('Layout reset. Tap undo to bring it back.'); });
 
   /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
   const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -1384,6 +1401,7 @@ async function tool(cfg){
     const sel=S.sel; S.sel=null;
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
+    progress(.02,'Getting the HD pictures…'); await assetsHD();   // saving uses the HD can cut-outs, never the light preview copies
     const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
     try{
       for(const [li,pg] of list.entries()){
@@ -1764,7 +1782,7 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={ROOT,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
+const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};

@@ -54,9 +54,24 @@ BD.util={kind,isFrame,isObj,isLocked,frames,items,fsize,wrect,unionRect,frameOf,
 
 /* ---------- photos ---------- */
 const IMGS=new Map(); BD.IMGS=IMGS;
-async function getImg(id){ if(IMGS.has(id)) return IMGS.get(id);
-  try{ if(String(id).startsWith('brand:')){ const a=L.brandAssets().find(x=>x.id===id.slice(6)); if(!a) return null; const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=L.assetUrl(a); }); const v={el:im,w:im.width,h:im.height}; IMGS.set(id,v); return v; }
+/* brand pictures (HD can cut-outs): the light copy (a.prev) shows at once; the HD file loads quietly behind it and
+   replaces it on screen. Sizes stay the HD ones, so nothing moves. Saving waits for every HD file (hdReady). */
+const HD=new Map();
+const loadEl=src=>new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; });
+function loadHD(id,a,v){ if(HD.has(id)) return HD.get(id);
+  const p=loadEl(L.assetUrl(a)).then(el=>{ v.el=el; v.w=el.width; v.h=el.height; v.hd=true; main.find(n=>n.getAttr&&n.getAttr('imgId')===id).forEach(n=>{ if(n.image){ n.image(el); applyFx(n); } }); main.batchDraw(); }).catch(()=>{});
+  HD.set(id,p); return p; }
+async function getImg(id,opt){ opt=Object.assign({preview:!!BD.previewOnly},typeof opt==='object'?opt:{}); if(IMGS.has(id)){ const v=IMGS.get(id); if(!opt.preview&&!v.hd&&v.asset) loadHD(id,v.asset,v); return v; }
+  try{ if(String(id).startsWith('brand:')){ const a=L.brandAssets().find(x=>x.id===id.slice(6)); if(!a) return null;
+      let el=null; if(a.prev){ try{ el=await loadEl(L.assetPrevUrl(a)); }catch(_){} }
+      if(!el){ el=await loadEl(L.assetUrl(a)); const v={el,w:el.width,h:el.height,hd:true}; IMGS.set(id,v); return v; }
+      /* sizes from the HD file's shape: the light copy has the same proportions */
+      const v={el,w:el.width,h:el.height,asset:a,hd:false}; IMGS.set(id,v); if(!opt.preview) loadHD(id,a,v); return v; }
     const blob=await L.idb.get('bimg:'+id); if(!blob) return null; const el=await L.loadFile(blob); const v={el,w:el.width,h:el.height}; IMGS.set(id,v); return v; }catch(_){ return null; } }
+/* before saving: every brand picture on the pages is the HD file */
+async function hdReady(){ const ids=new Set(); main.find('Image').forEach(n=>{ const id=n.getAttr('imgId'); if(id) ids.add(id); });
+  await Promise.all([...ids].map(id=>{ const v=IMGS.get(id); return v&&v.asset&&!v.hd?loadHD(id,v.asset,v):null; })); }
+BD.hdReady=hdReady;
 async function addPhotoFile(file){ const id=uid(); const el=await L.loadFile(file); IMGS.set(id,{el,w:el.width,h:el.height}); S.imgs.add(id); await L.idb.put('bimg:'+id,file); return id; }
 BD.getImg=getImg; BD.addPhotoFile=addPhotoFile;
 /* cover crop: a photo always fills its box; zoom and the focus point move it inside */
@@ -363,7 +378,7 @@ function renderFrame(f,scale){ const s=fsize(f), vis=f.visible(), sel=tr.nodes()
   stage.scale({x:1,y:1}); stage.position({x:0,y:0}); const undo=sharpen(f,scale);
   try{ return f.toCanvas({x:f.x(),y:f.y(),width:s.w,height:s.h,pixelRatio:scale}); }
   finally{ undo(); stage.scale({x:old.k,y:old.k}); stage.position({x:old.x,y:old.y}); f.visible(vis); tr.nodes(sel); main.batchDraw(); } }
-async function exportFrame(f,opt){ opt=opt||{}; const s=fsize(f), want=opt.scale||2;
+async function exportFrame(f,opt){ opt=opt||{}; await hdReady(); const s=fsize(f), want=opt.scale||2;
   for(const k of [want,1.5,1].filter((v,i,a)=>v<=want&&a.indexOf(v)===i)){ if(s.w*s.h*k*k>MAX_PX) continue; let c=null;
     try{ c=renderFrame(f,k); const blob=await L.canvasBlob(c,opt.type||'image/png'); c.width=c.height=0; if(blob&&blob.size>1000) return {blob,scale:k}; }catch(_){ if(c) c.width=c.height=0; } }
   throw new Error('Your phone could not make the image. Close other apps or tabs and try again.'); }
