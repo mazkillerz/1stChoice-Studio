@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.2.0';
+const VERSION='0.3.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -536,6 +536,7 @@ async function tool(cfg){
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
     <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
+    <div class="banner ready" id="readyBar" hidden><span id="readyTxt">Your photo is in.</span><span class="banner-btns"><button type="button" class="mini" id="readyEdit">Change words</button><button type="button" class="mini solid" id="readySave">Looks good · Save</button></span></div>
     <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
@@ -1478,6 +1479,12 @@ async function tool(cfg){
     if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; $('teamOnly').hidden=team; syncSaveOpts(); $('saveTxt').textContent='Save again';
   }
   $('save').addEventListener('click',()=>doSave());
+  /* Quick start: "Looks good · Save" saves straight away (one tap); Change words opens Words; any other tab just hides the bar */
+  $('readySave').addEventListener('click',()=>{ $('readyBar').hidden=true; resetSaveSheet(); doSave(); });
+  if(!sheetEl('words')) $('readyEdit').hidden=true;
+  $('readyEdit').addEventListener('click',()=>{ $('readyBar').hidden=true; openSheet('words'); focusSheet('words'); });
+  $('bar').addEventListener('click',e=>{ if(e.target.closest('.tab')) $('readyBar').hidden=true; });
+  document.addEventListener('input',()=>{ $('readyBar').hidden=true; });   // they started editing (desktop has no tab bar)
   if(PG) $('saveThis').addEventListener('click',()=>doSave(S.page));
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
   /* pages (carousels): one page for ordinary stories */
@@ -1575,7 +1582,7 @@ async function tool(cfg){
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
-      status(fs.length>1?'Your photos are in. Check the words, then Save.':'Your photo is in. Check the words, then Save.',4000); }
+      $('readyTxt').textContent=fs.length>1?'Your photos are in.':'Your photo is in.'; $('readyBar').hidden=false; }
     else status('That photo did not come through. Tap Add your photo.'); }
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font

@@ -2,6 +2,21 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 3 · 0.3.0 · 24 Oct 2026 (team session)
+
+**Worked**
+- Reusing the existing `.banner` + `.mini` pieces for the ready bar meant no new look to design; one CSS rule moved it from the top to the bottom (near the thumb, clear of the headline).
+- Calling the existing `resetSaveSheet()` + `doSave()` from the new button kept every save rule (missing-photo check, 2× PNG, fallbacks) in one place.
+- A throwaway screenshot script in the scratchpad gave the before/after shots for a flow `tests/shot.mjs` can't reach (Quick start needs a file upload).
+
+**Didn't work / watch out**
+- A button label with an icon wrapped to two lines at 390px; drop the icon or shorten the text and check the shot.
+- Desktop has no bottom tab bar, so "hide when they tap a tab" does nothing there; also hide on the first `input` event.
+- tapscan reports controls that already have a hidden `::after` hit area (swatches). Check the CSS before "fixing" a finding.
+
+**Process tweaks**
+- Count taps in the What's New note (two → one) so the gain is visible to the team.
+
 ## Session 2 · 0.2.0 · 24 Oct 2026 (Mazoon session)
 
 **Worked**

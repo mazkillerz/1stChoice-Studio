@@ -8,6 +8,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Anything above the first `##` (this intro) is not shown.
 
+## 0.3.0 · 24 Oct 2026
+
+### Save in one tap after Quick start
+After you start a Restock, Photo story or Collage from a photo on the home page, a bar under the story says "Your photo is in." Tap Looks good · Save and the picture saves straight away, or Change words to edit first. That is one tap instead of two (Save, then Save again). The bar goes away as soon as you start editing.
+![before](assets/whatsnew/0.3.0-quicksave-before.jpg)
+![after](assets/whatsnew/0.3.0-quicksave-after.jpg)
+
+### Bigger Text place pad
+The 9-spot pad that sets where the words sit on a Photo story is bigger on phones, so each spot is a full finger wide.
+![before](assets/whatsnew/0.3.0-place-before.jpg)
+![after](assets/whatsnew/0.3.0-place-after.jpg)
+
 ## 0.2.0 · 24 Oct 2026
 
 ### Highlight covers
