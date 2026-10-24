@@ -91,29 +91,22 @@ function getPins(){ let p=store(PINS_KEY);
   return p.filter(id=>TOOLS[id]); }
 function setPin(id,on){ const p=new Set(getPins()); if(on) p.add(id); else p.delete(id); store(PINS_KEY,Object.keys(TOOLS).filter(t=>p.has(t))); return !!on; }
 
-/* ---------- Fresh look (preview): livelier motion, soft depth and one bold accent colour, on top of the same neutral design.
-   Off by default; each device keeps its own choice. Turn it on from What's New, by searching "fresh look", or with ?look=fresh (?look=classic turns it off). ---------- */
-const LOOK_KEY='studio:look';
-const fresh=()=>document.documentElement.dataset.look==='fresh';
-function setLook(on){ store(LOOK_KEY,on?'fresh':null); if(on) document.documentElement.dataset.look='fresh'; else delete document.documentElement.dataset.look; pageMotion(); }
+/* ---------- the look: motion, soft depth and one bold accent (the "fresh look", the default for everyone since 0.7.0) ---------- */
+const fresh=()=>true;
 /* smooth page changes: pages fade into each other where the browser can (cross-page view transitions); elsewhere the new page fades in */
-function pageMotion(){ let st=document.getElementById('vtStyle'); const on=fresh();
-  if(on&&!st){ st=document.createElement('style'); st.id='vtStyle'; st.textContent='@view-transition{navigation:auto}'; document.head.appendChild(st); }
-  if(!on&&st) st.remove();
-  document.documentElement.classList.toggle('no-vt',on&&!('onpagereveal' in window)); }
-(function(){ try{ const q=new URLSearchParams(location.search).get('look'); if(q==='fresh'||q==='classic') store(LOOK_KEY,q==='fresh'?'fresh':null); }catch(_){}
-  if(store(LOOK_KEY)==='fresh') document.documentElement.dataset.look='fresh'; else delete document.documentElement.dataset.look;   // the home page's head may have set it early
-  pageMotion(); })();
-/* haptics (fresh look only): a short buzz on Android; on iPhone (iOS 18+) the system switch tick, which is the only haptic Safari allows */
+(function(){ try{ localStorage.removeItem('studio:look'); }catch(_){}   // the old per-device preview switch
+  const st=document.createElement('style'); st.id='vtStyle'; st.textContent='@view-transition{navigation:auto}'; document.head.appendChild(st);
+  document.documentElement.classList.toggle('no-vt',!('onpagereveal' in window)); })();
+/* haptics: a short buzz on Android; on iPhone (iOS 18+) the system switch tick, which is the only haptic Safari allows */
 let hapEl=null;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-function haptic(kind){ if(!fresh()) return;
+function haptic(kind){
   try{ if(navigator.vibrate){ navigator.vibrate(kind==='success'?[12,70,22]:kind==='warn'?[30,60,30]:8); return; } }catch(_){}
   if(!isIOS()) return;
   if(!hapEl){ hapEl=document.createElement('label'); hapEl.setAttribute('aria-hidden','true'); hapEl.style.cssText='position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none'; hapEl.innerHTML='<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(hapEl); }
   hapEl.click(); if(kind==='success') setTimeout(()=>hapEl&&hapEl.click(),110); }
-/* a satisfying "saved": a check that pops over the preview with a soft ring, plus a haptic (fresh look only) */
-function celebrate(){ if(!fresh()) return; haptic('success');
+/* a satisfying "saved": a check that pops over the preview with a soft ring, plus a haptic */
+function celebrate(){ haptic('success');
   const host=document.querySelector('.phone')||document.querySelector('.cr-stage')||document.body, b=document.createElement('div');
   b.className='save-burst'+(host===document.body?' fixed':''); b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
   host.appendChild(b); setTimeout(()=>b.remove(),1500); }
@@ -1772,8 +1765,6 @@ async function home(){
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
              :{kind:'action',id:'act:signin',title:'Sign in',sub:'See and save your team’s designs',keys:'sign in log in login account team password saved designs',icon:ICON.user,run:()=>$('acct').click()});
     a.push({kind:'action',id:'act:new',title:'What’s new',sub:'Studio '+VERSION+' · every update',keys:"what's new whats news update updates changelog version release notes",icon:ICON.sparkle,href:ROOT+'whats-new.html'});
-    a.push({kind:'action',id:'act:look',title:fresh()?'Turn off the fresh look':'Try the fresh look',sub:fresh()?'Back to the classic look on this phone':'Preview: motion, depth and one bold colour. Only on this phone.',keys:'fresh look new design theme preview motion animation colour color haptics vibration style appearance classic',icon:ICON.look,
-      run:()=>{ setLook(!fresh()); haptic('tick'); hubToast(fresh()?'Fresh look on. Search “fresh look” to turn it off.':'The classic look is back.'); }});
     a.push({kind:'action',id:'act:view',title:toolsView==='list'?'Show your tools as a grid':'Show your tools as a list',sub:'How your pinned tools look',keys:'view layout grid list tools display',icon:toolsView==='list'?ICON.grid:ICON.list,run:()=>{ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); }});
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
@@ -1937,7 +1928,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
-  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,setLook,getPins,setPin,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,getPins,setPin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
