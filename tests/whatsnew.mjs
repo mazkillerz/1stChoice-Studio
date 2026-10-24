@@ -14,7 +14,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(vp.name+': '+e));
   const real=()=>pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length);
-  await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear()); await pg.reload(); await pg.waitForTimeout(800);
+  /* since 0.6.0 Start from a photo shows pinned tools only: pin the three photo-first tools (what a phone that used Studio before gets) */
+  await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:pins','["restock","photo-story","collage"]'); }); await pg.reload(); await pg.waitForTimeout(800);
   ok(vp.name+': Quick start shows Restock first',await pg.isVisible('#quickSec')&&(await pg.textContent('.qbtn:first-child b'))==='Restock');
   const tb=await pg.$$eval('.qbtn',l=>l.map(x=>x.getBoundingClientRect()).every(r=>r.height>=48&&r.width>=48&&r.right<=innerWidth+1));
   ok(vp.name+': Quick start buttons are finger-sized and fit the screen',tb);
@@ -33,7 +34,10 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   ok(vp.name+': both quick drafts are in Continue editing',await pg.locator('.ccard').count()===2);
   await pg.click('#wnBtn'); await pg.waitForURL(/whats-new/); await pg.waitForTimeout(1200);
   const n=await pg.locator('.wn-card').count(); ok(vp.name+': What\'s New shows the cards',n>=3,n+' cards');
+  /* screenshots are lazy-loaded: scroll through the page (it grows every version) so each one gets its turn */
+  await pg.evaluate(async()=>{ for(let y=0;y<=document.documentElement.scrollHeight;y+=500){ scrollTo(0,y); await new Promise(r=>setTimeout(r,50)); } }); await pg.waitForTimeout(900);
   ok(vp.name+': screenshots load',await pg.$$eval('.wn-card img',l=>l.length>0&&l.every(i=>i.complete&&i.naturalWidth>0)));
+  await pg.evaluate(()=>scrollTo(0,0));
   await pg.locator('.wn-shot').first().click(); await pg.waitForTimeout(300);
   ok(vp.name+': a screenshot opens large',await pg.evaluate(()=>document.getElementById('wnDlg').open));
   await pg.keyboard.press('Escape');

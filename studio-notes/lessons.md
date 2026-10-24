@@ -16,6 +16,7 @@ What worked, what failed, and process tweaks. Newest session first.
 - The search star and the page's pin code both buzzed on one tap. When a module and the page react to the same action, only one gives the feedback.
 - The tool page removes `?quick=1` after loading the photo: check the ready bar, not the URL.
 - Three old suites expected every tool on the home page (`#toolGrid`). A home-page change means grepping every suite for `#toolGrid`, `.tgroup`, `.qbtn`.
+- `whatsnew.mjs` broke twice for reasons outside the code: Collage's Quick start button only exists when Collage is pinned, and old screenshots far down the growing page are lazy-loaded. Tests now pin the photo-first tools and scroll through What's New before checking images.
 
 **Process tweaks**
 - Screenshots with real fonts in the sandbox: launch Chromium with `proxy:{server:process.env.HTTPS_PROXY}` and the context with `ignoreHTTPSErrors:true`.
