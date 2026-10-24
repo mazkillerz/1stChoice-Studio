@@ -138,17 +138,18 @@ function colorTargets(n){ const k=kind(n), out=[];
   return out; }
 function swatches(key,cur,o){ o=o||{}; const c=String(cur||'').toLowerCase(); let hit=false;
   const sw=pal().map(p=>{ const on=!!c&&p.hex.toLowerCase()===c.slice(0,7); if(on) hit=true; return `<button type="button" class="cr-sw" style="--c:${p.hex}" data-k="${key}" data-c="${p.hex}" aria-label="${esc(p.name)}" title="${esc(p.name)}" aria-pressed="${on}"></button>`; }).join('');
-  return `<div class="cr-sws">${sw}${o.none?`<button type="button" class="cr-sw none" data-k="${key}" data-c="" aria-label="None" title="None" aria-pressed="${!c}"></button>`:''}<label class="cr-sw custom" title="Custom colour"><input type="color" data-k="${key}" value="${hex6(cur||'#000000')}" aria-label="Custom colour"></label></div>`; }
+  const rec=(L.recentColours?L.recentColours():[]).map(h=>{ const on=!hit&&!!c&&h.toLowerCase()===c.slice(0,7); if(on) hit=true; return `<button type="button" class="cr-sw recent" style="--c:${h}" data-k="${key}" data-c="${h}" aria-label="Recent colour ${h}" title="Recent ${h}" aria-pressed="${on}"></button>`; }).join('');
+  return `<div class="cr-sws">${sw}${rec?'<span class="cr-sw-sep" aria-hidden="true"></span>'+rec:''}${o.none?`<button type="button" class="cr-sw none" data-k="${key}" data-c="" aria-label="None" title="None" aria-pressed="${!c}"></button>`:''}<label class="cr-sw custom" title="Custom colour"><input type="color" data-k="${key}" value="${hex6(cur||'#000000')}" aria-label="Custom colour"></label></div>`; }
 function openColor(){ const list=sel(); if(!list.length) return; const first=list.find(n=>colorTargets(n).length); if(!first) return; const tg=colorTargets(first);
   const body=selSheet('color','Colour',tg.map((t,i)=>`<span class="lbl">${esc(t.label)}</span>${swatches(i,typeof t.get()==='string'?t.get():'',t)}${t.width?`<div class="cr-row"><span class="lbl">Outline width</span><input type="range" min="0" max="60" step="1" value="${Math.round(t.node.strokeWidth()||0)}" data-sw="${i}"></div>`:''}`).join('')+(list.length>1?'<p class="small">Changes every selected thing that has this part.</p>':''),openColor);
   const apply=(i,v)=>{ const label=tg[i].label; list.forEach(n=>{ const t=colorTargets(n).find(x=>x.label===label)||(colorTargets(n).length===1?colorTargets(n)[0]:null); if(t) t.set(v); }); after(); };
   body.addEventListener('click',e=>{ const b=e.target.closest('.cr-sw[data-c]'); if(!b) return; apply(+b.dataset.k,b.dataset.c); BD.changed(); body.querySelectorAll(`.cr-sw[data-k="${b.dataset.k}"]`).forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
   body.addEventListener('input',e=>{ const t=e.target; if(t.type==='color') apply(+t.dataset.k,t.value); if(t.dataset.sw!=null){ list.forEach(n=>{ if(n.strokeWidth&&kind(n)!=='group') n.strokeWidth(+t.value); }); after(); } });
-  body.addEventListener('change',()=>BD.changed()); }
+  body.addEventListener('change',e=>{ if(e.target.type==='color'&&L.addRecentColour) L.addRecentColour(e.target.value); BD.changed(); }); }
 function openPageBg(){ const f=BD.activeFrame(); if(!f) return; const bg=U.frameBg(f); reopen=null;
   const body=openSheet('pagebg','Page background',swatches(0,typeof bg.fill()==='string'?bg.fill():'#ffffff')+'<p class="small">White is the main look; Cream is the second look. Keep one look per design.</p>',{tool:true});
   body.addEventListener('click',e=>{ const b=e.target.closest('.cr-sw[data-c]'); if(!b) return; bg.fill(b.dataset.c||'#ffffff'); BD.main.batchDraw(); BD.changed(); body.querySelectorAll('.cr-sw[data-c]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
-  body.addEventListener('input',e=>{ if(e.target.type==='color'){ bg.fill(e.target.value); BD.main.batchDraw(); } }); body.addEventListener('change',()=>BD.changed()); }
+  body.addEventListener('input',e=>{ if(e.target.type==='color'){ bg.fill(e.target.value); BD.main.batchDraw(); } }); body.addEventListener('change',e=>{ if(e.target.type==='color'&&L.addRecentColour) L.addRecentColour(e.target.value); BD.changed(); }); }
 
 /* Font */
 const MORE=(L.MORE_FONTS||[]).map(f=>f.family);
@@ -275,12 +276,12 @@ function openAdd(){ reopen=null; const as=L.brandAssets();
   const body=openSheet('add','Add',`<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
     <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span>${esc(e.label)}</button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
-    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
+    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
     <span class="lbl" id="j-shapes">Shapes</span><div class="cr-icons">${BD.SHAPES.map(s=>`<button type="button" data-shape="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id]||native.rect)}</button>`).join('')}</div>
     <span class="lbl" id="j-lines">Lines</span><div class="cr-icons">${BD.STROKES.map(s=>`<button type="button" data-stroke="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id],true)}</button>`).join('')}</div>
     <span class="lbl" id="j-icons">Icons</span><div class="cr-icons">${CR.allIcons().map(i=>`<button type="button" data-icon="${i.id}" aria-label="${esc(i.id.replace(/-/g,' '))}" title="${esc(i.id.replace(/-/g,' '))}">${svg(`<path d="${i.d}"/>`,24)}</button>`).join('')}</div>
     <span class="lbl" id="j-emoji">Emoji</span><div class="cr-icons">${String(BD.EMOJI||'').split(/\s+/).filter(Boolean).map(e=>`<button type="button" data-emoji="${e}" style="font-size:24px">${e}</button>`).join('')}</div>`);
-  body.querySelectorAll('[data-prev]').forEach(sp=>{ const e=CR.element(sp.dataset.prev); if(e&&e.asset){ const a=as.find(x=>x.id===e.asset); if(a) sp.innerHTML=`<img alt="" src="${L.assetUrl(a)}">`; return; } const u=CR.preview(sp.dataset.prev); if(u) sp.innerHTML=`<img alt="" src="${u}">`; });
+  body.querySelectorAll('[data-prev]').forEach(sp=>{ const e=CR.element(sp.dataset.prev); if(e&&e.asset){ const a=as.find(x=>x.id===e.asset); if(a) sp.innerHTML=`<img alt="" src="${L.assetPrevUrl(a)}">`; return; } const u=CR.preview(sp.dataset.prev); if(u) sp.innerHTML=`<img alt="" src="${u}">`; });
   body.addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; const d=b.dataset, f=BD.activeFrame(), w=f?fsize(f).w:1080, c=CR.colors();
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
@@ -306,17 +307,25 @@ $('crSheetB').addEventListener('click',e=>{ const ly=$('crLy'); if(!ly||!ly.cont
 
 /* ---------- templates ---------- */
 const TH=new Map(); let thumbChain=Promise.resolve();
-const thKey=def=>'cr:th2:'+(B&&B.id)+':'+def.id+':'+JSON.stringify(def).length;
+const hash=t=>{ let h=5381; for(let i=0;i<t.length;i++) h=(h*33^t.charCodeAt(i))>>>0; return h.toString(36); };
+const TPL_LOOK='p3';   // bump when the template drawing code (create-templates.js / create-lib.js) changes, so kept previews are redrawn
+const thKey=def=>'cr:th:'+TPL_LOOK+':'+(B&&B.id)+':'+def.id+':'+hash(JSON.stringify(def));
+/* template previews are drawn once, then kept on this phone (IndexedDB) so the start sheet opens instantly next time.
+   A preview is only kept when the brand fonts had loaded, so an offline first visit never sticks with fallback letters. */
+const fontsReady=()=>{ try{ const f=B&&B.fonts; return !f||[f.display,f.body].filter(Boolean).every(n=>document.fonts.check('40px "'+n+'"')); }catch(_){ return false; } };
 function tplThumb(def){ if(TH.has(def.id)) return Promise.resolve(TH.get(def.id));
-  try{ const c=sessionStorage.getItem(thKey(def)); if(c){ TH.set(def.id,c); return Promise.resolve(c); } }catch(_){}
-  const p=thumbChain.then(async()=>{ if(TH.has(def.id)) return TH.get(def.id); let url=null, made=[];
-    try{ made=await CR.buildTemplate(def.id,{at:{x:-200000,y:-200000}}); made.forEach(f=>f.visible(false)); const f=made[0]; if(f){ const s=fsize(f), c=BD.renderFrame(f,260/s.w); url=c.toDataURL('image/jpeg',.82); c.width=c.height=0; } }catch(err){ console.warn(err); }
-    made.forEach(f=>f.destroy()); BD.main.batchDraw(); TH.set(def.id,url); try{ if(url) sessionStorage.setItem(thKey(def),url); }catch(_){} return url; });
+  const p=thumbChain.then(async()=>{ if(TH.has(def.id)) return TH.get(def.id);
+    let url=null; try{ url=await L.idb.get(thKey(def)); }catch(_){}
+    if(url){ TH.set(def.id,url); return url; }
+    await new Promise(r=>setTimeout(r,0));   // let the sheet paint and stay responsive between previews
+    let made=[];
+    try{ BD.previewOnly=true; made=await CR.buildTemplate(def.id,{at:{x:-200000,y:-200000}}).finally(()=>{ BD.previewOnly=false; }); made.forEach(f=>f.visible(false)); const f=made[0]; if(f){ const s=fsize(f), c=BD.renderFrame(f,260/s.w); url=c.toDataURL('image/jpeg',.82); c.width=c.height=0; } }catch(err){ console.warn(err); }
+    made.forEach(f=>f.destroy()); BD.main.batchDraw(); TH.set(def.id,url); if(url&&fontsReady()) L.idb.put(thKey(def),url); return url; });
   thumbChain=p.catch(()=>{}); return p; }
 async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.start, list=CR.templates();
   const body=openSheet('templates',start?'What are you making?':'Templates',
     `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
-     <span class="lbl">Templates</span>${list.length?`<div class="cr-tpls">${list.map(d=>{ const s=CR.templateSize(d); return `<button type="button" class="cr-tpl" data-tpl="${esc(d.id)}"><span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span>${esc(d.label)}</button>`; }).join('')}</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
+     <span class="lbl">Templates</span>${list.length?`<div class="cr-tpls">${list.map(d=>{ const s=CR.templateSize(d); return `<button type="button" class="cr-tpl" data-tpl="${esc(d.id)}"><span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span><span class="nm">${esc(d.label)}</span></button>`; }).join('')}</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
   body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl]'), tt=e.target.closest('[data-team]'), si=e.target.closest('#crTeamSign');
@@ -331,7 +340,7 @@ async function paintTeam(){ const box=$('crTeamT'); if(!box) return;
     const all=(await C.designs(B.id)).filter(d=>d.tool===TOOL&&d.kind==='template'); if(!$('crTeamT')) return;
     if(!all.length){ box.innerHTML='<div class="cr-empty">No team templates yet. Make a design, then in Save choose “Save as a team template”.</div>'; return; }
     const urls=await C.fileUrls(all.map(d=>d.thumb_path)).catch(()=>({}));
-    box.innerHTML=`<div class="cr-tpls">${all.map(d=>`<button type="button" class="cr-tpl" data-team="${esc(d.id)}"><span class="th">${urls[d.thumb_path]?`<img alt="" src="${urls[d.thumb_path]}">`:''}</span><span dir="auto">${esc(d.name)}</span></button>`).join('')}</div>`;
+    box.innerHTML=`<div class="cr-tpls">${all.map(d=>`<button type="button" class="cr-tpl" data-team="${esc(d.id)}"><span class="th">${urls[d.thumb_path]?`<img alt="" src="${urls[d.thumb_path]}">`:''}</span><span class="nm" dir="auto">${esc(d.name)}</span></button>`).join('')}</div>`;
   }catch(_){ box.innerHTML='<div class="cr-empty">Team templates could not load. Check the connection.</div>'; } }
 const isBlank=()=>frames().length<=1&&frames().every(f=>items(f).filter(n=>!n.hasName('frame-bg')).length===0);
 function chooseMode(run){ if(isBlank()){ closeSheet(true); run('replace'); return; }

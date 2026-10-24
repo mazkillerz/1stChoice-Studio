@@ -67,14 +67,15 @@ Studio.registerBrand({
   /* Assets people can add to any story as movable layers (Add asset). Files live in this folder.
      Cans: always the HD cut-outs (transparent PNG). A file that isn't here yet shows as "Not added yet".
      No cat mascot stickers unless the owner asks for them. */
+  /* prev: a light copy (~1000px WebP) for previews and on-screen editing; saving always uses the HD file */
   assets:[
     {id:'logo',label:'Logo',file:'logo.png',group:'Logo',tint:true},
-    {id:'can-classic',label:'Classic can',file:'assets/classic_can.png',group:'Cans (HD cut-outs)'},
-    {id:'can-classic-shadow',label:'Classic + shadow',file:'assets/classic_can_shadow.png',group:'Cans (HD cut-outs)'},
-    {id:'can-passion',label:'Passion Fruit can',file:'assets/passion_can.png',group:'Cans (HD cut-outs)'},
-    {id:'can-passion-shadow',label:'Passion + shadow',file:'assets/passion_can_shadow.png',group:'Cans (HD cut-outs)'},
-    {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',group:'Cans (HD cut-outs)'},
-    {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',group:'Cans (HD cut-outs)'}
+    {id:'can-classic',label:'Classic can',file:'assets/classic_can.png',prev:'assets/prev/classic_can.webp',group:'Cans (HD cut-outs)'},
+    {id:'can-classic-shadow',label:'Classic + shadow',file:'assets/classic_can_shadow.png',prev:'assets/prev/classic_can_shadow.webp',group:'Cans (HD cut-outs)'},
+    {id:'can-passion',label:'Passion Fruit can',file:'assets/passion_can.png',prev:'assets/prev/passion_can.webp',group:'Cans (HD cut-outs)'},
+    {id:'can-passion-shadow',label:'Passion + shadow',file:'assets/passion_can_shadow.png',prev:'assets/prev/passion_can_shadow.webp',group:'Cans (HD cut-outs)'},
+    {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',prev:'assets/prev/cans_pair.webp',group:'Cans (HD cut-outs)'},
+    {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)'}
   ],
   /* Create: the templates offered for this brand. Layouts live in tools/create-templates.js (no wording there);
      the words here come only from the approved phrases above. `write` (اكتب هنا) marks a spot for your own words. */

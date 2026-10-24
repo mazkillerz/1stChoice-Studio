@@ -126,6 +126,7 @@ body.sheet-open .cta-photo{display:none}
 .swatch{width:30px;height:46px;border-radius:5px;border:1px solid var(--line);display:block;position:relative;overflow:hidden}
 .swatch i{position:absolute;background:#b8a58f}
 .add-row{display:flex;gap:var(--sp-2)}
+.reset-layout{display:inline-flex;align-items:center;gap:6px;margin-top:var(--sp-3);min-height:var(--tap);color:var(--muted)}.reset-layout svg{width:16px;height:16px}
 .add-row .mini{flex:1 1 0;padding:0 10px;min-width:0;white-space:nowrap}
 
 /* inspector */
@@ -142,6 +143,7 @@ body.sheet-open .cta-photo{display:none}
 /* one brand palette in every colour picker: swatches + Custom (colour wheel + hex) */
 .pal{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 2px}
 .pal .sw-btn{flex:none}
+.sw-sep{width:1px;height:28px;background:var(--line);margin:0 2px}
 .sw-btn .sw-none{position:absolute;inset:8px;border-radius:50%;background:linear-gradient(135deg,transparent 45%,var(--danger) 45%,var(--danger) 55%,transparent 55%)}
 .sw-custom{display:inline-flex;align-items:center;justify-content:center;background:conic-gradient(#e94b4b,#f6c040,#5fc06a,#3b9be0,#9b5de5,#e94b4b);overflow:visible}
 .sw-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
@@ -183,7 +185,13 @@ body.sheet-open .cta-photo{display:none}
 
 /* save sheet */
 .save-sheet .sheet-body{gap:var(--sp-3)}
-@media (min-width:821px){.save-sheet{position:sticky;bottom:12px;z-index:3;box-shadow:var(--shadow)}}
+@media (min-width:821px){.save-sheet{position:sticky;bottom:12px;z-index:3;box-shadow:var(--shadow)}
+  /* computer: a compact save card so it covers less of the steps above it */
+  .save-sheet .sheet-body{gap:var(--sp-2)}
+  .save-sheet .save-opts{display:grid;grid-template-columns:1fr 1fr}
+  .save-sheet .save-opts .team-box{grid-column:1/-1}
+  .save-sheet .opt-row{padding-block:8px}
+  .save-sheet .opt-txt small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .progress{display:flex;flex-direction:column;gap:6px;align-items:stretch;font-weight:700;font-size:var(--fs-s);color:var(--muted);text-align:center}
 .progress-bar{height:8px;border-radius:var(--r-pill);background:var(--chip);overflow:hidden}
 .progress-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:inherit;transition:width .35s var(--ease)}
@@ -454,6 +462,8 @@ html{scroll-padding-top:8px}
 .seg-ic{display:flex;color:var(--muted)}
 .seg[aria-pressed="true"] .seg-ic{color:var(--fg)}
 [data-seg] .seg.has-ic{flex:1 1 84px}
+.row.seg-grid{display:grid;grid-template-columns:repeat(var(--c,3),minmax(0,1fr))}
+.row.seg-grid .seg{min-width:0}
 
 /* text place picker: a small story you tap where the words should go */
 .place-pick{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:4px;width:132px;aspect-ratio:9/14;padding:6px;border-radius:14px;background:var(--chip);border:1px solid var(--line)}
