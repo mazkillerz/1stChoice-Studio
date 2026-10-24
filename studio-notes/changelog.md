@@ -4,13 +4,55 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 - `## <version> · <date>` starts a version (newest first).
 - `### <title>` starts a card in that version.
-- Directly under the title, an optional type line: `type: feature` (a new tool or ability), `type: fix` (something was wrong, hard or broken and now is not) or `type: design` (how it looks or is laid out). A card without it counts as a feature. The What's New page uses it for the filter chips (All, New features, Fixes, Design) and a small tag on each card.
+- Directly under the title, an optional type line: `type: feature` (a new tool or ability), `type: fix` (something was wrong, hard or broken and now is not) or `type: design` (how it looks or is laid out). A card without it counts as a feature. The What's New page uses it for the filter chips (All, Features, Fixes, Design) and a small tag on each card.
 - The lines after that are the card's short note (plain text, one paragraph).
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Any other line that starts with `[try:` is ignored.
 - Anything above the first `##` (this intro) is not shown.
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
+
+## 0.7.0 · 25 Oct 2026
+
+### Save to the team, all set up
+type: feature
+Tap Save and a small sheet opens, ready to go: the name is filled in, the collection is the one you used last time, and Save to the team is on. One more tap on Save & add to team puts the full-quality picture in your Photos and the design in Saved for the whole team. Change the name or the collection first if you like. That is two taps, collection included; before it was three, or five with a collection. Looks good · Save after starting from a photo is still one tap, and now adds it to the team too. A design you opened from Saved is only updated in the team when you switch it on, so nobody overwrites one by accident.
+![before](assets/whatsnew/0.7.0-save-before.jpg)
+![after](assets/whatsnew/0.7.0-save-after.jpg)
+
+### Saved designs, easy to find
+type: feature
+The home page now has a Saved designs row with the team's latest designs and See all. See all, or Saved in the bottom bar, opens the new Saved page: a clean grid of pictures with quick filters for Stories, Posts, Highlights, Create and Templates, and your collections. Tap a design to open it. Press and hold one (or tap the ⋯ on its picture) to Duplicate, Rename, change Collections or Delete. Delete still asks first.
+![before](assets/whatsnew/0.7.0-saved-before.jpg)
+![after](assets/whatsnew/0.7.0-saved-after.jpg)
+
+### A + button for something new
+type: feature
+The big Start from a photo buttons at the top of the home page made way for a round + button in the bottom corner, right where your thumb is. Tap it for Restock, Photo story or Collage from a photo, or New design for a blank design or a template. Restock from a photo is still one tap: Restock, Photo story and Collage have a camera button at the end of their row on the home page.
+![before](assets/whatsnew/0.7.0-plus-before.jpg)
+![after](assets/whatsnew/0.7.0-plus-after.jpg)
+
+### The fresh look, for everyone
+type: design
+The fresh look is now Studio's look on every phone, and its switch is gone. It also got more polish: a soft wash of colour at the top of the home page, buttons with a little light on top, sheets that slide all the way up and land softly, chips that pop when you pick them, the preview that settles in when a tool opens, and a small greeting above the home title.
+![before](assets/whatsnew/0.7.0-look-before.jpg)
+![after](assets/whatsnew/0.7.0-look-after.jpg)
+
+### Pop-ups keep the page still
+type: fix
+Scrolling inside All tools, a saved design's menu or any other pop-up used to scroll the page behind it too. Now the page behind stays where it was until you close the pop-up.
+
+### The bottom bar, lined up
+type: fix
+The highlight in the bottom bar now takes the exact size of the tab you are on, so the icon and its label sit right in its middle. The bar has two tabs now, Home and Saved, with the + button beside it.
+![before](assets/whatsnew/0.7.0-bar-before.jpg)
+![after](assets/whatsnew/0.7.0-bar-after.jpg)
+
+### A clearer What's New
+type: design
+This page opens with the newest version as one big card. Older versions sit in groups you open with a tap (0.1 to 0.5, then 0.6 to 0.10), and the chips at the top show only new features, fixes or design changes.
+![before](assets/whatsnew/0.7.0-whatsnew-before.jpg)
+![after](assets/whatsnew/0.7.0-whatsnew-after.jpg)
 
 ## 0.6.0 · 24 Oct 2026
 
@@ -28,7 +70,7 @@ The home page now shows only the tools you pin. Tap All tools to see every tool,
 
 ### Try the fresh look (preview)
 type: design
-A livelier Studio, for you to try before it becomes the default. Taps press in and spring back, pages fade into each other, and cards lift off the page on soft shadows. One bold blue marks the main button on every screen. When you save, a big tick pops over your story, and phones that support it give a short buzz. It stays off until you switch it on here, and it only changes this phone. You can also search "fresh look" to switch it on or off.
+A livelier Studio, for you to try before it becomes the default. Taps press in and spring back, pages fade into each other, and cards lift off the page on soft shadows. One bold blue marks the main button on every screen. When you save, a big tick pops over your story, and phones that support it give a short buzz. It started as a preview you switched on yourself; since 0.7.0 it is the look for everyone.
 ![before](assets/whatsnew/0.6.0-fresh-before.jpg)
 ![after](assets/whatsnew/0.6.0-fresh-after.jpg)
 

@@ -2,13 +2,15 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 6 (0.6.0) was **owner-directed** (search at the top, pinned home + All tools, Fresh look preview). It counts as the **team** session (search and pins help the team find and adopt tools) → the next one (0.7.0) is a **Mazoon** session.
+**Last session:** 7 (0.7.0) was **owner-directed** (Fresh look default + polish, + button, Saved row + Saved page, one-tap save sheet, What's New redesign, scroll lock, bottom bar). It counts as the **team** session (finding saved designs, saving restocks to the team in the same tap) → the next one (0.8.0) is a **Mazoon** session.
 **Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
-| 17 | **Fresh look: make it the default** once Mazoon approves (drop the `data-look` scoping, keep a "Classic look" switch for one version, then archive it) | 4 | 5 | 4 | 2 | 11 | Waiting on approval (0.6.0 preview). |
+| 22 | Saved page: select several designs (press and hold, then tap more) to delete or move them into a collection in one go | 3 | 4 | 3 | 3 | 7 | Follow-up to 0.7.0 Saved page. |
+| 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
+| 24 | + menu: show the tool you used last first, and Templates as a third choice | 3 | 2 | 2 | 1 | 6 | Watch what the team taps. |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 19 | Reorder pinned tools (drag in All tools, or "Move up") | 3 | 3 | 2 | 2 | 6 | Today pins follow the TOOLS order. |
 | 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
@@ -22,13 +24,15 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
 | 10 | Highlight covers: a **Product** cover type that puts a brand asset (HD can cut-out) in the circle; emoji covers | 2 | 4 | 3 | 2 | 7 | Follow-up to 0.2.0. Use the brand's `assets` list, never a drawn can. |
 | 12 | Quick start for Highlight covers / Carousel (several photos → one page each) | 3 | 3 | 3 | 2 | 7 | Ready bar from 0.3.0 works for any tool with `quick`. |
-| 13 | Ready bar: "Save to team too" toggle so the restock lands in Saved designs in the same tap | 4 | 2 | 2 | 2 | 6 | Team save needs a name; default to tool + date. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- Picture-only save when signed in is now 3 taps (Save, switch off, Save); picture + team is 2 (was 3–5). Watch whether the team wants a direct picture-only button; if so add it under the Save button.
+- Desktop Saved page: tiles are large (6 per row at 1080px); consider 7–8 per row on wide screens.
+- Old hub CSS left from 0.5/0.6 (`.qbtn`, `.quick*`, `.dgrid`, `.dcard`, `.rcard`, `.recent`, `#saved .sec-head`) is unused since 0.7.0: remove it in the next Simplify session (0.10.0).
 - tapscan still reports the custom-colour `input[type=color]` (38px) inside `.sw-btn`: its parent's `::after` gives the hit area. Teach tapscan to check the parent's `::after` too.
 - Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
 - Inspector (layer editor) Done is still 40px tall visually; since 0.2.0 every Done has an invisible 48px hit area. Only enlarge it visibly if full.mjs stays green.
@@ -38,6 +42,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.7.0 (owner-directed): Fresh look is the default (switch removed) and more polished (wash, button light, sheets slide up, chip pop, greeting); + button (Restock / Photo story / Collage from a photo, New design) and a camera button on photo-first rows instead of the Start from a photo block; Saved designs row on home + Saved page (picture grid, type + collection filters, press and hold / ⋯ actions with confirmed delete); one-tap save sheet (team on for new designs when signed in, name filled, last collection); Looks good · Save adds to the team too (#13); scroll lock for pop-ups, sheets and search; bottom bar Home + Saved with a centred highlight; What's New: latest as a big card, grouped older versions, type filters.
 - 0.6.0 (owner-directed): universal search at the top of the hub (tools, templates, saved designs, collections, unfinished stories, settings and actions; recent searches + shortcuts; Arabic-aware), pinned home + All tools library with stars (per device; Restock on a new device, the three photo-first tools on a device that used Studio before), Fresh look preview behind a switch (motion, soft depth, one bold blue accent, save tick + haptics), white "Saved!" tick for everyone.
 - 0.5.0 (Simplify): one-tap Save on a phone (two taps → one; sheet then offers Add to the team, no second picture), hub tools grouped (Stories / Posts and covers / Make anything) with Restock first, two tool views instead of three, shorter hub intro, tapscan counts `::after` hit areas and skips screen-reader-only inputs.
 - 0.4.0: Board gets two Penpot ideas: Combine shapes (union/subtract/intersect/exclude, live and editable, Combine in the quick bar) and Components (main + copies that follow it, words kept per copy, detach/reset/go to main).

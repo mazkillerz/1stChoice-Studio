@@ -107,3 +107,5 @@ body.wn .top{max-width:720px}
   .wn-chev,.wn-f,.wn-f b,.wn-gsum{transition:none}
   .wn-group::details-content{transition:none}
 }
+/* phones: all four filter chips fit on one line at 390px */
+@media (max-width:420px){.wn-fscroll{gap:6px}.wn-f{padding:0 6px 0 12px;gap:6px;font-size:14px}.wn-f b{min-width:22px;padding:0 6px;font-size:12px}}

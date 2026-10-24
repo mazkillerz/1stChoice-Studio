@@ -948,3 +948,49 @@ body.on-saved nav.top{display:none}
 .team-more{margin-top:-4px}
 @media (max-width:820px){ .sheet.save-sheet{max-height:min(76dvh,640px)} }
 @media (min-width:821px){ .save-sheet .save-opts{display:flex;flex-direction:column} .tb-cols{margin:0;padding-inline:0;flex-wrap:wrap} }
+
+/* ---------- 0.7.0 look: more depth, smoother motion, a little character. Still calm: one accent, soft shadows. ---------- */
+:root{--spring-soft:cubic-bezier(.22,1,.36,1);--hi:inset 0 1px 0 rgba(255,255,255,.28)}
+/* a soft wash of colour behind the top of the home and What's New pages */
+body.hub,body.wn{background:radial-gradient(760px 380px at 108% -150px,color-mix(in srgb,var(--accent) 14%,transparent),transparent 72%) no-repeat,radial-gradient(620px 340px at -18% -170px,color-mix(in srgb,var(--gold) 20%,transparent),transparent 72%) no-repeat,var(--bg)}
+body.hub.on-saved{background:var(--bg)}
+/* a friendly line above the home title (Good morning / afternoon / evening) */
+.hello{margin:0 0 2px;font:800 var(--fs-s)/1.2 var(--sans);letter-spacing:.02em;color:var(--muted)}
+.hello:empty{display:none}
+:root body.hub .hero .hello{animation:rise .5s var(--ease) backwards}
+.hero h1{letter-spacing:-.005em}
+/* the main buttons: a gentle top light and the accent glow, so they read as the thing to press */
+:root :is(.btn:not(.ghost):not(.danger),.mini.solid,.tab.save,.fab,.fi-ic.new){background-image:linear-gradient(180deg,color-mix(in srgb,#fff 16%,transparent),transparent 62%);box-shadow:var(--hi),var(--glow)}
+:root .fab{box-shadow:var(--hi),var(--glow),var(--shadow-2)}
+:root .btn:not(.ghost):not(.danger):active:not(:disabled){box-shadow:var(--hi),0 4px 12px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+/* chosen chips pop in */
+:root .chip[aria-pressed="true"]{box-shadow:0 6px 14px -8px color-mix(in srgb,var(--accent) 80%,transparent);animation:chip-pop .4s var(--spring)}
+@keyframes chip-pop{from{transform:scale(.92)}}
+/* bottom sheets slide all the way up with a soft landing; the dimmed page fades in */
+@media (max-width:560px){
+  :root .dlg[open]{animation:sheet-up .44s var(--spring-soft)}
+  :root .dlg.fab-dlg[open]{animation:none}
+  :root .dlg::backdrop{animation:fade-in .28s ease-out}
+}
+@keyframes sheet-up{from{transform:translateY(100%)}}
+.dlg-body>.grab-line{display:none}
+/* tool pages: the preview settles in when the page opens */
+.phone{animation:phone-in .5s var(--spring-soft) backwards}
+@keyframes phone-in{from{opacity:0;transform:scale(.96) translateY(8px)}}
+/* the floating bars: frosted glass with a hairline of light on top */
+@media (max-width:820px){
+  :root .hubbar{box-shadow:var(--shadow-2),inset 0 1px 0 color-mix(in srgb,#fff 55%,transparent)}
+  :root .hubbar a[aria-current="true"] svg{animation:tab-pop .45s var(--spring)}
+}
+@keyframes tab-pop{40%{transform:scale(1.14) translateY(-1px)}}
+/* cards and rows feel tactile: a lift on hover (computers), a soft press on touch */
+@media (hover:hover){:root :is(.tool-row,.lib-open,.fab-item,.act-row,.opt-row){transition:transform .42s var(--spring),box-shadow .25s var(--ease),background-color .2s}}
+/* toasts: a dark pill that springs up */
+:root .toast{border-radius:var(--r-pill);padding:12px 20px;box-shadow:0 14px 30px -12px rgba(0,0,0,.45)}
+/* skeletons shimmer more softly */
+.skeleton,.sv-skel .sv-thumb{animation-duration:1.6s}
+/* dark mode: no bright top light on dark buttons, a deeper wash */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--hi:inset 0 1px 0 rgba(255,255,255,.12)}
+  :root:not([data-theme="light"]) .hubbar{box-shadow:var(--shadow-2),inset 0 1px 0 rgba(255,255,255,.06)}}
+:root[data-theme="dark"]{--hi:inset 0 1px 0 rgba(255,255,255,.12)}
+@media (prefers-reduced-motion: reduce){.phone,.hello,:root .chip[aria-pressed="true"],:root .hubbar a[aria-current="true"] svg{animation:none}:root .dlg[open]{animation:none}}

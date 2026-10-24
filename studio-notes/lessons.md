@@ -2,6 +2,24 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 7 · 0.7.0 · 25 Oct 2026 (owner-directed: fresh look default, + button, Saved, one-tap save, What's New)
+
+**Worked**
+- Making the fresh look the default by dropping its `[data-look]` scope was checked with a computed-style diff (every element on home, tools, Create, lab, Board, before vs after): zero differences except one rule that lost to `create.css` because the selector got less specific. A diff beats screenshots for "nothing changed" claims.
+- What's New (its own three files) and the test-suite updates (only `tests/`) went to Sonnet helpers while the engine work stayed in one hand; no file was edited by two agents at once.
+- The usage limit stopped a helper mid-way; a `send_later` check-in and `SendMessage` to the same helper resumed it with its context.
+- A tiny `look.mjs` (seeded designs + one step: fab / saved / sheet / dark / desktop) gave a screenshot after every change in seconds.
+
+**Didn't work / watch out**
+- A `const` helper (`skel`) used by init code that runs earlier (opening #saved on load) hit the temporal dead zone. Helpers that early code can reach must be function declarations, or the state must be declared at the top of `home()`.
+- `@view-transition` added from JS is too late for the page being opened ("InvalidStateError"); each page opts in with an inline `<style>` in its `<head>`.
+- Turning a switch on by default changes what a tap does to data: "Save to the team" on for an opened saved design would overwrite the team's copy. Defaults that write data need a separate look at new vs existing items.
+- `:focus-within` on a label that wraps a file input lights up when a dialog opens (it focuses the first input). Use `:has(:focus-visible)`.
+
+**Process tweaks**
+- `tests/seed.js` seeds fakecloud with 8 saved designs using the tool thumbnails; use it for Saved tests and shots.
+- New suite `tests/home7.mjs`.
+
 ## Session 6 · 0.6.0 · 24 Oct 2026 (owner-directed: search, pins, Fresh look)
 
 **Worked**

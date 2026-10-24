@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.6.0';
+const VERSION='0.7.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1062,7 +1062,7 @@ async function tool(cfg){
     ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return canvasBlob(c,'image/jpeg',.85);
   }
   /* ---- saving to the team: one function used by the Save sheet, "Only save to the team" and the leave prompt ---- */
-  let teamCols=null; const teamPicked=new Set();
+  let teamCols=null; const teamPicked=new Set(), typedCols=new Set();   // typedCols: new collections typed on this page
   const hasPhotosNow=()=>S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
   function defaultName(){ const d=new Date(); return cfg.title+' – '+d.getDate()+' '+d.toLocaleString('en',{month:'short'}); }
   async function teamSave(o){
@@ -1079,7 +1079,8 @@ async function tool(cfg){
     return name;
   }
   /* the Save sheet: one small sheet, ready to go. The name is filled in, the collection is the one you used last, and
-     "Save to the team" is on when this phone is signed in to the team. One tap on Save makes the picture and adds it to the team;
+     "Save to the team" is on when this phone is signed in to the team (for a new design: a design opened from Saved is only
+     updated in the team when you switch it on, so nobody overwrites a team design by accident). One tap on Save makes the picture and adds it to the team;
      every detail can still be changed first. */
   let imgDone=false;   // the picture as it is now is already in Photos: the team switch then only adds it to the team
   let teamMember=null;   // is this phone signed in to the team? null = not checked yet (checked quietly after the page loads)
@@ -1109,7 +1110,8 @@ async function tool(cfg){
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
   let colsLoading=null;
   async function paintTeamCols(){
-    if(!teamCols){ if(!colsLoading) colsLoading=(async()=>{ try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; } })(); await colsLoading; colsLoading=null; }
+    if(!teamCols){ if(!colsLoading) colsLoading=(async()=>{ try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; }
+        if(!design&&teamCols.length) [...teamPicked].forEach(n=>{ if(!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) teamPicked.delete(n); }); })(); await colsLoading; colsLoading=null; }
     if(!teamCols) return;
     const all=[...new Set([...teamCols.map(c=>c.name),...teamPicked])].sort((a,b)=>a.localeCompare(b));
     $('teamCols').innerHTML=all.map(n=>`<button type="button" class="chip" dir="auto" data-col="${esc(n)}" aria-pressed="${teamPicked.has(n)}">${esc(n)}</button>`).join('')
@@ -1118,7 +1120,7 @@ async function tool(cfg){
   $('teamMore').addEventListener('click',()=>{ const open=$('teamMoreBox').hidden; $('teamMoreBox').hidden=!open; $('teamMore').setAttribute('aria-expanded',String(open)); $('teamMore').textContent=open?'Fewer options':'More options'; });
   $('teamCols').addEventListener('click',e=>{ if(e.target.closest('[data-newcol]')){ const r=$('teamNewRow'); r.hidden=!r.hidden; paintTeamCols(); if(!r.hidden) $('teamNewCol').focus(); return; }
     const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); haptic('tick'); paintTeamCols(); });
-  const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
+  const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); typedCols.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
   function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:design&&$('teamAsNew').checked,collections:[...teamPicked]}; }
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
@@ -1533,8 +1535,8 @@ async function tool(cfg){
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
-  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts();
-    if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
+  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true&&!design; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts();
+    if(teamMember===null) checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
@@ -1653,7 +1655,7 @@ async function tool(cfg){
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
   /* quietly check whether this phone is signed in to the team, so Save to the team is ready (on) when the Save sheet opens */
-  setTimeout(()=>checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
+  setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
@@ -1732,6 +1734,8 @@ async function home(){
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
+  /* a friendly line above the title, by the time of day on this phone */
+  const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening'; }
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
      The bottom bar (phone) lights the one you're on; its highlight is sized from the tab itself, so icon and label sit in its middle. */
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
@@ -1754,6 +1758,7 @@ async function home(){
   addEventListener('resize',()=>setTab(onSaved()?'saved':'home'));
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>setTab(onSaved()?'saved':'home'));
   if(location.hash==='#saved') showView('saved'); else requestAnimationFrame(()=>setTab('home'));
+  $('savedRowList').innerHTML=skel(4);   // placeholders until the team's designs arrive
 
   /* install hint: Android/desktop Chrome get a real Install button; iPhone gets the Share → Add to Home Screen steps */
   (function(){
@@ -1910,7 +1915,7 @@ async function home(){
   let lp=null;
   const designOf=el=>{ const c=el&&el.closest('.sv-card'); return c?all.find(x=>x.id===c.dataset.id):null; };
   const cancelLp=()=>{ if(lp&&!lp.fired){ clearTimeout(lp.t); lp.a.classList.remove('pressing'); lp=null; } };
-  document.addEventListener('pointerdown',e=>{ lp=null; const a=e.target.closest('.sv-open'); if(!a||e.button>0) return; const d=designOf(a); if(!d) return;
+  document.addEventListener('pointerdown',e=>{ cancelLp(); lp=null; const a=e.target.closest('.sv-open'); if(!a||e.button>0) return; const d=designOf(a); if(!d) return;
     a.classList.add('pressing'); const me2={x:e.clientX,y:e.clientY,a,fired:false}; me2.t=setTimeout(()=>{ me2.fired=true; a.classList.remove('pressing'); haptic('tick'); designSheet(d); },480); lp=me2; });
   document.addEventListener('pointermove',e=>{ if(lp&&!lp.fired&&Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>10) cancelLp(); },{passive:true});
   document.addEventListener('pointerup',cancelLp); document.addEventListener('pointercancel',cancelLp);

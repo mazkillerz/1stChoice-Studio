@@ -2,14 +2,14 @@
   'use strict';
   /* What's new page. Reads studio-notes/changelog.md (format: see the intro of that file).
      Newest version = one big highlight card; older versions = closed groups of five minor versions;
-     filter chips (All / New features / Fixes / Design) hide the cards that do not match. Nothing is stored except the "seen" mark. */
+     filter chips (All / Features / Fixes / Design) hide the cards that do not match. Nothing is stored except the "seen" mark. */
   var list=document.getElementById('wnList'),foot=document.getElementById('wnFoot'),
       dlg=document.getElementById('wnDlg'),big=document.getElementById('wnBig'),
       closeBtn=document.getElementById('wnClose'),
       filtersBox=document.getElementById('wnFilters'),chips=document.getElementById('wnChips'),
       status=document.getElementById('wnStatus');
   var BLOCK=5;                         /* minor versions per group: 0.1 to 0.5, 0.6 to 0.10, ... */
-  var TYPES=[{id:'feature',label:'New features',tag:'Feature'},{id:'fix',label:'Fixes',tag:'Fix'},{id:'design',label:'Design',tag:'Design'}];
+  var TYPES=[{id:'feature',label:'Features',tag:'Feature'},{id:'fix',label:'Fixes',tag:'Fix'},{id:'design',label:'Design',tag:'Design'}];
   var ALIAS={features:'feature',fixes:'fix'};
   var filter='all',model=null;
 

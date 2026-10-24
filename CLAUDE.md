@@ -9,7 +9,7 @@ Studio is a phone-first story maker (static GitHub Pages site, no build step) fo
 | Path | What |
 | --- | --- |
 | `assets/studio.js` | Engine: tools, layers, inspector, layers panel, guides, assets, undo/redo, drafts, save engine, hub |
-| `assets/studio.css` | All shared UI (light + dark); the Fresh look preview is the `:root[data-look="fresh"]` block at the end |
+| `assets/studio.css` | All shared UI (light + dark); the look (the "fresh look", default since 0.7.0) and the 0.7.0 hub/Saved/save-sheet blocks are at the end |
 | `assets/search.js`, `assets/search.css` | Hub universal search; `home()` in studio.js feeds it (`searchEntries`, `searchShortcuts`) |
 | `assets/cloud.js`, `assets/config.js` | Supabase: shared team login, saved designs, collections, private `studio` bucket |
 | `tools/<id>.html` + `tools/<id>.js` | One pair per tool; a tool calls `Studio.tool({...})` with `draw(h,o)` |
