@@ -128,7 +128,7 @@ body.wn .top{max-width:720px}
 @keyframes ms-in{from{opacity:0;transform:translateY(10px) scale(.96)}}
 @keyframes ms-tw{0%,100%{opacity:.25;transform:rotate(45deg) scale(.7)}50%{opacity:1;transform:rotate(45deg) scale(1.1)}}
 @media (prefers-reduced-motion: reduce){.wn-msnum,.wn-msspark i{animation:none}}
-.wn-chip.ms{background:linear-gradient(140deg,#3d5afe,#211c6e);color:#fff}
+.wn-chip.ms{background:#3d5afe linear-gradient(140deg,#3d5afe,#211c6e);color:#fff}   /* solid base: readable (and measurable) even where a gradient does not paint */
 .wn-card p b,.wn-msintro b{font-weight:600;color:var(--fg)}
 .wn-msintro b{color:#fff}
 .wn-msrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);margin:0 0 var(--sp-3)}

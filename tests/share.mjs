@@ -34,7 +34,7 @@ for(const scheme of ['light','dark']){
   ok(scheme+': the pick-a-tool sheet opens',await pg.$eval('dialog[open] #shareH',e=>e.textContent).catch(()=>'')==='Your photo is in');
   ok(scheme+': it shows the shared photo',await pg.$$eval('dialog[open] .share-pics img',l=>l.length&&l.every(i=>i.naturalWidth>0)).catch(()=>false));
   const items=await pg.$$eval('dialog[open] [data-share]',l=>l.map(x=>{ const r=x.getBoundingClientRect(); return {id:x.dataset.share,h:r.height}; }));
-  ok(scheme+': Restock, Photo story, Collage in the + order',items.map(x=>x.id).join()==='restock,photo-story,collage',items.map(x=>x.id).join());
+  ok(scheme+': the photo tools in the + order',items.map(x=>x.id).join()==='restock,photo-story,collage,carousel,highlight',items.map(x=>x.id).join());
   ok(scheme+': every choice is at least 48px tall',items.every(x=>x.h>=48),items.map(x=>x.h).join());
   await pg.tap('dialog[open] [data-share="restock"]');
   await pg.waitForURL(/restock\.html/); await pg.waitForTimeout(2500);
