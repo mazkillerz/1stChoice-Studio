@@ -80,6 +80,40 @@ Studio.registerBrand({
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',prev:'assets/prev/cans_pair.webp',group:'Cans (HD cut-outs)'},
     {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)'}
   ],
+  /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
+     cat: restock | story | post | highlight. Previews: assets/thumbs/<brand>/tpl/<id>.jpg (node tests/tplthumbs.mjs makes them).
+     Words come only from the approved phrases above. A tap opens the tool with these settings, as a new story. */
+  presets:[
+    {id:'rs-cans',tool:'restock',cat:'restock',label:'Cans, no photo',sub:'Restock · ready in one tap',style:'cans',badge:'New',values:{head:'رجع متوفر'}},
+    {id:'rs-white',tool:'restock',cat:'restock',label:'White card',sub:'Restock · your photo',style:'white',values:{head:'رجع متوفر'}},
+    {id:'rs-classic',tool:'restock',cat:'restock',label:'Classic is back',sub:'Restock · cans, no photo',style:'cans',badge:'New',values:{head:'رجع متوفر',flav:['classic']}},
+    {id:'rs-passion',tool:'restock',cat:'restock',label:'Passion fruit is back',sub:'Restock · cans, no photo',style:'cans',badge:'New',values:{head:'رجع متوفر',flav:['passion'],bg:'#F3EADC'}},
+    {id:'rs-split',tool:'restock',cat:'restock',label:'Split',sub:'Restock · your photo',style:'split',badge:'New',values:{head:'رجع متوفر'}},
+    {id:'rs-poster',tool:'restock',cat:'restock',label:'Big words',sub:'Restock · your photo',style:'poster',badge:'New',values:{head:'وفرنا كمية جديدة'}},
+    {id:'rs-cream',tool:'restock',cat:'restock',label:'Cream card',sub:'Restock · your photo',style:'cream',values:{head:'وفرنا كمية جديدة'}},
+    {id:'rs-photo',tool:'restock',cat:'restock',label:'Full photo',sub:'Restock · your photo',style:'photo',values:{head:'رجع متوفر'}},
+    {id:'rs-limited',tool:'restock',cat:'restock',label:'Limited stock',sub:'Restock · your photo',style:'white',values:{head:'وفرنا كمية جديدة',small:'الكمية محدودة',pill:'راسلنا خاص'}},
+    {id:'ps-full',tool:'photo-story',cat:'story',label:'Photo story',sub:'Words on your photo',style:'full',values:{head:'يسرسح ثلج'}},
+    {id:'ps-whole',tool:'photo-story',cat:'story',label:'Whole photo',sub:'Photo story · wide photos',style:'whole',badge:'New',values:{head:'جربته؟'}},
+    {id:'ps-caption',tool:'photo-story',cat:'story',label:'Caption',sub:'Photo story · words below',style:'caption',badge:'New',values:{head:'خذلك كولد برو'}},
+    {id:'ps-poster',tool:'photo-story',cat:'story',label:'Poster',sub:'Photo story · big words',style:'poster',badge:'New',values:{head:'ما يتفوت'}},
+    {id:'ps-arch',tool:'photo-story',cat:'story',label:'Arch',sub:'Photo story · cream',style:'arch',badge:'New',values:{head:'روّق'}},
+    {id:'ps-frame',tool:'photo-story',cat:'story',label:'White frame',sub:'Photo story',style:'white',values:{head:'صباح الخير'}},
+    {id:'co-grid',tool:'collage',cat:'story',label:'Collage 2 × 2',sub:'Collage · 4 photos',count:4,values:{lay4:'g-2-2'}},
+    {id:'co-border',tool:'collage',cat:'story',label:'White borders',sub:'Collage · 3 photos',count:3,badge:'New',values:{lay3:'g-3-rows',border:16,gap:24}},
+    {id:'co-mosaic',tool:'collage',cat:'story',label:'Mosaic',sub:'Collage · 6 photos',count:6,values:{lay6:'g-mosaic'}},
+    {id:'co-prints',tool:'collage',cat:'story',label:'Scattered prints',sub:'Collage · 4 photos',count:4,values:{lay4:'scatter'}},
+    {id:'co-film',tool:'collage',cat:'story',label:'Film strip',sub:'Collage · 4 photos',count:4,style:'black',values:{lay4:'film'}},
+    {id:'np-new',tool:'new-place',cat:'story',label:'New place',sub:'A new sale point',style:'A'},
+    {id:'sp-two',tool:'split',cat:'story',label:'Two-photo split',sub:'Close-up and wide',style:'white'},
+    {id:'ci-bars',tool:'cinematic',cat:'story',label:'Cinematic bars',sub:'A wide photo, shown whole',style:'black'},
+    {id:'of-offer',tool:'offer',cat:'story',label:'Offer',sub:'Tiles, dates and a button',style:'white'},
+    {id:'ca-white',tool:'carousel',cat:'post',label:'Feed carousel',sub:'Carousel · several slides',style:'white'},
+    {id:'ca-cream',tool:'carousel',cat:'post',label:'Cream carousel',sub:'Carousel · several slides',style:'cream'},
+    {id:'hl-white',tool:'highlight',cat:'highlight',label:'White covers',sub:'Highlight covers · a set',style:'white',values:{shape:'disc'}},
+    {id:'hl-cream',tool:'highlight',cat:'highlight',label:'Cream covers',sub:'Highlight covers · a set',style:'cream',values:{shape:'ring'}},
+    {id:'hl-ink',tool:'highlight',cat:'highlight',label:'Black covers',sub:'Highlight covers · a set',style:'black',values:{shape:'plain'}}
+  ],
   /* Create: the templates offered for this brand. Layouts live in tools/create-templates.js (no wording there);
      the words here come only from the approved phrases above. `write` (اكتب هنا) marks a spot for your own words. */
   create:{
@@ -99,9 +133,9 @@ Studio.registerBrand({
       {id:'offer',label:'Offer',layout:'offer',size:'story',words:{head:'ما يتفوت',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
       {id:'order-steps',label:'How to order',layout:'order-steps',size:'story',words:{head:'اطلب الحين',step1:'راسلنا خاص'},assets:{product:'cans-pair-shadow'}},
       {id:'one-word',label:'Occasion: one word',layout:'one-word',size:'story',look:'cream',words:{head:'روّق'}},
-      {id:'restock',label:'Restock',layout:'restock',size:'story',words:{head:'رجع متوفر',small:'وفرنا كمية جديدة',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
+      {id:'restock',label:'Restock',cat:'restock',layout:'restock',size:'story',words:{head:'رجع متوفر',small:'وفرنا كمية جديدة',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
       {id:'new-place',label:'New place',layout:'new-place',size:'story',words:{head:'نقطة بيع جديدة',place:'اسم المكان',pill:'الخريطة في البايو'}},
-      {id:'stock-alert',label:'Stock alert',layout:'stock-alert',size:'story',words:{head:'الكمية محدودة',pill:'راسلنا خاص'},assets:{product:'can-classic-shadow'}},
+      {id:'stock-alert',label:'Stock alert',cat:'restock',layout:'stock-alert',size:'story',words:{head:'الكمية محدودة',pill:'راسلنا خاص'},assets:{product:'can-classic-shadow'}},
       {id:'highlight-places',label:'Highlight: places',layout:'highlight',size:'square',icon:'pin',words:{}},
       {id:'highlight-chat',label:'Highlight: chat',layout:'highlight',size:'square',icon:'chat',words:{}},
       {id:'highlight-reviews',label:'Highlight: reviews',layout:'highlight',size:'square',icon:'star',words:{}}

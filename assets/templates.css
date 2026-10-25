@@ -1,0 +1,101 @@
+/* Studio Templates library: header, sticky category chips and a grid of preview cards. Uses only the tokens from studio.css; light and dark follow them. */
+.tp{display:block;padding:var(--tp-pt,var(--sp-2)) 0 var(--tp-pb,calc(var(--sp-6) + var(--safe-b)));color:var(--fg);font-family:var(--sans)}
+.tp[hidden]{display:none}
+/* one content column: the title, the chips and the grid all start at the same edge */
+.tp-in{max-width:1080px;margin-inline:auto;padding-inline:var(--gutter) var(--gutter-r)}
+.tp-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ---------- header ---------- */
+.tp-head{padding-bottom:var(--sp-3)}   /* the chips start right under this, so their natural top is the bottom of the header */
+.tp-back{width:var(--tap);height:var(--tap);display:grid;place-items:center;padding:0;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);color:var(--fg);box-shadow:var(--shadow-1);cursor:pointer;transition:transform .42s var(--spring),box-shadow .2s var(--ease),background-color .2s}
+.tp-back svg{width:24px;height:24px;display:block}
+.tp-back:dir(rtl) svg{transform:scaleX(-1)}
+[dir=rtl] .tp-back svg{transform:scaleX(-1)}
+.tp-back:active{transform:scale(.92);transition-duration:.09s;transition-timing-function:ease-out}
+.tp-ttlrow{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--sp-3);margin-top:var(--sp-3)}
+.tp-ttl{margin:0;font:600 var(--fs-2xl)/1.2 var(--sans);letter-spacing:-.01em;color:var(--fg)}
+.tp-count{font:500 var(--fs-s) var(--sans);color:var(--muted)}
+.tp-count:empty{display:none}
+.tp-lead{margin:var(--sp-1) 0 0;font-size:var(--fs-m);line-height:1.45;color:var(--muted);text-wrap:balance}
+
+/* ---------- category chips: stick to the top while the grid scrolls ---------- */
+.tp-bar{position:sticky;top:var(--tp-stick,var(--safe-t));z-index:5;background:var(--bg)}
+.tp-bar::before{content:"";position:fixed;inset:0 0 auto 0;height:var(--safe-t);background:var(--bg);pointer-events:none}   /* the page colour behind the status bar while stuck */
+.tp-bar::after{content:"";position:absolute;inset:100% 0 auto 0;height:var(--sp-3);background:linear-gradient(var(--bg),transparent);pointer-events:none}   /* cards fade out under the bar */
+.tp-chips{display:flex;gap:var(--sp-2);overflow-x:auto;overflow-y:hidden;padding-block:var(--sp-2);
+  --tp-pad-l:max(var(--gutter),calc((100% - 1080px)/2 + var(--gutter)));--tp-pad-r:max(var(--gutter-r),calc((100% - 1080px)/2 + var(--gutter-r)));
+  padding-inline:var(--tp-pad-l) var(--tp-pad-r);scroll-padding-inline:var(--tp-pad-l) var(--tp-pad-r);
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--sp-4),#000 calc(100% - var(--sp-4)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--sp-4),#000 calc(100% - var(--sp-4)),transparent 100%)}
+.tp-chips::-webkit-scrollbar{display:none}
+.tp-chip{flex:none;position:relative;min-height:44px;padding:0 var(--sp-4);display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);color:var(--fg);box-shadow:var(--shadow-1);font:600 var(--fs-m) var(--sans);white-space:nowrap;cursor:pointer;
+  transition:transform .42s var(--spring),box-shadow .2s var(--ease),background-color .2s,color .2s,border-color .2s}
+.tp-chip::after{content:"";position:absolute;inset:-2px}   /* a 48px tap area around the 44px pill */
+.tp-chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 4px 12px -4px color-mix(in srgb,var(--accent) 60%,transparent)}
+.tp-chip:active{transform:scale(.95);transition-duration:.09s;transition-timing-function:ease-out}
+.tp-cn{font:500 var(--fs-s) var(--sans);color:var(--muted)}
+.tp-chip[aria-pressed="true"] .tp-cn{color:inherit}
+.tp-pill{flex:none;height:44px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--chip);animation:tp-pulse 1.4s ease-in-out infinite}
+@media (hover:hover){
+  .tp-chip:hover:not([aria-pressed="true"]),.tp-back:hover{background:color-mix(in srgb,var(--fg) 6%,var(--surface))}
+}
+
+.tp-back:focus-visible,.tp-chip:focus-visible,.tp-na:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* ---------- grid ---------- */
+.tp-body{padding-top:var(--sp-4);min-height:40vh}
+.tp-sec+.tp-sec{margin-top:var(--sp-4)}   /* each card also keeps 8px under its text, so sections end up 24px apart */
+.tp-h{display:flex;align-items:baseline;gap:var(--sp-2);margin:0 0 var(--sp-3);font:600 var(--fs-l)/1.3 var(--sans);color:var(--fg)}
+.tp-n{font:500 var(--fs-s) var(--sans);color:var(--muted)}
+.tp-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3);align-items:start}   /* cards keep their own height: a post is shorter than a story */
+@media (min-width:600px){.tp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1000px){.tp-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.tp-li{min-width:0;margin:0;padding:0}
+
+/* a card: the preview, then the title and one line under it */
+.tp-card{display:block;padding-bottom:var(--sp-2);color:inherit;text-decoration:none;-webkit-touch-callout:none;transition:transform .42s var(--spring)}
+.tp-card:active{transform:scale(.97);transition-duration:.09s;transition-timing-function:ease-out}
+.tp-card:focus-visible{outline:none}
+.tp-card:focus-visible .tp-frame{outline:3px solid var(--focus);outline-offset:3px}
+.tp-frame{position:relative;display:block;width:100%;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-1);transition:box-shadow .25s var(--ease),transform .42s var(--spring)}
+.tp-story{aspect-ratio:9/16}
+.tp-post{aspect-ratio:4/5}
+.tp-square,.tp-circle{aspect-ratio:1/1}
+.tp-circle{background:var(--chip)}
+.tp-none{background:var(--chip)}
+.tp-img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;opacity:0;transition:opacity .35s var(--ease)}
+.tp-img.on{opacity:1}
+.tp-circle .tp-img{inset:12%;width:76%;height:76%;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+/* until the picture is there: a soft shimmer */
+.tp-wait::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,var(--chip) 30%,color-mix(in srgb,var(--fg) 7%,var(--chip)) 50%,var(--chip) 70%) 100% 0/200% 100%;animation:tp-sh 1.4s linear infinite}
+.tp-circle.tp-wait::before{inset:12%;border-radius:50%}
+.tp-ph{position:absolute;inset:0;display:none;place-items:center;color:var(--muted)}
+.tp-none .tp-ph{display:grid}
+.tp-ph svg{width:32px;height:32px;display:block}
+.tp-badge{position:absolute;z-index:1;inset-block-start:var(--sp-2);inset-inline-start:var(--sp-2);padding:2px 8px;border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font:600 var(--fs-xs)/1.4 var(--sans);box-shadow:var(--shadow-1)}
+.tp-tx{display:block;margin-top:10px;padding-inline:2px}   /* dir="auto" is set on it: an Arabic title makes the title and the line under it start on the right */
+.tp-t{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font:600 var(--fs-m)/1.3 var(--sans);color:var(--fg);text-wrap:balance}
+.tp-s{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-s);line-height:1.35;color:var(--muted)}
+.tp-bone{display:block;height:12px;width:78%;border-radius:6px;background:var(--chip);animation:tp-pulse 1.4s ease-in-out infinite}
+.tp-bone.short{width:46%;margin-top:6px}
+@media (hover:hover){
+  .tp-card:hover .tp-frame{box-shadow:var(--shadow-2);transform:translateY(-3px)}
+}
+
+/* ---------- notes: Team without templates, and nothing here yet ---------- */
+.tp-note{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-3);max-width:520px;padding:var(--sp-4);border-radius:var(--r-l);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-1)}
+.tp-nt{margin:0;font-size:var(--fs-m);line-height:1.5;color:var(--fg)}
+.tp-na{min-height:var(--tap)}
+.tp-empty{display:flex;flex-direction:column;align-items:center;gap:var(--sp-3);padding:var(--sp-6) var(--sp-4);text-align:center;color:var(--muted)}
+.tp-empty p{margin:0;font-size:var(--fs-m)}
+.tp-ei{width:56px;height:56px;border-radius:var(--r-pill);display:grid;place-items:center;background:var(--chip);color:var(--muted)}
+.tp-ei svg{width:26px;height:26px;display:block}
+
+/* ---------- motion ---------- */
+@keyframes tp-in{from{opacity:0;transform:translateY(10px) scale(.985)}}
+@keyframes tp-sh{to{background-position:0 0}}
+@keyframes tp-pulse{50%{opacity:.55}}
+.tp-body[data-anim] .tp-card{animation:tp-in .46s var(--ease) backwards;animation-delay:calc(var(--i,0)*28ms)}   /* cards rise in one after another */
+@media (prefers-reduced-motion:reduce){
+  .tp,.tp *,.tp *::before,.tp *::after{animation:none!important;transition:none!important}
+}

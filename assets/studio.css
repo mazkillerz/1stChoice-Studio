@@ -1216,3 +1216,34 @@ body{line-height:1.5;font-feature-settings:"kern" 1}
 .nb svg{width:20px;height:20px;flex:none}
 .nb.wide{padding:0 12px}
 @media (max-width:380px){ .nb.wide span{display:none} .nb.wide{padding:0 10px} }
+
+/* ---------- 1.0.0 hub: + menu on one inset, Settings, the Templates page ---------- */
+/* + menu: the heading, the icons and the line all start on the same inset (22px from the menu's edge), top and sides alike.
+   (.dlg p{margin:0} used to win over the heading's margin, so it sat 10px left of the icons.) */
+.fab-menu{padding:12px}
+.fab-menu .fab-h{margin:10px 10px 6px}
+.fab-menu .fab-sep{margin:6px 10px}
+.fi-ic svg{width:24px;height:24px}
+/* Settings: the gear sits between What's new and the account button */
+.top .set-btn{margin-inline-start:-4px}
+.set-dlg .set{display:flex;flex-direction:column;gap:var(--sp-3)}
+.set-list .set-row{min-height:64px;padding-block:10px;text-align:start}
+.set-row>svg{flex:none;color:var(--muted)}
+.set-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.3}
+.set-txt b{font:500 var(--fs-m) var(--sans)}
+.set-txt small{font:400 var(--fs-s) var(--sans);color:var(--muted)}
+.set-end{flex:none;padding:4px 10px;border-radius:var(--r-pill);background:var(--chip);font:600 var(--fs-xs) var(--sans);color:var(--fg)}
+.set-foot{margin:0;text-align:center}
+/* the Templates page has its own header (Back + title), like Saved */
+body.on-templates nav.top{display:none}
+body.hub.on-templates{background:var(--bg)}
+.tpl-view{max-width:1080px;margin:0 auto;padding-bottom:calc(var(--bar-h) + 40px + var(--safe-b))}
+/* Photo sheet (2+ photos): Swap two / Shuffle */
+.swap-row{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-3)}
+.swap-row .mini svg{flex:none}
+#swapBtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.slots.swapping .slot.has{animation:slot-wiggle .9s ease-in-out infinite;border-style:solid;border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.slots.swapping .slot.has:nth-child(2n){animation-delay:-.45s}
+.slots.swapping .slot.pick{animation:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+@keyframes slot-wiggle{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
+@media (prefers-reduced-motion: reduce){.slots.swapping .slot.has{animation:none}}
