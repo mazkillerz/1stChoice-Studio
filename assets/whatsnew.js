@@ -131,10 +131,10 @@
     if(latest.milestone){
       /* a milestone (e.g. 1.0.0): a banner with the big version number, a title and a short intro, above the cards */
       var mb=el('div','wn-msban'),mn=/^(\d+\.\d+)/.exec(latest.version);
+      var mrow=el('div','wn-msrow');mrow.appendChild(el('span','wn-badge wn-msbadge','Latest · '+latest.version));if(latest.date)mrow.appendChild(el('span','wn-msdate',latest.date));mb.appendChild(mrow);
       var big=el('span','wn-msnum',mn?mn[1]:latest.version);big.setAttribute('aria-hidden','true');mb.appendChild(big);
       var spark=el('span','wn-msspark');spark.setAttribute('aria-hidden','true');spark.innerHTML='<i></i><i></i><i></i><i></i><i></i>';mb.appendChild(spark);
       var mh=el('h2','wn-mst',latest.milestone);mh.id='wnLatestH';mb.appendChild(mh);
-      var meta=el('p','wn-msmeta','Studio '+latest.version+(latest.date?' · '+latest.date:''));mb.appendChild(meta);
       if(latest.intro.length)mb.appendChild(rich(latest.intro.join(' '),'wn-msintro'));
       hero.appendChild(mb);
     } else {

@@ -9,7 +9,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
-| 24 | + menu: Templates as a third choice | 2 | 2 | 2 | 1 | 5 | Last used is tagged since 0.9.0 (order kept on purpose). |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 19 | Reorder pinned tools (drag in All tools, or "Move up") | 3 | 3 | 2 | 2 | 6 | Today pins follow the TOOLS order. |
 | 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
@@ -28,6 +27,13 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.0.0 follow-ups: Collage's logo at default settings sits at y≈1700–1780, below the story safe line (1620); kept so old designs stay identical; decide with Mazoon whether new collages move it up. Create's story templates put the logo at the bottom 1740 too.
+- 1.0.0: in Collage, dropping a photo onto another photo's **border** may miss the swap (the hit box is the photo inside the frame). Make the hit box the whole cell.
+- 1.0.0: the hub's tool thumbnails (`assets/thumbs/<brand>/<id>.jpg`, also used by the welcome tour) still show pre-1.0 looks; refresh them with the new styles (Restock Cans, Photo story Whole photo).
+- 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
+- 1.0.0: `tests/taste.mjs` covers Home, menus, Templates, Saved, search, What's New and the three photo tools; add Create, Highlight covers, Carousel and the lab next.
+- 1.0.0: on a computer the tool page shows the Save card right after Photo (above Style and Words); check whether that order is what Mazoon wants.
+- 1.0.0: Templates library ideas: favourites (star a template), "recently used", and team templates with real previews in the Team row (they use the saved thumbnail today).
 - Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
 - Share target: a shared photo whose sheet is closed without a choice stays in IndexedDB until the next share; harmless, but a "Your shared photo is waiting" row could bring it back if the team closes it by mistake.
 - Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
