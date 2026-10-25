@@ -1134,3 +1134,11 @@ body{line-height:1.5;font-feature-settings:"kern" 1}
 :root .tab.save.nudge{animation:save-nudge 1.2s ease-out 2}
 @keyframes save-nudge{0%{box-shadow:var(--hi),var(--glow),0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}100%{box-shadow:var(--hi),var(--glow),0 0 0 14px transparent}}
 @media (prefers-reduced-motion: reduce){:root .tab.save.nudge{animation:none}}
+/* small phones: a little tighter, so long tool names still fit beside Snap, Undo and Redo */
+@media (max-width:400px){
+  .tool-top{gap:var(--sp-2)}
+  .tool-top .top-actions{gap:0}
+  .tool-top .icon-btn:not(.snap-btn){width:44px}
+  .icon-btn.snap-btn{padding:0 10px 0 8px;margin-inline-end:2px}
+  .tool-top .ttl{font-size:var(--fs-m)}
+}

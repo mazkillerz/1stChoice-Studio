@@ -12,6 +12,50 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 0.7.1 · 25 Oct 2026
+
+### A calmer, cleaner look
+type: design
+Studio has a new font for its buttons and labels, IBM Plex Sans Arabic, made for Arabic and English side by side. Titles are lighter, there are fewer bold weights, and every page uses the same spacing, so the header, chips and cards line up the same way everywhere. Design cards sit in a soft frame with the name and time together underneath. In dark mode the page, the cards and the pop-ups are different shades of dark instead of one flat black. Your designs still use the brand fonts: only Studio itself changed.
+![before](assets/whatsnew/0.7.1-look-before.jpg)
+![after](assets/whatsnew/0.7.1-look-after.jpg)
+
+### Collections you can read, with a ⋯ menu
+type: fix
+Picking a collection on the Saved page turned its chip blank in light mode and dark on dark in dark mode, and cut its shadow off in a hard line. The chosen collection is now clearly filled and readable in both, shadow and all. Rename collection and Delete collection moved from two underlined links into a small ⋯ menu on the chosen chip, so they only show when you need them. Delete still asks first.
+![before](assets/whatsnew/0.7.1-collection-before.jpg)
+![after](assets/whatsnew/0.7.1-collection-after.jpg)
+
+### Arabic names, the right way round
+type: fix
+A name that mixes Arabic and English now reads from the right everywhere. On a design card the name can take two lines and its time lines up under it on the same side, and the top of a design's menu follows the same direction. In search, a result with an Arabic name is right to left all the way across: picture, words and arrow. In the search box the magnifying glass stays at the start and the clear ✕ at the end, so they never sit on top of each other.
+![before](assets/whatsnew/0.7.1-arabic-before.jpg)
+![after](assets/whatsnew/0.7.1-arabic-after.jpg)
+
+### “Your photo is in” gets out of the way
+type: fix
+After you start from a photo, the note over your design stayed there and had a second Save button on it. Now it is a small note that fades after about 3 seconds; swipe it down or tap the photo to hide it sooner. Save in the bottom bar is the one Save, and it pulses softly while the note shows. Restock is still two taps: the camera button on the home page, then Save, which saves the full-quality picture and adds it to the team straight away. Change something first and Save opens the Save sheet as usual.
+![before](assets/whatsnew/0.7.1-photo-before.jpg)
+![after](assets/whatsnew/0.7.1-photo-after.jpg)
+
+### A Snap button that says what it does
+type: fix
+The round icon at the top of the editor was Snap to guides, but nothing said so. It now shows a magnet and the word Snap, and it is tinted when it is on. When Snap is on, whatever you drag jumps onto the guide lines (the centre, the edges and the other layers).
+![before](assets/whatsnew/0.7.1-snap-before.jpg)
+![after](assets/whatsnew/0.7.1-snap-after.jpg)
+
+### Matching icons in the bottom bar
+type: design
+The home icon looked taller than the Saved icon. Both now come from one icon set, with the same size and the same rounded lines, and the tab you are on is filled in. The bar keeps its shape.
+![before](assets/whatsnew/0.7.1-bar-before.jpg)
+![after](assets/whatsnew/0.7.1-bar-after.jpg)
+
+### Friendlier when there is not much yet
+type: design
+An empty Saved page now says what to do and has a Make a design button. When there are only a few designs, a New design card fills the gap (it opens the + menu) and a tip shows how to copy, rename or file a design, so the page never looks bare.
+![before](assets/whatsnew/0.7.1-empty-before.jpg)
+![after](assets/whatsnew/0.7.1-empty-after.jpg)
+
 ## 0.7.0 · 25 Oct 2026
 
 ### Save to the team, all set up

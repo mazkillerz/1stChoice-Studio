@@ -2,6 +2,25 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 8 · 0.7.1 · 25 Oct 2026 (owner-directed: 10 fixes + visual polish)
+
+**Worked**
+- A contrast scan (`tests/contrast.mjs`: blend each text's ancestor backgrounds, WCAG ratio, plus "Arabic text that runs left-to-right") proved both the bug and the fix: 26 findings on the old commit (served from a `git worktree` on :8081), 0 after. Run a new checker on the old code first, so "no findings" means something.
+- The unreadable chosen collection chip was specificity order again (`.chip.col{background}` came after `.chip[aria-pressed="true"]` with equal specificity), like the 0.6.0 tick. A variant class that sets colours needs its own selected-state rule.
+- `dir="auto"` on the caption group (not on each line) lines up an Arabic name and its time on the same side; `dir=auto` skips descendants that carry their own `dir`, so put it on the wrapper only. A time that starts with a digit ("1 h ago") turned into "h ago 1" inside an RTL line: wrap it in `<bdi>`.
+- Removing a duplicate button without adding a tap: the main button takes over the shortcut's job while the state is fresh (`quickReady`, cleared by the first undo-history commit; `flush()` the Quick start's own commit before setting it). Restock from a photo stays two taps.
+- Search (two files) went to a Sonnet helper in parallel with the engine work and the test updates to another; no file had two editors.
+
+**Didn't work / watch out**
+- The new interface font did nothing at first: `useBrand()` wrote the brand's body font into `--sans` at runtime. A CSS token is not the final value; grep the JS for `setProperty('--`. The engine now writes `--brand-sans`.
+- Playwright adds `<-loopback>` to the proxy bypass list, so with a proxy (needed for real Google Fonts in the sandbox) local pages went through the proxy and showed its error page. Set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` and `bypass:'127.0.0.1,localhost'`.
+- A scrolling chip row (`overflow-x:auto`) also clips vertically: shadows need `padding-block` with a matching negative margin.
+- A visible label in the tool top bar squeezes the title on 360px phones; measure `.ttl` with the real font (fallback fonts are narrower).
+
+**Process tweaks**
+- `tests/look8.mjs <outDir> [base] [names]` shoots every screen the owner flagged in light and dark with Arabic names seeded (approved phrases only); `scratchpad/pair.py` puts light and dark side by side. Take the "before" set first.
+- New suites: `tests/polish71.mjs`, `tests/contrast.mjs`.
+
 ## Session 7 · 0.7.0 · 25 Oct 2026 (owner-directed: fresh look default, + button, Saved, one-tap save, What's New)
 
 **Worked**

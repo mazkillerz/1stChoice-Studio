@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 7 (0.7.0) was **owner-directed** (Fresh look default + polish, + button, Saved row + Saved page, one-tap save sheet, What's New redesign, scroll lock, bottom bar). It counts as the **team** session (finding saved designs, saving restocks to the team in the same tap) → the next one (0.8.0) is a **Mazoon** session.
+**Last session:** 8 (0.7.1) was **owner-directed** polish (readable collection chip + ⋯ menu, Arabic names right to left on cards / search / design menu, photo note that fades, labelled Snap, matching bar icons, IBM Plex Sans Arabic + calmer type scale, one spacing rhythm, layered dark mode, friendly empty and sparse Saved). It helps the whole team most and counts as a **team** session; the next one (0.8.0) is still a **Mazoon** session.
 **Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
@@ -30,6 +30,10 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
+- The Quick start note fades after 3.2 s: check on a real phone that it is long enough to read, and that Save's pulse is noticed.
+- Board and the lab pages now get the interface font (IBM Plex Sans Arabic) through studio.css but keep their own 800 weights (drawn as 700); align them with the 400/500/600 scale with backlog #18.
+- Old CSS left unused since 0.7.1: `.col-tools`, `.banner.ready` rules, `.link` in col tools. Remove in the next Simplify session (0.10.0) with the 0.5/0.6 leftovers below.
 - A saved design opened on a phone shows no "Saved design" label (`#designBar` is hidden on phones by `.panel>.banner{display:none}`); the Save sheet's switch says "Update “name” in the team" instead. Check whether the team misses the label.
 - Picture-only save when signed in is now 3 taps (Save, switch off, Save); picture + team is 2 (was 3–5). Watch whether the team wants a direct picture-only button; if so add it under the Save button.
 - Desktop Saved page: tiles are large (6 per row at 1080px); consider 7–8 per row on wide screens.
@@ -43,6 +47,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.7.1 (owner-directed polish): chosen collection chip readable in both themes with its full shadow; Rename / Delete collection in a ⋯ menu on the chosen chip (Delete asks first); design cards framed with the name (2 lines, `dir="auto"`) and time grouped; search clear ✕ at the end and magnifier at the start; Arabic search rows and the design menu header right to left; Quick start note fades in ~3 s (swipe / tap the photo), no second Save, bar Save one tap until the first edit; Snap labelled; Lucide bar icons, filled for the current tab; IBM Plex Sans Arabic with 400/500/600; one spacing rhythm; layered dark surfaces; friendly empty states, New design card and tip on sparse Saved; contrast + RTL sweep script.
 - 0.7.0 (owner-directed): Fresh look is the default (switch removed) and more polished (wash, button light, sheets slide up, chip pop, greeting); + button (Restock / Photo story / Collage from a photo, New design) and a camera button on photo-first rows instead of the Start from a photo block; Saved designs row on home + Saved page (picture grid, type + collection filters, press and hold / ⋯ actions with confirmed delete); one-tap save sheet (team on for new designs when signed in, name filled, last collection); Looks good · Save adds to the team too (#13); scroll lock for pop-ups, sheets and search; bottom bar Home + Saved with a centred highlight; What's New: latest as a big card, grouped older versions, type filters.
 - 0.6.0 (owner-directed): universal search at the top of the hub (tools, templates, saved designs, collections, unfinished stories, settings and actions; recent searches + shortcuts; Arabic-aware), pinned home + All tools library with stars (per device; Restock on a new device, the three photo-first tools on a device that used Studio before), Fresh look preview behind a switch (motion, soft depth, one bold blue accent, save tick + haptics), white "Saved!" tick for everyone.
 - 0.5.0 (Simplify): one-tap Save on a phone (two taps → one; sheet then offers Add to the team, no second picture), hub tools grouped (Stories / Posts and covers / Make anything) with Restock first, two tool views instead of three, shorter hub intro, tapscan counts `::after` hit areas and skips screen-reader-only inputs.
