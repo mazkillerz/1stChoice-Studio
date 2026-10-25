@@ -82,8 +82,9 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
     /* the Restock shortcut takes a photo straight into the tool */
     await tap('#uq'); await pg.waitForTimeout(300);
     await Promise.all([pg.waitForURL(/restock\.html/,{timeout:8000}).catch(()=>{}),pg.setInputFiles('#usPanel input[data-quick="restock"]',S+'pair.jpg')]);
-    await pg.waitForTimeout(2500);
-    ok(N+'Restock from a photo opens Restock with the photo in',/restock\.html/.test(pg.url())&&await pg.isVisible('#readyBar'),pg.url());
+    /* the "Your photo is in" card fades by itself after ~3 s: catch it as soon as it is up, not after a fixed wait */
+    const card=await pg.waitForSelector('#readyBar:not([hidden])',{timeout:8000}).then(async()=>({shown:true,txt:await pg.textContent('#readyTxt')})).catch(()=>({shown:false,txt:''}));
+    ok(N+'Restock from a photo opens Restock with the photo in',/restock\.html/.test(pg.url())&&card.shown&&/Your photo is in/.test(card.txt),pg.url()+' '+JSON.stringify(card));
   } else {
     /* keyboard: arrows + Enter open a tool */
     await pg.click('#uq'); await type('offer'); await pg.keyboard.press('ArrowDown'); await pg.keyboard.press('Enter');

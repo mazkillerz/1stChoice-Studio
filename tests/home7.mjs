@@ -122,16 +122,17 @@ for(const vp of [PHONE,DESK]){
   /* collection chips (fakecloud ids are the names) */
   const cc=await pg.$$eval('#colChips .chip.col',l=>l.map(c=>({f:c.dataset.f,n:+c.querySelector('i').textContent})).sort((a,b)=>a.f.localeCompare(b.f)));
   ok(N+'collection chips: Offers 1, Restocks 2',JSON.stringify(cc)==='[{"f":"c:Offers","n":1},{"f":"c:Restocks","n":2}]',cc);
-  ok(N+'collection tools are hidden until one is chosen',!(await pg.isVisible('#colTools')));
+  ok(N+'the collection ⋯ menu button is there only once a collection is chosen',!(await pg.$('#colMore'))&&!(await pg.$('#colTools'))&&!(await pg.$('#colRename')));
   await pg.tap('#colChips .chip[data-f="c:Restocks"]'); await pg.waitForTimeout(300);
   const rs=await gridNames(pg);
-  ok(N+'a collection chip keeps only its designs',rs.length===2&&rs.every(n=>/^Restock/.test(n))&&await pg.isVisible('#colTools')&&(await pg.textContent('#spCount')).trim()==='2 of 8',rs.join(' | '));
+  ok(N+'a collection chip keeps only its designs',rs.length===2&&rs.every(n=>/^Restock/.test(n))&&await pg.isVisible('#colMore')&&(await pg.textContent('#spCount')).trim()==='2 of 8',rs.join(' | '));
+  ok(N+'the chosen chip and its ⋯ sit together (span.col-sel), ⋯ is a menu button',await pg.evaluate(()=>{ const m=document.getElementById('colMore'); return !!m&&m.parentElement.classList.contains('col-sel')&&!!m.parentElement.querySelector('.chip.col[aria-pressed="true"]')&&m.getAttribute('aria-haspopup')==='menu'&&m.getAttribute('aria-expanded')==='false'; }));
   await pg.tap('#typeChips .chip[data-type="post"]'); await pg.waitForTimeout(300);
   ok(N+'collection + type with no match shows a note with Show all',await cards()===0&&await pg.isVisible('#savedEmpty [data-showall]'));
   await pg.tap('#savedEmpty [data-showall]'); await pg.waitForTimeout(300);
   ok(N+'Show all clears both filters',await cards()===8);
   await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(250); await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(300);
-  ok(N+'tapping the collection chip again clears it',await cards()===8&&!(await pg.isVisible('#colTools')));
+  ok(N+'tapping the collection chip again clears it (and the ⋯ goes)',await cards()===8&&!(await pg.$('#colMore')));
   /* sort */
   await pg.selectOption('#sort','name'); await pg.waitForTimeout(300);
   const byName=await gridNames(pg), want=[...NEWEST].sort((a,c)=>a.localeCompare(c));
@@ -186,12 +187,31 @@ for(const vp of [PHONE,DESK]){
   await pg.tap('dialog.design-dlg [data-act="del"]'); await pg.waitForSelector('#cfYes',{state:'visible'}); await pg.tap('#cfYes'); await pg.waitForTimeout(1000);
   ok(N+'Delete removes the design',await cards()===8&&!(await gridNames(pg)).includes('Renamed restock')&&!(await fdb(pg)).designs.seed0&&!(await pg.locator('dialog[open]').count()),(await gridNames(pg)).join(' | '));
   ok(N+'Delete: a toast, and the home row follows',/deleted/.test(await pg.textContent('#hubToast')||'')&&(await pg.textContent('#savedCount')).trim()==='8');
-  /* collection tools: rename, delete (the designs stay) */
-  await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(300); await pg.tap('#colRename'); await pg.waitForSelector('#crName',{state:'visible'});
+  /* the chosen collection's ⋯ menu: Rename, Delete (asks first; the designs stay) */
+  await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(300);
+  const mb=await pg.$eval('#colMore',e=>{ const r=e.getBoundingClientRect(), cx=(r.left+r.right)/2, cy=(r.top+r.bottom)/2, hit=(dx,dy)=>{ const t=document.elementFromPoint(cx+dx,cy+dy); return !!t&&(t===e||e.contains(t)); };
+    return {visual:Math.round(Math.min(r.width,r.height)),hit:hit(-22,0)&&hit(22,0)&&hit(0,-22)&&hit(0,22)}; });   // the button is 36px with an invisible 48px hit area around it
+  ok(N+'the collection ⋯ button is 36px+ with a 44px+ touch area',mb.visual>=36&&mb.hit,mb);
+  ok(N+'the menu is closed until ⋯ is tapped',!(await pg.$('.pop-menu')));
+  await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu[role="menu"]',{state:'visible'});
+  const pm=await pg.evaluate(()=>{ const m=document.querySelector('.pop-menu'), b=document.getElementById('colMore'), r=m.getBoundingClientRect(); return {exp:b.getAttribute('aria-expanded'),items:[...m.querySelectorAll('button')].map(x=>x.id+':'+x.textContent.trim()+(x.classList.contains('danger')?':danger':'')).join('|'),inside:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,minH:Math.min(...[...m.querySelectorAll('button')].map(x=>x.getBoundingClientRect().height))}; });
+  ok(N+'⋯ opens a menu: Rename collection, Delete collection (danger), on screen, finger-sized',pm.exp==='true'&&pm.items==='colRename:Rename collection|colDelete:Delete collection:danger'&&pm.inside&&pm.minH>=44,pm);
+  await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
+  ok(N+'Escape closes the menu',!(await pg.$('.pop-menu'))&&await pg.getAttribute('#colMore','aria-expanded')==='false');
+  await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu',{state:'visible'}); await pg.tap('#colMore'); await pg.waitForTimeout(300);
+  ok(N+'tapping ⋯ again closes the menu',!(await pg.$('.pop-menu'))&&await pg.getAttribute('#colMore','aria-expanded')==='false');
+  await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu',{state:'visible'}); await pg.tap('#savedH'); await pg.waitForTimeout(300);
+  ok(N+'a tap outside closes the menu',!(await pg.$('.pop-menu'))&&await pg.getAttribute('#colMore','aria-expanded')==='false');
+  await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu',{state:'visible'}); await pg.tap('#colRename'); await pg.waitForSelector('#crName',{state:'visible'});
+  ok(N+'Rename collection opens the rename dialog with the current name, and the menu closes',await pg.inputValue('#crName')==='Offers'&&!(await pg.$('.pop-menu')));
   await pg.fill('#crName','Specials'); await pg.tap('dialog[open] button[type="submit"]'); await pg.waitForTimeout(900);
   ok(N+'Rename collection: the chip has the new name',JSON.stringify(await pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textContent).sort()))==='["Restocks","Specials"]');
-  await pg.tap('#colChips .chip[data-f="c:Specials"]'); await pg.waitForTimeout(300); await pg.tap('#colDelete'); await pg.waitForSelector('#cdGo',{state:'visible'}); await pg.tap('#cdGo'); await pg.waitForTimeout(900);
-  ok(N+'Delete collection: the chip goes, the designs stay',JSON.stringify(await pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textContent)))==='["Restocks"]'&&await cards()===8);
+  await pg.tap('#colChips .chip[data-f="c:Specials"]'); await pg.waitForTimeout(300); await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu',{state:'visible'}); await pg.tap('#colDelete'); await pg.waitForSelector('#cdGo',{state:'visible'});
+  ok(N+'Delete collection still asks first (nothing is deleted yet)',await pg.isVisible('#cdGo')&&await pg.isVisible('#cdX')&&JSON.stringify(await pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textContent).sort()))==='["Restocks","Specials"]');
+  await pg.tap('#cdX'); await pg.waitForTimeout(400);
+  ok(N+'Cancel keeps the collection',!(await pg.locator('dialog[open]').count())&&JSON.stringify(await pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textContent).sort()))==='["Restocks","Specials"]');
+  await pg.tap('#colMore'); await pg.waitForSelector('.pop-menu',{state:'visible'}); await pg.tap('#colDelete'); await pg.waitForSelector('#cdGo',{state:'visible'}); await pg.tap('#cdGo'); await pg.waitForTimeout(900);
+  ok(N+'Delete collection: the chip goes, the designs stay',JSON.stringify(await pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textContent)))==='["Restocks"]'&&await cards()===8&&!(await pg.$('#colMore')));
   /* tapping a card opens it in its tool */
   await pg.tap('#savedGrid .sv-card[data-id="seed1"] .sv-open'); await pg.waitForURL(/photo-story\.html\?design=seed1/,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(1500);
   ok(N+'tapping a card opens that design in its tool',/tools\/photo-story\.html\?design=seed1$/.test(pg.url())&&!(await pg.locator('dialog[open]').count()),pg.url());
@@ -217,7 +237,7 @@ for(const vp of [PHONE,DESK]){
 { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'bottom bar');
   await fresh(pg);
   const bar=async()=>pg.evaluate(()=>{ const cur=document.querySelector('.hubbar a[aria-current="true"]'), pill=document.querySelector('.hubbar .pill').getBoundingClientRect();
-    const sv=cur.querySelector('svg').getBoundingClientRect(), sp=cur.querySelector('span').getBoundingClientRect(); const topIcon=sv.top, bottomLabel=sp.bottom;
+    const sv=cur.querySelector('svg.ic-on').getBoundingClientRect(), sp=cur.querySelector('span').getBoundingClientRect(); const topIcon=sv.top, bottomLabel=sp.bottom;
     return {tab:cur.dataset.tab,current:[...document.querySelectorAll('.hubbar a')].map(a=>a.dataset.tab+':'+a.getAttribute('aria-current')).join(),
       inside:sv.top>=pill.top-.5&&sv.bottom<=pill.bottom+.5&&sp.top>=pill.top-.5&&sp.bottom<=pill.bottom+.5&&sv.left>=pill.left-.5&&sv.right<=pill.right+.5&&sp.left>=pill.left-.5&&sp.right<=pill.right+.5,
       dy:Math.abs((topIcon+bottomLabel)/2-(pill.top+pill.bottom)/2), dxLabel:Math.abs((sp.left+sp.right)/2-(pill.left+pill.right)/2), dxIcon:Math.abs((sv.left+sv.right)/2-(pill.left+pill.right)/2),

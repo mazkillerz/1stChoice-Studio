@@ -589,8 +589,7 @@ async function tool(cfg){
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
     <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
-    <div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span></div>
-    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
+    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span></div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in Photo.')}</div>
@@ -1541,18 +1540,21 @@ async function tool(cfg){
   function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true&&!design; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
+    hideReady();
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
     if(miss.length&&!cfg.allowSamples){
       openSheet('photo');
       status(cfg.pages?'Add a photo to '+PN.one+' '+miss.join(', ')+' first.':S.count===1?'Add your photo first.':'Add photo '+miss.join(', ')+' first.');
       return;
     }
-    const team=$('teamOn').checked;
+    let team=$('teamOn').checked;
     /* the picture is already in Photos: the switch is on, so this tap only adds it to the team */
     if(imgDone&&team&&only==null){ $('save').disabled=true; await runTeamSave(); $('save').disabled=false; $('teamOn').checked=false; $('teamOnly').dataset.off='1'; syncSaveOpts(); return; }
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
+    const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
     await save(true,only);
+    if(!team&&asked&&await checkTeam()) team=true;
     if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
     if(team) $('teamOnly').dataset.off='1';
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts();
@@ -1574,7 +1576,7 @@ async function tool(cfg){
     r.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); r.style.transform=`translateY(${dy}px)`; r.style.opacity=String(Math.max(.2,1-dy/90)); });
     const end=()=>{ if(y0==null) return; y0=null; if(dy>24||dy<6){ r.style.transform=`translateY(${Math.max(dy,0)}px)`; hideReady(); } else { r.style.transform=''; r.style.opacity=''; readyT=setTimeout(()=>hideReady(),1500); } };
     r.addEventListener('pointerup',end); r.addEventListener('pointercancel',end); }
-  $('phone').addEventListener('pointerdown',()=>hideReady(),true);
+  $('phone').addEventListener('pointerdown',e=>{ if(!e.target.closest('#readyBar')) hideReady(); },true);   // a tap on the photo (the note handles its own taps)
   $('bar').addEventListener('click',e=>{ if(e.target.closest('.tab')&&!e.target.closest('#barSave')) hideReady(); });
   document.addEventListener('input',()=>{ hideReady(); });   // they started editing (desktop has no tab bar)
   if(PG) $('saveThis').addEventListener('click',()=>doSave(S.page));
