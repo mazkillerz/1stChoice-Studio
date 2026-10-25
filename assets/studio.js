@@ -142,7 +142,7 @@ const ICON={
   layers:svg('<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>'),
   download:svg('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'),
   share:svg('<path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
-  bookmark:svg('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
+  bookmark:svg('<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
   check:svg('<path d="M20 6 9 17l-5-5"/>',24),
   rotate:svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',20),
   size:svg('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',20),
@@ -150,7 +150,7 @@ const ICON={
   font:svg('<path d="M4 20 10 4h1l6 16"/><path d="M6.5 14h8"/><path d="M17 20h4"/>',20),
   grid:svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',20),
   more:svg('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',20),
-  magnet:svg('<path d="M6 3v8a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/>',22),
+  magnet:svg('<path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/><path d="m5 8 4 4"/><path d="m12 15 4 4"/>',18),
   plus:svg('<path d="M12 5v14M5 12h14"/>'),
   shapes:svg('<circle cx="7.5" cy="7.5" r="4.5"/><rect x="12" y="12" width="9" height="9" rx="2"/>',20),
   back:svg('<path d="m15 18-6-6 6-6"/>'),
@@ -166,7 +166,7 @@ const ICON={
   look:svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>',20),
   lab:svg('<path d="M9 3h6"/><path d="M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',20),
   install:svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/>',20),
-  home:svg('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>'),
+  home:svg('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   folder:svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',18),
   copy:svg('<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',20),
   pencil:svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',20),
@@ -313,7 +313,7 @@ async function useBrand(id){
     const l=document.createElement('link'); l.rel='stylesheet'; l.dataset.brandFonts='1'; l.href='https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap'; document.head.appendChild(l);
   }
   document.documentElement.style.setProperty('--display','"'+BRAND.fonts.display+'",system-ui,sans-serif');
-  document.documentElement.style.setProperty('--sans','"'+BRAND.fonts.body+'",system-ui,sans-serif');
+  document.documentElement.style.setProperty('--brand-sans','"'+BRAND.fonts.body+'",system-ui,sans-serif');   // the interface keeps its own font (--sans)
   document.querySelectorAll('[data-brand-logo]').forEach(i=>{i.src=BRAND.base+BRAND.logo;i.alt=BRAND.name;});
   document.querySelectorAll('[data-brand-name]').forEach(e=>{e.textContent=BRAND.name;});
   const ic=document.querySelector('link[rel=icon]'); if(ic&&BRAND.icon) ic.href=BRAND.base+BRAND.icon;
@@ -585,11 +585,11 @@ async function tool(cfg){
   let step=1;
   const nav=document.querySelector('nav.top');
   if(nav){ nav.classList.add('tool-top');
-    nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}</button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
+    nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}<span aria-hidden="true">Snap</span></button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
     <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
-    <div class="banner ready" id="readyBar" hidden><span id="readyTxt">Your photo is in.</span><span class="banner-btns"><button type="button" class="mini" id="readyEdit">Change words</button><button type="button" class="mini solid" id="readySave">Looks good · Save</button></span></div>
+    <div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span></div>
     <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
@@ -1001,7 +1001,7 @@ async function tool(cfg){
     hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
     syncUndo(); saveDraft(s); designChanged();
   }
-  function designChanged(){ if(imgDone&&!saving){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
+  function designChanged(){ quickReady=false; if(imgDone&&!saving){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
   function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); designChanged(); }
   function flush(){ if(hist.timer){ clearTimeout(hist.timer); hist.timer=0; if(!pts.size) commit(); } }   // record an edit made just before Undo
   function undo(){ flush(); if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
@@ -1083,6 +1083,7 @@ async function tool(cfg){
      updated in the team when you switch it on, so nobody overwrites a team design by accident). One tap on Save makes the picture and adds it to the team;
      every detail can still be changed first. */
   let imgDone=false;   // the picture as it is now is already in Photos: the team switch then only adds it to the team
+  let quickReady=false;   // just started from a photo on the home page and nothing edited yet: Save on the bar saves in one tap
   let teamMember=null;   // is this phone signed in to the team? null = not checked yet (checked quietly after the page loads)
   const LAST_COLS='studio:lastCols:'+B.id;
   async function checkTeam(){ if(teamMember!==null) return teamMember; try{ const C=await cloud(); teamMember=!!(await C.session())&&!!(await C.isMember()); }catch(_){ teamMember=false; } return teamMember; }
@@ -1533,6 +1534,7 @@ async function tool(cfg){
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   /* Save on the bar (phone) opens the small Save sheet, ready to go; Save in it (or Save on the bar again) saves */
   function saveTapped(){
+    if(quickReady&&!design){ quickReady=false; hideReady(true); resetSaveSheet(); doSave(); return; }   // Quick start, untouched: one tap, as before
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
@@ -1556,12 +1558,25 @@ async function tool(cfg){
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts();
   }
   $('save').addEventListener('click',()=>doSave());
-  /* Quick start: "Looks good · Save" saves straight away (one tap); Change words opens Words; any other tab just hides the bar */
-  $('readySave').addEventListener('click',()=>{ $('readyBar').hidden=true; resetSaveSheet(); doSave(); });
-  if(!sheetEl('words')) $('readyEdit').hidden=true;
-  $('readyEdit').addEventListener('click',()=>{ $('readyBar').hidden=true; openSheet('words'); focusSheet('words'); });
-  $('bar').addEventListener('click',e=>{ if(e.target.closest('.tab')) $('readyBar').hidden=true; });
-  document.addEventListener('input',()=>{ $('readyBar').hidden=true; });   // they started editing (desktop has no tab bar)
+  /* Quick start: a small "Your photo is in" note over the bottom of the preview. It fades by itself after about 3 seconds;
+     a swipe down or a tap on it or on the photo hides it sooner, and so does any tab or edit. It never stays over the design.
+     Save stays where it always is (the bar on a phone, the Save card on a computer); until the first edit it saves in one tap. */
+  let readyT=0;
+  function hideReady(now){ const r=$('readyBar'); clearTimeout(readyT); if(r.hidden) return;
+    if(now||matchMedia('(prefers-reduced-motion: reduce)').matches){ r.hidden=true; r.classList.remove('out'); r.style.transform=''; return; }
+    r.classList.add('out'); setTimeout(()=>{ if(r.classList.contains('out')){ r.hidden=true; r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; } },280); }
+  function showReady(many){ const r=$('readyBar'); $('readyTxt').textContent=many?'Your photos are in':'Your photo is in';
+    $('readySub').textContent=isPhone()?'Tap Save when it looks good':'Save it when it looks good';
+    r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),3200);
+    const sv=$('barSave'); sv.classList.remove('nudge'); void sv.offsetWidth; sv.classList.add('nudge'); setTimeout(()=>sv.classList.remove('nudge'),2600); }   // a soft pulse on Save: the note points at it
+  { const r=$('readyBar'); let y0=null, dy=0;
+    r.addEventListener('pointerdown',e=>{ y0=e.clientY; dy=0; clearTimeout(readyT); try{ r.setPointerCapture(e.pointerId); }catch(_){} });
+    r.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); r.style.transform=`translateY(${dy}px)`; r.style.opacity=String(Math.max(.2,1-dy/90)); });
+    const end=()=>{ if(y0==null) return; y0=null; if(dy>24||dy<6){ r.style.transform=`translateY(${Math.max(dy,0)}px)`; hideReady(); } else { r.style.transform=''; r.style.opacity=''; readyT=setTimeout(()=>hideReady(),1500); } };
+    r.addEventListener('pointerup',end); r.addEventListener('pointercancel',end); }
+  $('phone').addEventListener('pointerdown',()=>hideReady(),true);
+  $('bar').addEventListener('click',e=>{ if(e.target.closest('.tab')&&!e.target.closest('#barSave')) hideReady(); });
+  document.addEventListener('input',()=>{ hideReady(); });   // they started editing (desktop has no tab bar)
   if(PG) $('saveThis').addEventListener('click',()=>doSave(S.page));
   if(cfg.frameOnly) $('saveFrame').addEventListener('click',()=>save(false));
   /* pages (carousels): one page for ordinary stories */
@@ -1661,7 +1676,7 @@ async function tool(cfg){
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
-      $('readyTxt').textContent=fs.length>1?'Your photos are in.':'Your photo is in.'; $('readyBar').hidden=false; }
+      flush(); quickReady=true; showReady(fs.length>1); }
     else status('That photo did not come through. Tap Add your photo.'); }
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
@@ -1843,19 +1858,21 @@ async function home(){
   }
   /* load once at a time; sign-in events for the same person don't reload (that used to redraw the list under your finger) */
   function loadSaved(force){ if(loading&&!force) return loading; loading=doLoad().finally(()=>{ loading=null; }); return loading; }
-  function skel(n){ return Array.from({length:n},()=>'<div class="sv-card sv-skel" aria-hidden="true"><span class="sv-thumb"></span><span class="sv-line"></span></div>').join(''); }
+  function skel(n){ return Array.from({length:n},()=>'<div class="sv-card sv-skel" aria-hidden="true"><span class="sv-open"><span class="sv-thumb"></span><span class="sv-txt"><span class="sv-line"></span><span class="sv-line short"></span></span></span></div>').join(''); }
+  /* a friendly note for empty, signed-out and error states: icon, title, one line, an optional button */
+  const note=(ic,title,text,btn)=>`<div class="sv-note"><span class="sn-ic" aria-hidden="true">${ic}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
   async function doLoad(){
     const member=await refreshAccount(); loadedFor=me?me.id:null;
     if(!member){ all=[]; cols=[]; loaded=true; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
     if(!all.length){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
     try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }
-    catch(err){ const m=`<div class="sv-note"><p>${esc(err.message)}</p><button type="button" class="btn slim" data-reload>Try again</button></div>`; $('savedRowList').innerHTML=m; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=m; return; }
+    catch(err){ const m=note(ICON.rotate,'Could not load the saved designs',esc(err.message),'<button type="button" class="btn slim" data-reload>Try again</button>'); $('savedRowList').innerHTML=m; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=m; return; }
     loaded=true; paint();
   }
   function signedOut(){
-    const h=`<div class="sv-note"><p>${me?'This email is not on the team yet. Ask the owner to add you.':'Sign in to see the designs your team saved.'}</p>${me?'':'<button type="button" class="btn slim" data-signin>Sign in</button>'}</div>`;
+    const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
     $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    $('typeChips').hidden=$('colChips').hidden=$('colTools').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    $('typeChips').hidden=$('colChips').hidden=$('savedTip').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -1864,15 +1881,17 @@ async function home(){
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em>Template</em>':''}</span><span class="sv-txt"><b dir="auto">${esc(d.name)}</b><span>${esc(ago(lastUse(d)))}</span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
-  const emptyNote='<div class="sv-note"><p>Nothing saved yet. Tap <b>Save</b> in any tool and it lands here, for the whole team.</p></div>';
+    return `<div class="sv-card" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em>Template</em>':''}</span><span class="sv-txt" dir="auto"><b>${esc(d.name)}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+  const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
+  /* few designs: a "New design" card fills the gap (it opens the + menu) */
+  const newCard=()=>`<button type="button" class="sv-new" data-new aria-label="New design: start from a photo or a template"><span class="sv-new-ic" aria-hidden="true">${ICON.plus}</span><b>New design</b><span>From a photo or a template</span></button>`;
   function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); }
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
     const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,10);
     $('savedCount').textContent=all.length?String(all.length):'';
-    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(all.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${all.length}</a>`:''):emptyNote;
+    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(all.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${all.length}</a>`:'')+(recent.length<4?newCard():''):emptyNote;
     fillThumbs(recent);
   }
   /* the Saved page: type chips (only the types you have), collection chips, sort; a grid of pictures */
@@ -1888,27 +1907,59 @@ async function home(){
     $('typeChips').hidden=!has||types.length<2&&!n.template;
     $('typeChips').innerHTML=`<button type="button" class="chip" data-type="all" aria-pressed="${typeF==='all'}">All <i>${all.length}</i></button>`+types.map(t=>`<button type="button" class="chip" data-type="${t}" aria-pressed="${typeF===t}">${esc(TYPE_LABEL[t])} <i>${n[t]}</i></button>`).join('');
     $('colChips').hidden=!has||!cols.length;
-    $('colChips').innerHTML=cols.map(c=>`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${filter==='c:'+c.id}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`).join('');
-    $('colTools').hidden=!filter.startsWith('c:');
+    $('colChips').innerHTML=cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
+      return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
     const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&(typeF==='all'||(typeF==='template'?d.kind==='template':typeOf(d)===typeF)));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):(a,b)=>lastUse(b)-lastUse(a));
     $('spCount').textContent=has?(list.length===all.length?all.length+' design'+(all.length===1?'':'s'):list.length+' of '+all.length):'';
+    $('savedTip').hidden=!has||!list.length||list.length>=6;   // a few designs: a tip under them, so the page isn't bare
     if(!has){ $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
-    $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML='<div class="sv-note"><p>No saved design matches that.</p><button type="button" class="btn slim ghost" data-showall>Show all</button></div>';
-    $('savedGrid').innerHTML=list.map(svCard).join('');
+    const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
+    $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=colOn&&!colOn.count
+      ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
+      :note(ICON.search,'No saved design matches that','Try another type or collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
+    $('savedGrid').innerHTML=list.map(svCard).join('')+(list.length&&list.length<6?newCard():'');
     fillThumbs(list);
   }
   $('sort').addEventListener('change',e=>{ sortBy=e.target.value==='name'?'name':'recent'; store('studio:savedSort',sortBy); paintPage(); });
   $('typeChips').addEventListener('click',e=>{ const b=e.target.closest('[data-type]'); if(b){ typeF=b.dataset.type; haptic('tick'); paintPage(); } });
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: all collections
   $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ typeF='all'; filter='all'; paintPage(); } });
-  $('colRename').onclick=()=>{ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
+  /* the chosen collection's ⋯: a small menu with Rename and Delete (Delete still asks first) */
+  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('#colMore'); if(!b) return; e.stopPropagation(); haptic('tick');
+    popMenu(b,[{id:'colRename',icon:ICON.pencil,label:'Rename collection',run:renameCol},{id:'colDelete',icon:ICON.trash,label:'Delete collection',danger:true,run:deleteCol}]); });
+  /* "New design" (empty and sparse Saved): the + menu */
+  document.addEventListener('click',e=>{ if(e.target.closest('[data-new]')) $('fab').click(); });
+  function renameCol(){ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<form method="dialog" class="dlg-body"><h3>Rename collection</h3><input type="text" id="crName" dir="auto" maxlength="40"><div class="status" id="crSt"></div><div class="dlg-actions"><button type="button" class="mini" id="crX">Cancel</button><button type="submit" class="btn">Rename</button></div></form>`);
     d.querySelector('#crName').value=c.name; d.querySelector('#crX').onclick=()=>d.close();
     d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(true); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
-  $('colDelete').onclick=()=>{ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
+  function deleteCol(){ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
     d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }; };
+  /* a small menu under a button: arrow keys move, Escape / a tap outside / scrolling closes it, focus goes back to the button */
+  function popMenu(btn,items){
+    const old=document.querySelector('.pop-menu'); if(old) old.remove();
+    const m=document.createElement('div'); m.className='pop-menu'; m.setAttribute('role','menu'); m.setAttribute('aria-label',btn.getAttribute('aria-label')||'Options');
+    m.innerHTML=items.map(it=>`<button type="button" role="menuitem" class="pm-item${it.danger?' danger':''}" id="${it.id}">${it.icon}<span>${esc(it.label)}</span></button>`).join('');
+    document.body.appendChild(m);
+    const r=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight, rtl=getComputedStyle(btn).direction==='rtl';
+    const x=Math.max(8,Math.min(innerWidth-w-8,rtl?r.left:r.right-w)); let y=r.bottom+8; if(y+h>innerHeight-8) y=Math.max(8,r.top-h-8);
+    m.style.left=x+'px'; m.style.top=y+'px'; m.style.transformOrigin=`${rtl?'left':'right'} ${y<r.top?'bottom':'top'}`;
+    btn.setAttribute('aria-expanded','true');
+    const btns=[...m.querySelectorAll('[role=menuitem]')];
+    const close=back=>{ m.remove(); btn.setAttribute('aria-expanded','false'); removeEventListener('pointerdown',out,true); removeEventListener('scroll',shut,true); removeEventListener('resize',shut); document.removeEventListener('keydown',key,true); if(back&&btn.isConnected) btn.focus({preventScroll:true}); };
+    const out=e=>{ if(!m.contains(e.target)&&!btn.contains(e.target)) close(false); };
+    const shut=e=>{ if(!e||!m.contains(e.target)) close(false); };
+    const key=e=>{ const i=btns.indexOf(document.activeElement);
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(true); }
+      else if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); btns[(i+(e.key==='ArrowDown'?1:btns.length-1))%btns.length].focus(); }
+      else if(e.key==='Tab') close(false); };
+    btn.addEventListener('click',function again(e){ if(m.isConnected){ e.stopImmediatePropagation(); close(true); } btn.removeEventListener('click',again,true); },{capture:true,once:true});
+    addEventListener('pointerdown',out,true); addEventListener('scroll',shut,true); addEventListener('resize',shut); document.addEventListener('keydown',key,true);
+    m.addEventListener('click',e=>{ const b=e.target.closest('[role=menuitem]'); if(!b) return; const it=items.find(x=>x.id===b.id); close(false); if(it) it.run(); });
+    btns[0].focus({preventScroll:true});
+  }
   /* view switch for your tools (list or grid), remembered on this phone */
   document.querySelectorAll('.vswitch[data-view="tools"]').forEach(sw=>sw.addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; toolsView=b.dataset.v; store('studio:toolsView',toolsView); paintToolsView(); }));
 
@@ -1931,7 +1982,7 @@ async function home(){
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);
       const row=(act,ic,label,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-act="${act}">${ic}<span>${label}</span></button>`;
       const d=dialog(`<div class="dlg-body design-sheet">
-      <div class="ds-top">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}<div><h3 dir="auto">${esc(dsg.name)}</h3><p class="small">${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}<br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
+      <div class="ds-top" dir="auto">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}<div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}">${tpl?'Use template':'Open'}</a>
       <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>

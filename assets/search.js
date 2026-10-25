@@ -21,6 +21,8 @@ function nmap(s){
   return {n,m};
 }
 const norm=s=>nmap(s).n;
+/* our own clear button (the browser's native one jumps onto the magnifier when the text is Arabic): a soft disc with a small x */
+const X_ICON='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" fill-opacity=".16" stroke="none"/><path d="M15.5 8.5 8.5 15.5"/><path d="m8.5 8.5 7 7"/></svg>';
 const thumbs=new Map(), pending=new Set();   // saved-design thumbnails resolved so far (kept across re-inits)
 let cur=null;
 
@@ -36,6 +38,11 @@ function make(cfg){
   let isOpen=false, pushed=false, popRes=null, popT=0, closing=null, kb=-1, shown=[], view='', raf=0, stT=0, spacer=null, going=false;
   const expanded=new Set();
   input.setAttribute('aria-controls',panel.id||(panel.id='usPanel')); input.setAttribute('aria-expanded','false');
+  /* clear button: inside the field, right after the input; shown only while there is text */
+  if(input.parentNode) input.parentNode.querySelectorAll(':scope>.us-x').forEach(x=>x.remove());
+  const xb=document.createElement('button'); xb.type='button'; xb.className='us-x'; xb.hidden=true; xb.setAttribute('aria-label','Clear search'); xb.innerHTML=X_ICON; input.after(xb);
+  const syncX=()=>{ xb.hidden=!input.value; };
+  syncX();
 
   /* ---- searching ---- */
   function search(q){
@@ -87,13 +94,14 @@ function make(cfg){
       pic=`<span class="us-th" data-tid="${esc(e.id||'')}" aria-hidden="true">${u?`<img src="${esc(u)}" alt="" decoding="async">`:''}</span>`;
       if(!u&&e.thumbAsync) want(e);
     } else pic=`<span class="us-ic" aria-hidden="true">${e.icon||''}</span>`;
-    const sub=!tile&&e.sub?`<span class="us-s" dir="auto">${esc(e.sub)}</span>`:'', badge=!tile&&e.badge?`<span class="us-badge">${esc(e.badge)}</span>`:'';
+    const sub=!tile&&e.sub?`<span class="us-s">${esc(e.sub)}</span>`:'', badge=!tile&&e.badge?`<span class="us-badge">${esc(e.badge)}</span>`:'';
     const end=tile?'':e.quick?`<span class="us-end" aria-hidden="true">${ic('camera')}</span>`:e.togglePin?'':`<span class="us-end go" aria-hidden="true">${ic('next')}</span>`;
     const an=i<8, d=`style="--d:${i*15}ms"`;   // the first 8 fade in one after another
-    const row=`<${tag} class="us-row${tile?' us-tile'+(pri?' pri':'')+(an?' us-anim':''):''}"${tile&&an?' '+d:''} id="us-r${i}" data-i="${i}"${attr}>${lead}${pic}<span class="us-tx"><span class="us-t" dir="auto">${tile?esc(title):hl(title,words)}</span>${sub}</span>${badge}${end}</${tag}>`;
+    /* direction: the wrapper (.us-item, or the tile itself) has dir="auto" and the first text it meets is the title, so thumbnail, text, badge, chevron and star all follow the title's direction */
+    const row=`<${tag} class="us-row${tile?' us-tile'+(pri?' pri':'')+(an?' us-anim':''):''}"${tile?' dir="auto"':''}${tile&&an?' '+d:''} id="us-r${i}" data-i="${i}"${attr}>${lead}${pic}<span class="us-tx"><span class="us-t">${tile?esc(title):hl(title,words)}</span>${sub}</span>${badge}${end}</${tag}>`;
     if(tile) return row;
     const star=e.togglePin?`<button type="button" class="us-star" data-star="${i}" aria-pressed="${!!e.pinned}" aria-label="${esc(starLabel(e))}">${e.pinned?ic('starFill'):ic('star')}</button>`:'';
-    return `<div class="us-item${an?' us-anim':''}"${an?' '+d:''}>${row}${star}</div>`;
+    return `<div class="us-item${an?' us-anim':''}" dir="auto"${an?' '+d:''}>${row}${star}</div>`;
   }
   function idleHtml(){
     const rec=rd(); let h='';
@@ -136,7 +144,7 @@ function make(cfg){
       }
       root.classList.add('on'); document.body.classList.add('us-open'); panel.hidden=false; cancel.hidden=false; input.setAttribute('aria-expanded','true'); sync();
     }
-    if(q!=null) input.value=q;
+    if(q!=null){ input.value=q; syncX(); }
     if(!was||q!=null) render();
     if(document.activeElement!==input) input.focus({preventScroll:true});
   }
@@ -144,7 +152,7 @@ function make(cfg){
   function hide(){
     isOpen=false; root.classList.remove('on'); document.body.classList.remove('us-open'); panel.hidden=true; cancel.hidden=true;
     root.style.removeProperty('--us-top'); root.style.removeProperty('--us-h'); if(spacer){ spacer.remove(); spacer=null; }
-    input.setAttribute('aria-expanded','false'); input.removeAttribute('aria-activedescendant'); input.value=''; kb=-1; view=''; status.textContent='';
+    input.setAttribute('aria-expanded','false'); input.removeAttribute('aria-activedescendant'); input.value=''; syncX(); kb=-1; view=''; status.textContent='';
     if(phone()) input.blur();
   }
   function finishPop(){ clearTimeout(popT); const r=popRes; popRes=null; if(r) r(); }
@@ -168,7 +176,11 @@ function make(cfg){
   /* ---- events ---- */
   on(input,'focus',()=>{ if(!isOpen) open(); });
   on(input,'click',()=>{ if(!isOpen) open(); });
-  on(input,'input',()=>{ if(!isOpen) open(); else schedule(); });
+  on(input,'input',()=>{ syncX(); if(!isOpen) open(); else schedule(); });
+  /* the clear button never takes focus from the field (the phone keyboard stays up) and never closes the layer */
+  on(xb,'pointerdown',e=>e.preventDefault());
+  on(xb,'mousedown',e=>e.preventDefault());
+  on(xb,'click',e=>{ e.preventDefault(); input.value=''; input.dispatchEvent(new Event('input',{bubbles:true})); syncX(); input.focus({preventScroll:true}); });
   on(cancel,'click',()=>{ close(); });
   on(root,'keydown',e=>{
     if(e.isComposing) return;
@@ -183,7 +195,7 @@ function make(cfg){
   on(document,'pointerdown',e=>{ if(isOpen&&!phone()&&!root.contains(e.target)) close(); });
   on(root,'focusout',e=>{ if(isOpen&&!phone()&&e.relatedTarget&&!root.contains(e.relatedTarget)) close(); });
   on(window,'popstate',()=>{ if(popRes){ finishPop(); return; } if(isOpen&&pushed){ pushed=false; hide(); } });   // Android Back closes the search
-  on(window,'pageshow',e=>{ if(!e.persisted) return; pushed=false; finishPop(); if(isOpen) hide(); else input.value=''; });   // restored from the back/forward cache: start clean
+  on(window,'pageshow',e=>{ if(!e.persisted) return; pushed=false; finishPop(); if(isOpen) hide(); else{ input.value=''; syncX(); } });   // restored from the back/forward cache: start clean
   if(window.visualViewport){ on(window.visualViewport,'resize',sync); on(window.visualViewport,'scroll',sync); }
   /* a photo picked from a quick row: the page's own listener does the work, we just get out of the way */
   on(panel,'change',e=>{ if(e.target.matches&&e.target.matches('input[data-quick]')) close(); });
@@ -201,7 +213,7 @@ function make(cfg){
       star.classList.remove('pop'); void star.offsetWidth; star.classList.add('pop'); hap('tick'); return;
     }
     const chip=t.closest('[data-q]');
-    if(chip){ input.value=chip.dataset.q; input.focus({preventScroll:true}); render(); return; }
+    if(chip){ input.value=chip.dataset.q; syncX(); input.focus({preventScroll:true}); render(); return; }
     if(t.closest('[data-clear]')){ wr(null); render(); input.focus({preventScroll:true}); return; }
     const more=t.closest('[data-more]');
     if(more){
@@ -222,7 +234,7 @@ function make(cfg){
 
   return {
     open, close, refresh(){ if(isOpen) render({keep:true}); },
-    destroy(){ ac.abort(); status.remove(); if(isOpen) hide(); input.removeAttribute('aria-controls'); input.removeAttribute('aria-expanded'); }
+    destroy(){ ac.abort(); status.remove(); xb.remove(); if(isOpen) hide(); input.removeAttribute('aria-controls'); input.removeAttribute('aria-expanded'); }
   };
 }
 
