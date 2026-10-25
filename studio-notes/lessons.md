@@ -20,6 +20,7 @@ What worked, what failed, and process tweaks. Newest session first.
 **Process tweaks**
 - `tests/look8.mjs <outDir> [base] [names]` shoots every screen the owner flagged in light and dark with Arabic names seeded (approved phrases only); `scratchpad/pair.py` puts light and dark side by side. Take the "before" set first.
 - New suites: `tests/polish71.mjs`, `tests/contrast.mjs`.
+- Testing is now three levels (skill → Testing): `tests/smoke.mjs` every session (core flows, light + dark, ~30 s), the suites mapped to what changed, and every suite + contrast + every-screen shots only in Simplify sessions. For scale: `full.mjs` alone takes ~3 min, every suite ~25 min.
 
 ## Session 7 · 0.7.0 · 25 Oct 2026 (owner-directed: fresh look default, + button, Saved, one-tap save, What's New)
 

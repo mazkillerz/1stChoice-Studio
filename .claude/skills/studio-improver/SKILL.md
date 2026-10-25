@@ -26,9 +26,9 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Branches and merging:** work on the session's assigned branch (or `claude/<topic>`), then **merge to `main` at the end of every session** once every test passes (Mazoon's standing instruction, 24 Oct 2026: "Merge always"). Pages publishes `main` immediately. Because everything merges, big redesigns or experiments ship behind a toggle that is off by default (locked core rule 3) until Mazoon approves them.
 - **Version:** `VERSION` at the top of `assets/studio.js` (shown on the hub and used for the What's New dot). Also bump the cache name in `sw.js` whenever shipped files change.
 - **What's New:** `whats-new.html` + `assets/whatsnew.js/.css` read `studio-notes/changelog.md` directly (format in that file's intro). Screenshots go in `assets/whatsnew/<version>-<name>-before|after.jpg`, 390px-wide phone crops at 2×, JPEG quality ~72 (keep each under ~80 KB). Take the "before" shots **before** changing anything.
-- **Tests:** `npx http-server -p 8080 -c-1 .`, then `node tests/full.mjs`, `v5.mjs`, `create.mjs`, `extra.mjs`, `whatsnew.mjs`, `highlight.mjs`, `quicksave.mjs`, `simplify.mjs`, `pins.mjs`, `search.mjs`, `fresh.mjs`, `home7.mjs`, `polish71.mjs`, `contrast.mjs` (and `lab.mjs` / `lab-pro.mjs` / `board-penpot.mjs` when Board changes). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
-- **Audit + screenshot helpers:** `node tests/tapscan.mjs tools/a.html,tools/b.html` lists every control under 44px per sheet; `node tests/shot.mjs <page> <sheet|-> <out.jpg> [selector]` takes the What's New phone shots. Add `tests/<feature>.mjs` for each feature and to the suite list above.
-- **Contrast, RTL and real-font shots:** `node tests/contrast.mjs` scans every main screen in light and dark for text below WCAG AA and Arabic text running left-to-right (run it on the old commit too, so a clean result means something). `node tests/look8.mjs <outDir> [base] [names]` shoots the owner-flagged screens in both themes with Arabic names seeded. For real Google Fonts in the sandbox, launch with `proxy:{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}` and set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` (otherwise local pages go through the proxy).
+- **Tests:** serve with `npx http-server -p 8080 -c-1 .`, then follow **Testing** below (smoke every session, targeted suites for what changed, the full sweep only in Simplify sessions). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
+- **Audit + screenshot helpers:** `node tests/tapscan.mjs tools/a.html,tools/b.html` lists every control under 44px per sheet; `node tests/shot.mjs <page> <sheet|-> <out.jpg> [selector]` takes the What's New phone shots.
+- **Contrast, RTL and real-font shots** (full sweep, or when colours, tokens or Arabic text handling change): `node tests/contrast.mjs` scans every main screen in light and dark for text below WCAG AA and Arabic text running left-to-right (run it on the old commit too, so a clean result means something). `node tests/look8.mjs <outDir> [base] [names]` shoots the owner-flagged screens in both themes with Arabic names seeded. For real Google Fonts in the sandbox, launch with `proxy:{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}` and set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` (otherwise local pages go through the proxy).
 - **New paged tools** (a set of covers, slides…): use `pages`, `pagePhotos` and `pageNoun` in `Studio.tool` instead of new engine code; the hub list is `TOOLS` in `studio.js`, its thumbnails are `assets/thumbs/<brand>/<id>.jpg` + `-sm.jpg` (320×569), and both tool files go in the `sw.js` shell.
 - **Wording in test data:** anything a test types that can end up in a shipped image (thumbnails, screenshots) must be an approved phrase from `brand.js`.
 - **Owner-directed sessions:** when Mazoon names the work, do that instead of the backlog pick. The gates still apply, and the session still counts in the team/Mazoon rotation (by who it helps most).
@@ -40,7 +40,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Hub data for search:** new tools, templates or settings show up in the hub search automatically if they are in `TOOLS` (add `keys` for extra words), the brand kit's `create.templates`, or `searchActions()` in `home()`.
 - **Pins:** the home page shows `getPins()` (per device, `studio:pins`); every tool is in All tools. A new tool is not pinned anywhere by default, so mention in What's New where to find it (All tools or search).
 - **Outside repos:** when the owner points at another project (e.g. Penpot), check whether it can actually run on static Pages first; usually the right move is to port its best ideas into the existing code and credit it in README and What's New.
-- **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku`. Give a subagent files that nobody else is editing at the same time.
+- **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku` (see **Testing → Who runs the tests**). Give a subagent files that nobody else is editing at the same time.
 
 ## Design system
 
@@ -51,14 +51,14 @@ Everything else in this skill can be rewritten by the skill itself.
 ## Session loop
 
 1. **Load context.** Read `studio-notes/backlog.md`, `studio-notes/lessons.md` and the latest entry in the changelog.
-2. **Audit.** Do a mobile-first UX audit of the live site using the checklist below. Add any findings to the backlog. (A quick Playwright script that lists every visible control under 44px at 390×844 finds most tap-target problems in seconds.)
+2. **Audit.** Run the smoke test (`tests/smoke.mjs`, via a `haiku` helper) and look at the screens you are about to change with the checklist below. Add findings to the backlog. The audit of every screen is part of the full sweep in Simplify sessions.
 3. **Pick work.** First check the session count at the top of `backlog.md`: if this release is the 5th, 10th, 15th… version, it's a **Simplify session** (see below) and there's no new feature. Otherwise choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
    - Team session: speed up restock photos and other team workflows, and make it easier for the team to adopt more tools.
    - Mazoon session: power tools like post makers, story makers, highlight covers, and anything else useful.
-4. **Build.** Keep the scope small enough to finish and test in one session.
+4. **Build.** Keep the scope small enough to finish and test in one session. Write `tests/<feature>.mjs` alongside each new feature or fix and add it to the test map (see Testing).
 5. **Quality gates.**
-   - Everything that worked before still works.
-   - It looks right and works well at phone size, then at desktop size.
+   - Everything that worked before still works: the smoke test and the targeted suites are green (Testing levels 1 and 2). The full sweep proves it for every screen each 5th version.
+   - The changed screens look right and work well at phone size, then at desktop size.
    - Saved designs in Supabase still load, save and delete correctly.
    - Nothing loads noticeably slower than before.
    - **Simplicity gate (locked core):** every change makes Studio easier, never more confusing.
@@ -66,8 +66,42 @@ Everything else in this skill can be rewritten by the skill itself.
      - Common tasks never take more taps than before (count them before and after: restock story, photo story, save).
      - Familiar buttons don't move without a good reason, and the reason goes in the What's New card.
      - If a change adds complexity, simplify it or move it to the backlog instead of shipping it.
-6. **Release.** Bump the version, update the What's New page, then commit, push and merge to `main` (see Repo notes).
+6. **Release.** Bump the version, update the What's New page, run the smoke test and the targeted suites one last time, then commit, push and merge to `main` (see Repo notes).
 7. **Reflect and self-improve.** Record what worked and what didn't in `lessons.md`. Add new ideas to the backlog. Edit this skill to work better next time, without touching the locked core.
+
+## Testing (fast by default)
+
+Test what changed, fully; test the core flows quickly; test everything only every 5th version. Decide the scope from the diff (`git diff --stat main`), not from habit.
+
+**Level 1: smoke, every session (about 30 s).** `node tests/smoke.mjs` runs the core flows at phone size (390×844, touch) in light and dark mode: home, Restock from a photo, Save in one tap (2160×3840 PNG + team), Save after an edit (Save sheet), search (English and Arabic, the Arabic row right to left), and opening a saved design from Saved with its photo back. Run it at the start (audit) and right before merging. It replaces checking these flows by hand. Keep it small: core flows only, under a minute. If a core flow changes on purpose, update `smoke.mjs` in the same session; a new feature gets its own suite instead.
+
+**Level 2: targeted, every session.** Test fully only the screens and features that changed:
+- Every new feature or fix gets `tests/<feature>.mjs` (phone first; light and dark when colours or surfaces change; desktop when its layout differs). Add it to the map below.
+- Run the suites mapped to every area the diff touches. Shared foundations count as areas: tokens or shared classes in `studio.css`, `dialog()`, the save engine, `useBrand`, `sw.js`.
+- A flow change can break tests that tap the old way: grep every suite for the old selectors and taps; the suites that use them are in scope too.
+- Screenshots (both themes) only of the changed screens, and only when the change is visual.
+
+| Area changed | Suites |
+| --- | --- |
+| Tool pages: layers, inspector, sheets, photos, drafts (`tool()` in studio.js, `tools/*.js`) | `full`, `v5`, `polish` |
+| Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
+| Quick start, "Your photo is in" | `quicksave`, `whatsnew` |
+| Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `fresh` |
+| Saved page, collections, a design's menu | `home7`, `polish71`, `extra` |
+| Search (`assets/search.*`) | `search` |
+| Highlight covers, paged tools | `highlight` |
+| Create (`tools/create*`) | `create` |
+| What's New, changelog | `whatsnew` |
+| Colours, tokens, type, Arabic text handling | `contrast`, `polish71`, `fresh` |
+| Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
+
+**Level 3: full sweep, Simplify sessions only** (every 5th version: 0.10.0, 0.15.0…), or when Mazoon asks for a check of every screen. Every suite in `tests/` (one at a time; they share the server), `tests/contrast.mjs`, shots of every screen in light and dark with Arabic names seeded (the `tests/look8.mjs` pattern), `tests/tapscan.mjs` over every tool, and a desktop pass. Fix what it finds or add it to the backlog. Other sessions skip it.
+
+**Who runs the tests.** The main model plans the scope, writes the checks a new suite must make, reads the results and decides. Routine testing goes to cheaper helpers:
+- `haiku`: runs suites and reports, takes screenshots of the changed screens with short notes. Brief: "Server on :8080 (start it if it is down). Run one at a time: `node tests/smoke.mjs`, `node tests/<suite>.mjs` … Do not edit any file. Reply with one line per suite: name, PASS count, FAIL count, time, and the first 3 FAIL lines word for word."
+- `sonnet`: writes or updates `tests/<feature>.mjs` from a precise list of checks (selectors, expected values, themes, viewports), then runs it.
+- Start helpers in the background and keep planning or writing notes meanwhile. The server serves the working tree, so make no app edits while a helper is testing (commit first, or wait for its report).
+- A helper's failure is a claim: reproduce the failing check before changing app code.
 
 ## Simplify session (every 5th version)
 
@@ -79,6 +113,7 @@ Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole sessi
 - Tidy the hub (grouping, order by use) and fix the open UX audit findings in `backlog.md`.
 - Clean up code and CSS that the cuts leave unused (move removed files to `_archive/`, never delete).
 - Still follow the locked core: nothing that changes saved designs, and big layout changes ship behind a toggle until Mazoon approves.
+- Run the full sweep (Testing, level 3): it is the one session that checks every screen, both themes and RTL.
 - What's New gets one card per simplification, with before/after screenshots and the tap counts.
 
 ## Mobile-first UX checklist
