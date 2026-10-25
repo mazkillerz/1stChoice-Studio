@@ -60,6 +60,7 @@
   <div class="sp-head">
     <button type="button" class="sp-back" id="savedBack" aria-label="Back to home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
     <div class="sp-title"><h1 id="savedH">Saved designs</h1><span class="sp-count" id="spCount"></span></div>
+    <button type="button" class="sp-sel" id="selBtn" hidden>Select</button>
     <label class="sr-only" for="sort">Sort saved designs</label><select id="sort" class="sel sort"><option value="recent">Recent</option><option value="name">Name</option></select>
   </div>
   <div class="sp-filters">
@@ -70,6 +71,11 @@
   <div class="empty" id="savedEmpty" hidden></div>
   <p class="sv-tip" id="savedTip" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg><span>Tip: tap ⋯ on a design, or press and hold it, to copy it, rename it or add it to a collection.</span></p>
 </section>
+<div class="sel-bar" id="selBar" role="toolbar" aria-label="Selected designs" hidden>
+  <button type="button" class="sel-act" id="selCol" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/></svg><span>Collection</span></button>
+  <button type="button" class="sel-act" id="selOut" disabled hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6"/></svg><span>Take out</span></button>
+  <button type="button" class="sel-act danger" id="selDel" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/></svg><span>Delete</span></button>
+</div>
 <nav class="hubbar" aria-label="Sections"><span class="pill" aria-hidden="true"></span>
   <a href="#" data-tab="home" aria-current="true"><svg class="ic-off" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><svg class="ic-on" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 21v-8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8z"/></svg><span>Home</span></a>
   <a href="#saved" data-tab="saved" aria-current="false"><svg class="ic-off" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><svg class="ic-on" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Saved</span></a>

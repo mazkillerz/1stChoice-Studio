@@ -24,5 +24,6 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/quicksave.mjs  # Quick start ready bar: one-tap "Looks good · Save" (2× PNG + team), Change words, hides on edit; text-place pad size
     node tests/home7.mjs      # 0.7.0: the + button and row cameras, Saved row + Saved page (chips, sort, hold/⋯/right-click actions, rename/duplicate/delete), bottom bar highlight, scroll lock, one-tap Save sheet
     node tests/fresh.mjs      # 0.7.0: the Fresh look is the default (accent, no switch, old setting removed), save tick + haptic, reduced motion
+    node tests/select.mjs     # 0.8.0: Saved page select mode (tick, Select all, Collection / Take out / Delete for many, ✕ / Escape / Back), Select more, 7 a row on a computer
     node tests/tapscan.mjs    # (helper) lists visible controls under 44px at 390×844, per sheet
     node tests/shot.mjs       # (helper) phone screenshot for What's New

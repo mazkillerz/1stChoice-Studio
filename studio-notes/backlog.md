@@ -2,13 +2,12 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 8 (0.7.1) was **owner-directed** polish (readable collection chip + ⋯ menu, Arabic names right to left on cards / search / design menu, photo note that fades, labelled Snap, matching bar icons, IBM Plex Sans Arabic + calmer type scale, one spacing rhythm, layered dark mode, friendly empty and sparse Saved). It helps the whole team most and counts as a **team** session; the next one (0.8.0) is still a **Mazoon** session.
+**Last session:** 9 (0.8.0) was a **Mazoon** session (select several saved designs: Collection / Take out / Delete in one go; 7 designs a row on a computer). The next one (0.9.0) is a **team** session.
 **Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
-| 22 | Saved page: select several designs (press and hold, then tap more) to delete or move them into a collection in one go | 3 | 4 | 3 | 3 | 7 | Follow-up to 0.7.0 Saved page. |
 | 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
 | 24 | + menu: show the tool you used last first, and Templates as a third choice | 3 | 2 | 2 | 1 | 6 | Watch what the team taps. |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
@@ -36,7 +35,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Old CSS left unused since 0.7.1: `.col-tools`, `.banner.ready` rules, `.link` in col tools. Remove in the next Simplify session (0.10.0) with the 0.5/0.6 leftovers below.
 - A saved design opened on a phone shows no "Saved design" label (`#designBar` is hidden on phones by `.panel>.banner{display:none}`); the Save sheet's switch says "Update “name” in the team" instead. Check whether the team misses the label.
 - Picture-only save when signed in is now 3 taps (Save, switch off, Save); picture + team is 2 (was 3–5). Watch whether the team wants a direct picture-only button; if so add it under the Save button.
-- Desktop Saved page: tiles are large (6 per row at 1080px); consider 7–8 per row on wide screens.
+- Select mode (0.8.0): on a phone, check whether the team finds **Select** at the top right or only through press and hold → Select more. Swipe-to-tick across several cards (like Photos) would be faster for long lists.
+- Select mode: Save the pictures of several designs in one go would fit the same bar (needs each tool to render offscreen: see #5 Batch export).
 - Old hub CSS left from 0.5/0.6 (`.qbtn`, `.quick*`, `.dgrid`, `.dcard`, `.rcard`, `.recent`, `#saved .sec-head`) is unused since 0.7.0: remove it in the next Simplify session (0.10.0).
 - tapscan still reports the custom-colour `input[type=color]` (38px) inside `.sw-btn`: its parent's `::after` gives the hit area. Teach tapscan to check the parent's `::after` too.
 - Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
@@ -47,6 +47,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.8.0 (Mazoon): Saved page select mode (Select / Select all / Clear; Collection adds the ticked designs to an existing or new collection, keeping their others; Take out while a collection is chosen; Delete many with one confirm; ✕ / Escape / Back stop; press and hold → Select more), 7 designs a row on a computer (#22 and the desktop tiles audit finding).
 - 0.7.1 (owner-directed polish): chosen collection chip readable in both themes with its full shadow; Rename / Delete collection in a ⋯ menu on the chosen chip (Delete asks first); design cards framed with the name (2 lines, `dir="auto"`) and time grouped; search clear ✕ at the end and magnifier at the start; Arabic search rows and the design menu header right to left; Quick start note fades in ~3 s (swipe / tap the photo), no second Save, bar Save one tap until the first edit; Snap labelled; Lucide bar icons, filled for the current tab; IBM Plex Sans Arabic with 400/500/600; one spacing rhythm; layered dark surfaces; friendly empty states, New design card and tip on sparse Saved; contrast + RTL sweep script.
 - 0.7.0 (owner-directed): Fresh look is the default (switch removed) and more polished (wash, button light, sheets slide up, chip pop, greeting); + button (Restock / Photo story / Collage from a photo, New design) and a camera button on photo-first rows instead of the Start from a photo block; Saved designs row on home + Saved page (picture grid, type + collection filters, press and hold / ⋯ actions with confirmed delete); one-tap save sheet (team on for new designs when signed in, name filled, last collection); Looks good · Save adds to the team too (#13); scroll lock for pop-ups, sheets and search; bottom bar Home + Saved with a centred highlight; What's New: latest as a big card, grouped older versions, type filters.
 - 0.6.0 (owner-directed): universal search at the top of the hub (tools, templates, saved designs, collections, unfinished stories, settings and actions; recent searches + shortcuts; Arabic-aware), pinned home + All tools library with stars (per device; Restock on a new device, the three photo-first tools on a device that used Studio before), Fresh look preview behind a switch (motion, soft depth, one bold blue accent, save tick + haptics), white "Saved!" tick for everyone.

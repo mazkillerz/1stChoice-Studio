@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.7.1';
+const VERSION='0.8.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -154,6 +154,7 @@ const ICON={
   plus:svg('<path d="M12 5v14M5 12h14"/>'),
   shapes:svg('<circle cx="7.5" cy="7.5" r="4.5"/><rect x="12" y="12" width="9" height="9" rx="2"/>',20),
   back:svg('<path d="m15 18-6-6 6-6"/>'),
+  close:svg('<path d="M18 6 6 18M6 6l12 12"/>'),
   next:svg('<path d="m9 18 6-6-6-6"/>'),
   trash:svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/>',20),
   search:svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',20),
@@ -1694,6 +1695,7 @@ async function home(){
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
   let sortBy=store('studio:savedSort')==='name'?'name':'recent', typeF='all', loaded=false;
+  let sel=null, shown=[];   // sel: the designs ticked in select mode (null = not selecting); shown: the Saved page's list right now
   const urls={}, toolName=t=>(TOOLS[t]||{}).title||t, colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
   const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hubToast=(msg,undo)=>{ let t=document.getElementById('hubToast'); if(!t){ t=document.createElement('div'); t.id='hubToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
@@ -1761,7 +1763,7 @@ async function home(){
   function setTab(v){ tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
     const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
-  function showView(v){ const sp=v==='saved'; setTab(v); if(sp===onSaved()) return;
+  function showView(v){ const sp=v==='saved'; setTab(v); if(!sp&&sel) endSelect(true); if(sp===onSaved()) return;
     if(sp) homeY=scrollY;
     $('homeView').hidden=sp; $('saved').hidden=!sp; document.body.classList.toggle('on-saved',sp);
     window.scrollTo({top:sp?0:homeY,behavior:'instant'});
@@ -1772,7 +1774,7 @@ async function home(){
   addEventListener('popstate',()=>{ const want=location.hash==='#saved'?'saved':'home'; if((want==='saved')!==onSaved()) showView(want); });
   tabs.forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); haptic('tick'); if(a.dataset.tab==='saved') openSaved(); else goHome(); }));
   document.addEventListener('click',e=>{ const a=e.target.closest('[data-see-all]'); if(a){ e.preventDefault(); openSaved(); } });
-  $('savedBack').onclick=goHome;
+  $('savedBack').onclick=()=>{ if(sel) return history.state&&history.state.sel?history.back():endSelect(); goHome(); };
   addEventListener('resize',()=>setTab(onSaved()?'saved':'home'));
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>setTab(onSaved()?'saved':'home'));
   if(location.hash==='#saved') showView('saved'); else requestAnimationFrame(()=>setTab('home'));
@@ -1874,7 +1876,7 @@ async function home(){
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
     $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    $('typeChips').hidden=$('colChips').hidden=$('savedTip').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    endSelect(true); $('typeChips').hidden=$('colChips').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -1883,7 +1885,7 @@ async function home(){
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em>Template</em>':''}</span><span class="sv-txt" dir="auto"><b>${esc(d.name)}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em>Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b>${esc(d.name)}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
   /* few designs: a "New design" card fills the gap (it opens the + menu) */
   const newCard=()=>`<button type="button" class="sv-new" data-new aria-label="New design: start from a photo or a template"><span class="sv-new-ic" aria-hidden="true">${ICON.plus}</span><b>New design</b><span>From a photo or a template</span></button>`;
@@ -1915,13 +1917,15 @@ async function home(){
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):(a,b)=>lastUse(b)-lastUse(a));
     $('spCount').textContent=has?(list.length===all.length?all.length+' design'+(all.length===1?'':'s'):list.length+' of '+all.length):'';
     $('savedTip').hidden=!has||!list.length||list.length>=6;   // a few designs: a tip under them, so the page isn't bare
-    if(!has){ $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
+    shown=list; $('selBtn').hidden=!has;
+    if(sel){ const ids=new Set(list.map(d=>d.id)); [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); }); }   // only what you can see stays ticked
+    if(!has){ endSelect(true); $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
     const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=colOn&&!colOn.count
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
       :note(ICON.search,'No saved design matches that','Try another type or collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
-    $('savedGrid').innerHTML=list.map(svCard).join('')+(list.length&&list.length<6?newCard():'');
-    fillThumbs(list);
+    $('savedGrid').innerHTML=list.map(svCard).join('')+(list.length&&list.length<6&&!sel?newCard():'');
+    fillThumbs(list); paintSel();
   }
   $('sort').addEventListener('change',e=>{ sortBy=e.target.value==='name'?'name':'recent'; store('studio:savedSort',sortBy); paintPage(); });
   $('typeChips').addEventListener('click',e=>{ const b=e.target.closest('[data-type]'); if(b){ typeF=b.dataset.type; haptic('tick'); paintPage(); } });
@@ -1965,11 +1969,75 @@ async function home(){
   /* view switch for your tools (list or grid), remembered on this phone */
   document.querySelectorAll('.vswitch[data-view="tools"]').forEach(sw=>sw.addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; toolsView=b.dataset.v; store('studio:toolsView',toolsView); paintToolsView(); }));
 
+  /* Select (Saved page): tick several designs, then put them in a collection, take them out of the one you're looking at,
+     or delete them, in one go. The bottom bar swaps for the actions; ✕, Escape, Back or leaving the page stops selecting. */
+  const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+  function startSelect(id){ sel=new Set(id?[id]:[]); document.body.classList.add('selecting'); $('selBar').hidden=false; haptic('tick');
+    try{ history.pushState({sp:1,sel:1},'',location.hash||'#saved'); }catch(_){}
+    paintPage(); }
+  function endSelect(quiet){ if(!sel) return; sel=null; document.body.classList.remove('selecting'); $('selBar').hidden=true;
+    if(history.state&&history.state.sel) history.back();   // drop the select step from history, so Back goes home next
+    if(quiet) paintSel(); else paintPage(); }
+  function paintSel(){
+    const on=!!sel, n=on?sel.size:0, back=$('savedBack');
+    $('savedH').textContent=on?(n?n+' selected':'Select designs'):'Saved designs';
+    if(on) $('spCount').textContent=n?'Tap more, or pick what to do below':'Tap the designs you want';
+    back.innerHTML=on?ICON.close:ICON.back; back.setAttribute('aria-label',on?'Stop selecting':'Back to home');
+    const sb=$('selBtn'), every=on&&shown.length&&n===shown.length;
+    sb.textContent=on?(every?'Clear':'Select all'):'Select'; sb.setAttribute('aria-pressed',String(on));
+    $('sort').hidden=on;
+    document.querySelectorAll('#savedGrid .sv-card').forEach(c=>{ const p=on&&sel.has(c.dataset.id), a=c.querySelector('.sv-open');
+      c.classList.toggle('picked',p); if(on){ a.setAttribute('role','checkbox'); a.setAttribute('aria-checked',String(p)); } else { a.removeAttribute('role'); a.removeAttribute('aria-checked'); } });
+    const col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
+    $('selOut').hidden=!col; if(col) $('selOut').setAttribute('aria-label','Take them out of “'+col.name+'”');
+    ['selCol','selOut','selDel'].forEach(id=>$(id).disabled=!n);
+  }
+  function toggleSel(id){ if(!sel) return; sel.has(id)?sel.delete(id):sel.add(id); haptic('tick'); paintSel(); }
+  $('selBtn').addEventListener('click',()=>{ if(!sel) return startSelect();
+    if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
+  addEventListener('popstate',()=>{ if(sel&&!(history.state&&history.state.sel)) endSelect(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sel&&!document.querySelector('dialog[open],.pop-menu')){ e.preventDefault(); history.state&&history.state.sel?history.back():endSelect(); } });
+  const picked=()=>all.filter(d=>sel&&sel.has(d.id));
+  /* run one call per design, with a running count; stops at the first error and says how far it got */
+  async function eachDesign(list,st,verb,fn){ for(let i=0;i<list.length;i++){ st(verb+' '+(i+1)+' of '+list.length+'…'); await fn(list[i]); } }
+  $('selDel').addEventListener('click',()=>{ const list=picked(); if(!list.length) return; const one=list.length===1;
+    const cf=dialog(`<div class="dlg-body"><h3 dir="auto">Delete ${one?'“'+esc(list[0].name)+'”':plural(list.length,'design')}?</h3>
+      <p class="small">This removes ${one?'the design and all its images':'these designs and all their images'} from Studio for the whole team. It can't be undone.</p>
+      <div class="status" id="cfSt" role="status"></div>
+      <div class="dlg-actions"><button type="button" class="mini" id="cfNo">Cancel</button><button type="button" class="btn danger" id="cfYes">Delete${one?'':' '+list.length}</button></div></div>`);
+    const st=t=>{ cf.querySelector('#cfSt').textContent=t; };
+    cf.querySelector('#cfNo').onclick=()=>cf.close();
+    cf.querySelector('#cfYes').onclick=async()=>{ cf.querySelectorAll('button').forEach(x=>x.disabled=true); let done=0;
+      try{ await eachDesign(list,st,'Deleting',async d=>{ await C.deleteDesign(d.id); done++; }); cf.close(); endSelect(true);
+        all=all.filter(x=>!list.includes(x)); paint(); hubToast(one?'“'+list[0].name+'” deleted.':plural(list.length,'design')+' deleted.'); loadSaved(true); }
+      catch(err){ st((done?plural(done,'design')+' deleted, then: ':'')+err.message); cf.querySelectorAll('button').forEach(x=>x.disabled=false); if(done) loadSaved(true); } }; });
+  $('selCol').addEventListener('click',()=>{ const list=picked(); if(!list.length) return; let pick=filter.startsWith('c:')?'':(cols[0]||{}).name||'';
+    const d=dialog(`<div class="dlg-body"><h3>Add ${plural(list.length,'design')} to a collection</h3><div class="chips" id="scChips"></div>
+      <div class="inline"><input type="text" id="scNew" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"></div>
+      <div class="status" id="scSt" role="status"></div>
+      <div class="dlg-actions"><button type="button" class="mini" id="scX">Cancel</button><button type="button" class="btn" id="scGo">Add</button></div></div>`);
+    const chips=d.querySelector('#scChips'), inp=d.querySelector('#scNew'), go=d.querySelector('#scGo'), st=t=>{ d.querySelector('#scSt').textContent=t; };
+    const draw=()=>{ chips.hidden=!cols.length; chips.innerHTML=cols.map(c=>`<button type="button" class="chip" dir="auto" data-n="${esc(c.name)}" aria-pressed="${!inp.value.trim()&&pick===c.name}">${esc(c.name)}</button>`).join('');
+      const name=inp.value.trim()||pick; go.disabled=!name; go.textContent=name?'Add to “'+name+'”':'Add'; };
+    chips.onclick=e=>{ const c=e.target.closest('[data-n]'); if(!c) return; pick=c.dataset.n; inp.value=''; haptic('tick'); draw(); };
+    inp.addEventListener('input',draw); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go.click(); } });
+    d.querySelector('#scX').onclick=()=>d.close();
+    go.onclick=async()=>{ const name=inp.value.trim()||pick; if(!name) return; d.querySelectorAll('button,input').forEach(x=>x.disabled=true);
+      try{ await eachDesign(list,st,'Adding',async x=>{ const names=x.collections.map(colName).filter(Boolean); if(!names.includes(name)) await C.setDesignCollections(B.id,x.id,[...names,name]); });
+        d.close(); endSelect(true); hubToast('Added '+plural(list.length,'design')+' to “'+name+'”.'); loadSaved(true); }
+      catch(err){ st(err.message); d.querySelectorAll('button,input').forEach(x=>x.disabled=false); draw(); loadSaved(true); } };
+    draw(); if(!cols.length) setTimeout(()=>inp.focus(),60); });
+  $('selOut').addEventListener('click',async()=>{ const list=picked(), col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter); if(!list.length||!col) return;
+    const b=$('selOut'); b.disabled=true;
+    try{ await eachDesign(list,()=>{},'',x=>C.setDesignCollections(B.id,x.id,x.collections.map(colName).filter(n=>n&&n!==col.name)));
+      endSelect(true); hubToast('Took '+plural(list.length,'design')+' out of “'+col.name+'”.'); loadSaved(true); }
+    catch(err){ hubToast('Could not take them out: '+err.message); b.disabled=false; loadSaved(true); } });
+
   /* press and hold a saved design (phones), right-click or ⋯ (computers): its actions. A short tap opens it. */
   let lp=null;
   const designOf=el=>{ const c=el&&el.closest('.sv-card'); return c?all.find(x=>x.id===c.dataset.id):null; };
   const cancelLp=()=>{ if(lp&&!lp.fired){ clearTimeout(lp.t); lp.a.classList.remove('pressing'); lp=null; } };
-  document.addEventListener('pointerdown',e=>{ cancelLp(); lp=null; const a=e.target.closest('.sv-open'); if(!a||e.button>0) return; const d=designOf(a); if(!d) return;
+  document.addEventListener('pointerdown',e=>{ cancelLp(); lp=null; const a=e.target.closest('.sv-open'); if(!a||e.button>0||sel) return; const d=designOf(a); if(!d) return;
     a.classList.add('pressing'); const me2={x:e.clientX,y:e.clientY,a,fired:false}; me2.t=setTimeout(()=>{ me2.fired=true; a.classList.remove('pressing'); haptic('tick'); designSheet(d); },480); lp=me2; });
   document.addEventListener('pointermove',e=>{ if(lp&&!lp.fired&&Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>10) cancelLp(); },{passive:true});
   document.addEventListener('pointerup',cancelLp); document.addEventListener('pointercancel',cancelLp);
@@ -1977,8 +2045,9 @@ async function home(){
   document.addEventListener('keydown',()=>{ lp=null; });
   document.addEventListener('click',e=>{
     const a=e.target.closest('.sv-open'); if(a&&lp&&lp.fired){ e.preventDefault(); lp=null; return; }
+    if(a&&sel){ e.preventDefault(); e.stopPropagation(); const c=a.closest('.sv-card'); if(c) toggleSel(c.dataset.id); return; }
     const m=e.target.closest('[data-dmore]'); if(m){ const d=all.find(x=>x.id===m.dataset.dmore); if(d) designSheet(d); } },true);
-  document.addEventListener('contextmenu',e=>{ const a=e.target.closest('.sv-open'); if(!a) return; e.preventDefault(); if(lp&&lp.fired) return; cancelLp(); const d=designOf(a); if(d&&!document.querySelector('dialog[open]')) designSheet(d); });
+  document.addEventListener('contextmenu',e=>{ const a=e.target.closest('.sv-open'); if(!a) return; e.preventDefault(); if(lp&&lp.fired||sel) return; cancelLp(); const d=designOf(a); if(d&&!document.querySelector('dialog[open]')) designSheet(d); });
   function designSheet(dsg){
     try{
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);
@@ -1986,7 +2055,7 @@ async function home(){
       const d=dialog(`<div class="dlg-body design-sheet">
       <div class="ds-top" dir="auto">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}<div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}">${tpl?'Use template':'Open'}</a>
-      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${row('del',ICON.trash,'Delete','danger')}</div>
+      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
@@ -1998,6 +2067,7 @@ async function home(){
       if(act==='rename'){ P.innerHTML=`<div class="inline"><label class="sr-only" for="rn">New name</label><input type="text" id="rn" dir="auto" maxlength="80"><button type="button" class="mini solid" id="rnGo">Save</button></div>`; const i=P.querySelector('#rn'); i.value=dsg.name; i.focus(); i.select();
         const go=async()=>{ const v=i.value.trim(); if(!v) return; try{ await C.renameDesign(dsg.id,v); dsg.name=v; d.close(); paint(); hubToast('Renamed to “'+v+'”.'); loadSaved(true); }catch(err){ st(err.message); } };
         P.querySelector('#rnGo').onclick=go; i.addEventListener('keydown',e2=>{ if(e2.key==='Enter'){ e2.preventDefault(); go(); } }); }
+      if(act==='sel'){ d.close(); startSelect(dsg.id); return; }
       if(act==='dup'){ st('Copying…'); b.disabled=true; try{ await C.duplicateDesign(dsg.id); d.close(); hubToast('Copied “'+dsg.name+'”.'); loadSaved(true); }catch(err){ st(err.message); b.disabled=false; } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;

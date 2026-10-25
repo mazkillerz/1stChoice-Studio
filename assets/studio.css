@@ -914,6 +914,35 @@ body.on-saved nav.top{display:none}
 .saved-page .col-tools{margin-top:-4px}
 .sv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 10px}
 @media (min-width:600px){.sv-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px 18px}}
+@media (min-width:1000px){.sv-grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}}   /* a computer: 7 a row instead of 6 */
+
+/* Select (Saved page): a Select button in the header; ticked designs get a ring and a filled tick; the actions bar takes the bottom bar's place */
+.sp-sel{flex:none;min-height:var(--tap);padding:0 16px;border-radius:var(--r-pill);border:0;background:var(--chip);color:var(--fg);font:600 var(--fs-m) var(--sans);cursor:pointer;white-space:nowrap;transition:transform .42s var(--spring),background-color .15s}
+.sp-sel:active{transform:scale(.94);transition-duration:.09s}
+.sp-sel[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}
+.sp-sel:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sv-check{display:none;position:absolute;top:7px;inset-inline-start:7px;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:rgba(22,18,16,.32);box-shadow:0 2px 8px rgba(0,0,0,.25);align-items:center;justify-content:center;color:#fff}
+.sv-check svg{width:18px;height:18px;stroke-width:3;opacity:0;transform:scale(.4);transition:opacity .15s,transform .3s var(--spring)}
+body.selecting .sv-check{display:flex}
+body.selecting .sv-more,body.selecting .sv-new,body.selecting .sv-thumb em,body.selecting .sv-tip{display:none}
+body.selecting .sv-open{cursor:pointer}
+.sv-card.picked .sv-check{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sp-head .sort[hidden]{display:none}
+.sv-card.picked .sv-check svg{opacity:1;transform:none}
+body.selecting .sv-card.picked .sv-thumb{transform:scale(.93);box-shadow:0 0 0 3px var(--accent),var(--shadow-1)}
+body.selecting .hubbar,body.selecting .fab{display:none}
+.sel-bar{position:fixed;z-index:46;left:max(12px,var(--safe-l));right:max(12px,var(--safe-r));bottom:calc(10px + var(--safe-b));max-width:520px;margin:0 auto;display:flex;gap:6px;padding:6px;border-radius:24px;background:color-mix(in srgb,var(--raised) 86%,transparent);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);box-shadow:var(--shadow-2);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);animation:sel-in .38s var(--spring) backwards}
+.sel-bar[hidden]{display:none}
+@keyframes sel-in{from{opacity:0;transform:translateY(24px)}}
+.sel-act{flex:1;min-width:0;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:18px;background:none;color:var(--fg);font:600 12px var(--sans);cursor:pointer;transition:transform .42s var(--spring),background-color .15s,opacity .15s}
+.sel-act:active:not(:disabled){transform:scale(.94);background:var(--chip);transition-duration:.09s}
+@media (hover:hover){.sel-act:hover:not(:disabled){background:var(--chip)}}
+.sel-act:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.sel-act.danger{color:var(--danger)}
+.sel-act:disabled{opacity:.4;cursor:default}
+.sel-act[hidden]{display:none}
+body.selecting .saved-page{padding-bottom:110px}
+@media (prefers-reduced-motion:reduce){.sel-bar{animation:none}}
 
 /* a saved design's actions (press and hold, ⋯, right-click) */
 .design-sheet .btn{min-height:54px}

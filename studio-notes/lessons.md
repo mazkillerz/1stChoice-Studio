@@ -2,6 +2,22 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 9 · 0.8.0 · 25 Oct 2026 (Mazoon session)
+
+**Worked**
+- A select mode built as one `sel` Set plus a `body.selecting` class: the grid re-renders as before, `paintSel()` only flips classes, labels and the bar, and CSS hides ⋯, the + button and the bottom bar. No new page, no new engine code.
+- Giving select mode its own history step (`pushState({sel:1})`) made the phone's Back stop selecting instead of leaving the page; ending it any other way calls `history.back()` so no extra step is left behind.
+- Pruning the selection to the designs on screen whenever the filter changes means Delete never touches a design you can't see.
+- Bulk actions as one call per design with a running count ("Deleting 2 of 3…"), stopping at the first error and saying how far it got, needed no change to `cloud.js` or the database.
+
+**Didn't work / watch out**
+- `fakecloud.collections()` keeps insertion order while the real one sorts by name: compare sorted lists in tests.
+- A synthetic touch press (CDP touchStart) did not start the press-and-hold timer; dispatching `pointerdown`/`pointerup` with `pointerType:'touch'` (home7's way) does.
+- `page.click` on cards scrolls them into view, which moves the header out of a screenshot; click from `page.evaluate` for What's New shots.
+
+**Process tweaks**
+- New Saved page features: add the suite to the Saved row of the skill's test map (done: `select`).
+
 ## Session 8 · 0.7.1 · 25 Oct 2026 (owner-directed: 10 fixes + visual polish)
 
 **Worked**

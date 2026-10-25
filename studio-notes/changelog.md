@@ -12,6 +12,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 0.8.0 · 25 Oct 2026
+
+### Select several designs at once
+type: feature
+Tidying the Saved page used to mean one design at a time. Now tap **Select** at the top right, tick as many designs as you like (or **Select all**), and use the bar at the bottom: **Collection** puts them all in a collection (pick one or type a new name; their other collections stay), **Delete** removes them all after one question that says how many, and while you look at a collection **Take out** removes them from it. Tap ✕ or Back to stop. You can also press and hold a design and pick **Select more** to start with that one ticked.
+![before](assets/whatsnew/0.8.0-select-before.jpg)
+![after](assets/whatsnew/0.8.0-select-after.jpg)
+
+### More designs in view on a computer
+type: design
+On a wide screen the Saved page now shows 7 designs a row instead of 6, so you see more at a glance. Phones are unchanged.
+
 ## 0.7.1 · 25 Oct 2026
 
 ### A calmer, cleaner look

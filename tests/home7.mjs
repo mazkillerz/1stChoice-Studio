@@ -151,7 +151,7 @@ for(const vp of [PHONE,DESK]){
   ok(N+'press and hold does not navigate (the release click is swallowed)',pg.url()===url0&&await pg.isVisible('dialog.design-dlg[open]'),pg.url());
   ok(N+'the page behind the sheet cannot scroll',await pg.evaluate(()=>getComputedStyle(document.documentElement).overflow)==='hidden');
   const sh=await pg.evaluate(()=>{ const d=document.querySelector('dialog.design-dlg[open]'); const rows=[...d.querySelectorAll('.act-row')]; return {title:d.querySelector('h3').textContent,open:d.querySelector('a.btn').textContent.trim(),openHref:d.querySelector('a.btn').getAttribute('href'),rows:rows.map(r=>r.textContent.trim()),again:(rows[0].getAttribute('href')||''),acts:rows.map(r=>r.dataset.act||'link'),minH:Math.min(...rows.map(r=>r.getBoundingClientRect().height))}; });
-  ok(N+'the sheet: name, Open, and the five actions',sh.title==='Restock – 24 Oct'&&sh.open==='Open'&&/restock\.html\?design=seed0$/.test(sh.openHref)&&sh.rows.join('|')==='Save the picture again|Duplicate|Rename|Collections|Delete',sh);
+  ok(N+'the sheet: name, Open, and the six actions',sh.title==='Restock – 24 Oct'&&sh.open==='Open'&&/restock\.html\?design=seed0$/.test(sh.openHref)&&sh.rows.join('|')==='Save the picture again|Duplicate|Rename|Collections|Select more|Delete',sh);
   ok(N+'"Save the picture again" links with go=1',/restock\.html\?design=seed0&go=1$/.test(sh.again),sh.again);
   ok(N+'the sheet rows are finger-sized',sh.minH>=48,sh.minH);
   await pg.tap('#dsClose'); await pg.waitForTimeout(400);
