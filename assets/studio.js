@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.1.0';
+const VERSION='1.2.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -91,7 +91,9 @@ function usedBefore(){ try{ for(let i=0;i<localStorage.length;i++){ const k=loca
 function getPins(){ let p=store(PINS_KEY);
   if(!Array.isArray(p)){ p=usedBefore()?Object.keys(TOOLS).filter(id=>TOOLS[id].quick&&TOOLS[id].qi<=3):DEFAULT_PINS; store(PINS_KEY,p); }
   return p.filter(id=>TOOLS[id]); }
-function setPin(id,on){ const p=new Set(getPins()); if(on) p.add(id); else p.delete(id); store(PINS_KEY,Object.keys(TOOLS).filter(t=>p.has(t))); return !!on; }
+/* pins keep the order you set: a new pin goes last, and All tools › Order on your home moves one up (since 1.2.0) */
+function setPin(id,on){ const p=getPins().filter(t=>t!==id); if(on) p.push(id); store(PINS_KEY,p); return !!on; }
+function movePinUp(id){ const p=getPins(), i=p.indexOf(id); if(i>0){ [p[i-1],p[i]]=[p[i],p[i-1]]; store(PINS_KEY,p); } return p; }
 
 /* ---------- the look: motion, soft depth and one bold accent (the "fresh look", the default for everyone since 0.7.0) ---------- */
 const fresh=()=>true;
@@ -1868,12 +1870,19 @@ async function home(){
   const pinBtn=id=>{ const on=getPins().includes(id), t=esc(TOOLS[id].title); return `<button type="button" class="pin-btn" data-pin="${id}" aria-pressed="${on}" aria-label="${on?'Unpin '+t+' from home':'Pin '+t+' to home'}">${on?ICON.starFill:ICON.star}</button>`; };
   function togglePin(id,fromSearch){ const on=setPin(id,!getPins().includes(id)), t=esc(TOOLS[id].title);
     document.querySelectorAll(`.lib-row [data-pin="${id}"]`).forEach(b=>{ b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label',on?'Unpin '+t+' from home':'Pin '+t+' to home'); b.innerHTML=on?ICON.starFill:ICON.star; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
-    paintTools(); paintToolsView(); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
+    paintTools(); paintToolsView(); paintPinOrder(); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
+  /* All tools › Order on your home: shown once two or more tools are pinned; the arrow moves a tool one place up */
+  function pinOrderHtml(){ const p=getPins(); if(p.length<2) return '';
+    return `<h4 class="po-h">Order on your home</h4>`+p.map((id,i)=>{ const t=esc(TOOLS[id].title);
+      return `<div class="pin-ord"><span class="po-n" aria-hidden="true">${i+1}</span><b>${t}</b><button type="button" class="pin-btn" data-up="${id}" aria-label="Move ${t} up"${i?'':' disabled'}>${ICON.up}</button></div>`; }).join(''); }
+  function paintPinOrder(focusId){ const box=document.querySelector('dialog[open] .pin-order'); if(!box) return; box.innerHTML=pinOrderHtml();
+    if(focusId){ const b=box.querySelector(`[data-up="${focusId}"]`); (b&&!b.disabled?b:box.querySelector('[data-up]:not([disabled])'))?.focus(); } }
   function openLibrary(){
     let last=null;
     const rows=Object.entries(TOOLS).map(([id,t])=>(t.group!==last&&TOOL_GROUPS[last=t.group]?`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`:'')
       +`<div class="lib-row"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${pinBtn(id)}</div>`).join('');
-    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="lib-list">${rows}</div></div>`,'lib-dlg');
+    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="pin-order">${pinOrderHtml()}</div><div class="lib-list">${rows}</div></div>`,'lib-dlg');
+    d.querySelector('.pin-order').addEventListener('click',e=>{ const b=e.target.closest('[data-up]'); if(!b||b.disabled) return; movePinUp(b.dataset.up); haptic('tick'); paintTools(); paintToolsView(); paintPinOrder(b.dataset.up); if(window.StudioSearch) StudioSearch.refresh(); });
     d.querySelector('#libDone').onclick=()=>d.close();
     d.querySelector('.lib-list').addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
   }
@@ -2355,7 +2364,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
-  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePinUp,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

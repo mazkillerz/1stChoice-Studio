@@ -77,6 +77,8 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 - What's New with before/after pictures and plain "one tap instead of two" notes. [S format]
 - Tests that catch problems for him (contrast scan, tap scan, smoke). [S 25 Oct]
 
+- His own Studio logo: the black dragon (25 Oct 2026, 1.2.0). Studio's mark, not the brand's: it never goes on designs. [C 25 Oct]
+
 ## Open questions to ask him
 - Saved cards align captions with each name's direction, so a mixed grid has captions on both sides. One side for all?
 - The "Your photo is in" note fades after about 3 s. Long enough to read and notice the Save pulse?
