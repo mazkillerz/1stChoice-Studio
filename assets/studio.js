@@ -835,7 +835,7 @@ async function tool(cfg){
     }).join('');
     box.addEventListener('click',e=>{
       const more=e.target.closest('[data-more]'); if(more){ const g=more.parentNode, open=g.classList.toggle('open'); more.setAttribute('aria-expanded',String(open)); more.textContent=open?'Less':'More…'; return; }
-      const b=e.target.closest('.chip'); if(b){ const id=b.parentNode.dataset.f, v=S.values[id];
+      const b=e.target.closest('[data-f] .chip'); if(b){ const id=b.parentNode.dataset.f, v=S.values[id];   // single-choice words only (flavours are [data-mf], below)
         if(b.dataset.own){ if(v.pick!=='__own'&&!v.own) v.own=value(id); v.pick='__own'; syncUI(); const inp=document.querySelector(`[data-ownfor="${id}"]`); inp.focus(); }
         else if(b.dataset.none) v.pick='__none'; else v.pick=b.dataset.v;
         if(S.layers[id]) S.layers[id].hidden=false;

@@ -135,17 +135,17 @@ Studio.registerBrand({
       {id:'restock',label:'Restock',cat:'restock',layout:'restock',size:'story',words:{head:'رجع متوفر',small:'وفرنا كمية جديدة',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
       {id:'new-place',label:'New place',layout:'new-place',size:'story',words:{head:'نقطة بيع جديدة',place:'اسم المكان',pill:'الخريطة في البايو'}},
       {id:'stock-alert',label:'Stock alert',cat:'restock',layout:'stock-alert',size:'story',words:{head:'الكمية محدودة',pill:'راسلنا خاص'},assets:{product:'can-classic-shadow'}},
-      {id:'restock-post',label:'Restock post',cat:'restock',layout:'restock-post',size:'post',words:{head:'رجع متوفر',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
-      {id:'both-flavours',label:'Both flavours',cat:'restock',layout:'both-flavours',size:'story',words:{head:'وفرنا كمية جديدة'},assets:{one:'can-classic-shadow',two:'can-passion-shadow'}},
-      {id:'this-or-that',label:'This or that',cat:'post',layout:'this-or-that',size:'post',words:{head:'هذا ولا هذا؟',pill:'منشن ربعك'},assets:{one:'can-classic-shadow',two:'can-passion-shadow'}},
-      {id:'one-word-post',label:'One word post',cat:'post',layout:'one-word-post',size:'post',look:'cream',words:{head:'روّق'}},
-      {id:'map-post',label:'Map in bio post',cat:'post',layout:'map-post',size:'post',words:{head:'وين تلقانا؟',pill:'الخريطة في البايو'}},
-      {id:'good-morning',label:'Good morning',cat:'story',layout:'good-morning',size:'story',words:{head:'صباح الخير',small:'يصحصحك'},assets:{product:'can-classic-shadow'}},
+      {id:'restock-post',label:'Restock post',badge:'New',cat:'restock',layout:'restock-post',size:'post',words:{head:'رجع متوفر',pill:'اطلب الحين'},assets:{product:'cans-pair-shadow'}},
+      {id:'both-flavours',label:'Both flavours',badge:'New',cat:'restock',layout:'both-flavours',size:'story',words:{head:'وفرنا كمية جديدة'},assets:{one:'can-classic-shadow',two:'can-passion-shadow'}},
+      {id:'this-or-that',label:'This or that',badge:'New',cat:'post',layout:'this-or-that',size:'post',words:{head:'هذا ولا هذا؟',pill:'منشن ربعك'},assets:{one:'can-classic-shadow',two:'can-passion-shadow'}},
+      {id:'one-word-post',label:'One word post',badge:'New',cat:'post',layout:'one-word-post',size:'post',look:'cream',words:{head:'روّق'}},
+      {id:'map-post',label:'Map in bio post',badge:'New',cat:'post',layout:'map-post',size:'post',words:{head:'وين تلقانا؟',pill:'الخريطة في البايو'}},
+      {id:'good-morning',label:'Good morning',badge:'New',cat:'story',layout:'good-morning',size:'story',words:{head:'صباح الخير',small:'يصحصحك'},assets:{product:'can-classic-shadow'}},
       {id:'highlight-places',label:'Highlight: places',layout:'highlight',size:'square',icon:'pin',words:{}},
       {id:'highlight-chat',label:'Highlight: chat',layout:'highlight',size:'square',icon:'chat',words:{}},
       {id:'highlight-reviews',label:'Highlight: reviews',layout:'highlight',size:'square',icon:'star',words:{}},
-      {id:'highlight-order',label:'Highlight: order',cat:'highlight',layout:'highlight',size:'square',icon:'cart',words:{}},
-      {id:'highlight-new',label:'Highlight: new',cat:'highlight',layout:'highlight',size:'square',icon:'sparkles',words:{}}
+      {id:'highlight-order',label:'Highlight: order',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'cart',words:{}},
+      {id:'highlight-new',label:'Highlight: new',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'sparkles',words:{}}
     ]
   },
   /* Example photos each tool opens with (files in samples/). */
