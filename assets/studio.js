@@ -1099,7 +1099,8 @@ async function tool(cfg){
     if(on) paintTeamCols();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
-  function pickDefaultCols(){ teamPicked.clear(); const d=design?design.collections:store(LAST_COLS); (Array.isArray(d)?d:[]).forEach(n=>n&&teamPicked.add(n)); }
+  function pickDefaultCols(){ teamPicked.clear(); const d=design?design.collections:store(LAST_COLS);
+    (Array.isArray(d)?d:[]).forEach(n=>{ if(!n) return; if(!design&&teamCols&&teamCols.length&&!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) return; teamPicked.add(n); }); }   // a remembered collection that no longer exists is dropped
   store('studio:teamSave',null);   // forget the old remembered setting
   $('teamOn').checked=false;
   $('teamOn').addEventListener('change',async e=>{ const sw=e.target; sw.dataset.touched='1'; syncSaveOpts();
@@ -1124,9 +1125,9 @@ async function tool(cfg){
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
   function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:design&&$('teamAsNew').checked,collections:[...teamPicked]}; }
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
-  async function runTeamSave(){
+  async function runTeamSave(afterPicture){
     teamLine('Saving to the team…');
-    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); celebrate(); }
+    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); }
     catch(err){ teamLine(''); status(err.message||'Could not save to the team.'); }
   }
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
@@ -1550,7 +1551,7 @@ async function tool(cfg){
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     await save(true,only);
-    if(team){ await runTeamSave(); $('teamOn').checked=false; }
+    if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
     if(team) $('teamOnly').dataset.off='1';
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts();
   }

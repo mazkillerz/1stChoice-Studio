@@ -18,9 +18,11 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/create.mjs   # Phase 2: Create — start sheet, sizes, every template, elements, photo spots, pages, drafts, PNG 2×, team save + team templates
     node tests/polish.mjs   # Phase 3: light WebP copies (HD swaps in, saves stay 2×), kept template previews, even option grids, Reset layout, recent colours, dark-mode element previews
 
-    node tests/whatsnew.mjs   # 0.1.0: Quick start from a photo (hub → tool with the photo in, as a draft), What's New page + badge
+    node tests/whatsnew.mjs   # 0.1.0: photo-first rows' camera buttons (hub → tool with the photo in, as a draft), What's New page + badge
     node tests/highlight.mjs  # Highlight covers: covers per page, icon/word/photo, + adds a cover, 2× PNG per cover, team save + reopen
-    node tests/simplify.mjs   # 0.5.0: one-tap Save on a phone, then Add to the team (no second picture); hub groups + order, two views
-    node tests/quicksave.mjs  # Quick start ready bar: one-tap "Looks good · Save" (2× PNG), Change words, hides on edit; text-place pad size
+    node tests/simplify.mjs   # 0.5.0: bar Save opens the Save sheet, Save makes the PNG, then Add to the team (no second picture); an open saved design starts with the team switch off; hub groups + order
+    node tests/quicksave.mjs  # Quick start ready bar: one-tap "Looks good · Save" (2× PNG + team), Change words, hides on edit; text-place pad size
+    node tests/home7.mjs      # 0.7.0: the + button and row cameras, Saved row + Saved page (chips, sort, hold/⋯/right-click actions, rename/duplicate/delete), bottom bar highlight, scroll lock, one-tap Save sheet
+    node tests/fresh.mjs      # 0.7.0: the Fresh look is the default (accent, no switch, old setting removed), save tick + haptic, reduced motion
     node tests/tapscan.mjs    # (helper) lists visible controls under 44px at 390×844, per sheet
     node tests/shot.mjs       # (helper) phone screenshot for What's New
