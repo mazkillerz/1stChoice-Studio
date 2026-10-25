@@ -5,9 +5,20 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
-## Session 11 · 1.0.0 · 25 Oct 2026 (owner-directed milestone, preview branch)
+## Session 12 · 1.1.0 · 25 Oct 2026 (team)
+
+**Worked**
+- Reusing the engine: Quick start for paged tools needed one helper (`quickPages`) and a `quickKind` per tool; the + menu, camera rows, share sheet and search picked the tools up from `TOOLS` (`quick`, `multi`, `max`, `qi`).
+- Read the tests that measure a thing before changing it: `collage-grids` treats `reg` boxes as the drawn photo, so the border hit area went in as a separate `pad` on the box (hit tests only) instead of a bigger box.
+
+**Didn't work / watch out**
+- What's New keeps one `before` and one `after` per card (the last wins); a third image silently replaced the second. Pick the two that tell the story.
+- `usedBefore()` pins every `quick` tool on an old device with no pins; limited to `qi<=3` so new photo tools never pin themselves.
+
+ 1.0.0 · 25 Oct 2026 (owner-directed milestone, preview branch)
 
 **Worked**
 - Engine first, then helpers: the shared pieces (photo looks, styles with no photo, `?preset=`, Move tab, `h.backdrop`) went in and were committed before three Sonnet helpers each took one tool file. Nobody waited on anybody and no file had two editors.

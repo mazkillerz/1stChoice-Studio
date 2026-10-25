@@ -25,11 +25,12 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Tap targets:** CLAUDE.md asks for 48px (`--tap`). Treat 44px as the absolute floor, 48px as the goal.
 - **Branches and merging:** work on the session's assigned branch (or `claude/<topic>`), then **merge to `main` at the end of every session** once every test passes (Mazoon's standing instruction, 24 Oct 2026: "Merge always"). Pages publishes `main` immediately. Because everything merges, big redesigns or experiments ship behind a toggle that is off by default (locked core rule 3) until Mazoon approves them.
 - **Version:** `VERSION` at the top of `assets/studio.js` (shown on the hub and used for the What's New dot). Also bump the cache name in `sw.js` whenever shipped files change.
+- **What's New cards** hold one `before` and one `after` image (the last line of each wins).
 - **What's New:** `whats-new.html` + `assets/whatsnew.js/.css` read `studio-notes/changelog.md` directly (format in that file's intro). Screenshots go in `assets/whatsnew/<version>-<name>-before|after.jpg`, 390px-wide phone crops at 2×, JPEG quality ~72 (keep each under ~80 KB). Take the "before" shots **before** changing anything.
 - **Tests:** serve with `npx http-server -p 8080 -c-1 .`, then follow **Testing** below (smoke every session, targeted suites for what changed, the full sweep only in Simplify sessions). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
 - **Audit + screenshot helpers:** `node tests/tapscan.mjs tools/a.html,tools/b.html` lists every control under 44px per sheet; `node tests/shot.mjs <page> <sheet|-> <out.jpg> [selector]` takes the What's New phone shots.
 - **Contrast, RTL and real-font shots** (full sweep, or when colours, tokens or Arabic text handling change): `node tests/contrast.mjs` scans every main screen in light and dark for text below WCAG AA and Arabic text running left-to-right (run it on the old commit too, so a clean result means something). `node tests/look8.mjs <outDir> [base] [names]` shoots the owner-flagged screens in both themes with Arabic names seeded. For real Google Fonts in the sandbox, launch with `proxy:{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}` and set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` (otherwise local pages go through the proxy).
-- **New paged tools** (a set of covers, slides…): use `pages`, `pagePhotos` and `pageNoun` in `Studio.tool` instead of new engine code; the hub list is `TOOLS` in `studio.js`, its thumbnails are `assets/thumbs/<brand>/<id>.jpg` + `-sm.jpg` (320×569), and both tool files go in the `sw.js` shell.
+- **New paged tools** (a set of covers, slides…): use `pages`, `pagePhotos` and `pageNoun` in `Studio.tool` instead of new engine code (since 1.1.0 `quickKind` + `quick`/`multi`/`max`/`qi` in `TOOLS` give it Quick start, one photo per page); the hub list is `TOOLS` in `studio.js`, its thumbnails are `assets/thumbs/<brand>/<id>.jpg` + `-sm.jpg` (320×569), and both tool files go in the `sw.js` shell.
 - **Wording in test data:** anything a test types that can end up in a shipped image (thumbnails, screenshots) must be an approved phrase from `brand.js`.
 - **Owner-directed sessions:** when Mazoon names the work, do that instead of the backlog pick. The gates still apply, and the session still counts in the team/Mazoon rotation (by who it helps most).
 - **Service-worker features** (share target, offline): most suites block the service worker (`serviceWorkers:'block'`); a suite that needs it waits for `navigator.serviceWorker.ready` and reloads so the page is controlled (`tests/share.mjs`).
@@ -96,7 +97,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `fresh` |
 | Saved page, collections, a design's menu, select mode | `home7`, `polish71`, `extra`, `select` |
 | Search (`assets/search.*`) | `search` |
-| Highlight covers, paged tools | `highlight` |
+| Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
 | Create (`tools/create*`) | `create` |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu | `share` (runs with the service worker on) |

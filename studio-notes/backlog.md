@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 11 (1.0.0, 25 Oct 2026) was an **owner-directed milestone** (welcome tour, Templates library, Restock / Photo story / Collage upgrades, + menu, polish pass, skill upgrade) that also ran the full sweep and the first pattern review, so it stood in for the 0.10.0 Simplify session. It waits on a preview branch for Mazoon's approval. The next session (1.1.0) is a **team** session.
+**Last session:** 12 (1.1.0, 25 Oct 2026) was a **team** session: Carousel and Highlight covers start from photos (#12), Collage border drops (audit fix). The next session (1.2.0) is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
 
 ## Next up
@@ -20,7 +20,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | |
 | 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
 | 10 | Highlight covers: a **Product** cover type that puts a brand asset (HD can cut-out) in the circle; emoji covers | 2 | 4 | 3 | 2 | 7 | Follow-up to 0.2.0. Use the brand's `assets` list, never a drawn can. |
-| 12 | Quick start for Highlight covers / Carousel (several photos → one page each) | 3 | 3 | 3 | 2 | 7 | Ready bar from 0.3.0 works for any tool with `quick`. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
@@ -28,7 +27,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 
 ## UX audit findings (open)
 - 1.0.0 follow-ups: Collage's logo at default settings sits at y≈1700–1780, below the story safe line (1620); kept so old designs stay identical; decide with Mazoon whether new collages move it up. Create's story templates put the logo at the bottom 1740 too.
-- 1.0.0: in Collage, dropping a photo onto another photo's **border** may miss the swap (the hit box is the photo inside the frame). Make the hit box the whole cell.
+- 1.1.0: the + menu now has 5 photo tools (7 rows). If it grows again, group it (e.g. Stories / Posts) or show the 3 most used and a More.
+- 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
 - 1.0.0: the hub's tool thumbnails (`assets/thumbs/<brand>/<id>.jpg`, also used by the welcome tour) still show pre-1.0 looks; refresh them with the new styles (Restock Cans, Photo story Whole photo).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
 - 1.0.0: `tests/taste.mjs` covers Home, menus, Templates, Saved, search, What's New and the three photo tools; add Create, Highlight covers, Carousel and the lab next.
@@ -54,6 +54,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.1.0 (team): Carousel (up to 10) and Highlight covers (up to 12) start from photos in +, camera rows and the share sheet, one slide/cover per photo (#12); Collage drops on a photo's border swap it (audit finding); own icons for both tools.
 - 1.0.0 (owner-directed milestone, preview branch): first-run welcome (3 swipes, once per new device, Settings → Welcome tour), Templates library (Home · Templates · Saved; restock, stories, posts, highlights, team; real previews; one tap opens a preset `?preset=` or a Create template), 8 new Create templates, Restock (Cans with no photo + one-tap Save, Split, Big words, photo shape, headline size, button colour), Photo story (Whole photo, Caption, Poster, Arch, headline size, shade, words colour, logo switch), Collage (more grids for 2–9, border + colour, gap to 80, edge space), photo looks + Light for every photo, Move tab (nudge, centre, middle, rotate), Swap two / Shuffle, + menu on one inset with an icon per tool + Templates, Settings sheet, one-line notes, What's New milestone banner + bold; #24 (Templates in +) and #20 partly (search shows template previews for presets).
 - 0.9.0 (team): share photos from the phone's gallery into Studio (Android, installed: manifest `share_target`, sw.js POST handler → IndexedDB → hub pick-a-tool sheet → Quick start), Last time tag on the photo tool used last in + and the share sheet (#4, part of #24); Android install hint mentions sharing.
 - 0.8.0 (Mazoon): Saved page select mode (Select / Select all / Clear; Collection adds the ticked designs to an existing or new collection, keeping their others; Take out while a collection is chosen; Delete many with one confirm; ✕ / Escape / Back stop; press and hold → Select more), 7 designs a row on a computer (#22 and the desktop tiles audit finding).
