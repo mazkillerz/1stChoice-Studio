@@ -81,6 +81,8 @@ Everything else in this skill can be rewritten by the skill itself.
 
 Test what changed, fully; test the core flows quickly; test everything only every 5th version. Decide the scope from the diff (`git diff --stat main`), not from habit.
 
+**Run them in parallel (since 1.2.0):** `node tests/run.mjs --changed` runs smoke + taste + the suites mapped to the files changed since `main`, 4 at a time, and prints one line per suite plus the first fails (`node tests/run.mjs a b c` for named suites, `JOBS=n` to change the width). Nine suites take ~2.5 min instead of ~8; `home7` is the long pole. Never `pkill -f` a pattern that is also in your own command line (it kills the shell running it).
+
 **Level 1: smoke, every session (about 30 s).** `node tests/smoke.mjs` runs the core flows at phone size (390×844, touch) in light and dark mode: home, Restock from a photo, Save in one tap (2160×3840 PNG + team), Save after an edit (Save sheet), search (English and Arabic, the Arabic row right to left), and opening a saved design from Saved with its photo back. Run it at the start (audit) and right before merging. It replaces checking these flows by hand. Keep it small: core flows only, under a minute. If a core flow changes on purpose, update `smoke.mjs` in the same session; a new feature gets its own suite instead.
 
 **Level 2: targeted, every session.** Test fully only the screens and features that changed:
@@ -114,6 +116,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 **Who runs the tests.** The main model plans the scope, writes the checks a new suite must make, reads the results and decides. Routine testing goes to cheaper helpers:
 - `haiku`: runs suites and reports, takes screenshots of the changed screens with short notes. Brief: "Server on :8080 (start it if it is down). Run one at a time: `node tests/smoke.mjs`, `node tests/<suite>.mjs` … Do not edit any file. Reply with one line per suite: name, PASS count, FAIL count, time, and the first 3 FAIL lines word for word."
 - `sonnet`: writes or updates `tests/<feature>.mjs` from a precise list of checks (selectors, expected values, themes, viewports), then runs it.
+- Prefer `tests/run.mjs` over a helper for a plain pass/fail run: it is already parallel and its report is short.
 - Start helpers in the background and keep planning or writing notes meanwhile. The server serves the working tree, so make no app edits while a helper is testing (commit first, or wait for its report).
 - A helper's failure is a claim: reproduce the failing check before changing app code.
 

@@ -16,7 +16,12 @@ What worked, what failed, and process tweaks. Newest session first.
 - A separate maskable icon (smaller drawing, more space) keeps the round Android crop from cutting the wings.
 - Pin order: storing pins in the order set (not the TOOLS order) needed no migration, since old lists were already in TOOLS order.
 
+- Tests in parallel: `tests/run.mjs` ran 9 suites in 148 s (one at a time they took ~8 min); the suites do not share state, so nothing became flaky.
+- taste.mjs caught the new mark making the top bar 4px too wide at 360px; fixed with a smaller mark under 375px.
+
 **Watch out**
+- `pkill -f "node tests/"` killed its own shell (the pattern was in its command line) twice.
+- A new heading in All tools must not reuse `.tgroup`: simplify.mjs reads those as the tool groups.
 - The owner's picture is ~400px across the drawing, so the 512px icon is slightly upscaled.
 
 ## Session 12 · 1.1.0 · 25 Oct 2026 (team)

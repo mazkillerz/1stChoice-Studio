@@ -1873,7 +1873,7 @@ async function home(){
     paintTools(); paintToolsView(); paintPinOrder(); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
   /* All tools › Order on your home: shown once two or more tools are pinned; the arrow moves a tool one place up */
   function pinOrderHtml(){ const p=getPins(); if(p.length<2) return '';
-    return `<h4 class="tgroup">Order on your home</h4>`+p.map((id,i)=>{ const t=esc(TOOLS[id].title);
+    return `<h4 class="po-h">Order on your home</h4>`+p.map((id,i)=>{ const t=esc(TOOLS[id].title);
       return `<div class="pin-ord"><span class="po-n" aria-hidden="true">${i+1}</span><b>${t}</b><button type="button" class="pin-btn" data-up="${id}" aria-label="Move ${t} up"${i?'':' disabled'}>${ICON.up}</button></div>`; }).join(''); }
   function paintPinOrder(focusId){ const box=document.querySelector('dialog[open] .pin-order'); if(!box) return; box.innerHTML=pinOrderHtml();
     if(focusId){ const b=box.querySelector(`[data-up="${focusId}"]`); (b&&!b.disabled?b:box.querySelector('[data-up]:not([disabled])'))?.focus(); } }
