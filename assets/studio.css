@@ -1247,3 +1247,11 @@ body.hub.on-templates{background:var(--bg)}
 .slots.swapping .slot.pick{animation:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
 @keyframes slot-wiggle{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
 @media (prefers-reduced-motion: reduce){.slots.swapping .slot.has{animation:none}}
+/* hub top bar on a phone: logo, What's new, Settings and the account button all fit; the small "Studio" word steps aside below 400px */
+.top .wn-btn{width:44px;height:44px}
+body.hub .top{gap:var(--sp-2)}
+body.hub .top .home{margin-inline-end:var(--sp-1)}
+.top .acct{flex:none}
+@media (max-width:400px){ body.hub .top .studio{display:none} }
+.top .set-btn{border:0;background:none;padding:0;cursor:pointer;color:var(--fg)}
+.top .set-btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}

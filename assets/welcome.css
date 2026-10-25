@@ -1,0 +1,146 @@
+/* Studio welcome tour (assets/welcome.js). Tokens only (defined in studio.css). Order: dialog, top, track + slides, copy, visual 1 (fan),
+   visual 2 (search), visual 3 (save), footer, motion. Motion lives in one no-preference block: without it every visual simply shows its final state. */
+
+/* ---------- dialog: full screen on phones, a centred card on desktop ---------- */
+dialog.wl{
+  position:fixed;inset:0;margin:auto;box-sizing:border-box;padding:0;border:0;border-radius:0;overflow:hidden;
+  width:100vw;height:100dvh;max-width:none;max-height:none;
+  color:var(--fg);font-family:var(--sans);font-size:var(--fs-m);line-height:1.45;
+  background:radial-gradient(120% 55% at 50% 0%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 72%),var(--bg);
+}
+dialog.wl[open]{display:flex;flex-direction:column}
+/* the page behind is locked: no reserved scrollbar strip, so the scrim covers the full width and the card is truly centred */
+html:has(dialog.wl[open]){scrollbar-gutter:auto}
+dialog.wl:focus,dialog.wl:focus-visible{outline:none}
+dialog.wl *{box-sizing:border-box}
+dialog.wl::backdrop{background:var(--scrim,rgba(10,8,6,.5));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+@media (min-width:821px){
+  dialog.wl{width:min(420px,calc(100vw - 32px));height:min(720px,calc(100dvh - 48px));border-radius:var(--r-xl);box-shadow:var(--shadow-2),0 0 0 1px var(--line)}
+}
+
+/* ---------- top: Skip ---------- */
+.wl-top{flex:none;display:flex;justify-content:flex-end;align-items:center;min-height:56px;padding:calc(var(--safe-t) + var(--sp-2)) max(var(--sp-2),var(--safe-r)) 0 max(var(--sp-2),var(--safe-l))}
+.wl-skip{min-height:48px;min-width:48px;padding:0 var(--sp-4);border:0;border-radius:var(--r-pill);background:none;color:var(--muted);font:600 var(--fs-m) var(--sans);cursor:pointer}
+.wl-skip:active{background:var(--chip);color:var(--fg)}
+.wl-skip.off{visibility:hidden}
+.wl-skip:focus-visible,.wl-dot:focus-visible,.wl-next:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* ---------- the track: one slide per view, native swipe ---------- */
+.wl-track{flex:1 1 0;min-height:0;display:flex;direction:ltr;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.wl-track::-webkit-scrollbar{display:none}
+.wl-slide{flex:0 0 100%;width:100%;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:var(--sp-4);scroll-snap-align:start;scroll-snap-stop:always;
+  padding:var(--sp-2) max(var(--sp-4),var(--safe-r)) var(--sp-3) max(var(--sp-4),var(--safe-l));overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior-y:contain}
+.wl-slide::-webkit-scrollbar{display:none}
+.wl-vis{flex:1 1 0;min-height:150px;max-height:44dvh;container-type:size;display:grid;place-items:center;position:relative;user-select:none;-webkit-user-select:none;pointer-events:none}
+.wl-vis img{-webkit-user-drag:none}
+.wl-vis svg{display:block;width:20px;height:20px}
+
+/* ---------- title + text ---------- */
+.wl-copy{flex:none;min-height:calc(var(--fs-2xl) * 1.2 + var(--sp-3) + var(--fs-m) * 6);text-align:center}
+.wl-t{margin:0;font:600 var(--fs-2xl)/1.2 var(--sans);letter-spacing:-.01em;color:var(--fg);text-wrap:balance}
+.wl-p{margin:var(--sp-3) auto 0;max-width:32ch;font:400 var(--fs-m)/1.5 var(--sans);color:var(--muted);text-wrap:pretty}
+
+/* ---------- visual 1: the tools as story cards, fanned ---------- */
+.wl-fan{--cw:min(36cqw,calc((100cqh - 46px) * 9 / 16));--step:.6;position:relative;width:var(--cw);height:calc(var(--cw) * 16 / 9 + 34px)}
+.wl-c{position:absolute;left:0;top:0;width:100%;z-index:var(--z);transform:translateX(calc(var(--k) * var(--cw) * var(--step))) translateY(0) scale(1)}
+.wl-card{position:relative;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:var(--chip);box-shadow:0 0 0 1px var(--line),var(--shadow-2);transform:rotate(calc(var(--k) * var(--rot)));transform-origin:50% 100%}
+.wl-card img{display:block;width:100%;height:100%;object-fit:cover}
+.wl-ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+.wl-lab{position:absolute;left:calc((var(--cw) - var(--lw)) / 2);top:calc(var(--cw) * 16 / 9 + var(--sp-2));width:var(--lw);text-align:center;font:500 var(--fs-s)/1.3 var(--sans);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- visual 2: a mock search with two results ---------- */
+.wl-find{width:min(100cqw,340px);display:flex;flex-direction:column;gap:var(--sp-5)}
+.wl-field{display:flex;align-items:center;gap:var(--sp-3);min-height:60px;padding:0 var(--sp-5);border-radius:var(--r-pill);background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--shadow-1,0 1px 3px rgba(0,0,0,.08));font:500 var(--fs-l)/1.2 var(--sans);color:var(--fg)}
+.wl-fi{flex:none;display:grid;place-items:center;color:var(--muted)}
+.wl-q{display:flex;align-items:baseline;gap:var(--sp-3);min-width:0}
+.wl-q1,.wl-q2{white-space:nowrap}
+.wl-res{display:flex;flex-direction:column;gap:var(--sp-3)}
+.wl-row{display:flex;align-items:center;gap:var(--sp-3);min-height:84px;padding:var(--sp-2) var(--sp-1) var(--sp-2) var(--sp-3);border-radius:var(--r-l);background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--shadow-1,0 1px 3px rgba(0,0,0,.08))}
+.wl-th{flex:none;width:40px;height:68px;border-radius:8px;overflow:hidden;background:var(--chip);box-shadow:0 0 0 1px var(--line)}
+.wl-th img{display:block;width:100%;height:100%;object-fit:cover}
+.wl-rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:start}
+.wl-rt b{font:600 var(--fs-m)/1.25 var(--sans);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-rt span{font:400 var(--fs-s)/1.3 var(--sans);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-sk{display:block;height:10px;width:70%;border-radius:var(--r-pill);background:var(--chip)}
+.wl-sk.short{width:45%;margin-top:var(--sp-2)}
+.wl-star{flex:none;position:relative;width:48px;height:48px;display:grid;place-items:center}
+.wl-star>span{grid-area:1/1;display:grid;place-items:center}
+.wl-star svg{width:24px;height:24px}
+.wl-s0{color:var(--muted)}
+.wl-s1{opacity:0;color:var(--accent)}
+.wl-s1 svg{fill:currentColor}
+.wl-pin .wl-s1{opacity:1}
+
+/* ---------- visual 3: a small phone, a Save pill, a tick and "Saved!" ---------- */
+.wl-save{position:relative;display:flex;flex-direction:column;align-items:center}
+.wl-phone{position:relative;height:min(calc(100cqh - 56px),280px);aspect-ratio:9/17.5;padding:7px;border-radius:30px;background:var(--raised);box-shadow:0 0 0 1px var(--line),var(--shadow-2)}
+.wl-mini{position:relative;width:100%;height:100%;border-radius:23px;overflow:hidden;background:var(--chip)}
+.wl-mini img{display:block;width:100%;height:100%;object-fit:cover}
+.wl-mini::after{content:"";position:absolute;left:16px;right:16px;top:14px;height:3px;border-radius:3px;background:rgba(255,255,255,.78);box-shadow:0 0 0 .5px rgba(0,0,0,.18)}
+.wl-pill{position:relative;z-index:2;margin-top:-24px;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);min-height:48px;padding:0 var(--sp-5);border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font:600 var(--fs-m) var(--sans);box-shadow:var(--glow,none),0 0 0 4px var(--bg)}
+.wl-tick{position:absolute;z-index:3;top:-14px;right:-16px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:var(--bg);box-shadow:0 0 0 4px var(--bg),var(--shadow-1,none)}
+.wl-tick svg{width:22px;height:22px}
+.wl-toast{position:absolute;z-index:3;left:50%;bottom:46px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 var(--sp-3);border-radius:var(--r-pill);background:var(--fg);color:var(--bg);font:600 var(--fs-s) var(--sans);white-space:nowrap;box-shadow:var(--shadow-2)}
+.wl-toast svg{width:16px;height:16px}
+
+/* ---------- footer: dots + the main button ---------- */
+.wl-foot{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);padding:var(--sp-2) max(var(--sp-4),var(--safe-r)) calc(var(--sp-5) + var(--safe-b)) max(var(--sp-4),var(--safe-l))}
+.wl-dots{display:flex;justify-content:center}
+.wl-dot{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:none;display:grid;place-items:center;cursor:pointer}
+.wl-dot::before{content:"";width:8px;height:8px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--muted) 70%,transparent);transition:width .3s var(--ease),background-color .2s}
+.wl-dot[aria-current="true"]::before{width:24px;background:var(--accent)}
+.wl-next{max-width:360px}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion:no-preference){
+  dialog.wl{transition:opacity .2s ease,transform .2s var(--ease)}
+  dialog.wl[open]{animation:wl-in .36s var(--ease) backwards}
+  dialog.wl[open]::backdrop{animation:wl-fade .3s ease backwards}
+  dialog.wl::backdrop{transition:opacity .2s ease}
+  dialog.wl.closing{opacity:0;transform:scale(.97)}
+  dialog.wl.closing::backdrop{opacity:0}
+  @keyframes wl-in{from{opacity:0;transform:translateY(20px) scale(.985)}}
+  @keyframes wl-fade{from{opacity:0}}
+  @keyframes wl-rise{from{opacity:0;transform:translateY(14px)}}
+
+  /* a slide that is not "on" waits in its starting state; "on" plays the entrance (backwards fill: nothing is held afterwards) */
+  /* 1: the cards fan out from one pile */
+  .wl-slide:not(.on) .wl-c{opacity:0;transform:translateX(0) translateY(18px) scale(.9)}
+  .wl-slide:not(.on) .wl-card{transform:rotate(0deg)}
+  .wl-slide.on .wl-c{animation:wl-fan .75s var(--spring) calc(.1s + var(--i) * .09s) backwards}
+  .wl-slide.on .wl-card{animation:wl-tilt .75s var(--spring) calc(.1s + var(--i) * .09s) backwards}
+  .wl-slide:not(.on) .wl-lab{opacity:0}
+  .wl-slide.on .wl-lab{animation:wl-rise .5s var(--ease) calc(.4s + var(--i) * .09s) backwards}
+  @keyframes wl-fan{from{opacity:0;transform:translateX(0) translateY(18px) scale(.9)}}
+  @keyframes wl-tilt{from{transform:rotate(0deg)}}
+
+  /* 2: the field and rows rise in, the text swaps between English and Arabic, then the star fills in */
+  .wl-slide:not(.on) :is(.wl-field,.wl-row){opacity:0;transform:translateY(14px)}
+  .wl-slide.on .wl-field{animation:wl-rise .5s var(--ease) backwards}
+  .wl-slide.on .wl-row{animation:wl-rise .5s var(--ease) calc(.1s + var(--i) * .09s) backwards}
+  .wl-q{display:grid}
+  .wl-q>*{grid-area:1/1;justify-self:start}
+  .wl-q2{opacity:0}
+  .wl-slide.on .wl-q1{animation:wl-q1 6s ease-in-out infinite}
+  .wl-slide.on .wl-q2{animation:wl-q2 6s ease-in-out infinite}
+  @keyframes wl-q1{0%,42%{opacity:1;transform:none}50%,92%{opacity:0;transform:translateY(-4px)}100%{opacity:1;transform:none}}
+  @keyframes wl-q2{0%,42%{opacity:0;transform:translateY(4px)}50%,92%{opacity:1;transform:none}100%{opacity:0;transform:translateY(4px)}}
+  .wl-pin .wl-s1{opacity:0;transform:scale(.3) rotate(-40deg)}
+  .wl-slide.on .wl-pin .wl-s1{opacity:1;transform:none;animation:wl-star .6s var(--spring) .9s backwards}
+  @keyframes wl-star{from{opacity:0;transform:scale(.3) rotate(-40deg)}}
+
+  /* 3: the pill is pressed, a tick pops in and "Saved!" rises; the loop repeats gently */
+  .wl-slide:not(.on) .wl-phone{opacity:0;transform:translateY(14px)}
+  .wl-slide.on .wl-phone{animation:wl-rise .55s var(--ease) backwards}
+  .wl-tick{opacity:0;transform:scale(.3)}
+  .wl-toast{opacity:0}
+  .wl-slide.on .wl-pill{animation:wl-press 6s ease-in-out .6s infinite}
+  .wl-slide.on .wl-tick{animation:wl-tick 6s ease-in-out .6s infinite}
+  .wl-slide.on .wl-toast{animation:wl-toast 6s ease-in-out .6s infinite}
+  @keyframes wl-press{0%,2%{transform:none}8%{transform:scale(.92);filter:brightness(.92)}16%,100%{transform:none;filter:none}}
+  @keyframes wl-tick{0%,10%{opacity:0;transform:scale(.3)}17%{opacity:1;transform:scale(1.2)}22%,86%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(.8)}}
+  @keyframes wl-toast{0%,12%{opacity:0;transform:translateX(-50%) translateY(16px)}22%,86%{opacity:1;transform:translateX(-50%) translateY(0)}95%,100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+}
+@media (prefers-reduced-motion:reduce){
+  dialog.wl,dialog.wl *,dialog.wl::backdrop{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

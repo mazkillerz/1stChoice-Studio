@@ -341,6 +341,83 @@ LAYOUTS['highlight']=async function(t,w,def){
   return [f];
 };
 
+/* ---------- feed-post and story layouts added for the Templates library ---------- */
+/* a flavour (from the brand kit) as a pill in its own colours */
+const flavourPill=(t,fl,h)=>fl?t.el.pill(fl.name,{bg:fl.bg,fg:fl.fg,h:h||80,label:'Flavour'}):null;
+/* two soft cards side by side, one can each (the first flavour sits at the reading start).
+   o: top, H (card height), canH (biggest can), canY (can centre, from the card's top), name (flavour pill under the can), mark (1 / 2 circle) */
+async function twoCards(t,f,def,o){ const C=t.C, fl=(t.B.flavours||[]).slice(0,2), cw=o.cw||440, gap=o.gap||40, x0=(1080-cw*2-gap)/2, order=t.rtl?[1,0]:[0,1];
+  const ids=[AS(def,'one',(fl[0]&&fl[0].can)||'can-classic-shadow'),AS(def,'two',(fl[1]&&fl[1].can)||'can-passion-shadow')];
+  for(let s=0;s<2;s++){ const i=order[s], x=x0+s*(cw+gap), cx=x+cw/2;
+    t.add(f,t.el.panel(cw,o.H,{fill:o.fill||C.panel,r:64}),{x,y:o.top});
+    await fit(t,f,ids[i],cw-60,o.canH,{cx,cy:o.top+o.canY});
+    if(o.name){ const p=flavourPill(t,fl[i],84); if(p) t.add(f,p,{cx,bottom:o.top+o.H-56}); }
+    if(o.mark){ const n=t.el.numCircle(i+1,{r:40,size:48}); t.add(f,n,{cx:t.rtl?x+cw-62:x+62,cy:o.top+62}); } } }
+
+/* "Restock post": a feed post, back in stock. */
+LAYOUTS['restock-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
+  t.add(f,t.el.panel(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
+  await fit(t,f,AS(def,'product','cans-pair-shadow'),800,520,{cx:540,cy:630});
+  t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:1020});
+  await t.logo(f,190,{cx:540,bottom:1270});
+  return [f];
+};
+
+/* "Both flavours": a story with two cards, one can and its flavour name each. */
+LAYOUTS['both-flavours']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:290});
+  await twoCards(t,f,def,{top:560,H:940,canH:660,canY:430,name:true,fill:w.panel});
+  await t.logo(f,200,{cx:540,bottom:1740});
+  return [f];
+};
+
+/* "This or that": a feed post with two cards and a pill to tag a friend. */
+LAYOUTS['this-or-that']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
+  await twoCards(t,f,def,{top:290,H:680,canH:560,canY:340,mark:true,fill:w.panel});
+  t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:1020});
+  await t.logo(f,190,{cx:540,bottom:1270});
+  return [f];
+};
+
+/* "One word post": one big word on a soft shape, cream look. */
+LAYOUTS['one-word-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.cream});
+  t.add(f,t.el.blob(900,720,{fill:w.blob||C.blob}),{cx:540,cy:610});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:340,fill:C.ink}),{cx:540,cy:630});
+  await t.logo(f,200,{cx:540,bottom:1270});
+  return [f];
+};
+
+/* "Map in bio post": a pin on a soft card, the map button. */
+LAYOUTS['map-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
+  t.add(f,t.el.panel(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
+  f.add(t.circle({r:290,x:540,y:630,fill:C.paper,opacity:.55,label:'Ring'}));
+  f.add(t.circle({r:190,x:540,y:630,fill:C.paper,label:'Disc'}));
+  t.add(f,t.icon('pin-fill',340,C.ink),{cx:540,cy:630});
+  t.add(f,t.el.pill(WD(t,w,'pill'),{icon:'pin',h:88,label:'Map in bio'}),{cx:540,y:1020});
+  await t.logo(f,190,{cx:540,bottom:1270});
+  return [f];
+};
+
+/* "Good morning": a small line, the can on a card with a soft sun behind it. */
+LAYOUTS['good-morning']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
+  t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:520});
+  t.add(f,t.el.panel(880,900,{fill:w.panel||C.panel,r:64}),{cx:540,y:620});
+  f.add(t.circle({r:330,x:540,y:1070,fill:C.paper,label:'Sun'}));
+  await fit(t,f,AS(def,'product','can-classic-shadow'),460,700,{cx:540,cy:1070});
+  await t.logo(f,200,{cx:540,bottom:1740});
+  return [f];
+};
+
 /* ---------- building a template from the brand kit ---------- */
 function brandTemplates(){ const B=BD.B||{}; return ((B.create&&B.create.templates)||[]).filter(d=>LAYOUTS[d.layout]); }
 CR.templates=brandTemplates;

@@ -25,7 +25,7 @@ let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 /* ---------- small utilities ---------- */
 function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 /* option buttons sit in an even grid: no lone button stretched across a row (4 → 2×2, 8 → 4×2) */
-function segCols(opts){ const n=opts.length, max=opts.some(o=>o.ic)?3:4; if(n<=max) return n; return n%max===0?max:(n%(max-1)===0?max-1:max); }
+function segCols(opts){ const n=opts.length, max=opts.some(o=>o.ic)?3:4; if(n<=max) return n; if(n>6&&n%4===0) return 4; /* 8 styles: two short rows, not four tall ones */ return n%max===0?max:(n%(max-1)===0?max-1:max); }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 /* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
    loaded the first time someone picks one. Safari opens them itself, so it's only used when needed. */
@@ -1991,7 +1991,8 @@ async function home(){
   const WKEY='studio:welcome';
   function openWelcome(){ if(!window.StudioWelcome) return Promise.resolve(null);
     const tools=quickTools().slice(0,3).map(([id,t])=>({id,title:t.title,blurb:t.quick,thumb:`${ROOT}assets/thumbs/${B.id}/${id}.jpg`}));
-    return StudioWelcome.open({tools,icons:ICON,lockScroll,haptic}).then(r=>{ store(WKEY,'seen'); return r; }); }
+    const ph=B.phrases||{}, ar=(ph.restock||ph.headlines||[])[0];   // the mock search shows a tool name, then a phrase in the brand's language
+    return StudioWelcome.open({tools,icons:ICON,lockScroll,haptic,queries:[tools[0]?tools[0].title:'Restock',ar||(tools[1]?tools[1].title:'Search')]}).then(r=>{ store(WKEY,'seen'); return r; }); }
   { const qs=new URLSearchParams(location.search);
     if(qs.get('welcome')==='1'){ history.replaceState(null,'',location.pathname+location.hash); setTimeout(openWelcome,300); }
     else if(firstRun&&!navigator.webdriver&&!qs.has('shared')&&!location.hash) setTimeout(openWelcome,450);   // (automated tests open it on purpose)
