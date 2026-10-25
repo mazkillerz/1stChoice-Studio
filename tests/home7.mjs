@@ -49,11 +49,11 @@ for(const vp of [PHONE,DESK]){
   await tap(pg,'#fab'); await pg.waitForTimeout(600);
   ok(N+'the + button opens a menu',await pg.isVisible('dialog.fab-dlg[open]')&&await pg.getAttribute('#fab','aria-expanded')==='true');
   const items=await pg.$$eval('dialog.fab-dlg .fab-item',l=>l.map(x=>({t:x.querySelector('b').textContent,a:x.tagName==='A',h:x.getBoundingClientRect().height,inside:x.getBoundingClientRect().right<=innerWidth&&x.getBoundingClientRect().bottom<=innerHeight})));
-  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items[items.length-2].t==='Templates'&&items.length===5,items.map(x=>x.t).join(' / '));
+  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items[items.length-2].t==='Templates'&&items.length===7,items.map(x=>x.t).join(' / '));
   ok(N+'menu: Photo story and Collage between them',items.slice(1,3).map(x=>x.t).join()==='Photo story,Collage');
   ok(N+'menu: every item is finger-sized and on screen',items.every(x=>x.h>=48&&x.inside),items.map(x=>Math.round(x.h)).join());
   ok(N+'menu: New design links to Create',(await pg.getAttribute('dialog.fab-dlg a.fab-item','href')||'').endsWith('tools/create.html'));
-  ok(N+'menu: photo inputs for the three tools, Collage takes several',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock","photo-story","collage*"]');
+  ok(N+'menu: photo inputs for the five photo tools, Collage / Carousel / Highlight covers take several',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock","photo-story","collage*","carousel*","highlight*"]');
   const xr=await pg.$eval('dialog.fab-dlg .fab-x',e=>{ const r=e.getBoundingClientRect(); return Math.min(r.width,r.height); });
   ok(N+'the close button is at least 56px',xr>=56,xr);
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);

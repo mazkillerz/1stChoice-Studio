@@ -46,7 +46,7 @@ Studio.tool({
   safe:{top:0,bottom:0},
   pages:{min:1,max:12,start:4}, pageNoun:{one:'cover',many:'covers',set:'set of covers'},
   photos:{count:1}, sampleNote:'A photo cover fills the whole circle. Keep the important part in the middle.',
-  pagePhotos:value=>value('kind')==='photo'?1:0,
+  pagePhotos:value=>value('kind')==='photo'?1:0, quickKind:'photo',
   stylesTitle:'All covers',
   styles:[
     {id:'white',label:'White',swatch:hsw('#fff','#F3F3F1')},

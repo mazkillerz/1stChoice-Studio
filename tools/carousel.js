@@ -15,7 +15,7 @@ Studio.tool({
   id:'carousel', title:'Carousel', fileName:'carousel',
   size:{w:1080,h:1350}, safe:{top:0,bottom:0},
   pages:{min:2,max:10,start:4},
-  photos:{count:2}, sampleNote:'Example photos. Add your photos (pick several at once to fill the slides); keep the important part in the middle (the grid shows 3:4).',
+  photos:{count:2}, quickKind:'photo', sampleNote:'Example photos. Add your photos (pick several at once to fill the slides); keep the important part in the middle (the grid shows 3:4).',
   stylesTitle:'All slides',
   styles:[{id:'white',label:'White',swatch:csw('#fff')},{id:'cream',label:'Cream',swatch:csw('#F3EADC')},{id:'black',label:'Black',swatch:csw('#000')}],
   /* photos each slide takes */

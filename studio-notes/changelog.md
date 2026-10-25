@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.1.0 · 25 Oct 2026
+
+### Carousel and covers from your photos
+type: feature
+**+** now starts a **Carousel** or **Highlight covers** from your photos too. Pick up to 10 photos for a carousel (or 12 for covers) and it opens with **one slide or cover per photo**, as many as you picked, ready to save. Before: open the tool, delete or add slides, then add the photos slide by slide. Now: **+**, Carousel, pick the photos, **Save**. Sharing photos from the gallery (Android) offers both as well. Their rows in All tools get the camera button.
+![before](assets/whatsnew/1.1.0-photos-before.jpg)
+![after](assets/whatsnew/1.1.0-photos-after.jpg)
+
+### Collage: drop a photo on its border
+type: fix
+With a border on, dragging a photo onto another one only swapped them when you let go on the picture itself; on its border nothing happened. Now the border counts as part of the photo, so a drop anywhere on the frame swaps them.
+
 ## 1.0.0 · 25 Oct 2026
 milestone: Studio 1.0
 Studio is complete: a welcome for new phones, a real **Templates** library, a faster Restock, new looks for Photo story and Collage, and finer editing for every tool. Thank you to the team for every idea and every fix request that got us here.
