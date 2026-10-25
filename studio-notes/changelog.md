@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.3.0 · 25 Oct 2026
+
+### See a saved design big
+type: feature
+Looking for last week's restock story? Press and hold a saved design (or tap **⋯**), then tap its **picture**: it opens big, full screen. **Swipe** left or right to flip through the designs next to it (on a computer: the arrows or ← →). **Open** edits the one you see; **More** shows its menu. Nothing moved: the menu has the same buttons as before.
+![after](assets/whatsnew/1.3.0-peek-after.jpg)
+
+### Your shared photo waits for you
+type: fix
+Shared a photo from the gallery to Studio and closed the "pick what to make" sheet by mistake? Before: the photo was gone and you had to share it again. Now Home shows **Your photo is in** at the top: tap **Pick** to choose the tool, or **✕** to forget it.
+![after](assets/whatsnew/1.3.0-shared-after.jpg)
+
 ## 1.2.0 · 25 Oct 2026
 
 ### A new logo for Studio

@@ -35,7 +35,7 @@ Studio is a phone-first story maker (static GitHub Pages site, no build step) fo
 
 ## Workflow
 1. Work on a branch `claude/<topic>`; small commits that each work.
-2. Run the tests before pushing: `npx http-server -p 8080 -c-1 .`, then `node tests/run.mjs --changed` (smoke + taste + the suites for what changed, 4 at a time); by hand: `node tests/smoke.mjs` (core flows, light + dark) and the suites for what changed (the studio-improver skill's **Testing** section maps areas to suites, e.g. `full.mjs` for tool pages, `lab.mjs` for Board; every suite only in Simplify sessions). Google Fonts failing inside a sandbox is a known false failure.
+2. Run the tests before pushing: `npx http-server -p 8080 -c-1 .`, then `node tests/run.mjs --quick` while working and `node tests/run.mjs --changed` once before merging (smoke + taste + the suites for what changed since origin/main, 4 at a time; `--dry` shows the list); by hand: `node tests/smoke.mjs` (core flows, light + dark) and the suites for what changed (the studio-improver skill's **Testing** section maps areas to suites, e.g. `full.mjs` for tool pages, `lab.mjs` for Board; every suite only in Simplify sessions). Google Fonts failing inside a sandbox is a known false failure.
 3. **Merge to `main` at the end of every session** once all tests pass (owner's standing instruction, 24 Oct 2026). Pages publishes `main` immediately, so never merge with a failing test. Big redesigns/experiments still ship behind a toggle (off by default) until the owner approves them.
 4. End with a short list: what changed, what the owner must do, any wording that needs approval.
 
