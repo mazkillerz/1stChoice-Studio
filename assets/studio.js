@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -77,8 +77,8 @@ const TOOLS={
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',type:'story',keys:'two pictures half'},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',type:'story',keys:'film movie wide letterbox'},
   'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',group:'post',type:'story',keys:'sale deal promo price percent'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',group:'post',type:'post',keys:'slides swipe feed post'},
-  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',group:'post',type:'highlight',keys:'circle icons profile'},
+  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
+  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
   'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
@@ -89,7 +89,7 @@ const toolPage=id=>ROOT+'tools/'+id+'.html';
 const PINS_KEY='studio:pins', DEFAULT_PINS=['restock'];
 function usedBefore(){ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||''; if(k.startsWith('studio:')&&!/^studio:(look|pins|recentSearches|welcome)$/.test(k)) return true; } }catch(_){} return false; }
 function getPins(){ let p=store(PINS_KEY);
-  if(!Array.isArray(p)){ p=usedBefore()?Object.keys(TOOLS).filter(id=>TOOLS[id].quick):DEFAULT_PINS; store(PINS_KEY,p); }
+  if(!Array.isArray(p)){ p=usedBefore()?Object.keys(TOOLS).filter(id=>TOOLS[id].quick&&TOOLS[id].qi<=3):DEFAULT_PINS; store(PINS_KEY,p); }
   return p.filter(id=>TOOLS[id]); }
 function setPin(id,on){ const p=new Set(getPins()); if(on) p.add(id); else p.delete(id); store(PINS_KEY,Object.keys(TOOLS).filter(t=>p.has(t))); return !!on; }
 
@@ -179,6 +179,8 @@ const ICON={
   /* one icon per photo tool, so the + menu and the welcome tell them apart */
   restock:svg('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.7 4.73a2 2 0 0 0 2 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>'),
   story:svg('<rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="14.5" cy="7.5" r="1.5"/><path d="m5 17 4.5-4.5 3 3 2-2L19 18"/>'),
+  carousel:svg('<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M2 5v14"/><path d="M22 5v14"/>'),
+  highlight:svg('<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.5"/>'),
   collage:svg('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
   settings:svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
   play:svg('<circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/>',20),
@@ -408,8 +410,10 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
       ctx.restore();
-      if(rot){ const c=Math.abs(Math.cos(rot)), sn=Math.abs(Math.sin(rot)), ew=w*c+hh*sn, eh=w*sn+hh*c; reg.push({photo:ix(i,opt),x:x+w/2-ew/2,y:y+hh/2-eh/2,w:ew,h:eh,mode:opt.mode||'cover'}); }
-      else reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover'});
+      /* opt.pad: the frame drawn around the photo counts as the photo for taps and drops (a Collage border) */
+      const pad=Math.max(0,opt.pad||0);
+      if(rot){ const c=Math.abs(Math.cos(rot)), sn=Math.abs(Math.sin(rot)), ew=w*c+hh*sn, eh=w*sn+hh*c; reg.push({photo:ix(i,opt),x:x+w/2-ew/2,y:y+hh/2-eh/2,w:ew,h:eh,mode:opt.mode||'cover',pad}); }
+      else reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover',pad});
     },
     /* the same photo, soft-blurred and dimmed, as a backdrop (a wide photo shown whole on top of it). The blur is a tiny copy
        scaled up, so it looks the same on every phone (Safari has no canvas blur filter) and at any save size. Not a layer. */
@@ -1461,11 +1465,12 @@ async function tool(cfg){
   /* ---- pointer: drag layers or photos, pinch to resize/zoom, tap text to edit ---- */
   let guides=[], dragging=false; const pts=new Map(); let st=null, target=null, moved=false;
   function toCanvas(e){ const r=view.getBoundingClientRect(), k=W/r.width; return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k,k}; }
+  const inBox=(pt,b)=>{ const d=b.pad||0; return pt.x>=b.x-d&&pt.x<=b.x+b.w+d&&pt.y>=b.y-d&&pt.y<=b.y+b.h+d; };   // a photo plus its frame
   function hit(pt){
     for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.id&&!b.hidden&&!b.empty){ const pad=24;
       if(b.rot){ const dx=pt.x-b.cx, dy=pt.y-b.cy, c=Math.cos(-b.rot), s=Math.sin(-b.rot), lx=dx*c-dy*s, ly=dx*s+dy*c; if(Math.abs(lx)<=b.rw/2+pad&&Math.abs(ly)<=b.rh/2+pad) return {layer:b.id}; }
       else if(pt.x>=b.x-pad&&pt.x<=b.x+b.w+pad&&pt.y>=b.y-pad&&pt.y<=b.y+b.h+pad) return {layer:b.id}; } }
-    for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return {photo:b.photo,mode:b.mode}; }
+    for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&inBox(pt,b)) return {photo:b.photo,mode:b.mode}; }
     return null;
   }
   /* carousels: swipe sideways starting near the left or right edge of the preview to change slide */
@@ -1508,7 +1513,7 @@ async function tool(cfg){
   function setRot(id,r){ const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}); l.rot=normRot(r); if(!l.rot) delete l.rot; syncInspector(); render(); }
   /* ---- swapping photos: lift one, drop it on another ---- */
   let lift=null;
-  function photoAt(pt){ for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&pt.x>=b.x&&pt.x<=b.x+b.w&&pt.y>=b.y&&pt.y<=b.y+b.h) return b.photo; } return null; }
+  function photoAt(pt){ for(let j=reg.length-1;j>=0;j--){ const b=reg[j]; if(b.photo!=null&&inBox(pt,b)) return b.photo; } return null; }
   function startLift(cx,cy){ if(!lift) return; lift.on=true; const p=S.photos[lift.i]; if(navigator.vibrate) navigator.vibrate(10);
     const g=document.createElement('img'); g.className='lift-ghost'; g.src=p.thumb||''; g.alt=''; document.body.appendChild(g); lift.ghost=g; moveGhost(cx,cy); view.classList.add('lifting'); render(); }
   function moveGhost(cx,cy){ if(lift&&lift.ghost) lift.ghost.style.transform=`translate(${cx-44}px,${cy-44}px)`; }
@@ -1709,6 +1714,15 @@ async function tool(cfg){
   function goPage(n){ n=Math.max(0,Math.min(S.P.length-1,n)); S.page=n; S.sel=null; S.active=photoOffset(); if(openName==='insp') closeSheet('insp'); syncUI(); syncInspector();
     $('pager').querySelectorAll('.sthumb').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.pg===n))); const cur=$('pager').querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); render(); }
   function insertPage(at,page,photos){ S.P.splice(at,0,page); S.photos.splice(at*perPage,0,...(photos||Array.from({length:perPage},blankPhoto))); S.photos.length=nPhotos; for(let i=0;i<nPhotos;i++) if(!S.photos[i]) S.photos[i]=blankPhoto(); }
+  /* Quick start in a paged tool (Carousel, Highlight covers): one photo per page, as many pages as photos (within the tool's min and max);
+     a page whose type takes no photo switches to cfg.quickKind (an icon cover becomes a photo cover) */
+  async function quickPages(fs){ const n=Math.max(PG.min,Math.min(PG.max,fs.length));
+    while(S.P.length<n) insertPage(S.P.length,newPage(S.P.length));
+    while(S.P.length>n) removePage(S.P.length-1);
+    for(let pg=0;pg<Math.min(n,fs.length);pg++){
+      if(!pagePhotoCount(pg)&&cfg.quickKind&&S.P[pg].values.kind!==undefined) S.P[pg].values.kind=cfg.quickKind;
+      if(pagePhotoCount(pg)) await setPhoto(pg*perPage,fs[pg]); }
+    paintPager(); goPage(0); render(); }
   function removePage(at){ S.P.splice(at,1); S.photos.splice(at*perPage,perPage); while(S.photos.length<nPhotos) S.photos.push(blankPhoto()); }
   function movePage(from,to){ if(to<0||to>=S.P.length||from===to) return; const pg=S.P[from], ph=S.photos.slice(from*perPage,from*perPage+perPage); removePage(from); insertPage(to,pg,ph); S.page=to; paintPager(); goPage(to); }
   function dupPage(at){ if(S.P.length>=PG.max) return status('A '+PN.set+' can have up to '+PG.max+' '+PN.many+'.'); const pg=clone(S.P[at]); pg.extras.forEach(x=>{ const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const nid=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n; if(pg.layers[x.id]){ pg.layers[nid]=pg.layers[x.id]; delete pg.layers[x.id]; } x.id=nid; });
@@ -1794,7 +1808,8 @@ async function tool(cfg){
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ photoStyleNow(); if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
-      const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
+      if(PG) await quickPages(fs);
+      else { const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]); }
       flush(); quickReady=true; showReady(fs.length>1); }
     else status('That photo did not come through. Tap Add your photo.'); }
   /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
@@ -1806,6 +1821,8 @@ async function tool(cfg){
 
 /* ---------- Quick start: the hub hands photos to a tool through IndexedDB (too big for the URL) ---------- */
 const quickKey=(brand,tool)=>'studio:quick:'+brand+':'+tool;
+/* how many photos a Quick start keeps: one, or up to the tool's max (Collage 9, Carousel 10, Highlight covers 12) */
+const quickMax=id=>TOOLS[id].multi?(TOOLS[id].max||9):1;
 /* ---------- home: continue editing, saved designs + collections, tools ---------- */
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return new Date(t).toLocaleDateString(); }
 async function home(){
@@ -1841,7 +1858,7 @@ async function home(){
   /* a photo picked in any Quick start button (home or search) goes to its tool through IndexedDB */
   document.addEventListener('change',async e=>{ const inp=e.target, id=inp&&inp.dataset&&inp.dataset.quick; if(!id||!TOOLS[id]) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
     const lbl=inp.closest('label'); if(lbl) lbl.classList.add('busy');
-    const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
+    const ok=await idb.put(quickKey(B.id,id),fs.slice(0,quickMax(id)));
     if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ if(lbl) lbl.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
     store('studio:lastQuick',id);
     if(window.StudioSearch) await StudioSearch.close();   // picked from the search: let it close (and its Back entry go) first
@@ -1881,14 +1898,14 @@ async function home(){
     const got=n>0?await idb.get('studio:shared'):null, fs=got&&got.files||[];
     if(!fs.length){ hubToast('That photo did not come through. Share it again, or tap + to pick it.'); return; }
     const q=quickTools(), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });
-    const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses all '+Math.min(fs.length,9)+' photos':'Uses the first photo';
+    const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses '+(fs.length>(t.max||9)?'the first ':'all ')+Math.min(fs.length,t.max||9)+' photos':'Uses the first photo';
     const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
     d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice
     d.querySelector('.fab-x').onclick=()=>d.close();
     d.addEventListener('close',()=>setTimeout(()=>urls.forEach(u=>u&&URL.revokeObjectURL(u)),400));
     d.querySelector('.share-menu').addEventListener('click',async e=>{ const b=e.target.closest('[data-share]'); if(!b) return; const id=b.dataset.share;
       b.classList.add('busy');
-      const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
+      const ok=await idb.put(quickKey(B.id,id),fs.slice(0,quickMax(id)));
       if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ b.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
       idb.del('studio:shared'); store('studio:lastQuick',id);
       location.href=toolPage(id)+'?quick=1'; });

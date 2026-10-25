@@ -91,7 +91,7 @@ Studio.tool({
       cellBoxes(grid,ax,ay,aw,ah,gap).forEach((b,i)=>{
         if(!bw){ h.photo(i,b.x,b.y,b.w,b.h,{mode:'cover',r:rad}); return; }
         const t=Math.min(bw,Math.max(0,(Math.min(b.w,b.h)-12)/2));   // a tiny cell never shrinks to nothing
-        frame(b.x,b.y,b.w,b.h,rad); h.photo(i,b.x+t,b.y+t,b.w-2*t,b.h-2*t,{mode:'cover',r:Math.max(0,rad-t)}); });
+        frame(b.x,b.y,b.w,b.h,rad); h.photo(i,b.x+t,b.y+t,b.w-2*t,b.h-2*t,{mode:'cover',r:Math.max(0,rad-t),pad:t}); });
       if(margin) logoBelow(ay+ah); else if(showLogo){ const lw=170; h.logo((W-lw)/2,H-300,lw,'light'); }
       return;
     }
@@ -105,7 +105,7 @@ Studio.tool({
       const area=P=>P.reduce((s,p)=>s+p.w*p.hh,0), A=fit(SC[n]), B2=fit(col), P=area(B2)>area(A)*1.15?B2:A;
       P.forEach((p,i)=>{ ctx.save(); ctx.translate(p.cx,p.cy); ctx.rotate(p.tilt*Math.PI/180);
         ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=34; ctx.shadowOffsetY=12; ctx.fillStyle=bw?bc:'#000'; ctx.beginPath(); h.rr(ctx,-p.w/2,-p.hh/2,p.w,p.hh,rad); ctx.fill(); ctx.restore();
-        h.photo(i,p.cx-p.w/2+bw,p.cy-p.hh/2+bw,p.w-2*bw,p.hh-2*bw,{mode:'contain',r:Math.max(0,rad-bw),rot:p.tilt}); });
+        h.photo(i,p.cx-p.w/2+bw,p.cy-p.hh/2+bw,p.w-2*bw,p.hh-2*bw,{mode:'contain',r:Math.max(0,rad-bw),rot:p.tilt,pad:bw}); });
       logoBelow(ay+ah); return;
     }
     /* whole-photo layouts (2 to 4 photos): never cropped. Every rectangle is a photo plus its border (bl, in layout units), so the
@@ -153,7 +153,7 @@ Studio.tool({
       if(r.border){ const b=r.border*k; ctx.save(); ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=24; ctx.fillStyle=bc; ctx.beginPath(); h.rr(ctx,x-b,y-b,w+2*b,hh+2*b,rad?rad+b:0); ctx.fill(); ctx.restore(); }
       const b=r.border?0:bl*k;   // the "Big + small" print has its frame outside its photo
       if(b) frame(x,y,w,hh,rad);
-      h.photo(r.i,x+b,y+b,w-2*b,hh-2*b,{mode:'contain',r:Math.max(0,rad-b)}); });
+      h.photo(r.i,x+b,y+b,w-2*b,hh-2*b,{mode:'contain',r:Math.max(0,rad-b),pad:b||(r.border?r.border*k:0)}); });
     logoBelow(oy+gh);
   }
 });
