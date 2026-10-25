@@ -846,6 +846,13 @@ body.us-open .fab{display:none}
 .fi-txt b{font:600 var(--fs-l) var(--sans)}
 .fi-txt span{font-size:var(--fs-s);color:var(--muted)}
 .fab-sep{height:1px;background:var(--line);margin:6px 12px}
+.fi-tag{font:600 10px/1 var(--sans);font-style:normal;vertical-align:2px;margin-inline-start:6px;padding:3px 7px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent)}
+button.fab-item{border:0;background:none;font:inherit;text-align:start;width:100%}
+.dlg.share-dlg:focus{outline:none}
+.share-head{display:flex;align-items:center;gap:12px;padding:8px 10px 10px}
+.share-pics{display:flex;flex:none}
+.share-pics img{width:46px;height:58px;object-fit:cover;border-radius:12px;border:2px solid var(--raised);box-shadow:var(--shadow-1);transform:rotate(calc((var(--i) - 1) * 4deg))}
+.share-pics img+img{margin-inline-start:-30px}
 :root .fab.fab-x{position:relative;inset:auto;flex:none;animation:none}
 .fab.fab-x svg{transform:rotate(45deg);animation:fab-x-in .45s var(--spring) backwards}
 @keyframes fab-menu-in{from{opacity:0;transform:translateY(18px) scale(.9)}}

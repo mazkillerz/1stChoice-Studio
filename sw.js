@@ -2,8 +2,10 @@
    - The app shell (pages, code, styles, brand kit) is cached so Studio opens even with a weak signal.
    - Code and pages are "network first": when online you always get the newest version.
    - Images (samples, thumbs, assets) are "cache first" and refreshed in the background.
-   - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network. */
-const VERSION='studio-v8-0';   // Studio 0.8.0
+   - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
+   - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
+     IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
+const VERSION='studio-v9-0';   // Studio 0.9.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -24,8 +26,9 @@ self.addEventListener('activate',e=>{
 });
 const FONT_HOSTS=['fonts.googleapis.com','fonts.gstatic.com'];
 self.addEventListener('fetch',e=>{
-  const req=e.request; if(req.method!=='GET') return;
-  const url=new URL(req.url);
+  const req=e.request, url=new URL(req.url);
+  if(req.method==='POST'&&url.origin===self.location.origin&&url.pathname.endsWith('/share-target')){ e.respondWith(shareIn(req)); return; }
+  if(req.method!=='GET') return;
   if(/supabase\.(co|in)$/.test(url.hostname)||url.pathname.includes('/auth/v1/')||url.pathname.includes('/rest/v1/')||url.pathname.includes('/storage/v1/')) return;   // never cached
   if(FONT_HOSTS.includes(url.hostname)){ e.respondWith(cacheFirst(req)); return; }
   if(url.origin!==self.location.origin) return;
@@ -50,4 +53,15 @@ async function cacheFirst(req,refresh){
   const net=fetch(req).then(res=>{ if(res&&(res.ok||res.type==='opaque')) c.put(req,res.clone()); return res; }).catch(()=>null);
   if(hit){ if(refresh) net; return hit; }
   const res=await net; if(res) return res; return Response.error();
+}
+/* photos shared from another app: keep up to 9 pictures, then open the hub (?shared=<count>) */
+function idbPut(k,v){ return new Promise(res=>{ try{ const r=indexedDB.open('studio',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('files');
+  r.onsuccess=()=>{ try{ const t=r.result.transaction('files','readwrite'); t.objectStore('files').put(v,k); t.oncomplete=()=>res(true); t.onerror=()=>res(false); }catch(_){ res(false); } };
+  r.onerror=()=>res(false); }catch(_){ res(false); } }); }
+async function shareIn(req){
+  let files=[];
+  try{ const fd=await req.formData(); files=fd.getAll('photos').filter(f=>f&&typeof f!=='string'&&f.size&&(/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name||''))).slice(0,9); }catch(_){}
+  const ok=files.length?await idbPut('studio:shared',{files,at:Date.now()}):false;
+  return Response.redirect(new URL('index.html?shared='+(ok?files.length:0),self.registration.scope).href,303);
 }

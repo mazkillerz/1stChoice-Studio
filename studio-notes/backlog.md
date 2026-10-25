@@ -2,20 +2,19 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 9 (0.8.0) was a **Mazoon** session (select several saved designs: Collection / Take out / Delete in one go; 7 designs a row on a computer). The next one (0.9.0) is a **team** session.
+**Last session:** 10 (0.9.0) was a **team** session (share photos from the gallery into Studio on Android; Last time tag in +). The next one (0.10.0) is a **Simplify** session (no new feature).
 **Simplify session:** every 5th version. The next one is 0.10.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
-| 24 | + menu: show the tool you used last first, and Templates as a third choice | 3 | 2 | 2 | 1 | 6 | Watch what the team taps. |
+| 24 | + menu: Templates as a third choice | 2 | 2 | 2 | 1 | 5 | Last used is tagged since 0.9.0 (order kept on purpose). |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 19 | Reorder pinned tools (drag in All tools, or "Move up") | 3 | 3 | 2 | 2 | 6 | Today pins follow the TOOLS order. |
 | 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
-| 4 | Share target: share photos from the phone's gallery straight into Studio (PWA `share_target`) | 5 | 3 | 5 | 4 | 9 | Needs a service-worker POST handler; Android only, iPhone no. |
 | 5 | Batch export: save every slide/page or several drafts in one go (ZIP or share sheet with many files) | 3 | 4 | 3 | 3 | 7 | |
 | 6 | Template search and collections in Create (search by word, favourites) | 2 | 4 | 3 | 3 | 6 | Hub search finds templates since 0.6.0; inside Create there is still no search box. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
@@ -29,6 +28,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
+- Share target: a shared photo whose sheet is closed without a choice stays in IndexedDB until the next share; harmless, but a "Your shared photo is waiting" row could bring it back if the team closes it by mistake.
 - Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
 - The Quick start note fades after 3.2 s: check on a real phone that it is long enough to read, and that Save's pulse is noticed.
 - Board and the lab pages now get the interface font (IBM Plex Sans Arabic) through studio.css but keep their own 800 weights (drawn as 700); align them with the 400/500/600 scale with backlog #18.
@@ -47,6 +48,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 0.9.0 (team): share photos from the phone's gallery into Studio (Android, installed: manifest `share_target`, sw.js POST handler → IndexedDB → hub pick-a-tool sheet → Quick start), Last time tag on the photo tool used last in + and the share sheet (#4, part of #24); Android install hint mentions sharing.
 - 0.8.0 (Mazoon): Saved page select mode (Select / Select all / Clear; Collection adds the ticked designs to an existing or new collection, keeping their others; Take out while a collection is chosen; Delete many with one confirm; ✕ / Escape / Back stop; press and hold → Select more), 7 designs a row on a computer (#22 and the desktop tiles audit finding).
 - 0.7.1 (owner-directed polish): chosen collection chip readable in both themes with its full shadow; Rename / Delete collection in a ⋯ menu on the chosen chip (Delete asks first); design cards framed with the name (2 lines, `dir="auto"`) and time grouped; search clear ✕ at the end and magnifier at the start; Arabic search rows and the design menu header right to left; Quick start note fades in ~3 s (swipe / tap the photo), no second Save, bar Save one tap until the first edit; Snap labelled; Lucide bar icons, filled for the current tab; IBM Plex Sans Arabic with 400/500/600; one spacing rhythm; layered dark surfaces; friendly empty states, New design card and tip on sparse Saved; contrast + RTL sweep script.
 - 0.7.0 (owner-directed): Fresh look is the default (switch removed) and more polished (wash, button light, sheets slide up, chip pop, greeting); + button (Restock / Photo story / Collage from a photo, New design) and a camera button on photo-first rows instead of the Start from a photo block; Saved designs row on home + Saved page (picture grid, type + collection filters, press and hold / ⋯ actions with confirmed delete); one-tap save sheet (team on for new designs when signed in, name filled, last collection); Looks good · Save adds to the team too (#13); scroll lock for pop-ups, sheets and search; bottom bar Home + Saved with a centred highlight; What's New: latest as a big card, grouped older versions, type filters.

@@ -32,6 +32,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **New paged tools** (a set of covers, slides…): use `pages`, `pagePhotos` and `pageNoun` in `Studio.tool` instead of new engine code; the hub list is `TOOLS` in `studio.js`, its thumbnails are `assets/thumbs/<brand>/<id>.jpg` + `-sm.jpg` (320×569), and both tool files go in the `sw.js` shell.
 - **Wording in test data:** anything a test types that can end up in a shipped image (thumbnails, screenshots) must be an approved phrase from `brand.js`.
 - **Owner-directed sessions:** when Mazoon names the work, do that instead of the backlog pick. The gates still apply, and the session still counts in the team/Mazoon rotation (by who it helps most).
+- **Service-worker features** (share target, offline): most suites block the service worker (`serviceWorkers:'block'`); a suite that needs it waits for `navigator.serviceWorker.ready` and reloads so the page is controlled (`tests/share.mjs`).
 - **Seeded data:** `tests/seed.js` (`seedDesigns()` + `seedScript()`) fills fakecloud with 8 saved designs that use the tool thumbnails; use it for Saved tests and What's New shots. For a "before" shot after code already changed, check out the previous commit with `git worktree add <scratch>/old <sha>` and serve it on another port.
 - **The look:** the fresh look is the default since 0.7.0 (no `data-look` attribute any more); its rules sit at the end of `studio.css` and must stay last. Each page opts in to page transitions with an inline `<style>@view-transition{navigation:auto}</style>` in its `<head>` (from JS it is too late). Pop-ups use `dialog()` (it locks the page behind with `lockScroll`); a new overlay that is not a `<dialog>` must call `lockScroll(key,true/false)` itself.
 - **Type and RTL (since 0.7.1):** the interface font is IBM Plex Sans Arabic (`@import` at the top of `studio.css`, token `--sans`; `studio.js` passes the brand's fonts as `--display` / `--brand-sans`, never `--sans`). Weights 400/500/600 only. Spacing 4-8-12-16-24-32, sections 24px apart. Dark layers: `--bg` < `--surface` (cards) < `--raised` (sheets, menus, bars). Text that may be Arabic: `dir="auto"` on the wrapper that holds a name and its details (not on each line), and `<bdi>` around times/numbers that start a line.
@@ -92,6 +93,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Highlight covers, paged tools | `highlight` |
 | Create (`tools/create*`) | `create` |
 | What's New, changelog | `whatsnew` |
+| Share target, `sw.js`, manifest, the + menu | `share` (runs with the service worker on) |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71`, `fresh` |
 | Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
 

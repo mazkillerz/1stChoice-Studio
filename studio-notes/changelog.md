@@ -12,6 +12,19 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 0.9.0 · 25 Oct 2026
+
+### Share photos straight into Studio
+type: feature
+On Android, once Studio is installed on your home screen, it now shows up when you tap **Share** in your gallery or camera app. Pick one photo or several, tap Share, then Studio: it opens with your photos in and asks what to make: **Restock**, **Photo story** or **Collage** (Collage uses all of them, the others the first one). Tap one and the story opens with your photo already in, ready to Save. No more opening Studio first and hunting for the photo again. Not installed yet? Studio's home page offers an **Install** button, or search for "Install". iPhones don't let websites appear in the Share list, so on an iPhone keep using the camera button or +.
+![after](assets/whatsnew/0.9.0-share-after.jpg)
+
+### + remembers what you made last
+type: design
+The + menu now puts a small **Last time** tag on the photo tool you used last on this phone, so a repeat restock is easy to spot. The order of the menu never changes, so your thumb still finds Restock in the same place.
+![before](assets/whatsnew/0.9.0-last-before.jpg)
+![after](assets/whatsnew/0.9.0-last-after.jpg)
+
 ## 0.8.0 · 25 Oct 2026
 
 ### Select several designs at once

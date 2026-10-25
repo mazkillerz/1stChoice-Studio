@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='0.8.0';
+const VERSION='0.9.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1724,6 +1724,7 @@ async function home(){
     const lbl=inp.closest('label'); if(lbl) lbl.classList.add('busy');
     const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
     if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ if(lbl) lbl.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
+    store('studio:lastQuick',id);
     if(window.StudioSearch) await StudioSearch.close();   // picked from the search: let it close (and its Back entry go) first
     location.href=toolPage(id)+'?quick=1'; });
   addEventListener('pageshow',()=>document.querySelectorAll('label.busy').forEach(l=>l.classList.remove('busy')));   // back button from the tool
@@ -1742,15 +1743,37 @@ async function home(){
   }
   $('allTools').onclick=openLibrary;
   /* the + button (bottom corner, in thumb reach): start from a photo, or a new design */
+  /* the photo-first tool used last on this device gets a small "Last time" tag (the order never changes) */
+  const lastTag=id=>store('studio:lastQuick')===id?' <em class="fi-tag">Last time</em>':'';
   function openNew(){
     const q=quickTools(), fab=$('fab');
-    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i}"><span class="fi-ic">${ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}${TOOLS.create?`<span class="fab-sep" aria-hidden="true"></span><a class="fab-item" href="${toolPage('create')}" style="--i:0"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Blank, or from a template</span></span></a>`:''}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
+    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i}"><span class="fi-ic">${ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}${TOOLS.create?`<span class="fab-sep" aria-hidden="true"></span><a class="fab-item" href="${toolPage('create')}" style="--i:0"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Blank, or from a template</span></span></a>`:''}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
     d.setAttribute('aria-labelledby','fabH'); fab.setAttribute('aria-expanded','true'); haptic('tick');
     d.querySelector('.fab-x').onclick=()=>d.close();
     d.addEventListener('click',e=>{ if(e.target===d) d.close(); });   // the clear space around the menu
     d.addEventListener('close',()=>fab.setAttribute('aria-expanded','false'));
   }
   $('fab').onclick=openNew;
+  /* photos shared from the phone's gallery (Share → Studio, installed app on Android): sw.js keeps them in IndexedDB and
+     opens the hub with ?shared=<n>; the same menu as + asks which tool to start, then hands them over like Quick start */
+  async function openShared(n){
+    history.replaceState(null,'',location.pathname+location.hash);
+    const got=n>0?await idb.get('studio:shared'):null, fs=got&&got.files||[];
+    if(!fs.length){ hubToast('That photo did not come through. Share it again, or tap + to pick it.'); return; }
+    const q=quickTools(), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });
+    const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses all '+Math.min(fs.length,9)+' photos':'Uses the first photo';
+    const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
+    d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice
+    d.querySelector('.fab-x').onclick=()=>d.close();
+    d.addEventListener('close',()=>setTimeout(()=>urls.forEach(u=>u&&URL.revokeObjectURL(u)),400));
+    d.querySelector('.share-menu').addEventListener('click',async e=>{ const b=e.target.closest('[data-share]'); if(!b) return; const id=b.dataset.share;
+      b.classList.add('busy');
+      const ok=await idb.put(quickKey(B.id,id),TOOLS[id].multi?fs.slice(0,9):fs.slice(0,1));
+      if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ b.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
+      idb.del('studio:shared'); store('studio:lastQuick',id);
+      location.href=toolPage(id)+'?quick=1'; });
+  }
+  { const sh=new URLSearchParams(location.search).get('shared'); if(sh!==null) openShared(+sh||0); }
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
@@ -1784,7 +1807,7 @@ async function home(){
   (function(){
     const bar=$('installBar'); if(!bar||standalone()||store('studio:installHidden')) return;
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-    const showPrompt=()=>{ bar.hidden=false; $('installGo').hidden=false; };
+    const showPrompt=()=>{ bar.hidden=false; $('installGo').hidden=false; if(/android/i.test(navigator.userAgent)) $('installTxt').innerHTML='<b>Install Studio</b><span>Open it like an app, and share photos to it from your gallery.</span>'; };
     if(installEvt) showPrompt(); document.addEventListener('studio:installable',showPrompt);
     if(ios){ bar.hidden=false; $('installGo').hidden=true; $('installTxt').innerHTML='<b>Install Studio</b><span>Tap <svg class="ios-share" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> Share, then <b>Add to Home Screen</b>.</span>'; }
     $('installGo').onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); const r=await installEvt.userChoice.catch(()=>null); installEvt=null; if(r&&r.outcome==='accepted') bar.hidden=true; };

@@ -2,6 +2,17 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Session 10 · 0.9.0 · 25 Oct 2026 (team session)
+
+**Worked**
+- The share target needed no new tool code: the service worker drops the files in the same IndexedDB store studio.js uses, and the hub hands them on with the existing Quick start key, so tools treat a shared photo exactly like a picked one.
+- A Playwright form POST (DataTransfer files + `form.submit()`) goes through the real service worker, so the whole Android path (POST → IndexedDB → 303 → sheet → tool) is tested end to end, not mocked.
+- Tagging the last-used tool instead of reordering kept the simplicity gate (familiar buttons stay put) and still gives the repeat-job hint.
+
+**Didn't work / watch out**
+- A test fetched a sample that does not exist (`samples/restock.jpg`); list the folder before naming test files.
+- A dialog opened from code focuses its first button, which draws a focus ring nobody asked for; focus the dialog itself (`tabIndex=-1`) and hide its own outline.
+
 ## Session 9 · 0.8.0 · 25 Oct 2026 (Mazoon session)
 
 **Worked**
