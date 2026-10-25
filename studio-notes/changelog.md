@@ -13,6 +13,24 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.4.0 · 25 Oct 2026
+
+### Your can on a highlight cover
+type: feature
+Highlight covers have a fourth cover type: **Product**. Open **Style**, tap **Product** next to Icon, Word and Photo, then pick the can you want: Classic, Passion fruit, both, with or without a shadow. It is the real HD can picture, sitting inside the circle Instagram shows. The Shape (circle, ring, nothing) still works behind it.
+![before](assets/whatsnew/1.4.0-product-before.jpg)
+![after](assets/whatsnew/1.4.0-product-after.jpg)
+
+### Search the templates in Create
+type: feature
+Create's template list has a search box at the top now. Type a name ("ice") or a word from the design in Arabic ("ثلج") and only the templates that match stay; **✕** brings them all back. Opening a template from the hub search while you already have a design in Create now opens the list right on that template.
+![before](assets/whatsnew/1.4.0-search-before.jpg)
+![after](assets/whatsnew/1.4.0-search-after.jpg)
+
+### Tidier tick boxes
+type: design
+Tick boxes in the sheets now line up exactly with the heading above them (they sat 4 px to the right). Studio's automatic design checks now cover Carousel, Highlight covers and Create too.
+
 ## 1.3.0 · 25 Oct 2026
 
 ### See a saved design big

@@ -32,6 +32,7 @@ for(const scheme of ['light','dark']){
   await pg.fill('#crTplQ',word); s=await shown(pg);
   ok(scheme+': Arabic word filters',s.includes(aw.id)&&s.length<n&&s.length>0,{word,s});
   ok(scheme+': input direction is rtl for Arabic',await pg.evaluate(()=>getComputedStyle(document.getElementById('crTplQ')).direction==='rtl'));
+  ok(scheme+': Arabic words never run under the clear button',await pg.evaluate(()=>{ const q=document.getElementById('crTplQ'), c=document.getElementById('crTplClear').getBoundingClientRect(), r=q.getBoundingClientRect(); return !document.getElementById('crTplClear').hidden && r.right-parseFloat(getComputedStyle(q).paddingRight)<=c.left+1; }));
   /* Arabic normalisation: same word with a tatweel still matches */
   await pg.fill('#crTplQ',word[0]+'ـ'+word.slice(1)); ok(scheme+': Arabic tatweel ignored',(await shown(pg)).includes(aw.id));
   await pg.fill('#crTplQ','zzqqxx'); ok(scheme+': nonsense shows empty state',(await shown(pg)).length===0&&await pg.locator('#crTplNone').isVisible()&&/No templates match/.test(await pg.locator('#crTplNone').textContent()));

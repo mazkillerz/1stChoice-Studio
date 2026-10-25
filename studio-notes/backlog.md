@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 14 (1.3.0, 25 Oct 2026) was a **team** session: Peek a saved design big and swipe through (#23), a shared photo waits on Home if its sheet was closed; the test runner runs only what changed (owner asked for faster tests). The next session (1.4.0) is a **Mazoon** session; 1.5.0 is the Simplify session.
+**Last session:** 15 (1.4.0, 25 Oct 2026) was a **Mazoon** session, run as 3 parallel helpers: Highlight covers Product type (#10, part), Create template search + `?tpl=` opens the picker on that template (#6, part of #20), taste checks for Carousel, Highlight covers and Create. The next session, 1.5.0, is the **Simplify** session (with a pattern review); after it comes a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
 
 ## Next up
@@ -13,11 +13,11 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
 | 5 | Batch export: save every slide/page or several drafts in one go (ZIP or share sheet with many files) | 3 | 4 | 3 | 3 | 7 | |
-| 6 | Template search and collections in Create (search by word, favourites) | 2 | 4 | 3 | 3 | 6 | Hub search finds templates since 0.6.0; inside Create there is still no search box. |
+| 6 | Template collections in Create (favourites, recently used) | 2 | 3 | 2 | 3 | 4 | Search box shipped in 1.4.0. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
 | 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | |
 | 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
-| 10 | Highlight covers: a **Product** cover type that puts a brand asset (HD can cut-out) in the circle; emoji covers | 2 | 4 | 3 | 2 | 7 | Follow-up to 0.2.0. Use the brand's `assets` list, never a drawn can. |
+| 10 | Highlight covers: emoji covers; Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
@@ -30,7 +30,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - 1.1.0: the + menu now has 5 photo tools (7 rows). If it grows again, group it (e.g. Stories / Posts) or show the 3 most used and a More.
 - 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
-- 1.0.0: `tests/taste.mjs` covers Home, menus, Templates, Saved, search, What's New and the three photo tools; add Create, Highlight covers, Carousel and the lab next.
+- 1.4.0: `tests/taste.mjs` now covers Carousel, Highlight covers and Create (first view); the note/toast monitor still only watches Restock, and the lab is not covered yet.
+- 1.4.0: Create has its own Arabic normaliser for template search (`normQ` in create.js); share one with `assets/search.js` in the Simplify session.
 - 1.0.0: on a computer the tool page shows the Save card right after Photo (above Style and Words); check whether that order is what Mazoon wants.
 - 1.0.0: Templates library ideas: favourites (star a template), "recently used", and team templates with real previews in the Team row (they use the saved thumbnail today).
 - Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
@@ -52,6 +53,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.4.0 (Mazoon, 3 parallel helpers): Highlight covers **Product** type (the brand kit's HD can pictures in the circle, picker in Style); Create template search (English + Arabic, empty state, ✕) and `?tpl=` on an open design shows the picker on that template; taste checks for Carousel, Highlight, Create + labels on icon-only controls; checkbox rows aligned with their sheet heading (4px).
 - 1.3.0 (team): Peek, a saved design big with swipe to the next (#23); the shared photo waits on Home ("Your photo is in", Pick / ✕); `tests/run.mjs --quick`, `--dry`, origin/main as base, studio.js mapped by tool()/home(), slowest first (26 → 13 suites, 487 → 193 s). Hub tool thumbnails checked: kept (a fresh render was worse).
 - 1.2.0 (owner-directed, Mazoon): Studio's own logo (the dragon from the owner: app icons 180/192/256/512, a separate maskable icon, the mark next to the brand logo on Home, inverted in dark; old "1st" icons in `_archive/app icons 1st mark (2026-10-25)/`); pins keep the order you set, All tools › Order on your home moves one up (#19).
 - Idea: the dragon in the welcome tour and on the What's New page header; a higher-resolution source of the dragon would sharpen the 512px icon (the owner's picture is ~400px across).

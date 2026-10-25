@@ -5,10 +5,21 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 15 | 1.4.0 | 4 (all suites green; two slips caught by the lead in review: weight 700, Arabic under ✕) | 5 (3 items in one pass with 3 parallel helpers) | 0 reported after 1.3.0 | 33/33 pass | Brief helpers with the taste rules (weights, RTL with an icon in the box) and that worktrees may start from an old main |
 | 14 | 1.3.0 | 4 (new suite 90/90, 13 suites green; shots checked in both themes) | 4 (both items shipped; one dead end on thumbnails, reverted) | 0 reported after 1.2.0; mid-session: tests too slow (fixed in run.mjs + skill) | 32/32 pass | Check `--changed --dry` before a long run; compare a regenerated asset with the old one before replacing it |
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 15 · 1.4.0 · 25 Oct 2026 (Mazoon, 3 parallel helpers)
+
+**Worked**
+- Three `sonnet` helpers in separate worktrees, each owning its own files (highlight / create / taste.mjs) and its own server port (`BASE=http://127.0.0.1:808x/`): no merge conflicts, everything fast-forwarded or cherry-picked.
+- The lead kept the shared files (VERSION, sw.js, changelog, notes, run.mjs) and did the review, shots and release.
+
+**Didn't work / watch out**
+- Agent worktrees started from an old `main` (df0680f), not the session branch: tell each helper to check its base is the session branch tip.
+- Helpers missed two taste rules (font weight 700; with `dir=auto` an Arabic search text ran under the ✕ because the padding flipped but the button did not). Physical padding on the button side fixes it; the screenshot step caught it, so keep checking shots with Arabic typed.
 
 ## Session 14 · 1.3.0 · 25 Oct 2026 (team)
 
