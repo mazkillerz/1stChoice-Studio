@@ -27,6 +27,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Version:** `VERSION` at the top of `assets/studio.js` (shown on the hub and used for the What's New dot). Also bump the cache name in `sw.js` whenever shipped files change.
 - **What's New cards** hold one `before` and one `after` image (the last line of each wins).
 - **What's New:** `whats-new.html` + `assets/whatsnew.js/.css` read `studio-notes/changelog.md` directly (format in that file's intro). Screenshots go in `assets/whatsnew/<version>-<name>-before|after.jpg`, 390px-wide phone crops at 2×, JPEG quality ~72 (keep each under ~80 KB). Take the "before" shots **before** changing anything.
+- **Hub thumbnails:** the tool pictures (`assets/thumbs/<brand>/<id>.jpg`) are hand-picked shots, not the tool's default view; a fresh render was worse (1.3.0: Collage showed beans, Highlight lost its grid). Keep them unless a tool's look really changes.
 - **Tests:** serve with `npx http-server -p 8080 -c-1 .`, then follow **Testing** below (smoke every session, targeted suites for what changed, the full sweep only in Simplify sessions). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
 - **Audit + screenshot helpers:** `node tests/tapscan.mjs tools/a.html,tools/b.html` lists every control under 44px per sheet; `node tests/shot.mjs <page> <sheet|-> <out.jpg> [selector]` takes the What's New phone shots.
 - **Contrast, RTL and real-font shots** (full sweep, or when colours, tokens or Arabic text handling change): `node tests/contrast.mjs` scans every main screen in light and dark for text below WCAG AA and Arabic text running left-to-right (run it on the old commit too, so a clean result means something). `node tests/look8.mjs <outDir> [base] [names]` shoots the owner-flagged screens in both themes with Arabic names seeded. For real Google Fonts in the sandbox, launch with `proxy:{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}` and set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` (otherwise local pages go through the proxy).
@@ -81,7 +82,12 @@ Everything else in this skill can be rewritten by the skill itself.
 
 Test what changed, fully; test the core flows quickly; test everything only every 5th version. Decide the scope from the diff (`git diff --stat main`), not from habit.
 
-**Run them in parallel (since 1.2.0):** `node tests/run.mjs --changed` runs smoke + taste + the suites mapped to the files changed since `main`, 4 at a time, and prints one line per suite plus the first fails (`node tests/run.mjs a b c` for named suites, `JOBS=n` to change the width). Nine suites take ~2.5 min instead of ~8; `home7` is the long pole. Never `pkill -f` a pattern that is also in your own command line (it kills the shell running it).
+**Run them in parallel (since 1.2.0), and only what changed (since 1.3.0):** two runs per session, no more:
+- **While you work:** `node tests/run.mjs --quick` = smoke + taste + the suites in `tests/` you added or changed (about 1 min). Run your new suite on its own (`node tests/<feature>.mjs`) while fixing it.
+- **Once, before the merge:** `node tests/run.mjs --changed` = smoke + taste + the suites mapped to the files changed since `origin/main` (it fetches it first: a stale local `main` once made it run all 26 suites for 8 min). Run it again only if app code changed after it.
+- `--dry` prints which suites it would run and why, in a second; check it before a long run. `studio.js` is mapped by where the lines changed: inside `tool()` → tool-page suites, inside `home()` → hub suites, only the `VERSION` line → `whatsnew`. The slowest suites start first.
+- Keep `MAP`, `TOOL_SUITES`, `HUB_SUITES` and `SLOW` in `tests/run.mjs` in step with the table below when you add a suite.
+- 4 at a time by default (`JOBS=n`). Long poles: `collage-grids` ~210 s, `full` ~180 s, `home7` ~145 s, `polish71` ~135 s. Never `pkill -f` a pattern that is also in your own command line (it kills the shell running it).
 
 **Level 1: smoke, every session (about 30 s).** `node tests/smoke.mjs` runs the core flows at phone size (390×844, touch) in light and dark mode: home, Restock from a photo, Save in one tap (2160×3840 PNG + team), Save after an edit (Save sheet), search (English and Arabic, the Arabic row right to left), and opening a saved design from Saved with its photo back. Run it at the start (audit) and right before merging. It replaces checking these flows by hand. Keep it small: core flows only, under a minute. If a core flow changes on purpose, update `smoke.mjs` in the same session; a new feature gets its own suite instead.
 
@@ -97,12 +103,12 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
 | Quick start, "Your photo is in" | `quicksave`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
-| Saved page, collections, a design's menu, select mode | `home7`, `polish71`, `extra`, `select` |
+| Saved page, collections, a design's menu, Peek, select mode | `home7`, `polish71`, `extra`, `select`, `peek` |
 | Search (`assets/search.*`) | `search` |
 | Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
 | Create (`tools/create*`) | `create` |
 | What's New, changelog | `whatsnew` |
-| Share target, `sw.js`, manifest, the + menu | `share` (runs with the service worker on) |
+| Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71`, `fresh` |
 | Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
 | Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews | `templates`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
@@ -116,7 +122,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 **Who runs the tests.** The main model plans the scope, writes the checks a new suite must make, reads the results and decides. Routine testing goes to cheaper helpers:
 - `haiku`: runs suites and reports, takes screenshots of the changed screens with short notes. Brief: "Server on :8080 (start it if it is down). Run one at a time: `node tests/smoke.mjs`, `node tests/<suite>.mjs` … Do not edit any file. Reply with one line per suite: name, PASS count, FAIL count, time, and the first 3 FAIL lines word for word."
 - `sonnet`: writes or updates `tests/<feature>.mjs` from a precise list of checks (selectors, expected values, themes, viewports), then runs it.
-- Prefer `tests/run.mjs` over a helper for a plain pass/fail run: it is already parallel and its report is short.
+- Prefer `tests/run.mjs` over a helper for a plain pass/fail run: it is already parallel and its report is short. A helper only for screenshots or writing a suite.
 - Start helpers in the background and keep planning or writing notes meanwhile. The server serves the working tree, so make no app edits while a helper is testing (commit first, or wait for its report).
 - A helper's failure is a claim: reproduce the failing check before changing app code.
 

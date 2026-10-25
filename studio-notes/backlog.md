@@ -2,13 +2,12 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 13 (1.2.0, 25 Oct 2026) was an owner-directed **Mazoon** session: the dragon became Studio's logo (app icons, favicon, a mark on Home), and pins keep your order (#19). The next session (1.3.0) is a **team** session.
+**Last session:** 14 (1.3.0, 25 Oct 2026) was a **team** session: Peek a saved design big and swipe through (#23), a shared photo waits on Home if its sheet was closed; the test runner runs only what changed (owner asked for faster tests). The next session (1.4.0) is a **Mazoon** session; 1.5.0 is the Simplify session.
 **Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
-| 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
@@ -25,16 +24,16 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.3.0: Peek opens from the picture in a design's menu (press and hold → picture). Watch whether the team finds it; a quicker way would be press and hold straight into Peek with the actions under it (changes a familiar gesture: ask first).
+- 1.3.0: test time: `home7` (~145 s) and `polish71` (~135 s) run for any hub or CSS change; split them by area in the 1.5.0 Simplify session so a small hub change runs a part.
 - 1.0.0 follow-ups: Collage's logo at default settings sits at y≈1700–1780, below the story safe line (1620); kept so old designs stay identical; decide with Mazoon whether new collages move it up. Create's story templates put the logo at the bottom 1740 too.
 - 1.1.0: the + menu now has 5 photo tools (7 rows). If it grows again, group it (e.g. Stories / Posts) or show the 3 most used and a More.
 - 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
-- 1.0.0: the hub's tool thumbnails (`assets/thumbs/<brand>/<id>.jpg`, also used by the welcome tour) still show pre-1.0 looks; refresh them with the new styles (Restock Cans, Photo story Whole photo).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
 - 1.0.0: `tests/taste.mjs` covers Home, menus, Templates, Saved, search, What's New and the three photo tools; add Create, Highlight covers, Carousel and the lab next.
 - 1.0.0: on a computer the tool page shows the Save card right after Photo (above Style and Words); check whether that order is what Mazoon wants.
 - 1.0.0: Templates library ideas: favourites (star a template), "recently used", and team templates with real previews in the Team row (they use the saved thumbnail today).
 - Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
-- Share target: a shared photo whose sheet is closed without a choice stays in IndexedDB until the next share; harmless, but a "Your shared photo is waiting" row could bring it back if the team closes it by mistake.
 - Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
 - The Quick start note fades after 3.2 s: check on a real phone that it is long enough to read, and that Save's pulse is noticed.
 - Board and the lab pages now get the interface font (IBM Plex Sans Arabic) through studio.css but keep their own 800 weights (drawn as 700); align them with the 400/500/600 scale with backlog #18.
@@ -53,6 +52,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.3.0 (team): Peek, a saved design big with swipe to the next (#23); the shared photo waits on Home ("Your photo is in", Pick / ✕); `tests/run.mjs --quick`, `--dry`, origin/main as base, studio.js mapped by tool()/home(), slowest first (26 → 13 suites, 487 → 193 s). Hub tool thumbnails checked: kept (a fresh render was worse).
 - 1.2.0 (owner-directed, Mazoon): Studio's own logo (the dragon from the owner: app icons 180/192/256/512, a separate maskable icon, the mark next to the brand logo on Home, inverted in dark; old "1st" icons in `_archive/app icons 1st mark (2026-10-25)/`); pins keep the order you set, All tools › Order on your home moves one up (#19).
 - Idea: the dragon in the welcome tour and on the What's New page header; a higher-resolution source of the dragon would sharpen the 512px icon (the owner's picture is ~400px across).
 - 1.1.0 (team): Carousel (up to 10) and Highlight covers (up to 12) start from photos in +, camera rows and the share sheet, one slide/cover per photo (#12); Collage drops on a photo's border swap it (audit finding); own icons for both tools.

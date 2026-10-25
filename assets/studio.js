@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.2.0';
+const VERSION='1.3.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1919,7 +1919,16 @@ async function home(){
       idb.del('studio:shared'); store('studio:lastQuick',id);
       location.href=toolPage(id)+'?quick=1'; });
   }
-  { const sh=new URLSearchParams(location.search).get('shared'); if(sh!==null) openShared(+sh||0); }
+  { const sh=new URLSearchParams(location.search).get('shared'); if(sh!==null) openShared(+sh||0); else sharedWaiting(); }
+  /* a shared photo whose pick-a-tool sheet was closed without a choice stays in IndexedDB: Home offers it again (1.3.0) */
+  async function sharedWaiting(){ const bar=$('sharedBar'); if(!bar) return;
+    const got=await idb.get('studio:shared'), fs=got&&got.files||[]; if(!fs.length){ bar.hidden=true; return; }
+    let u=''; try{ u=URL.createObjectURL(fs[0]); }catch(_){}
+    const pic=$('sharedPic'); if(u) pic.src=u; else pic.parentElement.hidden=true;
+    $('sharedTxt').textContent=fs.length>1?fs.length+' photos are in':'Your photo is in';
+    bar.hidden=false;
+    $('sharedGo').onclick=()=>{ bar.hidden=true; openShared(fs.length).then(()=>{ const d=document.querySelector('dialog.dlg[open]'); if(d) d.addEventListener('close',()=>setTimeout(sharedWaiting,60)); }); };
+    $('sharedX').onclick=()=>{ bar.hidden=true; idb.del('studio:shared'); if(u) URL.revokeObjectURL(u); hubToast('Forgot the shared photo.'); }; }
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
@@ -2290,14 +2299,15 @@ async function home(){
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);
       const row=(act,ic,label,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-act="${act}">${ic}<span>${label}</span></button>`;
       const d=dialog(`<div class="dlg-body design-sheet">
-      <div class="ds-top" dir="auto">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}<div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
-      <a class="btn" href="${open}">${tpl?'Use template':'Open'}</a>
+      <div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
+      <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>
       <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
     const P=d.querySelector('#dsPanel'), st=t=>{ d.querySelector('#dsSt').textContent=t; };
     d.querySelector('#dsClose').onclick=()=>d.close();
+    d.querySelector('.ds-peek').onclick=()=>{ d.close(); peek(dsg); };
     d.querySelector('.act-list').addEventListener('click',async ev=>{
       const b=ev.target.closest('[data-act]'); if(!b) return; const act=b.dataset.act; st('');
       d.querySelectorAll('.act-row').forEach(x=>x.classList.toggle('on',x===b&&(act==='rename'||act==='cols')));
@@ -2324,6 +2334,38 @@ async function home(){
       }
     });
     }catch(err){ hubToast('Could not open that design: '+(err.message||err)); }
+  }
+
+  /* Peek (1.3.0): a saved design big, swipe (or the arrows) to the one next to it in the same list; Open or More from here.
+     The list is the cards shown around it right now (Saved with its filter, or the Saved row on Home). */
+  function peek(dsg){
+    const card=[...document.querySelectorAll('.sv-card[data-id]')].find(c=>c.dataset.id===dsg.id&&c.offsetParent);
+    const ids=card?[...card.parentElement.querySelectorAll('.sv-card[data-id]')].map(c=>c.dataset.id):[dsg.id];
+    const list=ids.map(id=>all.find(x=>x.id===id)).filter(Boolean); let i=Math.max(0,list.findIndex(x=>x.id===dsg.id)); if(!list.length) list.push(dsg);
+    const d=dialog(`<div class="pk-wrap"><button type="button" class="pk-x" aria-label="Close">${ICON.close}</button>
+      <div class="pk-stage"><img class="pk-img" alt=""><button type="button" class="pk-nav prev" aria-label="Previous design">${ICON.back}</button><button type="button" class="pk-nav next" aria-label="Next design">${ICON.next}</button></div>
+      <div class="pk-info" dir="auto"><b class="pk-name"></b><span class="pk-sub small"></span></div>
+      <div class="pk-acts"><button type="button" class="mini" data-pk="more">${ICON.more}<span>More</span></button><a class="btn" data-pk="open">Open</a></div></div>`,'peek-dlg');
+    const img=d.querySelector('.pk-img');
+    const show=dir=>{ const x=list[i], u=urls[x.thumb_path], tpl=x.kind==='template';
+      d.querySelector('.pk-name').textContent=x.name;
+      d.querySelector('.pk-sub').innerHTML=`<bdi>${esc(toolName(x.tool))}${tpl?' · template':''} · ${esc(ago(x.updated_at))}</bdi>${list.length>1?` · <bdi>${i+1} of ${list.length}</bdi>`:''}`;
+      const a=d.querySelector('[data-pk="open"]'); a.href=toolPage(x.tool)+'?design='+encodeURIComponent(x.id); a.textContent=tpl?'Use template':'Open';
+      d.querySelector('.prev').disabled=i===0; d.querySelector('.next').disabled=i===list.length-1;
+      img.classList.remove('in-l','in-r'); void img.offsetWidth; if(dir) img.classList.add(dir>0?'in-r':'in-l');
+      if(u) img.src=u; else { img.removeAttribute('src'); if(x.thumb_path) C.fileUrl(x.thumb_path).then(v=>{ if(v){ urls[x.thumb_path]=v; if(list[i]===x) img.src=v; } }).catch(()=>{}); } };
+    const go=n=>{ const j=i+n; if(j<0||j>=list.length) return; i=j; haptic('tick'); show(n); };
+    d.querySelector('.pk-x').onclick=()=>d.close();
+    d.querySelector('.prev').onclick=()=>go(-1); d.querySelector('.next').onclick=()=>go(1);
+    d.querySelector('[data-pk="more"]').onclick=()=>{ const x=list[i]; d.close(); designSheet(x); };
+    d.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); go((e.key==='ArrowRight')!==(document.dir==='rtl')?1:-1); } });
+    /* swipe: left = next, right = previous (the picture follows the finger a little) */
+    const st=d.querySelector('.pk-stage'); let x0=null,y0=0;
+    st.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; x0=e.clientX; y0=e.clientY; });
+    st.addEventListener('pointermove',e=>{ if(x0===null) return; const dx=e.clientX-x0; if(Math.abs(dx)>Math.abs(e.clientY-y0)) img.style.transform=`translateX(${dx*.4}px)`; });
+    const up=e=>{ if(x0===null) return; const dx=e.clientX-x0, dy=e.clientY-y0; x0=null; img.style.transform=''; if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1); };
+    st.addEventListener('pointerup',up); st.addEventListener('pointercancel',()=>{ x0=null; img.style.transform=''; });
+    d.tabIndex=-1; d.focus({preventScroll:true}); show(0);   // focus on the sheet, so no ring on a button it opened with
   }
 
   /* account menu: who's signed in, team (owner), sign out */

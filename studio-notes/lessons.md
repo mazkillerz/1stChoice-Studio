@@ -5,9 +5,20 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 14 | 1.3.0 | 4 (new suite 90/90, 13 suites green; shots checked in both themes) | 4 (both items shipped; one dead end on thumbnails, reverted) | 0 reported after 1.2.0; mid-session: tests too slow (fixed in run.mjs + skill) | 32/32 pass | Check `--changed --dry` before a long run; compare a regenerated asset with the old one before replacing it |
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 14 · 1.3.0 · 25 Oct 2026 (team)
+
+**Worked**
+- Peek reused `dialog()` (scroll lock, Escape, tap-outside) and the cards already on the page as its list, so it follows the Saved filter for free.
+- Comparing old and new tool thumbnails side by side before committing saved a worse set from shipping.
+
+**Didn't work / watch out**
+- `run.mjs --changed` compared with this clone's local `main`, which was weeks old: it ran all 26 suites (487 s). Now it fetches and uses `origin/main`, and `--dry` shows the list first.
+- `studio.js` is touched nearly every session; mapping it by function (tool()/home()) instead of by file cut the tool-page suites (~4 min) from hub-only sessions.
 
 ## Session 13 · 1.2.0 · 25 Oct 2026 (owner-directed, Mazoon)
 
