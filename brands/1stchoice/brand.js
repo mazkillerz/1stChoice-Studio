@@ -100,7 +100,7 @@ Studio.registerBrand({
     {id:'ps-arch',tool:'photo-story',cat:'story',label:'Arch',sub:'Photo story · cream',style:'arch',badge:'New',values:{head:'روّق'}},
     {id:'ps-frame',tool:'photo-story',cat:'story',label:'White frame',sub:'Photo story',style:'white',values:{head:'صباح الخير'}},
     {id:'co-grid',tool:'collage',cat:'story',label:'Collage 2 × 2',sub:'Collage · 4 photos',count:4,values:{lay4:'g-2-2'}},
-    {id:'co-border',tool:'collage',cat:'story',label:'White borders',sub:'Collage · 3 photos',count:3,badge:'New',values:{lay3:'g-3-rows',border:16,gap:24}},
+    {id:'co-border',tool:'collage',cat:'story',label:'With borders',sub:'Collage · 3 photos',count:3,badge:'New',values:{lay3:'g-3-rows',border:16,gap:24}},
     {id:'co-mosaic',tool:'collage',cat:'story',label:'Mosaic',sub:'Collage · 6 photos',count:6,values:{lay6:'g-mosaic'}},
     {id:'co-prints',tool:'collage',cat:'story',label:'Scattered prints',sub:'Collage · 4 photos',count:4,values:{lay4:'scatter'}},
     {id:'co-film',tool:'collage',cat:'story',label:'Film strip',sub:'Collage · 4 photos',count:4,style:'black',values:{lay4:'film'}},

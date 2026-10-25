@@ -210,14 +210,15 @@ for(const scheme of ['light','dark']){
     const bar=()=>pg.evaluate(()=>[...document.querySelectorAll('.hubbar a')].map(a=>{ const off=a.querySelector('svg.ic-off'), on=a.querySelector('svg.ic-on'), v=e=>!!e&&getComputedStyle(e).display!=='none'&&e.getClientRects().length>0, sz=e=>{ const r=e.getBoundingClientRect(); return Math.round(r.width)+'x'+Math.round(r.height); };
       const shown=[off,on].filter(v)[0]; return {tab:a.dataset.tab,cur:a.getAttribute('aria-current'),svgs:a.querySelectorAll('svg').length,off:v(off),on:v(on),size:shown?sz(shown):null,filledOn:!!on&&((on.getAttribute('fill')&&on.getAttribute('fill')!=='none')||/fill="(?!none)[^"]+"/.test(on.innerHTML)),filledOff:!!off&&((off.getAttribute('fill')&&off.getAttribute('fill')!=='none')||/fill="(?!none)[^"]+"/.test(off.innerHTML))}; }));
     let g=await bar();
-    ok(N+'bar: each tab has two icons, .ic-off (outline) and .ic-on (filled)',g.length===2&&g.every(x=>x.svgs===2),g);
-    ok(N+'bar: the current tab (Home) shows only the filled icon, the other only the outline',g[0].cur==='true'&&g[0].on&&!g[0].off&&g[1].cur==='false'&&g[1].off&&!g[1].on,g);
+    const T=(g,t)=>g.find(x=>x.tab===t)||{};   // tabs by name: Home, Templates (1.0.0) and Saved
+    ok(N+'bar: each tab has two icons, .ic-off (outline) and .ic-on (filled)',g.length===3&&g.every(x=>x.svgs===2),g);
+    ok(N+'bar: the current tab (Home) shows only the filled icon, the others only the outline',T(g,'home').cur==='true'&&T(g,'home').on&&!T(g,'home').off&&g.filter(x=>x.tab!=='home').every(x=>x.cur==='false'&&x.off&&!x.on),g);
     ok(N+'bar: icons are 24x24',g.every(x=>x.size==='24x24'),g.map(x=>x.size).join());
     ok(N+'bar: the .ic-on icons are really filled (fill set), the .ic-off outlines are not',g.every(x=>x.filledOn&&!x.filledOff),g.map(x=>x.tab+':'+x.filledOn+'/'+x.filledOff).join());
     await pg.tap('.hubbar a[data-tab="saved"]'); await pg.waitForTimeout(700); g=await bar();
-    ok(N+'bar: after Saved is chosen the icons swap (Saved filled, Home outline)',g[1].cur==='true'&&g[1].on&&!g[1].off&&g[0].cur==='false'&&g[0].off&&!g[0].on,g);
+    ok(N+'bar: after Saved is chosen the icons swap (Saved filled, Home outline)',T(g,'saved').cur==='true'&&T(g,'saved').on&&!T(g,'saved').off&&T(g,'home').cur==='false'&&T(g,'home').off&&!T(g,'home').on,g);
     await pg.tap('.hubbar a[data-tab="home"]'); await pg.waitForTimeout(700); g=await bar();
-    ok(N+'bar: back on Home the icons swap back',g[0].on&&!g[0].off&&g[1].off&&!g[1].on,g);
+    ok(N+'bar: back on Home the icons swap back',T(g,'home').on&&!T(g,'home').off&&T(g,'saved').off&&!T(g,'saved').on,g);
 
     /* the interface font, and no weight 800 anywhere on Home */
     const f=await pg.evaluate(()=>{ const cs=(e)=>getComputedStyle(e), pick=s=>{ const e=document.querySelector(s); return e?{ff:cs(e).fontFamily,w:cs(e).fontWeight,sz:cs(e).fontSize}:null; };

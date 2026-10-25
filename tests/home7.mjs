@@ -1,5 +1,5 @@
 /* Studio 0.7.0: the new home and the one-tap Save sheet.
-   - the + button (menu with Restock first, New design last), the camera button on photo-first tool rows
+   - the + button (menu with Restock first, then Photo story, Collage, Templates, and New design last; since 1.0.0), the camera button on photo-first tool rows
    - Saved designs row on home, the Saved page (type + collection chips, sort, open, press-and-hold / ⋯ / right-click actions:
      rename, collections, duplicate, delete with confirmation), Back and the history entry
    - the bottom bar's highlight centres icon and label, aria-current follows the view
@@ -49,7 +49,7 @@ for(const vp of [PHONE,DESK]){
   await tap(pg,'#fab'); await pg.waitForTimeout(600);
   ok(N+'the + button opens a menu',await pg.isVisible('dialog.fab-dlg[open]')&&await pg.getAttribute('#fab','aria-expanded')==='true');
   const items=await pg.$$eval('dialog.fab-dlg .fab-item',l=>l.map(x=>({t:x.querySelector('b').textContent,a:x.tagName==='A',h:x.getBoundingClientRect().height,inside:x.getBoundingClientRect().right<=innerWidth&&x.getBoundingClientRect().bottom<=innerHeight})));
-  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items.length===4,items.map(x=>x.t).join(' / '));
+  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items[items.length-2].t==='Templates'&&items.length===5,items.map(x=>x.t).join(' / '));
   ok(N+'menu: Photo story and Collage between them',items.slice(1,3).map(x=>x.t).join()==='Photo story,Collage');
   ok(N+'menu: every item is finger-sized and on screen',items.every(x=>x.h>=48&&x.inside),items.map(x=>Math.round(x.h)).join());
   ok(N+'menu: New design links to Create',(await pg.getAttribute('dialog.fab-dlg a.fab-item','href')||'').endsWith('tools/create.html'));
@@ -243,21 +243,21 @@ for(const vp of [PHONE,DESK]){
       dy:Math.abs((topIcon+bottomLabel)/2-(pill.top+pill.bottom)/2), dxLabel:Math.abs((sp.left+sp.right)/2-(pill.left+pill.right)/2), dxIcon:Math.abs((sv.left+sv.right)/2-(pill.left+pill.right)/2),
       pill:[pill.width,pill.height].map(Math.round).join('x'), tabH:Math.round(cur.getBoundingClientRect().height)}; });
   let g=await bar();
-  ok(N+'Home: aria-current is on the Home tab only',g.current==='home:true,saved:false',g.current);
+  ok(N+'Home: aria-current is on the Home tab only',g.current==='home:true,templates:false,saved:false',g.current);
   ok(N+'Home: the highlight holds the icon and the label',g.inside,g);
   ok(N+'Home: icon + label are centred in the highlight (≤2px)',g.dy<=2&&g.dxLabel<=2&&g.dxIcon<=2,g);
   ok(N+'the tabs are finger-sized',g.tabH>=48,g.tabH);
   await pg.tap('.hubbar a[data-tab="saved"]'); await pg.waitForTimeout(900);
   g=await bar();
-  ok(N+'Saved: the tab is current and the Saved page shows',g.current==='home:false,saved:true'&&JSON.stringify(await homeShown(pg))==='{"home":false,"saved":true}',g.current);
+  ok(N+'Saved: the tab is current and the Saved page shows',g.current==='home:false,templates:false,saved:true'&&JSON.stringify(await homeShown(pg))==='{"home":false,"saved":true}',g.current);
   ok(N+'Saved: the highlight holds the icon and the label',g.inside,g);
   ok(N+'Saved: icon + label are centred in the highlight (≤2px)',g.dy<=2&&g.dxLabel<=2&&g.dxIcon<=2,g);
   await pg.goBack(); await pg.waitForTimeout(900);
   g=await bar();
-  ok(N+'Back: the Home tab is current again, highlight still centred',g.current==='home:true,saved:false'&&g.inside&&g.dy<=2&&g.dxLabel<=2,g);
+  ok(N+'Back: the Home tab is current again, highlight still centred',g.current==='home:true,templates:false,saved:false'&&g.inside&&g.dy<=2&&g.dxLabel<=2,g);
   await pg.tap('.hubbar a[data-tab="saved"]'); await pg.waitForTimeout(600); await pg.tap('.hubbar a[data-tab="home"]'); await pg.waitForTimeout(900);
   g=await bar();
-  ok(N+'the Home tab returns home',g.current==='home:true,saved:false'&&JSON.stringify(await homeShown(pg))==='{"home":true,"saved":false}'&&g.inside&&g.dy<=2,g);
+  ok(N+'the Home tab returns home',g.current==='home:true,templates:false,saved:false'&&JSON.stringify(await homeShown(pg))==='{"home":true,"saved":false}'&&g.inside&&g.dy<=2,g);
   await pg.goto(BASE+'index.html#saved'); await pg.waitForTimeout(1200); g=await bar();
   ok(N+'opening #saved directly puts the highlight on Saved, centred',g.tab==='saved'&&g.inside&&g.dy<=2&&g.dxLabel<=2,g);
   await ctx.close();

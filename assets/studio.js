@@ -568,7 +568,7 @@ function palettePicker(key,cur,opt){
   return `<div class="pal" data-pal="${esc(key)}" role="group">${opt.auto?b('',opt.auto,'','A'):''}${opt.none?b('none','None','','<i class="sw-none" aria-hidden="true"></i>'):''}${pal.map(p=>b(p.hex,p.name,p.hex)).join('')}`
     +(rec.length?`<span class="sw-sep" aria-hidden="true"></span>`+rec.map(h=>`<button type="button" class="sw-btn sw-recent" data-c="${h}" aria-pressed="${String(recHit&&h===up)}" aria-label="Recent colour ${h}" title="Recent ${h}" style="background:${h}"></button>`).join(''):'')
     +`<label class="sw-btn sw-custom" title="Custom colour" aria-pressed="${custom}"${custom?` style="background:${esc(cur)}"`:''}><span class="sr-only">Custom colour</span><input type="color" data-cpick value="${custom?esc(cur):'#888888'}"></label>`
-    +`<input type="text" class="hex" data-chex maxlength="7" placeholder="#hex" aria-label="Custom colour (hex)" value="${custom?esc(cur):''}" spellcheck="false" autocomplete="off"></div>`;
+    +`<input type="text" class="hex" dir="ltr" data-chex maxlength="7" placeholder="#hex" aria-label="Custom colour (hex)" value="${custom?esc(cur):''}" spellcheck="false" autocomplete="off"></div>`;
 }
 /* one listener for every palette on the page: onPick(key,value) with value '' | 'none' | #HEX */
 function wirePalettes(root,onPick){

@@ -1258,3 +1258,11 @@ body.hub .top .home{margin-inline-end:var(--sp-1)}
 /* a page title focused for screen readers when a page opens: no ring (it is not a control) */
 .tpl-view h1:focus,.tpl-view h1:focus-visible{outline:none}
 .sp-title h1:focus{outline:none}
+/* found by tests/taste.mjs (1.0.0): group headings in All tools start where the row thumbnails start (1px border + 6px padding),
+   and the last small controls reach the 44px tap size (text links, sliders, the layer bar's ✓) */
+.lib .tgroup{margin-inline:7px 0}
+.link{min-height:44px}
+input[type=range]{min-height:44px}
+.done.icon{width:44px;height:44px}
+.sw-btn{padding:0;display:inline-grid;place-items:center}   /* the "A" (auto) label fits the round swatch at any size */
+.sp-back{margin-inline-start:-3px}   /* the arrow lines up with the chips and cards below it */

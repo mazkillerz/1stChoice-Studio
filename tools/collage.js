@@ -62,7 +62,7 @@ Studio.tool({
     lay(5,[]),lay(6,[]),lay(7,[]),lay(8,[]),lay(9,[]),
     {id:'gap',type:'range',in:'style',label:'Gap',min:0,max:80,step:2,default:14,unit:'px'},
     {id:'border',type:'range',in:'style',label:'Border',min:0,max:40,step:2,default:0,unit:'px'},
-    {id:'bcol',type:'color',in:'style',label:'Border colour',default:null,auto:'White'},
+    {id:'bcol',type:'color',in:'style',label:'Border colour',default:null,auto:'Auto'},
     {id:'radius',type:'range',in:'style',label:'Corner radius',min:0,max:60,step:2,default:0,unit:'px'},
     {id:'bg',type:'color',in:'style',label:'Gap & background colour',default:null,auto:'Style colour'},
     {id:'margin',type:'toggle',in:'style',label:'Outer margin',default:true},
@@ -77,7 +77,7 @@ Studio.tool({
     const n=o.count, a=i=>h.photoAspect(i), gap=V('gap',14), g=gap, rad=V('radius',0), showLogo=!!V('logo',true), margin=V('margin',true)!==false;
     /* border: a frame of this width and colour around every photo (the photo shrinks inside its cell). Frame colour white unless chosen;
        with no border, only the "Big + small" print keeps its old built-in frame (paper in the dark look) */
-    const bw=Math.max(0,V('border',0)), bc=o.value('bcol')||(bw>0?'#fff':dk?C.paper:'#fff');
+    const bw=Math.max(0,V('border',0)), bc=o.value('bcol')||(bw>0?(o.style==='cream'?(C.blob||'#fff'):'#fff'):dk?C.paper:'#fff');   // Cream look: a warm frame, never white (looks never mix)
     /* a frame filled in the border colour; the photo then goes inside it with the matching smaller corner radius */
     const frame=(x,y,w,hh,r)=>{ ctx.fillStyle=bc; ctx.beginPath(); h.rr(ctx,x,y,w,hh,r); ctx.fill(); };
     let L=o.value('lay'+n); if(L==='polaroid') L='scatter';   // old designs
