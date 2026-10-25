@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 10 (0.9.0) was a **team** session (share photos from the gallery into Studio on Android; Last time tag in +). The next one (0.10.0) is a **Simplify** session (no new feature).
-**Simplify session:** every 5th version. The next one is 0.10.0.
+**Last session:** 11 (1.0.0, 25 Oct 2026) was an **owner-directed milestone** (welcome tour, Templates library, Restock / Photo story / Collage upgrades, + menu, polish pass, skill upgrade) that also ran the full sweep and the first pattern review, so it stood in for the 0.10.0 Simplify session. It waits on a preview branch for Mazoon's approval. The next session (1.1.0) is a **team** session.
+**Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -48,6 +48,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.0.0 (owner-directed milestone, preview branch): first-run welcome (3 swipes, once per new device, Settings → Welcome tour), Templates library (Home · Templates · Saved; restock, stories, posts, highlights, team; real previews; one tap opens a preset `?preset=` or a Create template), 8 new Create templates, Restock (Cans with no photo + one-tap Save, Split, Big words, photo shape, headline size, button colour), Photo story (Whole photo, Caption, Poster, Arch, headline size, shade, words colour, logo switch), Collage (more grids for 2–9, border + colour, gap to 80, edge space), photo looks + Light for every photo, Move tab (nudge, centre, middle, rotate), Swap two / Shuffle, + menu on one inset with an icon per tool + Templates, Settings sheet, one-line notes, What's New milestone banner + bold; #24 (Templates in +) and #20 partly (search shows template previews for presets).
 - 0.9.0 (team): share photos from the phone's gallery into Studio (Android, installed: manifest `share_target`, sw.js POST handler → IndexedDB → hub pick-a-tool sheet → Quick start), Last time tag on the photo tool used last in + and the share sheet (#4, part of #24); Android install hint mentions sharing.
 - 0.8.0 (Mazoon): Saved page select mode (Select / Select all / Clear; Collection adds the ticked designs to an existing or new collection, keeping their others; Take out while a collection is chosen; Delete many with one confirm; ✕ / Escape / Back stop; press and hold → Select more), 7 designs a row on a computer (#22 and the desktop tiles audit finding).
 - 0.7.1 (owner-directed polish): chosen collection chip readable in both themes with its full shadow; Rename / Delete collection in a ⋯ menu on the chosen chip (Delete asks first); design cards framed with the name (2 lines, `dir="auto"`) and time grouped; search clear ✕ at the end and magnifier at the start; Arabic search rows and the design menu header right to left; Quick start note fades in ~3 s (swipe / tap the photo), no second Save, bar Save one tap until the first edit; Snap labelled; Lucide bar icons, filled for the current tab; IBM Plex Sans Arabic with 400/500/600; one spacing rhythm; layered dark surfaces; friendly empty states, New design card and tip on sparse Saved; contrast + RTL sweep script.

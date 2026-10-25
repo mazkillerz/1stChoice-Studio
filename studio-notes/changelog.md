@@ -13,6 +13,57 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.0.0 · 25 Oct 2026
+milestone: Studio 1.0
+Studio is complete: a welcome for new phones, a real **Templates** library, a faster Restock, new looks for Photo story and Collage, and finer editing for every tool. Thank you to the team for every idea and every fix request that got us here.
+
+### A welcome for new phones
+type: feature
+The first time Studio opens on a new phone, three short swipes show the main tools, how to pin and search, and how Save works. Tap **Skip** any time; it never shows again on that phone. Want to see it again, or show a new teammate? Tap the new **gear** at the top of Home, then **Welcome tour**. The gear is Studio's **Settings**: your account, how your tools look, the welcome, What's new and Experimental, in one short list.
+![after](assets/whatsnew/1.0.0-welcome-after.jpg)
+
+### Templates, all in one place
+type: feature
+A new **Templates** tab sits in the bottom bar between Home and Saved (it is also in **+** and in search). It holds every ready-made start with a real preview, sorted into **Restock**, **Stories**, **Posts**, **Highlights** and your **Team**'s own templates. Tap one and it opens ready to go: a Restock template opens Restock with its style and words already set, so all that is left is your photo (or nothing at all, for the Cans ones). 18 of the 57 are new, including Restock post, Both flavours, This or that, Good morning and two new highlight covers.
+![before](assets/whatsnew/1.0.0-templates-before.jpg)
+![after](assets/whatsnew/1.0.0-templates-after.jpg)
+
+### Restock: two taps, no photo needed
+type: feature
+Restock has a new **Cans** style that uses the HD can pictures instead of a photo: pick which flavours are back and tap **Save**. Restock remembers your last style and flavours, so the next restock is **two taps from Home: Restock, then Save** (before: the camera button, pick a photo, Save). Two new layouts for your own photos, **Split** and **Big words**, and new options: **Photo shape** (rounded, circle, arch or square), **Headline size** and **Button colour**.
+![before](assets/whatsnew/1.0.0-restock-before.jpg)
+![after](assets/whatsnew/1.0.0-restock-after.jpg)
+
+### Photo story: four new looks
+type: feature
+**Whole photo** shows a wide or square photo whole, on a soft blur of itself. **Caption** puts your words on a clean band under the photo, **Poster** sets a big headline over a tall photo card, and **Arch** frames the photo in an arch on cream. Every style now has **Headline size**, **Words colour** and **Show the logo**, and the photo styles have a **Shade** slider for how dark the fade behind the words is.
+![before](assets/whatsnew/1.0.0-story-before.jpg)
+![after](assets/whatsnew/1.0.0-story-after.jpg)
+
+### Collage: more grids, borders and easy swaps
+type: feature
+More grid layouts for every number of photos, 2 to 9. A **Border** around each photo with its own colour, gaps up to 80 px, and **Edge space** when Outer margin is on. Changing the order is easy now: in the Photo sheet tap **Swap two**, then the two photos, or tap **Shuffle** for a new mix (Undo goes back).
+![before](assets/whatsnew/1.0.0-collage-before.jpg)
+![after](assets/whatsnew/1.0.0-collage-after.jpg)
+
+### Finer editing in every tool
+type: feature
+Every photo now has a **Photo look** (Bright, Warm, Cool, Vivid, B&W or Soft) and a **Light** slider, right in the Photo sheet, and they are saved with your design. Tap a word or the logo and the bar has a new **Move** tab: arrows nudge it a little at a time (hold to keep going), **Centre** and **Middle** line it up, and Rotate lives there too. All six tabs now fit on small phones; **More** used to hide under the ✓.
+![before](assets/whatsnew/1.0.0-edit-before.jpg)
+![after](assets/whatsnew/1.0.0-edit-after.jpg)
+
+### A tidier + menu
+type: design
+"Start from a photo" now starts exactly where the icons under it start, with the same padding all round the menu, and **Restock**, **Photo story** and **Collage** each have their own icon instead of three cameras. **Templates** is in the menu too, just above New design.
+![before](assets/whatsnew/1.0.0-plus-before.jpg)
+![after](assets/whatsnew/1.0.0-plus-after.jpg)
+
+### Polish everywhere
+type: fix
+Every screen was checked in light and dark mode and with Arabic names. Notes like "Your unfinished stories stay in Continue editing" are one short line now instead of a tall bubble over your design. What's New shows **bold** words properly. And Studio now checks itself for the things you asked us to fix before (alignment, contrast, notes in the way, too many taps, Arabic direction, small phones), so they are caught before you see them.
+![before](assets/whatsnew/1.0.0-polish-before.jpg)
+![after](assets/whatsnew/1.0.0-polish-after.jpg)
+
 ## 0.9.0 · 25 Oct 2026
 
 ### Share photos straight into Studio

@@ -2,6 +2,11 @@
 
 What worked, what failed, and process tweaks. Newest session first.
 
+## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
+| Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
+|---|---|---|---|---|---|---|
+| 11 | 1.0.0 | _filled at release_ | _filled at release_ | 1 (+ menu title left of its icons; 3 tools with one camera icon) | _at release_ | _at release_ |
+
 ## Session 10 · 0.9.0 · 25 Oct 2026 (team session)
 
 **Worked**
