@@ -25,10 +25,19 @@
       if(!started){if(/^## /.test(line))started=true;else return;}
       if(/^## /.test(line)){
         var p=line.slice(3).split(' · ');
-        ver={version:(p[0]||'').trim(),date:(p.slice(1).join(' · ')||'').trim(),cards:[]};
+        ver={version:(p[0]||'').trim(),date:(p.slice(1).join(' · ')||'').trim(),cards:[],milestone:'',intro:[]};
         out.push(ver);card=null;return;
       }
       if(!ver)return;
+      /* lines between the version heading and its first card: "milestone: <title>" turns the version into a milestone banner,
+         any other text is the banner's short intro */
+      if(!card&&!/^### /.test(line)){
+        if(!line)return;
+        var ms=/^milestone:\s*(.+)$/i.exec(line);
+        if(ms){ver.milestone=ms[1].trim();return;}
+        if(!/^\[try:/i.test(line))ver.intro.push(line);
+        return;
+      }
       if(/^### /.test(line)){card={title:line.slice(4).trim(),note:[],type:'feature',before:'',after:''};ver.cards.push(card);return;}
       if(!card||!line)return;
       if(/^\[try:[^\]]*\]/i.test(line))return;                      /* old "[try:...]" switch lines are ignored */
@@ -116,11 +125,22 @@
 
     /* the latest version: one big highlight card */
     var latest=vers[0];
-    var hero=enter(el('section','wn-latest'));hero.setAttribute('aria-labelledby','wnLatestH');
-    var lh=el('div','wn-lhead');
-    var badge=el('h2','wn-badge','Latest · '+latest.version);badge.id='wnLatestH';
-    lh.appendChild(badge);if(latest.date)lh.appendChild(el('span','wn-date',latest.date));
-    hero.appendChild(lh);
+    var hero=enter(el('section','wn-latest'+(latest.milestone?' wn-ms':'')));hero.setAttribute('aria-labelledby','wnLatestH');
+    if(latest.milestone){
+      /* a milestone (e.g. 1.0.0): a banner with the big version number, a title and a short intro, above the cards */
+      var mb=el('div','wn-msban'),mn=/^(\d+\.\d+)/.exec(latest.version);
+      var big=el('span','wn-msnum',mn?mn[1]:latest.version);big.setAttribute('aria-hidden','true');mb.appendChild(big);
+      var spark=el('span','wn-msspark');spark.setAttribute('aria-hidden','true');spark.innerHTML='<i></i><i></i><i></i><i></i><i></i>';mb.appendChild(spark);
+      var mh=el('h2','wn-mst',latest.milestone);mh.id='wnLatestH';mb.appendChild(mh);
+      var meta=el('p','wn-msmeta','Studio '+latest.version+(latest.date?' · '+latest.date:''));mb.appendChild(meta);
+      if(latest.intro.length)mb.appendChild(el('p','wn-msintro',latest.intro.join(' ')));
+      hero.appendChild(mb);
+    } else {
+      var lh=el('div','wn-lhead');
+      var badge=el('h2','wn-badge','Latest · '+latest.version);badge.id='wnLatestH';
+      lh.appendChild(badge);if(latest.date)lh.appendChild(el('span','wn-date',latest.date));
+      hero.appendChild(lh);
+    }
     latest.cards.forEach(function(c){hero.appendChild(add(c,'h3',model.heroCards));});
     model.hero=hero;list.appendChild(hero);
 
@@ -143,7 +163,7 @@
         var body=el('div','wn-gbody'),rec={el:det,count:count,cards:[],blocks:[],was:undefined};
         g.versions.forEach(function(v){
           var blk=el('section','wn-gver'),bcards=[];
-          var vh=el('div','wn-vhead');vh.appendChild(el('h3','wn-chip',v.version));if(v.date)vh.appendChild(el('span','wn-date',v.date));
+          var vh=el('div','wn-vhead');vh.appendChild(el('h3','wn-chip'+(v.milestone?' ms':''),v.version+(v.milestone?' · '+v.milestone:'')));if(v.date)vh.appendChild(el('span','wn-date',v.date));
           blk.appendChild(vh);
           v.cards.forEach(function(c){blk.appendChild(add(c,'h4',bcards));});
           bcards.forEach(function(x){rec.cards.push(x);});

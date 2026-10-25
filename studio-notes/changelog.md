@@ -3,6 +3,7 @@
 The What's New page in Studio (`whats-new.html`) reads this file. Keep the format exact:
 
 - `## <version> · <date>` starts a version (newest first).
+- Optional, right under the version heading (before its first card): `milestone: <title>` turns the version into a milestone banner (big version number, the title, then any plain lines below it as a short intro). Use it only for big releases (1.0.0, 2.0.0).
 - `### <title>` starts a card in that version.
 - Directly under the title, an optional type line: `type: feature` (a new tool or ability), `type: fix` (something was wrong, hard or broken and now is not) or `type: design` (how it looks or is laid out). A card without it counts as a feature. The What's New page uses it for the filter chips (All, Features, Fixes, Design) and a small tag on each card.
 - The lines after that are the card's short note (plain text, one paragraph).

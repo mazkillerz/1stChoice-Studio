@@ -41,6 +41,9 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Hub data for search:** new tools, templates or settings show up in the hub search automatically if they are in `TOOLS` (add `keys` for extra words), the brand kit's `create.templates`, or `searchActions()` in `home()`.
 - **Pins:** the home page shows `getPins()` (per device, `studio:pins`); every tool is in All tools. A new tool is not pinned anywhere by default, so mention in What's New where to find it (All tools or search).
 - **Outside repos:** when the owner points at another project (e.g. Penpot), check whether it can actually run on static Pages first; usually the right move is to port its best ideas into the existing code and credit it in README and What's New.
+- **1.0.0 engine pieces (use them, don't rebuild them):** a tool can have styles that need no photo (`photosFor(o)` → 0, `photoStyle`, `noPhotoNote`, `noPhotoHint`: no photo box, one-tap Save when opened fresh); every photo can take a look (`p.fx` = {look, light}, saved in the recipe; `PHOTO_LOOKS` + `photoFx()` draw it as blend layers, the same at any size); `h.backdrop()` is a blurred copy of a photo that works on iPhones (no canvas `filter`); the layer bar's Move tab nudges, centres and rotates; the Photo sheet has Swap two / Shuffle for 2+ photos; `?preset=<id>` opens a tool with a brand-kit preset (`presets` in brand.js: tool, style, count, values by field id, approved words only).
+- **Hub views since 1.0.0:** Home, Templates (`#templates`, `assets/templates.js` renders it from `tplEntries()`), Saved (`#saved`); `openView(v)` gives a page its own Back entry and `goHome()` returns. Settings is the gear (`openSettings()`); the welcome tour (`assets/welcome.js`) opens once on a device that never used Studio, never under automation (`navigator.webdriver`), and again from Settings or `?welcome=1`.
+- **What's New milestones:** a `milestone: <title>` line under a version heading draws the big-number banner (1.0.0). Keep it for real milestones.
 - **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku` (see **Testing → Who runs the tests**). Give a subagent files that nobody else is editing at the same time.
 
 ## Design system
@@ -51,13 +54,14 @@ Everything else in this skill can be rewritten by the skill itself.
 
 ## Session loop
 
-1. **Load context.** Read `studio-notes/backlog.md`, `studio-notes/lessons.md` and the latest entry in the changelog.
-2. **Audit.** Run the smoke test (`tests/smoke.mjs`, via a `haiku` helper) and look at the screens you are about to change with the checklist below. Add findings to the backlog. The audit of every screen is part of the full sweep in Simplify sessions.
-3. **Pick work.** First check the session count at the top of `backlog.md`: if this release is the 5th, 10th, 15th… version, it's a **Simplify session** (see below) and there's no new feature. Otherwise choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
+1. **Load context.** Read `studio-notes/taste.md` (Mazoon's taste and the issues he keeps raising: design for it, and never hand him one of those issues again), `studio-notes/backlog.md`, the scoreboard and newest session in `studio-notes/lessons.md`, and the latest entry in the changelog.
+2. **Audit.** Run the smoke test (`tests/smoke.mjs`) and the taste checks (`tests/taste.mjs`), via a `haiku` helper, and look at the screens you are about to change with the checklist below. Add findings to the backlog. The audit of every screen is part of the full sweep in Simplify sessions and major versions.
+3. **Pick work.** First check the session count at the top of `backlog.md`: if this release's minor number is a multiple of 5 (1.5.0, 1.10.0, 2.5.0…), it's a **Simplify session** (see below) and there's no new feature; a major version (2.0.0) also runs the full sweep and the pattern review. Otherwise choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
    - Team session: speed up restock photos and other team workflows, and make it easier for the team to adopt more tools.
    - Mazoon session: power tools like post makers, story makers, highlight covers, and anything else useful.
 4. **Build.** Keep the scope small enough to finish and test in one session. Write `tests/<feature>.mjs` alongside each new feature or fix and add it to the test map (see Testing).
 5. **Quality gates.**
+   - **Taste checks are green** (`tests/taste.mjs`): alignment, contrast incl. selected states, notes that cover content, tap budget, clutter, RTL, small phones, tap targets. A new screen gets added to it in the same session.
    - Everything that worked before still works: the smoke test and the targeted suites are green (Testing levels 1 and 2). The full sweep proves it for every screen each 5th version.
    - The changed screens look right and work well at phone size, then at desktop size.
    - Saved designs in Supabase still load, save and delete correctly.
@@ -69,6 +73,8 @@ Everything else in this skill can be rewritten by the skill itself.
      - If a change adds complexity, simplify it or move it to the backlog instead of shipping it.
 6. **Release.** Bump the version, update the What's New page, run the smoke test and the targeted suites one last time, then commit, push and merge to `main` (see Repo notes).
 7. **Reflect and self-improve.** Record what worked and what didn't in `lessons.md`. Add new ideas to the backlog. Edit this skill to work better next time, without touching the locked core.
+   - **Feedback memory.** Every fix Mazoon asks for goes into `taste.md`: a new row in "Recurring issues" (or +1 on an existing row, with the version), and anything he liked or rejected under those headings. A row raised twice must have an automatic check in `tests/taste.mjs` (or the suite that owns that screen) before the session ends.
+   - **Self-score.** End every session with a scoreboard row at the top of `lessons.md`: Quality (1–5: gates green, nothing visibly off in the shots), Speed (1–5: shipped what was asked in one session, no rework), Owner-reported issues (how many fixes he asked for about the PREVIOUS release, filled in at the start of the next session), Taste checks (pass/fail at release), and one line on what to do better. Compare with the last three rows; if a score drops, the first process tweak targets it.
 
 ## Testing (fast by default)
 
@@ -96,8 +102,13 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Share target, `sw.js`, manifest, the + menu | `share` (runs with the service worker on) |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71`, `fresh` |
 | Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
+| Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews | `templates`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
+| Welcome tour, Settings sheet (`assets/welcome.*`) | `welcome`, `taste` |
+| Restock / Photo story / Collage drawing (`tools/restock.js`, `photo-story.js`, `collage.js`) | `restock-styles`, `photostory-styles`, `collage-grids` (each compares the old styles pixel for pixel) |
+| Photo looks, Swap two / Shuffle, Move tab, styles with no photo (`tool()`) | `full`, `restock-styles`, `taste` |
+| Any screen (the owner's recurring issues) | `taste` (every session, with smoke) |
 
-**Level 3: full sweep, Simplify sessions only** (every 5th version: 0.10.0, 0.15.0…), or when Mazoon asks for a check of every screen. Every suite in `tests/` (one at a time; they share the server), `tests/contrast.mjs`, shots of every screen in light and dark with Arabic names seeded (the `tests/look8.mjs` pattern), `tests/tapscan.mjs` over every tool, and a desktop pass. Fix what it finds or add it to the backlog. Other sessions skip it.
+**Level 3: full sweep, Simplify sessions and major versions** (1.5.0, 1.10.0, 2.0.0…), or when Mazoon asks for a check of every screen. Every suite in `tests/` (one at a time; they share the server), `tests/contrast.mjs`, shots of every screen in light and dark with Arabic names seeded (the `tests/look8.mjs` pattern), `tests/tapscan.mjs` over every tool, and a desktop pass. Fix what it finds or add it to the backlog. Other sessions skip it.
 
 **Who runs the tests.** The main model plans the scope, writes the checks a new suite must make, reads the results and decides. Routine testing goes to cheaper helpers:
 - `haiku`: runs suites and reports, takes screenshots of the changed screens with short notes. Brief: "Server on :8080 (start it if it is down). Run one at a time: `node tests/smoke.mjs`, `node tests/<suite>.mjs` … Do not edit any file. Reply with one line per suite: name, PASS count, FAIL count, time, and the first 3 FAIL lines word for word."
@@ -107,7 +118,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 
 ## Simplify session (every 5th version)
 
-Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole session is a pass to make Studio cleaner, simpler and more convenient for the team and Mazoon:
+Every 5th minor version (0.5.0 and 1.0.0 happened; next 1.5.0, 1.10.0…) skips new features unless Mazoon names the work. It starts with the **Pattern review** (below). The whole session is a pass to make Studio cleaner, simpler and more convenient for the team and Mazoon:
 - Walk the common jobs on a phone (restock story, photo story, offer, carousel, saving, finding a saved design) and count taps; cut every one that isn't needed.
 - Walk the same jobs on a computer too and list where the two differ: the extra steps are usually on the phone, and "now it works like on the computer" is an easy reason to give in What's New.
 - A flow change breaks tests that tap the old way: grep every suite for the old taps before running them.
@@ -118,6 +129,14 @@ Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole sessi
 - Run the full sweep (Testing, level 3): it is the one session that checks every screen, both themes and RTL.
 - What's New gets one card per simplification, with before/after screenshots and the tap counts.
 
+## Pattern review (every Simplify session and every major version: 1.5.0, 2.0.0 …)
+
+Before picking work, spend a few minutes improving the process itself:
+- Read `lessons.md` and `taste.md` end to end. Merge lessons that say the same thing, drop the ones that no longer apply (code that is gone, a tool that changed), and move durable rules into this skill (Repo notes, Testing or the checklist) so `lessons.md` stays a short log, not a rulebook.
+- In `taste.md`, update the counts, mark issues that have stayed fixed for 3+ releases as "settled" (keep their check), and add new rows from the latest fix requests.
+- Look at the scoreboard: what lowered the scores? Rewrite the step of the Session loop that caused it (e.g. a missing check, a late screenshot, a helper brief that was too vague).
+- Make sure every recurring issue has a check that runs automatically, and that the test map below still matches the suites in `tests/`.
+
 ## Mobile-first UX checklist
 
 - Tap targets are at least 44px, and the main actions can be reached with one thumb.
@@ -127,6 +146,15 @@ Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole sessi
 - The number of taps needed for common jobs keeps going down, especially for restock photos.
 - Exports come out at the correct Instagram sizes (post 1080×1350, story 1080×1920, highlight cover).
 - Animations feel smooth and never get in the way.
+- From `taste.md` (automated in `tests/taste.mjs`; check them by eye too on the screens you change):
+  - Alignment: a heading in a menu or sheet starts at the same x as the icons of its rows; titles, chips and cards on a page share one left edge; sibling icons are the same size.
+  - Contrast ≥ 4.5:1 in light AND dark, including selected, pressed and disabled states; a selected state must look different from the unselected one.
+  - Notes and pop-ups never block the design: a note covers ≤ 15% of the preview, is one or two lines, and goes away in ≤ 4 s or with a tap; dialogs fit inside the screen at 390×844 and 1280×800 and lock the page behind.
+  - Tap budget: Restock from a photo ≤ 2 taps to a saved picture, Photo story ≤ 2, a no-photo Restock ≤ 1 after opening, Save + team ≤ 2. A change may never raise a count.
+  - Clutter: at most two filled accent buttons on a first view (plus +), no two controls with the same label, new options behind a tap.
+  - RTL: Arabic text runs right to left (dir="auto" on the wrapper), times and numbers in `<bdi>`, every text input takes Arabic correctly.
+  - Small phones (360px): no sideways scrolling, no clipped labels, the last row scrolls clear of the bottom bar.
+  - Every icon-only control has a label or a tooltip; no two tools share an icon.
 
 ## Feature engine
 
@@ -136,10 +164,11 @@ Every 5th version (0.5.0, 0.10.0, 0.15.0…) skips new features. The whole sessi
 
 ## Versioning and What's New
 
-- Use semantic versions starting at 0.1.0. Fixes bump the last number (0.1.1), features bump the middle number (0.2.0), and 1.0.0 is for when Studio feels complete.
+- Use semantic versions starting at 0.1.0. Fixes bump the last number (0.1.1), features bump the middle number (0.2.0), and 1.0.0 is for when Studio feels complete (shipped 25 Oct 2026). After 1.0.0: 1.1.0, 1.2.0…; Simplify sessions at 1.5.0, 1.10.0…; 2.0.0 only for a big new chapter, with a `milestone:` banner like 1.0.0.
 - The What's New page lives inside Studio and must look beautiful. Each version gets cards with a title, a short note and before/after screenshots. Show a badge on the icon when there's something new.
 
 ## Memory files
+- `studio-notes/taste.md`: Mazoon's design taste, how he likes to work, and the issues he keeps raising, each with the check that catches it. Read first, update every session.
 
 - `studio-notes/backlog.md`: ranked ideas and bugs.
 - `studio-notes/lessons.md`: what worked, what failed and process tweaks.
