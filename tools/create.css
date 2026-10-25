@@ -186,6 +186,6 @@ body.kb-open .cr-sheet.tool{bottom:var(--kb,0px)}
 .cr-tpl[hidden]{display:none}
 .cr-tpl.hl .th{outline:3px solid var(--focus);outline-offset:2px}
 .cr-tsearch{position:relative;margin:0 0 var(--sp-3)}
-.cr-tsearch input{width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--r-m);padding-block:0;padding-inline:var(--sp-4) 48px;background:var(--surface);color:var(--fg);font:700 var(--fs-m) var(--sans);-webkit-appearance:none;appearance:none}
+.cr-tsearch input{width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--r-m);padding-block:0;padding-inline:var(--sp-4) 48px;background:var(--surface);color:var(--fg);font:500 var(--fs-m) var(--sans);-webkit-appearance:none;appearance:none}
 .cr-tsearch input::-webkit-search-cancel-button{display:none}
 .cr-tclear{position:absolute;top:0;inset-inline-end:0;width:48px;height:48px;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}
