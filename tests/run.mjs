@@ -18,7 +18,7 @@ const MAP=[
   [/^tools\/|assets\/studio\.js/,['full','v5','polish']],
   [/assets\/studio\.(js|css)|index\.html/,['home7','pins','pinorder','fresh','peek','select','extra']],
   [/assets\/search\./,['search']],
-  [/tools\/create/,['create']],
+  [/tools\/create/,['create','create-search']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71']],
@@ -26,7 +26,7 @@ const MAP=[
   [/assets\/templates\.|brands\//,['templates']],
   [/assets\/welcome\./,['welcome']],
   [/tools\/restock/,['restock-styles']],[/tools\/photo-story/,['photostory-styles']],[/tools\/collage/,['collage-grids']],
-  [/tools\/highlight|tools\/carousel/,['highlight','quickpages']],
+  [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','quickpages']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
