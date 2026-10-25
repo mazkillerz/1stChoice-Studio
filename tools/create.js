@@ -322,10 +322,19 @@ function tplThumb(def){ if(TH.has(def.id)) return Promise.resolve(TH.get(def.id)
     try{ BD.previewOnly=true; made=await CR.buildTemplate(def.id,{at:{x:-200000,y:-200000}}).finally(()=>{ BD.previewOnly=false; }); made.forEach(f=>f.visible(false)); const f=made[0]; if(f){ const s=fsize(f), c=BD.renderFrame(f,260/s.w); url=c.toDataURL('image/jpeg',.82); c.width=c.height=0; } }catch(err){ console.warn(err); }
     made.forEach(f=>f.destroy()); BD.main.batchDraw(); TH.set(def.id,url); if(url&&fontsReady()) L.idb.put(thKey(def),url); return url; });
   thumbChain=p.catch(()=>{}); return p; }
+/* template search: label, id, layout, size and words; Arabic is normalised (marks, alef/yaa/taa forms) so spellings match */
+const TPL_SEARCH=`<div class="cr-tsearch"><input type="search" id="crTplQ" dir="auto" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search templates" aria-label="Search templates"><button type="button" class="cr-tclear" id="crTplClear" aria-label="Clear search" title="Clear" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;
+const normQ=t=>String(t||'').toLowerCase().replace(/[\u0610-\u061A\u064B-\u065F\u0670\u0640]/g,'').replace(/[\u0622\u0623\u0625\u0671]/g,'\u0627').replace(/[\u0649\u06CC]/g,'\u064A').replace(/\u0629/g,'\u0647').replace(/\u06A9/g,'\u0643').replace(/[-_]+/g,' ');
+function tplSearch(body,list){ const q=body.querySelector('#crTplQ'); if(!q) return; const clr=body.querySelector('#crTplClear'), none=body.querySelector('#crTplNone');
+  const hay=new Map(list.map(d=>[d.id,normQ([d.label,d.id,d.layout,d.size].concat(Object.values(d.words||{})).join(' '))]));
+  const run=()=>{ const toks=normQ(q.value).split(/\s+/).filter(Boolean); let n=0;
+    body.querySelectorAll('.cr-tpl').forEach(b=>{ const h=hay.get(b.dataset.tpl)||'', show=toks.every(t=>h.includes(t)); b.hidden=!show; if(show) n++; });
+    none.hidden=n>0; clr.hidden=!q.value; };
+  q.addEventListener('input',run); clr.addEventListener('click',e=>{ e.stopPropagation(); q.value=''; run(); q.focus(); }); }
 async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.start, list=CR.templates();
   const body=openSheet('templates',start?'What are you making?':'Templates',
     `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
-     <span class="lbl">Templates</span>${list.length?`<div class="cr-tpls">${list.map(d=>{ const s=CR.templateSize(d); return `<button type="button" class="cr-tpl" data-tpl="${esc(d.id)}"><span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span><span class="nm">${esc(d.label)}</span></button>`; }).join('')}</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
+     <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>{ const s=CR.templateSize(d); return `<button type="button" class="cr-tpl${opt.focus===d.id?' hl':''}" data-tpl="${esc(d.id)}"><span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span><span class="nm">${esc(d.label)}</span></button>`; }).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
   body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl]'), tt=e.target.closest('[data-team]'), si=e.target.closest('#crTeamSign');
@@ -333,6 +342,7 @@ async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.s
     if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl,mode));
     if(tt) chooseMode(mode=>applyTeam(tt.dataset.team,mode));
     if(si){ if(await L.ensureMember('Team templates are shared with the team. Sign in to see them.')) paintTeam(); } });
+  tplSearch(body,list); if(opt.focus){ const f=body.querySelector(`[data-tpl="${CSS.escape(opt.focus)}"]`); if(f) setTimeout(()=>f.scrollIntoView({block:'center'}),60); }
   paintTeam();
   for(const d of list){ const url=await tplThumb(d); if(!sheet||sheet.name!=='templates') return; const th=body.querySelector(`[data-tpl="${CSS.escape(d.id)}"] .th`); if(th){ th.classList.remove('loading'); if(url) th.insertAdjacentHTML('afterbegin',`<img alt="" src="${url}">`); } } }
 async function paintTeam(){ const box=$('crTeamT'); if(!box) return;
@@ -515,6 +525,7 @@ document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&!e.shiftKey&
   $('crName').value=S.name||''; if(st.design) document.title=st.design.name+' · '+TITLE+' · Studio';
   st.ready=true; paintPages(); paintCtx(); syncUndo(); syncSaved();
   if(startWith) await startWith();
+  else if(tpl&&CR.templates().some(d=>d.id===tpl)) await openTemplates({focus:tpl});   // opened on a draft/design: show the picker on the asked-for template
   if(st.openSaveAfter) openSave();
   window.CRUI={openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
 })();
