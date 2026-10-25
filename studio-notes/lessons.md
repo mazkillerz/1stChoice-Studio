@@ -7,6 +7,27 @@ What worked, what failed, and process tweaks. Newest session first.
 |---|---|---|---|---|---|---|
 | 11 | 1.0.0 | _filled at release_ | _filled at release_ | 1 (+ menu title left of its icons; 3 tools with one camera icon) | _at release_ | _at release_ |
 
+## Session 11 · 1.0.0 · 25 Oct 2026 (owner-directed milestone, preview branch)
+
+**Worked**
+- Engine first, then helpers: the shared pieces (photo looks, styles with no photo, `?preset=`, Move tab, `h.backdrop`) went in and were committed before three Sonnet helpers each took one tool file. Nobody waited on anybody and no file had two editors.
+- Self-contained modules with a written contract (welcome tour, Templates page) were built and tested by helpers on a harness page while the hub wiring was done in parallel; plugging them in took minutes.
+- Mining past sessions (`list_sessions` / `list_events`) gave `taste.md` real evidence: 15 sessions, the owner's own words, counts per recurring issue. The new `tests/taste.mjs` then found 8 real problems on its first run (All tools headings 5px left of the rows, the Saved back arrow 3px off, sub-44px links/sliders, hex fields without a direction) that screenshots had not shown.
+- Pixel-hash compatibility tests (new tool file vs the old one served through `ctx.route`) proved every old style still draws exactly the same, so saved designs are safe.
+- A real bug from 0.9.0 surfaced while testing Restock: the single-choice chip handler (`.chip`) caught the multi-choice flavour chips, so tapping a flavour threw and did nothing. Scope delegated handlers to their own container (`[data-f] .chip`).
+- `.dlg p{margin:0}` beat `.fab-h{margin}` (specificity again): the + menu title sat 10px left of its icons. Fix by scoping (`.fab-menu .fab-h`), and check alignment numerically (Range on the text vs the icon box).
+
+**Didn't work / watch out**
+- The usage limit stopped three helpers at once (Restock, README, taste suite). Their files were on disk and nearly done; the main agent finished them. Brief helpers to save progress early and often, and check `git status` before restarting work.
+- A taste fix that made the layer bar's ✓ 44px made the bar 4px taller, which covered a Collage logo at the bottom of the preview (full.mjs caught it). Grow tap areas with an invisible `::after`, never by resizing a control in a bar (the 0.2.0 lesson, again).
+- A `//` comment inside a one-line function swallowed the rest of the line; `node --check` caught it within seconds, but helpers were running tests against the live file. Use `/* */` in one-line code and check before saving.
+- Two template previews (white and cream carousel) looked identical: a library must never show two cards that look the same. Check the contact sheet for near-duplicates.
+- A white photo border on the Cream look mixes the two looks; automatic colours must follow the look (warm on Cream).
+
+**Process tweaks**
+- New: `studio-notes/taste.md` (read first), `tests/taste.mjs` (every session, with smoke), the self-score scoreboard above, and the pattern review at Simplify sessions and major versions (skill).
+- New suites: `welcome`, `templates`, `restock-styles`, `photostory-styles`, `collage-grids`, `taste`; previews: `node tests/tplthumbs.mjs [ids | --tool=x | --create]`.
+
 ## Session 10 · 0.9.0 · 25 Oct 2026 (team session)
 
 **Worked**

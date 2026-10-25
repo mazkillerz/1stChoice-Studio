@@ -58,9 +58,13 @@ type: design
 ![before](assets/whatsnew/1.0.0-plus-before.jpg)
 ![after](assets/whatsnew/1.0.0-plus-after.jpg)
 
+### Flavour buttons work again
+type: fix
+In Restock, tapping **Classic** or **Passion fruit** under Words → Flavours back in stock did nothing: a hidden error stopped it. Now each tap ticks or unticks the flavour, the pills on the story follow, and in the new Cans style the cans follow too.
+
 ### Polish everywhere
 type: fix
-Every screen was checked in light and dark mode and with Arabic names. Notes like "Your unfinished stories stay in Continue editing" are one short line now instead of a tall bubble over your design. What's New shows **bold** words properly. And Studio now checks itself for the things you asked us to fix before (alignment, contrast, notes in the way, too many taps, Arabic direction, small phones), so they are caught before you see them.
+Every screen was checked in light and dark mode and with Arabic names. Notes are one short line now (for example after Start fresh: "Your other story is kept on Home"), low down and out of your design's way, instead of a tall bubble over it. What's New shows **bold** words properly. The group headings in All tools and the Back arrow on the Saved page now line up with the rows under them, small links and sliders are easier to hit, and a note never covers **Add your photo**. And Studio now checks itself for the things you asked us to fix before (alignment, contrast, notes in the way, too many taps, Arabic direction, small phones), so they are caught before you see them.
 ![before](assets/whatsnew/1.0.0-polish-before.jpg)
 ![after](assets/whatsnew/1.0.0-polish-after.jpg)
 

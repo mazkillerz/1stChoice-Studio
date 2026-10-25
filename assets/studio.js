@@ -1339,7 +1339,7 @@ async function tool(cfg){
   document.addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)||e.altKey) return; const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
     const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
   /* Start fresh = a new story; the unfinished ones stay in Continue editing */
-  $('draftFresh').addEventListener('click',()=>{ $('draftBar').hidden=true; status('Your unfinished stories stay in Continue editing.',3000); });
+  $('draftFresh').addEventListener('click',()=>{ $('draftBar').hidden=true; status('Your other story is kept on Home.',3000); });
   $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const x=listDrafts(B.id,cfg.id)[0]; if(x){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); } });
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); autoGrow(); render(); });
   $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=textExtra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });

@@ -1263,6 +1263,11 @@ body.hub .top .home{margin-inline-end:var(--sp-1)}
 .lib .tgroup{margin-inline:7px 0}
 .link{min-height:44px}
 input[type=range]{min-height:44px}
-.done.icon{width:44px;height:44px}
+.done.icon::after{inset:-4px}   /* the layer bar's ✓ stays 40px (a taller bar would cover a logo at the bottom of the story) but takes a 48px tap */
 .sw-btn{padding:0;display:inline-grid;place-items:center}   /* the "A" (auto) label fits the round swatch at any size */
 .sp-back{margin-inline-start:-3px}   /* the arrow lines up with the chips and cards below it */
+
+/* Text place picker: the spots you can pick are visible in sunlight too (were the faint line colour) */
+.pp i{background:color-mix(in srgb,var(--muted) 38%,var(--line))}
+/* a note never covers "Add your photo": while that button shows, the note sits just above it (over the story's empty bottom margin) */
+@media (max-width:820px){ body.tool-page:not(.sheet-open):has(#ctaPhoto:not([hidden])) .toast{bottom:calc(var(--bar-h) + var(--safe-b) + 72px)} }
