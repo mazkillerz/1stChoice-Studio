@@ -182,3 +182,10 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 /* phone keyboard open: the sheet sits just above it */
 body.kb-open .cr-ctx,body.kb-open .cr-bar,body.kb-open .cr-pages{display:none}
 body.kb-open .cr-sheet.tool{bottom:var(--kb,0px)}
+
+.cr-tpl[hidden]{display:none}
+.cr-tpl.hl .th{outline:3px solid var(--focus);outline-offset:2px}
+.cr-tsearch{position:relative;margin:0 0 var(--sp-3)}
+.cr-tsearch input{width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--r-m);padding:0 48px 0 var(--sp-4);background:var(--surface);color:var(--fg);font:500 var(--fs-m) var(--sans);-webkit-appearance:none;appearance:none}
+.cr-tsearch input::-webkit-search-cancel-button{display:none}
+.cr-tclear{position:absolute;top:0;right:0;width:48px;height:48px;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}

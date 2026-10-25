@@ -84,7 +84,7 @@ input::placeholder{color:var(--muted);opacity:.8}
 .sel{width:auto;flex:1;min-width:160px;padding:6px 10px}
 input[type=range]{width:100%;accent-color:var(--accent);min-height:36px}
 .check{display:flex;align-items:center;gap:10px;font-weight:500;min-height:var(--tap);cursor:pointer}
-.check input{width:24px;height:24px;accent-color:var(--accent);flex-shrink:0}
+.check input{width:24px;height:24px;accent-color:var(--accent);flex-shrink:0;margin-inline-start:0}
 .status{font-size:var(--fs-m);min-height:22px;text-align:center;font-weight:500}
 .status:empty{min-height:0}
 .inline{display:flex;gap:var(--sp-2);align-items:center}

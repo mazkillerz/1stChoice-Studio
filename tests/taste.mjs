@@ -27,6 +27,8 @@ const NAMES=['رجع متوفر – Classic','خذلك كولد برو · Passio
 Object.values(SEED.designs).slice(0,4).forEach((d,i)=>{ d.name=NAMES[i]; });
 SEED.cols['icy']={id:'icy',name:'يسرسح ثلج',brand:'1stchoice'}; Object.values(SEED.designs)[1].cols.push('icy'); Object.values(SEED.designs)[4].cols.push('icy');
 const TOOLS=['restock','photo-story','collage'];
+const MORE=['carousel','highlight'];   // 1.4.0: Carousel and Highlight covers get the same sweep as the photo tools; Create (CREATE) is read-only: first view only
+const CREATE='create';
 
 /* ---------- results ---------- */
 const res=[], skips=[]; const t0=Date.now();
@@ -129,6 +131,12 @@ const LIB=()=>{
       const a=getComputedStyle(el,'::after'); if(a.content!=='none'&&a.position==='absolute'){ w=Math.max(w,r.width-px(a.left)-px(a.right)); h=Math.max(h,r.height-px(a.top)-px(a.bottom)); }
       n++; if(h<43.5||w<43.5) out.push(`${desc(el)} ${Math.round(w)}x${Math.round(h)} "${(el.getAttribute('aria-label')||el.textContent||'').trim().slice(0,18)}"`); }
     return {n,bad:out}; };
+  /* 9. icon-only controls (no visible text) need an accessible name */
+  T.labels=()=>{ const out=[]; let n=0;
+    for(const el of document.body.querySelectorAll('button,a[href],[role=button],[role=tab],[role=menuitem],select,input:not([type=hidden])')){ if(el.closest('.sr-only')||el.classList.contains('sr-only')||!T.vis(el)) continue;
+      if(el.tagName==='INPUT'&&['file','checkbox','radio','range'].includes(el.type)&&!el.labels?.length&&!el.getAttribute('aria-label')&&el.closest('label')) continue;
+      const visible=(el.innerText||'').trim(); if(visible) continue; n++; if(!T.name(el)) out.push(desc(el)); }
+    return {n,bad:out}; };
   /* 2. clutter */
   T.name=el=>{ let t=el.getAttribute('aria-label'); if(!t){ const lb=el.getAttribute('aria-labelledby'); if(lb) t=lb.split(/\s+/).map(i=>(document.getElementById(i)||{}).textContent||'').join(' '); }
     if(!t&&el.labels&&el.labels.length) t=[...el.labels].map(l=>l.textContent).join(' '); if(!t) t=(el.innerText||el.textContent||'').trim();
@@ -225,6 +233,7 @@ async function scan(c,name,fl={}){
     }
     if(prof.layout&&c.touch){
       const t=await ev(()=>__taste.taps()); A('tap').cnt+=t.n; bad('tap',name,t.bad);
+      const lb=await ev(()=>__taste.labels()); A('labels').cnt+=lb.n; bad('labels',name,lb.bad);
     }
     if(prof.small){
       const k=await ev(()=>__taste.clip()); num('small:overflow',Math.max(k.sw,k.bw)); if(k.sw>c.w||k.bw>c.w) bad('small:overflow',name,`scrollWidth ${k.sw}/${k.bw} > ${c.w}`);
@@ -313,6 +322,11 @@ async function tool(c,id,fl={}){
   if(await open('style')){ await c.scan(T+' · Style sheet');
     if(await c.press('#styles .seg[aria-pressed="false"]')){ await c.wait(700); await c.scan(T+' · Style sheet, another style chosen'); }
     await close('style'); }
+  if(fl.slides&&await open('style')){   // Carousel: each slide type shows different fields; the first view is the Cover, so try the others
+    for(const [k,lab] of [['two','Two photos'],['number','Big number'],['end','End slide'],['pano','Panorama']]){
+      if(await c.press(`[data-seg="kind"] .seg[data-v="${k}"]`)){ await c.wait(500); await c.scan(`${T} · Style sheet, slide type ${lab}`); } }
+    if(await c.press('[data-seg="dots"] .seg[data-v="num"]')){ await c.wait(400); await c.scan(T+' · Style sheet, counter 1 / 5'); }
+    await close('style'); }
   if(await open('layers')){ await c.scan(T+' · Layers sheet');
     if(fl.toast){ await c.press('#resetLayout'); await c.wait(500); }
     await close('layers'); }
@@ -324,6 +338,12 @@ async function tool(c,id,fl={}){
     else miss.push(`${c.tag}: ${id} layer bar did not open (tapped ${box.id})`); }
   else miss.push(`${c.tag}: ${id} headline box not found`);
   if(fl.toast){ await pg.waitForFunction(()=>![...document.querySelectorAll('.toast')].some(t=>!t.hidden),null,{timeout:6000}).catch(()=>{}); await c.wait(300); c.eps=await pg.evaluate(()=>window.__tm.eps.map(e=>({...e}))); }
+}
+
+/* Create: read-only, first view only (no taps inside the editor) */
+async function create(c){
+  await c.go('tools/'+CREATE+'.html'); await c.wait(2000);
+  await c.scan('create',{first:true});
 }
 
 /* ---------- the tap budget: a photo to a saved PNG ---------- */
@@ -361,11 +381,13 @@ const jobs=[], EPS=[], W={};
 const P390=(tag,scheme)=>({tag,scheme,prof:{colour:true,layout:scheme==='light'}});
 for(const scheme of ['light','dark']) jobs.push((async()=>{
   const c=await mk(P390('390-'+scheme,scheme)); await hub(c); W[scheme]=c.welcome; await c.ctx.close();
-  for(const id of TOOLS){ const t=await mk(P390(`390-${scheme}-${id}`,scheme)); await tool(t,id,{toast:scheme==='light'&&id==='restock'}); if(t.eps) EPS.push(...t.eps); await t.ctx.close(); }
+  for(const id of [...TOOLS,...MORE]){ const t=await mk(P390(`390-${scheme}-${id}`,scheme)); await tool(t,id,{toast:scheme==='light'&&id==='restock',slides:id==='carousel'}); if(t.eps) EPS.push(...t.eps); await t.ctx.close(); }
+  { const t=await mk(P390(`390-${scheme}-create`,scheme)); await create(t); await t.ctx.close(); }
 })());
 jobs.push((async()=>{   // 360x740: overflow, clipped text, the last item clear of the bar
   const prof={small:true}; const c=await mk({tag:'360',w:360,h:740,prof}); await hub(c); await c.ctx.close();
-  for(const id of TOOLS){ const t=await mk({tag:'360-'+id,w:360,h:740,prof}); await tool(t,id); await t.ctx.close(); }
+  for(const id of [...TOOLS,...MORE]){ const t=await mk({tag:'360-'+id,w:360,h:740,prof}); await tool(t,id); await t.ctx.close(); }
+  { const t=await mk({tag:'360-create',w:360,h:740,prof}); await create(t); await t.ctx.close(); }
 })());
 jobs.push((async()=>{   // 1280x800: dialogs fit and the page stays put
   const c=await mk({tag:'1280',w:1280,h:800,touch:false,prof:{dialogs:true}});
@@ -424,6 +446,7 @@ line('clutter:dups','light: no two visible controls share a name on the first vi
 /* tap targets */
 line('tap','light: every visible control is >= 44x44 (or has a hit area that reaches it)',a=>({controls:a.cnt}));
 /* small phones */
+line('labels','light: every icon-only control has an accessible name (aria-label, title, label) on Home, menus, Saved and the tools',a=>({iconOnlyControls:a.cnt}));
 line('small:overflow','360x740: no sideways page scroll on any screen',a=>({screens:a.n,widest:a.max}));
 line('small:clip','360x740: no clipped text (scrollWidth <= clientWidth + 1 unless ellipsis/line-clamp)',a=>({screens:a.cnt}));
 line('small:last','360x740: the last item scrolls clear of the fixed bottom bar (Home, Templates, Saved, the tools)',a=>({pages:a.cnt,smallestGap:r1(a.min)+'px'}));

@@ -35,6 +35,15 @@ const HL_PATHS={
 };
 const hlIc=id=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${HL_PATHS[id]}"/></svg>`;
 const hsw=(bg,disc)=>`<span class="swatch" style="background:${bg}"><i style="left:6px;right:6px;top:9px;bottom:9px;border-radius:50%;background:${disc}"></i></span>`;
+/* Product cover: a brand asset (picture files of the brand kit, not the tinted logo) inside the circle. No assets in the kit = no Product type. */
+const hlProducts=b=>((b&&b.assets)||[]).filter(a=>a.file&&!a.tint);
+const HL_DIMS=new Map();   // asset id -> width/height of its picture, so it can be fitted to the circle
+function hlDims(b,a){
+  if(HL_DIMS.has(a.id)) return HL_DIMS.get(a.id);
+  HL_DIMS.set(a.id,null);
+  const i=new Image(); i.onload=()=>HL_DIMS.set(a.id,i.width/i.height); i.src=b.base+(a.prev||a.file);
+  return null;
+}
 /* draw an icon (24-unit path) centred at cx,cy, s px wide */
 function hlIcon(c,id,cx,cy,s,color,weight){
   c.save();
@@ -60,7 +69,8 @@ Studio.tool({
     {id:'ink',type:'color',in:'style',label:'Icon and word colour',default:null,auto:'Style colour',global:true},
     {id:'guide',type:'toggle',in:'style',label:'Show the circle Instagram crops to (preview only)',default:true,global:true},
     {id:'gThis',type:'note',in:'style',label:'This cover'},
-    {id:'kind',type:'seg',in:'style',label:'Cover type',options:[{v:'icon',l:'Icon'},{v:'word',l:'Word'},{v:'photo',l:'Photo'}],default:'icon'},
+    {id:'kind',type:'seg',in:'style',label:'Cover type',options:b=>[{v:'icon',l:'Icon'},{v:'word',l:'Word'},{v:'photo',l:'Photo'},...(hlProducts(b).length?[{v:'product',l:'Product'}]:[])],default:'icon'},
+    {id:'product',type:'seg',in:'style',label:'Product',cols:3,options:b=>{ const l=hlProducts(b); return l.length?l.map(a=>({v:a.id,l:a.label,ic:`<img alt="" src="${b.base+(a.prev||a.file)}" style="width:44px;height:44px;object-fit:contain">`})):[{v:'',l:''}]; },default:b=>(hlProducts(b)[0]||{}).id||'',when:{field:'kind',is:'product'}},
     {id:'icon',type:'seg',in:'style',label:'Icon',cols:4,options:HL_ICONS.map(([v,l])=>({v,l,ic:hlIc(v)})),pageDefault:pg=>HL_ICONS[pg%HL_ICONS.length][0],when:{field:'kind',is:'icon'}},
     {id:'word',type:'text',label:'Word on the cover',placeholder:b=>(b.phrases&&b.phrases.write)||'',when:{field:'kind',is:'word'}},
     {id:'sub',type:'text',label:'Small word under the icon',toggle:true,on:false,placeholder:b=>(b.phrases&&b.phrases.write)||'',when:{field:'kind',is:'icon'}}
@@ -82,6 +92,14 @@ Studio.tool({
         h.text('word','Word',word,cx,cy-m.h/2,{font:'display',size:230,color:ink,maxW:700});
         if(!word&&o.preview){ ctx.save(); ctx.fillStyle=dark?'rgba(255,255,255,.35)':'rgba(0,0,0,.25)'; ctx.font='800 54px "'+h.brand.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Type a word in Words',cx,cy); ctx.restore(); }
         h.text('sub','Small word','',0,0);
+      } else if(kind==='product'){
+        const a=hlProducts(h.brand).find(x=>x.id===o.value('product'));
+        if(a){
+          const ar=hlDims(h.brand,a)||.8, bw=Math.min(620,740*ar), bh=bw/ar;
+          h.asset({id:'product',ref:a.id,label:a.label,x:cx,y:cy,w:Math.round(bw)});
+          h.block('product',a.label,cx-bw/2,cy-bh/2,bw,bh,()=>{},'asset');   // keeps the layer steady while the picture loads
+        }
+        h.text('word','Word','',0,0); h.text('sub','Small word','',0,0);
       } else {
         const id=o.value('icon'), sub=o.value('sub'), wt=+o.value('weight')||1.8;
         const s=sub?360:460, sm=sub?h.measure(sub,{weight:'800',size:84,maxW:620}):{h:0}, gap=sub?36:0, top=cy-(s+gap+sm.h)/2;
