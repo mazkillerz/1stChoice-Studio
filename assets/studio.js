@@ -171,7 +171,17 @@ const ICON={
   folder:svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',18),
   copy:svg('<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',20),
   pencil:svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',20),
-  list:svg('<rect x="3" y="4" width="5" height="5" rx="1"/><path d="M11 6.5h10"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 17.5h10"/>',20)
+  list:svg('<rect x="3" y="4" width="5" height="5" rx="1"/><path d="M11 6.5h10"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 17.5h10"/>',20),
+  move:svg('<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',20),
+  up:svg('<path d="m18 15-6-6-6 6"/>',22), down:svg('<path d="m6 9 6 6 6-6"/>',22),
+  centerX:svg('<path d="M12 2v20"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/>',20),
+  centerY:svg('<path d="M2 12h20"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/>',20),
+  /* one icon per photo tool, so the + menu and the welcome tell them apart */
+  restock:svg('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.7 4.73a2 2 0 0 0 2 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>'),
+  story:svg('<rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="14.5" cy="7.5" r="1.5"/><path d="m5 17 4.5-4.5 3 3 2-2L19 18"/>'),
+  collage:svg('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+  settings:svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
+  play:svg('<circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/>',20)
 };
 
 /* ---------- assets: brand files (logo, can cut-outs, stickers) from the brand kit + built-in shapes ----------
@@ -337,10 +347,30 @@ function sharp(im,tw,th){
 }
 function freeSharp(){ SHARP.forEach(c=>Object.values(c).forEach(cv=>{cv.width=cv.height=0;})); SHARP=new Map(); }
 
+/* ---------- photo looks: a few calm colour moods for a photo, drawn as blend layers over it (same result at any size,
+   so the saved 2160×3840 picture matches the preview). fx = {look:'warm', light:-1…1}; kept per photo in the design. ---------- */
+const PHOTO_LOOKS=[
+  {id:'',label:'Original',ops:[]},
+  {id:'bright',label:'Bright',ops:[['soft-light','#ffffff',.5],['screen','#ffffff',.08]]},
+  {id:'warm',label:'Warm',ops:[['soft-light','#ffa75a',.38],['multiply','#fff2e0',.45]]},
+  {id:'cool',label:'Cool',ops:[['soft-light','#4d94ff',.4],['multiply','#eef4ff',.4]]},
+  {id:'vivid',label:'Vivid',ops:[['saturation','hsl(0,100%,50%)',.3],['soft-light','#ffffff',.18]]},
+  {id:'mono',label:'B&W',ops:[['saturation','#808080',1],['soft-light','#000000',.15]]},
+  {id:'soft',label:'Soft',ops:[['saturation','#808080',.3],['screen','#4a3b30',.35]]}
+];
+function photoFx(ctx,fx,x,y,w,h){
+  if(!fx) return; const L=PHOTO_LOOKS.find(l=>l.id===(fx.look||''))||PHOTO_LOOKS[0], v=+fx.light||0;
+  const ops=L.ops.slice(); if(v>0) ops.push(['soft-light','#ffffff',v*.6],['screen','#ffffff',v*.08]); if(v<0) ops.push(['soft-light','#000000',-v*.55],['source-over','#000000',-v*.1]);
+  if(!ops.length) return;
+  ctx.save(); ops.forEach(([m,c,a])=>{ ctx.globalCompositeOperation=m; ctx.globalAlpha=a; ctx.fillStyle=c; ctx.fillRect(x,y,w,h); }); ctx.restore();
+}
+const hasFx=fx=>!!fx&&(!!fx.look||!!+fx.light);
+
 /* ---------- drawing helpers handed to each tool ----------
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
 let onAssetLoad=null;
+const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
   const ix=(i,opt)=>opt&&opt.page!=null?opt.page*(perPage||1)+i:off+i;   // opt.page: a photo from another slide (panoramas)
@@ -371,12 +401,29 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         p.ox=Math.max(-mx,Math.min(mx,p.ox)); p.oy=Math.max(-my,Math.min(my,p.oy));
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
         ctx.drawImage(preview?prev(im):sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
+        if(hasFx(p.fx)) photoFx(ctx,p.fx,x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
         ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); ctx.fillStyle='#8b8882'; ctx.font='800 '+Math.max(28,Math.min(56,w/8))+'px "'+B.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',x+w/2,y+hh/2);
       }
       ctx.restore();
       if(rot){ const c=Math.abs(Math.cos(rot)), sn=Math.abs(Math.sin(rot)), ew=w*c+hh*sn, eh=w*sn+hh*c; reg.push({photo:ix(i,opt),x:x+w/2-ew/2,y:y+hh/2-eh/2,w:ew,h:eh,mode:opt.mode||'cover'}); }
       else reg.push({photo:ix(i,opt),x,y,w,h:hh,mode:opt.mode||'cover'});
+    },
+    /* the same photo, soft-blurred and dimmed, as a backdrop (a wide photo shown whole on top of it). The blur is a tiny copy
+       scaled up, so it looks the same on every phone (Safari has no canvas blur filter) and at any save size. Not a layer. */
+    backdrop(i,x,y,w,hh,opt){
+      opt=opt||{}; const p=S.photos[ix(i,opt)];
+      if(!p||!p.img){ if(preview){ ctx.fillStyle='#d8d6d1'; ctx.fillRect(x,y,w,hh); } return; }
+      const sw=Math.max(8,Math.round(w/(opt.blur||28))), sh=Math.max(8,Math.round(hh/(opt.blur||28)));
+      let m=BLURS.get(p.img); if(!m){ m={}; BLURS.set(p.img,m); } const key=sw+'x'+sh;
+      if(!m[key]){ const im=prev(p.img), k=Math.max(sw/im.width,sh/im.height), mid=document.createElement('canvas'), c=document.createElement('canvas');
+        mid.width=sw*4; mid.height=sh*4; const mx=mid.getContext('2d'); mx.imageSmoothingQuality='high'; mx.drawImage(im,(mid.width-im.width*k*4)/2,(mid.height-im.height*k*4)/2,im.width*k*4,im.height*k*4);
+        c.width=sw; c.height=sh; const cx=c.getContext('2d'); cx.imageSmoothingQuality='high'; cx.drawImage(mid,0,0,sw,sh); mid.width=mid.height=0; m[key]=c; }
+      ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      const pad=Math.max(w,hh)*.06; ctx.drawImage(m[key],x-pad,y-pad,w+pad*2,hh+pad*2);   // a little bigger: no soft edge at the border
+      if(hasFx(p.fx)) photoFx(ctx,p.fx,x,y,w,hh);
+      if(opt.dim) { ctx.fillStyle='rgba(0,0,0,'+opt.dim+')'; ctx.fillRect(x,y,w,hh); }
+      ctx.restore();
     },
     logoH(w){return w*LOGO.height/LOGO.width;},
     /* logo layer; tone 'dark' or 'light' */
@@ -600,7 +647,7 @@ async function tool(cfg){
         <div class="insp-tabs" role="group" aria-label="Edit this layer">
           <button type="button" class="itab" data-part="text" aria-pressed="false">${ICON.text}<span>Edit</span></button>
           <button type="button" class="itab" data-part="size" aria-pressed="false">${ICON.size}<span>Size</span></button>
-          <button type="button" class="itab" data-part="rotate" aria-pressed="false">${ICON.rotate}<span>Rotate</span></button>
+          <button type="button" class="itab" data-part="move" aria-pressed="false">${ICON.move}<span>Move</span></button>
           <button type="button" class="itab" data-part="color" aria-pressed="false">${ICON.drop}<span>Colour</span></button>
           <button type="button" class="itab" data-part="font" aria-pressed="false">${ICON.font}<span>Font</span></button>
           <button type="button" class="itab" data-part="more" aria-pressed="false">${ICON.more}<span>More</span></button>
@@ -611,8 +658,10 @@ async function tool(cfg){
         <div class="insp-part" data-part="text"><textarea id="inspText" rows="1" dir="${B.dir||'ltr'}" aria-label="Edit text"></textarea><span class="small" id="inspTextHint">New line: Enter. Done: ✓</span></div>
         <div class="insp-part insp-col" data-part="size"><div class="insp-row"><label class="lbl" for="inspSize">Size</label><input type="range" id="inspSize" min="0.4" max="2.5" step="0.01" value="1"></div>
           <div class="insp-row" id="inspWH" hidden><label class="lbl" for="inspW">Width</label><input type="range" id="inspW" min="40" max="${W}" step="2"><label class="lbl" for="inspH">Height</label><input type="range" id="inspH" min="40" max="${H}" step="2"></div></div>
-        <div class="insp-part insp-row" data-part="rotate"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
-          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div>
+        <div class="insp-part insp-col" data-part="move"><div class="insp-row move-row"><div class="nudge" role="group" aria-label="Nudge"><button type="button" class="nb" data-nudge="-1,0" aria-label="Nudge left">${ICON.back}</button><button type="button" class="nb" data-nudge="0,-1" aria-label="Nudge up">${ICON.up}</button><button type="button" class="nb" data-nudge="0,1" aria-label="Nudge down">${ICON.down}</button><button type="button" class="nb" data-nudge="1,0" aria-label="Nudge right">${ICON.next}</button></div>
+          <div class="nudge" role="group" aria-label="Line up"><button type="button" class="nb wide" id="inspCenter" title="Centre across">${ICON.centerX}<span>Centre</span></button><button type="button" class="nb wide" id="inspMiddle" title="Middle, top to bottom">${ICON.centerY}<span>Middle</span></button></div></div>
+          <div class="insp-row"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
+          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div></div>
         <div class="insp-part insp-col" data-part="font"><div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
           <div id="inspType">
           <div class="insp-row"><span class="lbl">Align</span><div class="row tight" role="group" aria-label="Align lines" id="inspAlign">${(B.dir==='rtl'?['right','center','left']:['left','center','right']).map(a=>`<button type="button" class="seg" data-align="${a}" aria-pressed="false">${a==='center'?'Centre':a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div></div>
@@ -624,7 +673,7 @@ async function tool(cfg){
           <div id="inspShape" hidden><span class="lbl">Outline</span><div id="inspStroke"></div><div class="insp-row" id="inspSWRow"><label class="lbl" for="inspSW">Outline width</label><input type="range" id="inspSW" min="0" max="40" step="1" value="0"></div>
             <div class="insp-row" id="inspRRow"><label class="lbl" for="inspR">Corners</label><input type="range" id="inspR" min="0" max="300" step="2" value="0"></div></div>
           <div class="insp-row"><label class="lbl" for="inspOp">Opacity</label><input type="range" id="inspOp" min="0.05" max="1" step="0.05" value="1"></div></div>
-        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspCenter">Centre</button><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
           <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
@@ -640,7 +689,10 @@ async function tool(cfg){
     html+=`</div>`;
   }
   html+=`<div class="slots" id="slots"></div><div class="small">Tap a box to add a photo${cfg.pages?' for this '+PN.one:''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
-  <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div></div></section>`;
+  <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div>
+  ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
+    <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
+    <button type="button" class="link" id="lookAll" hidden>Use this look on every photo</button></div>`}</div></section>`;
   if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
@@ -839,14 +891,20 @@ async function tool(cfg){
 
   /* ---- photo slots ---- */
   /* how many photos this slide takes (a carousel's slide type decides: words-only takes none, two-photo takes two) */
-  function pagePhotoCount(pg){ if(!PG||!cfg.pagePhotos) return S.count; return withPage(pg,()=>cfg.pagePhotos(value,{page:pg,pageValue})); }
+  function pagePhotoCount(pg){ if(!PG||!cfg.pagePhotos) return noPhotoStyle()?0:S.count; return withPage(pg,()=>cfg.pagePhotos(value,{page:pg,pageValue})); }
+  /* a style that uses no photo (e.g. Restock with the brand's can cut-outs): no photo boxes, nothing to add before Save */
+  function noPhotoStyle(){ return !PG&&!!cfg.photosFor&&!cfg.photosFor({style:S.style,value,count:S.count}); }
+  /* a photo arrived while the style uses none: switch to the tool's photo style so it shows */
+  function photoStyleNow(){ if(!noPhotoStyle()||!cfg.photoStyle) return; S.style=cfg.photoStyle; remember(); }
   const slotCount=()=>pagePhotoCount(S.page);
   function slotsUI(){
     let s=''; const off=photoOffset(), n=slotCount();
     for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
       s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
-    $('slots').innerHTML=n?s:'<p class="small">This '+PN.one+' has no photo. Change it in Style → This '+PN.one+'.</p>';
+    $('slots').innerHTML=n?s:PG?'<p class="small">This '+PN.one+' has no photo. Change it in Style → This '+PN.one+'.</p>'
+      :`<div class="no-photo"><p class="small">${esc(cfg.noPhotoNote||'This style needs no photo. Tap Save when it looks good.')}</p>${cfg.photoStyle?'<button type="button" class="mini" id="usePhotoStyle">'+ICON.photo+' Use a photo instead</button>':''}</div>`;
   }
+  $('slots').addEventListener('click',e=>{ if(!e.target.closest('#usePhotoStyle')) return; S.style=cfg.photoStyle; remember(); syncUI(); render(); pickPhoto(nextEmpty()); });
   $('slots').addEventListener('change',e=>{const t=e.target; if(t.dataset.file!=null){ setPhoto(+t.dataset.file,t.files&&t.files[0]); t.value=''; }});
   $('slots').addEventListener('click',e=>{ if(slotDrag&&slotDrag.used){ e.preventDefault(); e.stopPropagation(); slotDrag=null; return; } const l=e.target.closest('[data-slot]'); if(l){S.active=+l.dataset.slot; syncZoom();}},true);
   /* in the Photo sheet: hold a photo box, drag it onto another box, let go = swap */
@@ -868,11 +926,11 @@ async function tool(cfg){
     if(!isPhotoFile(file)){ status('That is not a photo. Try a JPG, PNG or HEIC.'); return; }
     if(isHeic(file)) status('Opening your iPhone photo…',10000);
     try{
-      const img=await loadFile(file);
+      const img=await loadFile(file); photoStyleNow();
       const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
-      S.photos[i]={img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7),file,key:'p'+Date.now().toString(36)+i};
+      const fx=S.photos[i]&&S.photos[i].fx;
+      S.photos[i]={img,zoom:1,ox:0,oy:0,sample:false,thumb:tc.toDataURL('image/jpeg',.7),file,key:'p'+Date.now().toString(36)+i,...(fx?{fx}:{})};
       S.active=i; $('result').hidden=true; status(''); if(PG) refreshThumbs();
-      $('hint').textContent='Drag text or photos to move them. Tap text to edit it.';
       syncUI(); render();
     }catch(_){ status(isHeic(file)?'That iPhone photo could not be opened. Try sharing it as a JPG.':'That photo could not be opened. Try a JPG or PNG.'); }
   }
@@ -887,7 +945,9 @@ async function tool(cfg){
       paintPager(); status(fs.length+' photos added across the '+PN.many+'.'); }
     e.target.value=''; });
   $('ctaPhoto').addEventListener('click',()=>pickPhoto(nextEmpty()));
-  function syncCta(){ const n=slotCount(); $('pick').multiple=!!PG||n>1; const off=photoOffset(); let any=false; for(let i=0;i<n;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=n>1||PG?'Add your photos':'Add your photo'; }
+  function syncCta(){ const n=slotCount(); $('pick').multiple=!!PG||n>1; const off=photoOffset(); let any=false; for(let i=0;i<n;i++){ const p=S.photos[off+i]; if(!p||!p.img||p.sample) any=true; } const was=$('ctaPhoto').hidden; $('ctaPhoto').hidden=!any; if(was!==!any) fit(); $('ctaPhoto').querySelector('span').textContent=n>1||PG?'Add your photos':'Add your photo';
+    const real=S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
+    $('hint').textContent=noPhotoStyle()?(cfg.noPhotoHint||'No photo needed. Tap a word to change it.'):real?'Drag text or photos to move them. Tap text to edit it.':(cfg.sampleNote||'Example photos. Add yours in Photo.'); }
   function nextEmpty(){ const off=photoOffset(); for(let j=0;j<slotCount();j++){ const p=S.photos[off+j]; if(p.sample||!p.img) return off+j; } return S.active; }
   document.addEventListener('paste',e=>{ if(e.target&&e.target.tagName==='INPUT') return; const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/')); if(it) setPhoto(nextEmpty(),it.getAsFile());});
   let dd=0;
@@ -919,7 +979,15 @@ async function tool(cfg){
     slotsUI(); syncZoom(); syncCta();
   }
   /* whole photos (contain) can't zoom, so the slider hides for them */
-  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&S.count>1)); }
+  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncLook(); }
+  /* the photo look row: shown for a real photo; its mood buttons are drawn from that photo with the same blend layers */
+  const lightTxt=v=>{ v=Math.round((+v||0)*100); return v>0?'+'+v:String(v); };
+  let lookFor=null;
+  function syncLook(){ const row=$('lookRow'); if(!row) return; const p=S.photos[S.active], real=!!(p&&p.img&&!p.sample&&photoUsed(S.active)); row.hidden=!real; if(!real) return;
+    const fx=p.fx||{}; row.querySelectorAll('.look').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.look===(fx.look||''))));
+    if(document.activeElement!==$('light')) $('light').value=fx.light||0; $('lightOut').textContent=lightTxt(fx.light); $('lookAll').hidden=slotCount()<2;
+    if(lookFor===p.img) return; lookFor=p.img; const im=prev(p.img);
+    row.querySelectorAll('.look').forEach(b=>{ const c=b.querySelector('canvas'), x=c.getContext('2d'), k=Math.max(112/im.width,112/im.height); x.clearRect(0,0,112,112); x.drawImage(im,56-im.width*k/2,56-im.height*k/2,im.width*k,im.height*k); photoFx(x,{look:b.dataset.look},0,0,112,112); }); }
   const status=(t,ms)=>{ $('status').textContent=t; if(isPhone()&&openName!=='save') toast(t,ms); else if(!t) toast(''); };
 
   /* ---- drawing ---- */
@@ -972,7 +1040,7 @@ async function tool(cfg){
     const p0=S.P[0];
     return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,pp:perPage,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
       ...(PG?{pages:clone(S.P)}:{}),
-      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample)}))};
+      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample),...(hasFx(p.fx)?{fx:{look:p.fx.look||'',light:+p.fx.light||0}}:{})}))};
   }
   /* slots: optional photo objects to put in each slot (null = keep what's there) */
   function applyRecipe(r,slots){
@@ -984,7 +1052,7 @@ async function tool(cfg){
     S.P.forEach(pp=>{ extraN=pp.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); }); assetN=Math.max(assetN,extraN);
     /* older carousels kept 1 photo per slide; map them onto today's layout */
     const oldPP=PG?(r.pp||1):perPage; if(oldPP!==perPage){ const map=i=>Math.floor(i/oldPP)*perPage+i%oldPP, rp2=[], sl2=[]; (r.photos||[]).forEach((x,i)=>{ rp2[map(i)]=x; }); if(slots) slots.forEach((x,i)=>{ if(x) sl2[map(i)]=x; }); r={...r,photos:rp2}; slots=slots?sl2:slots; }
-    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); });
+    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; });
     S.sel=null;
   }
   async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
@@ -1214,7 +1282,7 @@ async function tool(cfg){
       if($('inspPillPal').dataset.for!==id||!$('inspPillPal').firstChild){ $('inspPillPal').innerHTML=palettePicker('pill',l.bg||C.ink); $('inspPillPal').dataset.for=id; } else syncPalette($('inspPillPal').firstChild,l.bg||C.ink);
       $('inspPillPal').hidden=!pill; }
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
-    const has={text:t!==null,size:true,rotate:true,color:true,font:textish,more:true};
+    const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
     if(inspPart&&!has[inspPart]) inspPart=null;
     document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
@@ -1261,6 +1329,16 @@ async function tool(cfg){
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); autoGrow(); render(); });
   $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=textExtra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
   $('inspCenter').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id); if(!b||b.hidden) return; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.dx+=W/2-(b.x+b.w/2); render(); });
+  $('inspMiddle').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id); if(!b||b.hidden) return; LL(id).dy+=H/2-(b.y+b.h/2); render(); });
+  /* nudge: one tap = a small step; hold to keep moving (faster after a moment) */
+  { let rep=0, n=0; const step=(dx,dy)=>{ const id=S.sel; if(!id) return; const l=LL(id), k=n>12?24:8; l.dx+=dx*k; l.dy+=dy*k; n++; render(); };
+    const stop=()=>{ clearTimeout(rep); rep=0; n=0; };
+    const nb=e=>e.target.closest('[data-nudge]'), dir=b=>b.dataset.nudge.split(',').map(Number);
+    const box=$('sh-insp');
+    box.addEventListener('pointerdown',e=>{ const b=nb(e); if(!b) return; e.preventDefault(); stop(); const [dx,dy]=dir(b); step(dx,dy); haptic('tick'); const go=()=>{ step(dx,dy); rep=setTimeout(go,70); }; rep=setTimeout(go,380); });
+    ['pointerup','pointercancel','pointerleave'].forEach(t=>box.addEventListener(t,e=>{ if(rep&&(t!=='pointerleave'||nb(e))) stop(); }));
+    box.addEventListener('click',e=>{ const b=nb(e); if(b&&e.detail===0){ const [dx,dy]=dir(b); step(dx,dy); n=0; } });   // keyboard
+    box.addEventListener('contextmenu',e=>{ if(nb(e)) e.preventDefault(); }); }
   $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=textExtra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
   $('inspHide').addEventListener('click',()=>{ const id=S.sel; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.hidden=!l.hidden; syncInspector(); render(); });
   $('inspDelete').addEventListener('click',()=>{ S.extras=S.extras.filter(x=>x.id!==S.sel); delete S.layers[S.sel]; select(null); });
@@ -1467,6 +1545,16 @@ async function tool(cfg){
     else if(e.key==='['||e.key===']'){ e.preventDefault(); setRot(S.sel,(l.rot||0)+(e.key===']'?1:-1)*(e.shiftKey?15:1)); } else if(e.key==='Escape') select(null); });
   $('zoom').addEventListener('input',e=>{const p=S.photos[S.active]; if(p){p.zoom=+e.target.value;render();}});
   $('fitBtn').addEventListener('click',()=>{const p=S.photos[S.active]; if(p){p.zoom=1;p.ox=0;p.oy=0;$('zoom').value=1;render();}});
+  /* photo look: tap a mood, nudge the light; "every photo" copies it to the other boxes (collages) */
+  if($('lookRow')){
+    const setFx=(i,fx)=>{ const p=S.photos[i]; if(!p) return; if(hasFx(fx)) p.fx=fx; else delete p.fx; };
+    const realAt=i=>{ const p=S.photos[i]; return p&&p.img&&!p.sample?p:null; };
+    $('looks').addEventListener('click',e=>{ const b=e.target.closest('[data-look]'), p=realAt(S.active); if(!b||!p) return; setFx(S.active,{look:b.dataset.look,light:(p.fx&&p.fx.light)||0}); haptic('tick'); syncLook(); render(); });
+    $('light').addEventListener('input',e=>{ const p=realAt(S.active); if(!p) return; setFx(S.active,{look:(p.fx&&p.fx.look)||'',light:+e.target.value}); $('lightOut').textContent=lightTxt(+e.target.value); render(); });
+    $('lookAll').addEventListener('click',()=>{ const p=realAt(S.active); if(!p) return; const off=photoOffset(); let n=0;
+      for(let j=0;j<slotCount();j++){ const k=off+j; if(k!==S.active&&realAt(k)){ setFx(k,p.fx?{...p.fx}:null); n++; } }
+      render(); status(n?'Every photo has this look now.':'Add more photos first.',2200); });
+  }
   $('form').addEventListener('submit',e=>e.preventDefault());
 
   /* ---- saving: full-quality lossless PNG (2x, stepping down to 1.5x / 1x only if the phone runs out of memory) ---- */
@@ -1653,7 +1741,7 @@ async function tool(cfg){
     el.addEventListener('pointerup',end); el.addEventListener('pointercancel',()=>{ if(press){ clearTimeout(press.timer); press.b.classList.remove('lift'); press.b.style.transform=''; press=null; } });
     el.addEventListener('contextmenu',e=>{ if(e.target.closest('.sthumb')) e.preventDefault(); });
   }
-  function photoUsed(i){ if(!PG) return i<S.count; const pg=Math.floor(i/perPage); return pg<S.P.length&&i%perPage<pagePhotoCount(pg); }
+  function photoUsed(i){ if(!PG) return i<pagePhotoCount(0); const pg=Math.floor(i/perPage); return pg<S.P.length&&i%perPage<pagePhotoCount(pg); }
   function pageValue(pg,id){ return withPage(pg,()=>value(id)); }
 
   /* ---- start with the brand's example photos so the tool shows what it makes ---- */
@@ -1664,10 +1752,23 @@ async function tool(cfg){
   const got=imgs.filter(Boolean); if(!PG&&got.length) for(let i=got.length;i<nPhotos;i++) if(S.photos[i]&&!S.photos[i].img) S.photos[i]={img:got[i%got.length],zoom:1,ox:0,oy:0,sample:true};
   syncUI(); draw(vctx,true);
 
-  /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), or offer the unfinished story ---- */
+  /* ---- a template from the library (?preset=…): the brand kit's preset sets the style, photo count and words, as a new story ---- */
+  function applyPreset(id){
+    const pr=(B.presets||[]).find(x=>x.id===id&&x.tool===cfg.id); if(!pr) return false;
+    if(pr.style&&cfg.styles&&cfg.styles.some(s=>s.id===pr.style)) S.style=pr.style;
+    if(pr.count&&!PG) S.count=Math.min(perPage,Math.max(minPhotos,pr.count));
+    Object.entries(pr.values||{}).forEach(([k,v])=>{ const f=fields.find(x=>x.id===k); if(!f) return;
+      if(f.type==='chips') S.values[k]=v==null||v===''?{pick:'__none',own:''}:f.options.includes(v)?{pick:v,own:''}:{pick:'__own',own:String(v)};
+      else if(f.type==='multi') S.values[k]={picks:[].concat(v),own:''};
+      else if(!f.type||f.type==='text') S.values[k]=v===false?{...fieldDefault(f,0),on:false}:{text:String(v),on:true};
+      else S.values[k]=clone(v); });
+    syncGlobals(); remember(); return true;
+  }
+  /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), a template (?preset=…), or offer the unfinished story ---- */
   const q=new URLSearchParams(location.search), drafts=listDrafts(B.id,cfg.id), want=q.get('draft');
   try{
     if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
+    else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this phone.'); } }
     else if(q.get('quick')!=='1'){ const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
       if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
@@ -1677,10 +1778,12 @@ async function tool(cfg){
   setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
-    if(fs&&fs.length){ if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
+    if(fs&&fs.length){ photoStyleNow(); if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
       flush(); quickReady=true; showReady(fs.length>1); }
     else status('That photo did not come through. Tap Add your photo.'); }
+  /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
+  else if(noPhotoStyle()&&!design&&!draftId) quickReady=true;
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());

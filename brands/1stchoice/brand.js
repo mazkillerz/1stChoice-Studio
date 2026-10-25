@@ -46,9 +46,12 @@ Studio.registerBrand({
   handle:'@1stchoice.om',      // Instagram handle (the "Instagram handle" component)
   /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
   flavours:[
-    {id:'classic',name:'كلاسيك',bg:'#161210',fg:'#FFFFFF'},
-    {id:'passion',name:'باشن فروت',bg:'#F6C040',fg:'#161210'}
+    {id:'classic',name:'كلاسيك',bg:'#161210',fg:'#FFFFFF',can:'can-classic-shadow'},
+    {id:'passion',name:'باشن فروت',bg:'#F6C040',fg:'#161210',can:'can-passion-shadow'}
   ],
+  /* the product pictures tools draw without a photo (Restock "Cans"): one can per flavour above, and both together
+     (the pair cut-out keeps a gap between the cans: cans never touch) */
+  products:{both:'cans-pair-shadow'},
   /* Wording from the owner's Omani phrasebook. Only approved lines go here. */
   phrases:{
     headlines:['يسرسح ثلج','جربته؟','ترا فنان','ما يتفوت','عالميييي','تعرف ويش؟','مشتهيه؟','صبر شوي...','اطلب الحين','وين تلقانا؟','رجع متوفر','وفرنا كمية جديدة','خذلك كولد برو','هذا ولا هذا؟','أنت أي واحد؟','اختيارك؟','منشن ربعك','صباح الخير','روّق','الجو حرّ اليوم؟'],

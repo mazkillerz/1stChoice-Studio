@@ -54,7 +54,7 @@ ok('tap beside the preview closes the panel',!(await pg.evaluate(()=>document.qu
 // rotation: buttons + saved with the design
 await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1000);
 const vv=await pg.locator('#view').boundingBox(), kk=vv.width/1080; const hb=await pg.evaluate(()=>{ const b=Studio.debug.reg().find(x=>x.id==='head'); return {x:b.cx,y:b.cy}; });
-await pg.touchscreen.tap(vv.x+hb.x*kk,vv.y+hb.y*kk); await pg.waitForTimeout(400); await pg.tap('.itab[data-part="rotate"]'); await pg.waitForTimeout(500);
+await pg.touchscreen.tap(vv.x+hb.x*kk,vv.y+hb.y*kk); await pg.waitForTimeout(400); await pg.tap('.itab[data-part="move"]'); await pg.waitForTimeout(500);
 await pg.tap('[data-rot="15"]'); await pg.waitForTimeout(200); ok('rotate +15°',await pg.evaluate(()=>Studio.debug.S.layers.head.rot)===15);
 ok('recipe keeps rotation',await pg.evaluate(()=>Studio.debug.recipe().layers.head.rot)===15);
 ok('no page errors',!errs.length,errs.slice(0,2).join(' | '));
