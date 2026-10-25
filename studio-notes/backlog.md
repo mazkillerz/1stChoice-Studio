@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 12 (1.1.0, 25 Oct 2026) was a **team** session: Carousel and Highlight covers start from photos (#12), Collage border drops (audit fix). The next session (1.2.0) is a **Mazoon** session.
+**Last session:** 13 (1.2.0, 25 Oct 2026) was an owner-directed **Mazoon** session: the dragon became Studio's logo (app icons, favicon, a mark on Home), and pins keep your order (#19). The next session (1.3.0) is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
 
 ## Next up
@@ -10,7 +10,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 23 | Saved page: a bigger peek when you press and hold (the picture large, swipe to the next) before the actions | 2 | 3 | 4 | 2 | 7 | |
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
-| 19 | Reorder pinned tools (drag in All tools, or "Move up") | 3 | 3 | 2 | 2 | 6 | Today pins follow the TOOLS order. |
 | 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
@@ -54,6 +53,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.2.0 (owner-directed, Mazoon): Studio's own logo (the dragon from the owner: app icons 180/192/256/512, a separate maskable icon, the mark next to the brand logo on Home, inverted in dark; old "1st" icons in `_archive/app icons 1st mark (2026-10-25)/`); pins keep the order you set, All tools › Order on your home moves one up (#19).
+- Idea: the dragon in the welcome tour and on the What's New page header; a higher-resolution source of the dragon would sharpen the 512px icon (the owner's picture is ~400px across).
 - 1.1.0 (team): Carousel (up to 10) and Highlight covers (up to 12) start from photos in +, camera rows and the share sheet, one slide/cover per photo (#12); Collage drops on a photo's border swap it (audit finding); own icons for both tools.
 - 1.0.0 (owner-directed milestone, preview branch): first-run welcome (3 swipes, once per new device, Settings → Welcome tour), Templates library (Home · Templates · Saved; restock, stories, posts, highlights, team; real previews; one tap opens a preset `?preset=` or a Create template), 8 new Create templates, Restock (Cans with no photo + one-tap Save, Split, Big words, photo shape, headline size, button colour), Photo story (Whole photo, Caption, Poster, Arch, headline size, shade, words colour, logo switch), Collage (more grids for 2–9, border + colour, gap to 80, edge space), photo looks + Light for every photo, Move tab (nudge, centre, middle, rotate), Swap two / Shuffle, + menu on one inset with an icon per tool + Templates, Settings sheet, one-line notes, What's New milestone banner + bold; #24 (Templates in +) and #20 partly (search shows template previews for presets).
 - 0.9.0 (team): share photos from the phone's gallery into Studio (Android, installed: manifest `share_target`, sw.js POST handler → IndexedDB → hub pick-a-tool sheet → Quick start), Last time tag on the photo tool used last in + and the share sheet (#4, part of #24); Android install hint mentions sharing.

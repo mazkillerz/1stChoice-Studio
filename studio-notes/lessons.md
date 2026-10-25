@@ -5,8 +5,19 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 13 · 1.2.0 · 25 Oct 2026 (owner-directed, Mazoon)
+
+**Worked**
+- A logo from a phone picture: crop to the drawing, make the white outside transparent with a flood fill from the edges (so the white eyes stay), then build every icon from that one cut-out. The existing dark-mode `filter:invert(1)` on `.top img` turned the black dragon white for free.
+- A separate maskable icon (smaller drawing, more space) keeps the round Android crop from cutting the wings.
+- Pin order: storing pins in the order set (not the TOOLS order) needed no migration, since old lists were already in TOOLS order.
+
+**Watch out**
+- The owner's picture is ~400px across the drawing, so the 512px icon is slightly upscaled.
 
 ## Session 12 · 1.1.0 · 25 Oct 2026 (team)
 

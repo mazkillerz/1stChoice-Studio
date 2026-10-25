@@ -94,7 +94,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Tool pages: layers, inspector, sheets, photos, drafts (`tool()` in studio.js, `tools/*.js`) | `full`, `v5`, `polish` |
 | Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
 | Quick start, "Your photo is in" | `quicksave`, `whatsnew` |
-| Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `fresh` |
+| Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
 | Saved page, collections, a design's menu, select mode | `home7`, `polish71`, `extra`, `select` |
 | Search (`assets/search.*`) | `search` |
 | Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |

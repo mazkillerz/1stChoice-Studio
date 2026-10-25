@@ -1253,6 +1253,7 @@ body.hub .top{gap:var(--sp-2)}
 body.hub .top .home{margin-inline-end:var(--sp-1)}
 .top .acct{flex:none}
 @media (max-width:400px){ body.hub .top .studio{display:none} }
+.top img.studio-mark{height:26px;max-width:none;margin-inline-end:-4px}
 .top .set-btn{border:0;background:none;padding:0;cursor:pointer;color:var(--fg)}
 .top .set-btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 /* a page title focused for screen readers when a page opens: no ring (it is not a control) */
@@ -1261,6 +1262,14 @@ body.hub .top .home{margin-inline-end:var(--sp-1)}
 /* found by tests/taste.mjs (1.0.0): group headings in All tools start where the row thumbnails start (1px border + 6px padding),
    and the last small controls reach the 44px tap size (text links, sliders, the layer bar's ✓) */
 .lib .tgroup{margin-inline:7px 0}
+/* All tools › Order on your home (1.2.0) */
+.pin-order{display:flex;flex-direction:column;gap:var(--sp-2);margin-bottom:var(--sp-2)}
+.pin-order:empty{display:none}
+.pin-ord{display:flex;align-items:center;gap:var(--sp-3);min-height:52px;background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-1);padding-inline:14px 4px}
+.pin-ord b{flex:1;font:500 var(--fs-m) var(--sans);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pin-ord .po-n{width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font:600 var(--fs-xs) var(--sans);background:var(--bg);color:var(--muted)}
+.pin-ord .pin-btn{color:var(--fg)}
+.pin-ord .pin-btn:disabled{visibility:hidden}
 .link{min-height:44px}
 input[type=range]{min-height:44px}
 .done.icon::after{inset:-4px}   /* the layer bar's ✓ stays 40px (a taller bar would cover a logo at the bottom of the story) but takes a 48px tap */

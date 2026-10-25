@@ -13,6 +13,19 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.2.0 · 25 Oct 2026
+
+### A new logo for Studio
+type: design
+Studio has its own logo now: the little dragon. It is the app icon on your home screen (after you install Studio again, or when your phone refreshes it), the tab icon in the browser, and it sits next to your brand's logo at the top of Home. Your brand's logo and your designs did not change.
+![before](assets/whatsnew/1.2.0-icon-before.jpg)
+![after](assets/whatsnew/1.2.0-icon-after.jpg)
+
+### Put your tools in your order
+type: feature
+Home shows your pinned tools in the order you pinned them now, not a fixed order. Want Photo story first? Open **All tools**: once two or more tools are pinned, **Order on your home** sits at the top, and the arrow moves a tool one place up. The camera buttons follow.
+![after](assets/whatsnew/1.2.0-order-after.jpg)
+
 ## 1.1.0 · 25 Oct 2026
 
 ### Carousel and covers from your photos
