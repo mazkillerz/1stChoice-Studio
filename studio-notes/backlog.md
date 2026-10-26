@@ -26,6 +26,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 ## UX audit findings (open)
 - 1.5.0: one-line card names cut English dates on a phone ("Restock – 24 …"); watch whether the team misses the date. An idea: show the date as the card's second line (it is in the name today) or two lines only when the name has one script.
 - 1.5.0: Saved: the chosen collection's ⋯ can sit under the row's end fade on a narrow phone; the row scrolls it into view, but check on a real phone.
+- 1.5.0 full sweep: tapscan lists tick boxes (24px) and colour wells (38px) on tool Style/Words sheets; they sit inside larger rows (taste passes), same as 1.4.0. Confirm each row is the hit area.
 - 1.5.0: drag in All tools has no auto-scroll; fine for up to ~8 pinned tools (the pinned list is at the top of the sheet). Add edge auto-scroll if someone pins most tools.
 - 1.3.0: Peek opens from the picture in a design's menu (press and hold → picture). Watch whether the team finds it; a quicker way would be press and hold straight into Peek with the actions under it (changes a familiar gesture: ask first).
 - 1.3.0: test time: `home7` (~145 s) and `polish71` (~135 s) run for any hub or CSS change; split them by area in the 1.5.0 Simplify session so a small hub change runs a part.
