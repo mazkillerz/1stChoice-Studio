@@ -1294,8 +1294,8 @@ input[type=range]{min-height:44px}
 .lib-dlg .dlg-body.lib{padding-bottom:calc(max(var(--safe-b),16px) + 24px)}
 .lib .lib-hint{margin:-4px 0 0 7px;font-size:var(--fs-xs);color:var(--muted)}
 .lib-pins{display:flex;flex-direction:column;gap:var(--sp-2)}
-.lib-row.pinned{padding-inline-start:0}
-.drag-h{width:40px;height:var(--tap);flex:none;margin-inline-end:-6px;padding:0;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:grab;touch-action:none;border-radius:var(--r-l)}
+.lib-row.pinned{padding-inline-end:0}
+.drag-h{width:44px;height:var(--tap);flex:none;margin-inline-start:-6px;padding:0;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:grab;touch-action:none;border-radius:var(--r-l)}
 .drag-h:focus{outline:none}.drag-h:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
 .lib-pins .lib-row{transition:transform .22s var(--ease),box-shadow .2s}
 .lib-list.sorting{-webkit-user-select:none;user-select:none}
@@ -1303,7 +1303,7 @@ input[type=range]{min-height:44px}
 :root .lib-row.dragging{position:relative;z-index:3;transition:box-shadow .2s;box-shadow:var(--shadow-2),0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
 @media (prefers-reduced-motion:reduce){.lib-pins .lib-row{transition:none}}
 /* + menu: a small "More tools" under New design */
-.fab-more{display:flex;align-items:center;justify-content:center;gap:2px;min-height:44px;margin-top:2px;border:0;border-radius:16px;background:none;color:var(--accent);font:500 var(--fs-s) var(--sans);cursor:pointer;animation:fab-item-in .42s var(--ease) backwards;animation-delay:70ms}
+.fab-more{display:flex;align-items:center;justify-content:flex-start;gap:2px;min-height:44px;margin-top:2px;padding:0 10px;border:0;border-radius:16px;background:none;color:var(--accent);font:500 var(--fs-s) var(--sans);cursor:pointer;animation:fab-item-in .42s var(--ease) backwards;animation-delay:70ms}
 .fab-more svg{width:18px;height:18px}
 .fab-more:active{background:var(--chip)}
 @media (hover:hover){.fab-more:hover{background:var(--chip)}}
