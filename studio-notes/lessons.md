@@ -5,11 +5,23 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 16 | 1.5.0 | 4 (all six asks shipped; three taste findings of my own caught by taste.mjs and fixed before release: handle 40px, pinned thumbs off the line, More tools off the icon line) | 4 (one pass; test updates by a helper in parallel) | 0 reported after 1.4.0 (this list was new work, not fixes) | see release | Run taste.mjs right after the first visual pass, before screenshots for What's New |
 | 15 | 1.4.0 | 4 (all suites green; two slips caught by the lead in review: weight 700, Arabic under ✕) | 5 (3 items in one pass with 3 parallel helpers) | 0 reported after 1.3.0 | 33/33 pass | Brief helpers with the taste rules (weights, RTL with an icon in the box) and that worktrees may start from an old main |
 | 14 | 1.3.0 | 4 (new suite 90/90, 13 suites green; shots checked in both themes) | 4 (both items shipped; one dead end on thumbnails, reverted) | 0 reported after 1.2.0; mid-session: tests too slow (fixed in run.mjs + skill) | 32/32 pass | Check `--changed --dry` before a long run; compare a regenerated asset with the old one before replacing it |
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 16 · 1.5.0 · 26 Oct 2026 (owner-directed Simplify: hub and Saved)
+
+**Worked**
+- Before shots first, from a seeded script in the scratchpad; the "before" for What's New came from a `git worktree` of the previous release on port 8081.
+- taste.mjs caught three slips the eye missed (a 40px handle, a handle that pushed thumbnails off the shared left edge, a centred link off the menu's icon line). Putting the drag handle at the row's end (like iOS) fixed alignment without special cases.
+- A touch drag can be tested with CDP `Input.dispatchTouchEvent` (touchStart, ~10 touchMoves, touchEnd); Playwright's mouse does not fire touch pointers.
+
+**Didn't work / watch out**
+- Test-only Arabic names (made up) nearly went into What's New pictures: shots that ship use the plain seed names or approved phrases only.
+- A sort sheet that focuses its chosen option on open must not leave a ring on the button after close: style `:focus:not(:focus-visible)` off on every new button.
 
 ## Session 15 · 1.4.0 · 25 Oct 2026 (Mazoon, 3 parallel helpers)
 
