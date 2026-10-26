@@ -13,6 +13,31 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.5.0 · 26 Oct 2026
+
+### Put your tools in order with one drag
+type: feature
+All tools showed your pinned tools twice: once in "Order on your home" and again in their group. Now each tool is there once. Your pinned tools sit at the top under **On your home**, in the order Home shows them. Press the dots at the end of a row and drag it up or down, and Home follows. Moving the third tool to the top took two arrow taps, now it takes one drag. The other tools stay below in their groups. The last tool no longer hides behind the phone's gesture bar.
+![before](assets/whatsnew/1.5.0-alltools-before.jpg)
+![after](assets/whatsnew/1.5.0-alltools-after.jpg)
+
+### A shorter + menu
+type: design
+The + menu now has only what you start most: **Restock**, **Photo story** and **Collage**, then **New design**. Templates has its own tab at the bottom, so it left the menu. Carousel and Highlight covers are one tap away under **More tools**, which opens All tools. Restock from a photo is still 2 taps, and **Last time** still marks the tool you used last.
+![before](assets/whatsnew/1.5.0-plus-before.jpg)
+![after](assets/whatsnew/1.5.0-plus-after.jpg)
+
+### A calmer Saved page
+type: design
+Saved had two rows of chips. Now it has one: **All**, then your collections, with **Sort** at the end. Every design gets the same neat picture, so posts fill their card like stories, with no grey gap. The **Template** badge moved to the bottom corner and no longer sits under **⋯**. Long names, in Arabic, English or both, stay on one tidy line. The "New design" card is gone because the + button does the same job.
+![before](assets/whatsnew/1.5.0-saved-before.jpg)
+![after](assets/whatsnew/1.5.0-saved-after.jpg)
+
+### Sort in Studio's own style
+type: fix
+**Sort** opens a small sheet now, not the phone's own list: **Recent**, **Oldest** or **Name A to Z**, with a tick on your choice. The blue ring that stayed on the button after you picked is gone.
+![after](assets/whatsnew/1.5.0-sort-after.jpg)
+
 ## 1.4.0 · 25 Oct 2026
 
 ### Your can on a highlight cover
