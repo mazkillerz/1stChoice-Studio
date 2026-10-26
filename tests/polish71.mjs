@@ -56,14 +56,14 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
         let order=null; if(bd&&bd.firstChild&&bd.textContent.length>2){ const tn=bd.firstChild, a=document.createRange(), z=document.createRange(); a.setStart(tn,0); a.setEnd(tn,1); z.setStart(tn,tn.length-1); z.setEnd(tn,tn.length); order=a.getBoundingClientRect().left<z.getBoundingClientRect().left; }
         const tr=t.getBoundingClientRect(), nr=nm.getBoundingClientRect();
         return {tag:t.tagName,dirAttr:t.getAttribute('dir'),rtl:t.matches(':dir(rtl)'),ltr:t.matches(':dir(ltr)'),name:nm.textContent,time:bd?bd.textContent:null,hasBdi:!!bd,digitFirst:bd?/^\d/.test(bd.textContent):null,visualLtr:order,
-          nameDir:getComputedStyle(nm).direction,lines:Math.round(nr.height/parseFloat(getComputedStyle(nm).lineHeight)*10)/10,clamp:getComputedStyle(nm).webkitLineClamp,
+          nameDir:getComputedStyle(nm).direction,lines:Math.round(nr.height/parseFloat(getComputedStyle(nm).lineHeight)*10)/10,clamp:getComputedStyle(nm).webkitLineClamp,ellipsis:getComputedStyle(nm).textOverflow,nowrap:getComputedStyle(nm).whiteSpace,
           nameAtStart:getComputedStyle(nm).direction==='rtl'?Math.abs(nr.right-tr.right)<60:Math.abs(nr.left-tr.left)<60}; };
       return {ar:info(q('seed0')),long:info(q('seed1')),en:info(q('seed2')),frame:getComputedStyle(q('seed0').querySelector('.sv-open')).borderTopWidth+' '+getComputedStyle(q('seed0').querySelector('.sv-open')).borderRadius}; });
     ok(N+'card caption is span.sv-txt[dir=auto] > b + span > bdi',cap.ar.tag==='SPAN'&&cap.ar.dirAttr==='auto'&&cap.ar.hasBdi,cap.ar);
     ok(N+'an Arabic design name makes its caption right-to-left (:dir(rtl)) and the name starts at the right',cap.ar.rtl&&cap.ar.nameDir==='rtl'&&cap.ar.nameAtStart&&cap.ar.name===AR,cap.ar);
     ok(N+'the time reads like ago() ("1 h ago"), digit first in logical order, left-to-right inside its own bdi',cap.ar.time===agoH(1)&&cap.ar.digitFirst&&cap.ar.visualLtr===true,JSON.stringify({time:cap.ar.time,want:agoH(1),visualLtr:cap.ar.visualLtr}));
     ok(N+'an English name keeps a left-to-right caption (name at the left, time "'+agoH(20)+'")',cap.en.ltr&&cap.en.nameDir==='ltr'&&cap.en.nameAtStart&&cap.en.time===agoH(20)&&/^Offer/.test(cap.en.name),cap.en);
-    ok(N+'a long title takes two lines and is clamped there (not one, not three)',cap.long.lines>=1.8&&cap.long.lines<=2.2&&cap.long.clamp==='2',cap.long);
+    ok(N+'a long title stays on one line with an ellipsis (not wrapped)',cap.long.lines>=0.8&&cap.long.lines<=1.3&&cap.long.ellipsis==='ellipsis'&&cap.long.nowrap==='nowrap'&&cap.long.nameAtStart,cap.long);
     ok(N+'cards are framed (a hairline border and rounded corners)',/^1px/.test(cap.frame)&&/1[0-9]px|2[0-9]px/.test(cap.frame),cap.frame);
     await tap(pg,'#colChips .chip[data-f="c:Restocks"]'); await pg.waitForTimeout(600);
     /* readable chosen chip: .col-sel paints the accent, the chip inside takes --on-accent */
@@ -119,19 +119,14 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     await ctx.close(); }
 
   /* =========== Saved page, a few designs: New design tile + tip; no-match note; sparse list =========== */
-  { const db=eight(); const {ctx,pg}=await mk(vp,scheme,db); await savedPage(pg);
+  { const db=eight(); db.cols.Empty={id:'Empty',name:'Empty',brand:'1stchoice'}; const {ctx,pg}=await mk(vp,scheme,db); await savedPage(pg);
     await tap(pg,'#colChips .chip[data-f="c:Restocks"]'); await pg.waitForTimeout(500);
-    const t2=await pg.evaluate(()=>{ const g=document.getElementById('savedGrid'), nw=g.querySelector('.sv-new'), tip=document.getElementById('savedTip');
-      return {cards:g.querySelectorAll('.sv-card').length,newLast:!!nw&&g.lastElementChild===nw,newIsCard:!!nw&&nw.classList.contains('sv-card'),newTag:nw&&nw.tagName,dataNew:nw&&nw.hasAttribute('data-new'),txt:nw&&nw.textContent.replace(/\s+/g,' ').trim(),
-        tipVisible:!!tip&&!tip.hidden&&tip.getClientRects().length>0,tipTxt:tip&&tip.textContent.trim(),h:nw&&Math.round(nw.getBoundingClientRect().height),w:nw&&Math.round(nw.getBoundingClientRect().width)}; });
-    ok(N+'2 designs (Restocks): the grid ends with a "New design" button, which is not a .sv-card',t2.cards===2&&t2.newLast&&!t2.newIsCard&&t2.newTag==='BUTTON'&&t2.dataNew&&/New design/.test(t2.txt),t2);
+    const t2=await pg.evaluate(()=>{ const g=document.getElementById('savedGrid'), tip=document.getElementById('savedTip');
+      return {cards:g.querySelectorAll('.sv-card').length,tile:!!document.querySelector('.sv-new'),tipVisible:!!tip&&!tip.hidden&&tip.getClientRects().length>0,tipTxt:tip&&tip.textContent.trim()}; });
+    ok(N+'2 designs (Restocks): no New design tile anywhere',t2.cards===2&&!t2.tile,t2);
     ok(N+'2 designs: the tip is visible',t2.tipVisible&&t2.tipTxt.length>10,t2.tipTxt);
-    ok(N+'the New design tile is finger-sized',t2.h>=48&&t2.w>=48,t2);
-    await tap(pg,'#savedGrid .sv-new'); await pg.waitForSelector('dialog.fab-dlg[open]',{timeout:4000}).catch(()=>{});
-    ok(N+'tapping New design opens the + menu',await pg.isVisible('dialog.fab-dlg[open]'));
-    await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
     /* no match: the note keeps Show all, and neither tile nor tip shows */
-    await tap(pg,'#typeChips .chip[data-type="post"]'); await pg.waitForTimeout(400);
+    await tap(pg,'#colChips .chip[data-f="c:Empty"]'); await pg.waitForTimeout(400);
     const nm=await pg.evaluate(()=>{ const n=document.querySelector('#savedEmpty .sv-note'); return {note:!!n,ic:!!(n&&n.querySelector('.sn-ic svg')),title:n&&n.querySelector('.sn-txt b')&&n.querySelector('.sn-txt b').textContent.trim(),p:n&&n.querySelector('.sn-txt p')&&n.querySelector('.sn-txt p').textContent.trim(),
       showall:!!(n&&n.querySelector('[data-showall]')),tile:!!document.querySelector('#savedGrid .sv-new'),tip:!document.getElementById('savedTip').hidden,vis:!document.getElementById('savedEmpty').hidden}; });
     ok(N+'no match: a friendly .sv-note (icon, title, line) with Show all; no tile, no tip',nm.vis&&nm.note&&nm.ic&&!!nm.title&&!!nm.p&&nm.showall&&!nm.tile&&!nm.tip,nm);
@@ -142,13 +137,13 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
   for(const [n,want] of [[1,true],[5,true],[6,false]]){
     const {ctx,pg}=await mk(vp,scheme,few(n)); await savedPage(pg);
     const s=await pg.evaluate(()=>({cards:document.querySelectorAll('#savedGrid .sv-card').length,tile:!!document.querySelector('#savedGrid .sv-new'),tip:!document.getElementById('savedTip').hidden&&document.getElementById('savedTip').getClientRects().length>0}));
-    ok(N+n+' design'+(n>1?'s':'')+': tile and tip '+(want?'show':'are absent'),s.cards===n&&s.tile===want&&s.tip===want,s);
+    ok(N+n+' design'+(n>1?'s':'')+': no tile, tip '+(want?'shows':'is absent'),s.cards===n&&!s.tile&&s.tip===want,s);
     if(n===1||n===6){ await homePage(pg);
       const h=await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); const nw=r.querySelector('.sv-new'); return {cards:r.querySelectorAll('.sv-card').length,tile:!!nw,last:!!nw&&r.lastElementChild===nw}; });
-      ok(N+'home Saved row with '+n+': '+(n<4?'ends with the New design tile':'has no New design tile'),n<4?h.tile&&h.last&&h.cards===n:!h.tile&&h.cards===n,h); }
+      ok(N+'home Saved row with '+n+': no New design tile',!h.tile&&h.cards===n,h); }
     await ctx.close(); }
   { const {ctx,pg}=await mk(vp,scheme,few(3)); await homePage(pg);
-    ok(N+'home row: 3 designs end with the tile (fewer than 4)',await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); return r.querySelectorAll('.sv-card').length===3&&r.lastElementChild.classList.contains('sv-new'); }));
+    ok(N+'home row: 3 designs, no tile',await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); return r.querySelectorAll('.sv-card').length===3&&!r.querySelector('.sv-new'); }));
     await ctx.close(); }
   { const {ctx,pg}=await mk(vp,scheme,few(4)); await homePage(pg);
     ok(N+'home row: 4 designs have no tile',await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); return r.querySelectorAll('.sv-card').length===4&&!r.querySelector('.sv-new'); }));
@@ -157,7 +152,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
   /* =========== empty Saved: a friendly note and Make a design =========== */
   { const {ctx,pg}=await mk(vp,scheme,empty()); await savedPage(pg);
     const e=await pg.evaluate(()=>{ const n=document.querySelector('#savedEmpty .sv-note'), bt=n&&n.querySelector('[data-new]'); return {note:!!n,ic:!!(n&&n.querySelector('.sn-ic svg')),title:n&&n.querySelector('.sn-txt b').textContent.trim(),p:n&&n.querySelector('.sn-txt p').textContent.trim(),btn:bt&&bt.textContent.trim(),btnH:bt&&Math.round(bt.getBoundingClientRect().height),
-      grid:document.querySelectorAll('#savedGrid .sv-card,#savedGrid .sv-new').length,tip:!document.getElementById('savedTip').hidden,chips:!document.getElementById('typeChips').hidden||!document.getElementById('colChips').hidden}; });
+      grid:document.querySelectorAll('#savedGrid .sv-card,#savedGrid .sv-new').length,tip:!document.getElementById('savedTip').hidden,chips:!document.getElementById('colChips').hidden}; });
     ok(N+'empty Saved: .sv-note with icon, title, line and a "Make a design" button',e.note&&e.ic&&e.title==='Nothing saved yet'&&e.p.length>10&&e.btn==='Make a design'&&e.btnH>=44,e);
     ok(N+'empty Saved: no cards, no tile, no tip, no chips',e.grid===0&&!e.tip&&!e.chips,e);
     await tap(pg,'#savedEmpty [data-new]'); await pg.waitForSelector('dialog.fab-dlg[open]',{timeout:4000}).catch(()=>{});

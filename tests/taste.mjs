@@ -162,7 +162,7 @@ const LIB=()=>{
       const heads=[...c.querySelectorAll('.fab-h,.tgroup')].filter(T.vis).map(h=>({kind:h.classList.contains('fab-h')?'fab-h':'tgroup',text:h.textContent.trim().slice(0,22),x:textLeft(h)}));
       out.push({list:desc(c),icons,heads}); }); return out; };
   T.pageAlign=kind=>{ const q=s=>[...document.querySelectorAll(s)].find(T.vis);
-    const t=q(kind==='templates'?'.tp-ttl':'#savedBack'), c=q(kind==='templates'?'.tp-chip':'#typeChips .chip'), k=q(kind==='templates'?'.tp-card':'.sv-card');   // Saved: Back + title share one row; the row starts at Back
+    const t=q(kind==='templates'?'.tp-ttl':'#savedBack'), c=q(kind==='templates'?'.tp-chip':'#colChips .chip'), k=q(kind==='templates'?'.tp-card':'.sv-card');   // Saved: Back + title share one row; the row starts at Back
     if(!t||!c||!k) return null; const ic=t.querySelector('svg'), bare=getComputedStyle(t).backgroundColor==='rgba(0, 0, 0, 0)';   // a back arrow with no background: its icon box is the edge
     return {title:kind==='templates'?textLeft(t):bare&&ic?left(ic):left(t),chip:left(c),card:left(k)}; };
   T.sheetAlign=()=>{ const s=document.querySelector('.sheet.open:not(.insp)'); if(!s) return null; const h=s.querySelector('.sheet-head h2'); if(!h) return null;
@@ -299,7 +299,7 @@ async function hub(c){
   /* Saved, chips, design sheet, collection menu */
   await c.go('index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card',{timeout:8000}).catch(()=>miss.push(c.tag+': saved cards')); await c.wait(900);
   await c.scan('saved',{page:true,last:true,align:'saved'});
-  if(await c.press('#typeChips .chip[data-type="story"]')){ await c.wait(600); await c.scan('saved (Stories chip on)',{page:true}); await c.press('#typeChips .chip[data-type="all"]'); await c.wait(300); }
+  await modal(c,'sort sheet','#sortBtn');
   if(await c.press('#colChips .chip.col')){ await c.wait(600); await c.scan('saved (collection chip on)',{page:true});
     if(await c.press('#colMore')){ await c.wait(500); await c.scan('collection menu'); await pg.keyboard.press('Escape'); await c.wait(300); } }
   await modal(c,'design sheet','#savedGrid [data-dmore]');

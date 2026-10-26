@@ -34,7 +34,7 @@ for(const [t,n,col] of [['new-place','Shop A',''],['restock','Restock Oct','Rama
   await pg.tap('#save'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:30000}); }
 await pg.goto(BASE+'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(500);
 const chips=await pg.$$eval('#colChips .chip',cs=>cs.map(c=>c.textContent.replace(/\s+\d+$/,'').trim()));
-ok('chips are only collections',JSON.stringify(chips)==='["Ramadan"]',chips.join(', '));
+ok('chips are All + collections',JSON.stringify(chips)==='["All","Ramadan"]',chips.join(', '));
 const all2=await pg.$$eval('#savedGrid .sv-txt b',bs=>bs.map(b=>b.textContent).sort());
 ok('both designs are listed before filtering',JSON.stringify(all2)==='["Restock Oct","Shop A"]',all2.join(', '));
 await pg.tap('#colChips .chip[data-f="c:Ramadan"]'); await pg.waitForTimeout(300);

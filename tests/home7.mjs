@@ -49,11 +49,12 @@ for(const vp of [PHONE,DESK]){
   await tap(pg,'#fab'); await pg.waitForTimeout(600);
   ok(N+'the + button opens a menu',await pg.isVisible('dialog.fab-dlg[open]')&&await pg.getAttribute('#fab','aria-expanded')==='true');
   const items=await pg.$$eval('dialog.fab-dlg .fab-item',l=>l.map(x=>({t:x.querySelector('b').textContent,a:x.tagName==='A',h:x.getBoundingClientRect().height,inside:x.getBoundingClientRect().right<=innerWidth&&x.getBoundingClientRect().bottom<=innerHeight})));
-  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items[items.length-2].t==='Templates'&&items.length===7,items.map(x=>x.t).join(' / '));
+  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items.length===4,items.map(x=>x.t).join(' / '));
   ok(N+'menu: Photo story and Collage between them',items.slice(1,3).map(x=>x.t).join()==='Photo story,Collage');
+  ok(N+'menu: More tools link at the end',await pg.isVisible('dialog.fab-dlg .fab-more[data-fab-more]'));
   ok(N+'menu: every item is finger-sized and on screen',items.every(x=>x.h>=48&&x.inside),items.map(x=>Math.round(x.h)).join());
   ok(N+'menu: New design links to Create',(await pg.getAttribute('dialog.fab-dlg a.fab-item','href')||'').endsWith('tools/create.html'));
-  ok(N+'menu: photo inputs for the five photo tools, Collage / Carousel / Highlight covers take several',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock","photo-story","collage*","carousel*","highlight*"]');
+  ok(N+'menu: photo inputs for Restock, Photo story and Collage (Collage takes several)',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock","photo-story","collage*"]');
   const xr=await pg.$eval('dialog.fab-dlg .fab-x',e=>{ const r=e.getBoundingClientRect(); return Math.min(r.width,r.height); });
   ok(N+'the close button is at least 56px',xr>=56,xr);
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
@@ -109,16 +110,10 @@ for(const vp of [PHONE,DESK]){
   const cards=()=>pg.$$eval('#savedGrid .sv-card',c=>c.length);
   ok(N+'Saved page: 8 cards, newest first',await cards()===8&&JSON.stringify(await gridNames(pg))===JSON.stringify(NEWEST));
   ok(N+'Saved page: every card links to its tool with ?design=',await pg.$$eval('#savedGrid .sv-open',l=>l.every(a=>/tools\/[a-z-]+\.html\?design=seed\d/.test(a.href))));
-  /* type chips: only the types that exist */
-  const tc=await pg.$$eval('#typeChips .chip',l=>l.map(c=>({t:c.dataset.type,n:+c.querySelector('i').textContent,on:c.getAttribute('aria-pressed')})));
-  ok(N+'type chips: All, Stories, Posts, Highlights (nothing else exists)',tc.map(c=>c.t).join()==='all,story,post,highlight',tc.map(c=>c.t).join());
-  ok(N+'type chip counts match (8, 6, 1, 1)',tc.map(c=>c.n).join()==='8,6,1,1',tc.map(c=>c.n).join());
-  await pg.tap('#typeChips .chip[data-type="post"]'); await pg.waitForTimeout(300);
-  ok(N+'Posts leaves only the carousel',JSON.stringify(await gridNames(pg))==='["Carousel – 20 Oct"]'&&(await pg.textContent('#spCount')).trim()==='1 of 8'&&await pg.getAttribute('#typeChips .chip[data-type="post"]','aria-pressed')==='true',await gridNames(pg));
-  await pg.tap('#typeChips .chip[data-type="highlight"]'); await pg.waitForTimeout(300);
-  ok(N+'Highlights leaves only the covers',JSON.stringify(await gridNames(pg))==='["Highlight covers – 19 Oct"]');
-  await pg.tap('#typeChips .chip[data-type="all"]'); await pg.waitForTimeout(300);
-  ok(N+'All brings everything back',await cards()===8);
+  /* filter chips: All, then the collections (no type chips any more) */
+  ok(N+'no type chip row any more',!(await pg.$('#typeChips')));
+  const ac=await pg.$$eval('#colChips .chip',l=>l.map(c=>({f:c.dataset.f,n:+c.querySelector('i').textContent,on:c.getAttribute('aria-pressed')})));
+  ok(N+'the chip row starts with All (8), then the collections',ac[0]&&ac[0].f==='all'&&ac[0].n===8&&ac.length===3&&ac[0].on==='true',JSON.stringify(ac));
   /* collection chips (fakecloud ids are the names) */
   const cc=await pg.$$eval('#colChips .chip.col',l=>l.map(c=>({f:c.dataset.f,n:+c.querySelector('i').textContent})).sort((a,b)=>a.f.localeCompare(b.f)));
   ok(N+'collection chips: Offers 1, Restocks 2',JSON.stringify(cc)==='[{"f":"c:Offers","n":1},{"f":"c:Restocks","n":2}]',cc);
@@ -127,19 +122,18 @@ for(const vp of [PHONE,DESK]){
   const rs=await gridNames(pg);
   ok(N+'a collection chip keeps only its designs',rs.length===2&&rs.every(n=>/^Restock/.test(n))&&await pg.isVisible('#colMore')&&(await pg.textContent('#spCount')).trim()==='2 of 8',rs.join(' | '));
   ok(N+'the chosen chip and its ⋯ sit together (span.col-sel), ⋯ is a menu button',await pg.evaluate(()=>{ const m=document.getElementById('colMore'); return !!m&&m.parentElement.classList.contains('col-sel')&&!!m.parentElement.querySelector('.chip.col[aria-pressed="true"]')&&m.getAttribute('aria-haspopup')==='menu'&&m.getAttribute('aria-expanded')==='false'; }));
-  await pg.tap('#typeChips .chip[data-type="post"]'); await pg.waitForTimeout(300);
-  ok(N+'collection + type with no match shows a note with Show all',await cards()===0&&await pg.isVisible('#savedEmpty [data-showall]'));
-  await pg.tap('#savedEmpty [data-showall]'); await pg.waitForTimeout(300);
-  ok(N+'Show all clears both filters',await cards()===8);
+  await pg.tap('#colChips .chip[data-f="all"]'); await pg.waitForTimeout(300);
+  ok(N+'All brings everything back (and the ⋯ goes)',await cards()===8&&!(await pg.$('#colMore')));
   await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(250); await pg.tap('#colChips .chip[data-f="c:Offers"]'); await pg.waitForTimeout(300);
   ok(N+'tapping the collection chip again clears it (and the ⋯ goes)',await cards()===8&&!(await pg.$('#colMore')));
   /* sort */
-  await pg.selectOption('#sort','name'); await pg.waitForTimeout(300);
+  const pick=async v=>{ await pg.tap('#sortBtn'); await pg.waitForSelector('.sort-dlg[open] .sort-opt',{timeout:4000}); await pg.tap('.sort-dlg .sort-opt[data-sort="'+v+'"]'); await pg.waitForTimeout(400); };
+  await pick('name');
   const byName=await gridNames(pg), want=[...NEWEST].sort((a,c)=>a.localeCompare(c));
   ok(N+'sort by Name lists the designs alphabetically',JSON.stringify(byName)===JSON.stringify(want),byName.join(' | '));
   await pg.reload(); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(300);
-  ok(N+'the sort choice is remembered',await pg.inputValue('#sort')==='name'&&JSON.stringify(await gridNames(pg))===JSON.stringify(want));
-  await pg.selectOption('#sort','recent'); await pg.waitForTimeout(300);
+  ok(N+'the sort choice is remembered',(await pg.textContent('#sortLbl')).trim()==='A to Z'&&JSON.stringify(await gridNames(pg))===JSON.stringify(want));
+  await pick('recent');
   ok(N+'sort by Recent is newest first again',JSON.stringify(await gridNames(pg))===JSON.stringify(NEWEST));
   /* the actions sheet: press and hold (does not navigate), ⋯ */
   const url0=pg.url(), card0='#savedGrid .sv-card[data-id="seed0"]';
