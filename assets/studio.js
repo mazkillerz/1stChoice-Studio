@@ -68,7 +68,6 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 /* the hub lists tools in this order, under their group's heading: the most used first */
 const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
 /* what a tool makes, for the Saved page's quick filters (an Offer is a story-sized picture) */
-const TYPE_LABEL={story:'Stories',post:'Posts',highlight:'Highlights',free:'Create',template:'Templates'};
 const TOOLS={
   'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photo of the cans',icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock'},
   'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'One tall photo',icon:'story',qi:2,group:'story',type:'story',keys:'picture single'},
@@ -91,9 +90,9 @@ function usedBefore(){ try{ for(let i=0;i<localStorage.length;i++){ const k=loca
 function getPins(){ let p=store(PINS_KEY);
   if(!Array.isArray(p)){ p=usedBefore()?Object.keys(TOOLS).filter(id=>TOOLS[id].quick&&TOOLS[id].qi<=3):DEFAULT_PINS; store(PINS_KEY,p); }
   return p.filter(id=>TOOLS[id]); }
-/* pins keep the order you set: a new pin goes last, and All tools › Order on your home moves one up (since 1.2.0) */
+/* pins keep the order you set: a new pin goes last; in All tools the pinned tools sit on top and you drag them into order (since 1.5.0) */
 function setPin(id,on){ const p=getPins().filter(t=>t!==id); if(on) p.push(id); store(PINS_KEY,p); return !!on; }
-function movePinUp(id){ const p=getPins(), i=p.indexOf(id); if(i>0){ [p[i-1],p[i]]=[p[i],p[i-1]]; store(PINS_KEY,p); } return p; }
+function movePin(id,to){ const p=getPins(), i=p.indexOf(id); if(i<0) return p; to=Math.max(0,Math.min(p.length-1,to)); if(to!==i){ p.splice(i,1); p.splice(to,0,id); store(PINS_KEY,p); } return p; }
 
 /* ---------- the look: motion, soft depth and one bold accent (the "fresh look", the default for everyone since 0.7.0) ---------- */
 const fresh=()=>true;
@@ -175,6 +174,8 @@ const ICON={
   pencil:svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',20),
   list:svg('<rect x="3" y="4" width="5" height="5" rx="1"/><path d="M11 6.5h10"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 17.5h10"/>',20),
   move:svg('<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',20),
+  grip:svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',22),
+  sort:svg('<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',18),
   up:svg('<path d="m18 15-6-6-6 6"/>',22), down:svg('<path d="m6 9 6 6 6-6"/>',22),
   centerX:svg('<path d="M12 2v20"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/>',20),
   centerY:svg('<path d="M2 12h20"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/>',20),
@@ -1832,7 +1833,8 @@ async function home(){
   const B=await useBrand(); const $=id=>document.getElementById(id);
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
-  let sortBy=store('studio:savedSort')==='name'?'name':'recent', typeF='all', loaded=false;
+  const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
+  let sortBy=SORTS[store('studio:savedSort')]?store('studio:savedSort'):'recent', loaded=false;
   let sel=null, shown=[];   // sel: the designs ticked in select mode (null = not selecting); shown: the Saved page's list right now
   const urls={}, toolName=t=>(TOOLS[t]||{}).title||t, colName=id=>(cols.find(c=>c.id===id)||{}).name||'';
   const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1868,34 +1870,61 @@ async function home(){
   addEventListener('pageshow',()=>document.querySelectorAll('label.busy').forEach(l=>l.classList.remove('busy')));   // back button from the tool
   /* All tools: every tool in its group, with a star to pin or unpin it (this device only) */
   const pinBtn=id=>{ const on=getPins().includes(id), t=esc(TOOLS[id].title); return `<button type="button" class="pin-btn" data-pin="${id}" aria-pressed="${on}" aria-label="${on?'Unpin '+t+' from home':'Pin '+t+' to home'}">${on?ICON.starFill:ICON.star}</button>`; };
-  function togglePin(id,fromSearch){ const on=setPin(id,!getPins().includes(id)), t=esc(TOOLS[id].title);
-    document.querySelectorAll(`.lib-row [data-pin="${id}"]`).forEach(b=>{ b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label',on?'Unpin '+t+' from home':'Pin '+t+' to home'); b.innerHTML=on?ICON.starFill:ICON.star; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
-    paintTools(); paintToolsView(); paintPinOrder(); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
-  /* All tools › Order on your home: shown once two or more tools are pinned; the arrow moves a tool one place up */
-  function pinOrderHtml(){ const p=getPins(); if(p.length<2) return '';
-    return `<h4 class="po-h">Order on your home</h4>`+p.map((id,i)=>{ const t=esc(TOOLS[id].title);
-      return `<div class="pin-ord"><span class="po-n" aria-hidden="true">${i+1}</span><b>${t}</b><button type="button" class="pin-btn" data-up="${id}" aria-label="Move ${t} up"${i?'':' disabled'}>${ICON.up}</button></div>`; }).join(''); }
-  function paintPinOrder(focusId){ const box=document.querySelector('dialog[open] .pin-order'); if(!box) return; box.innerHTML=pinOrderHtml();
-    if(focusId){ const b=box.querySelector(`[data-up="${focusId}"]`); (b&&!b.disabled?b:box.querySelector('[data-up]:not([disabled])'))?.focus(); } }
+  function togglePin(id,fromSearch){ const on=setPin(id,!getPins().includes(id));
+    paintTools(); paintToolsView(); paintLib(id); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
+  /* All tools: the pinned tools first ("On your home", in their home order, each with a drag handle), then every other tool
+     in its group. Press and drag the handle to change the order on the home screen; on a keyboard the arrow keys move it. */
+  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}">${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}<a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${pinBtn(id)}</div>`;
+  function libHtml(){ const pins=getPins(); let last=null, h='';
+    if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
+    Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
+    return h; }
+  /* redraw the open sheet; the star you tapped (or the handle you moved) keeps focus, the star does its little pop */
+  function paintLib(popId,focusSel){ const box=document.querySelector('dialog[open] .lib-list'); if(!box) return;
+    const had=popId&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest(`[data-pin="${popId}"]`);
+    box.innerHTML=libHtml();
+    if(popId){ const b=box.querySelector(`[data-pin="${popId}"]`); if(b){ b.classList.add('pop'); if(had) b.focus({preventScroll:true}); } }
+    if(focusSel) box.querySelector(focusSel)?.focus({preventScroll:true}); }
+  function pinsChanged(){ haptic('tick'); paintTools(); paintToolsView(); if(window.StudioSearch) StudioSearch.refresh(); }
   function openLibrary(){
-    let last=null;
-    const rows=Object.entries(TOOLS).map(([id,t])=>(t.group!==last&&TOOL_GROUPS[last=t.group]?`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`:'')
-      +`<div class="lib-row"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${pinBtn(id)}</div>`).join('');
-    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="pin-order">${pinOrderHtml()}</div><div class="lib-list">${rows}</div></div>`,'lib-dlg');
-    d.querySelector('.pin-order').addEventListener('click',e=>{ const b=e.target.closest('[data-up]'); if(!b||b.disabled) return; movePinUp(b.dataset.up); haptic('tick'); paintTools(); paintToolsView(); paintPinOrder(b.dataset.up); if(window.StudioSearch) StudioSearch.refresh(); });
+    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
+    const list=d.querySelector('.lib-list');
     d.querySelector('#libDone').onclick=()=>d.close();
-    d.querySelector('.lib-list').addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
+    list.addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
+    list.addEventListener('keydown',e=>{ const h=e.target.closest('[data-drag]'); if(!h||!/^Arrow(Up|Down)$/.test(e.key)) return; e.preventDefault();
+      const id=h.dataset.drag, i=getPins().indexOf(id), to=i+(e.key==='ArrowUp'?-1:1); if(to<0||to>=getPins().length) return;
+      movePin(id,to); pinsChanged(); paintLib(null,`[data-drag="${id}"]`); });
+    /* drag: the row follows the finger; the others slide out of the way; letting go puts it in its new place */
+    let drag=null;
+    list.addEventListener('pointerdown',e=>{ const h=e.target.closest('[data-drag]'); if(!h||e.button>0) return; e.preventDefault();
+      const row=h.closest('.lib-row'), rows=[...list.querySelectorAll('.lib-pins .lib-row')], from=rows.indexOf(row);
+      const tops=rows.map(r=>r.getBoundingClientRect().top), step=rows.length>1?tops[1]-tops[0]:row.offsetHeight;
+      drag={id:h.dataset.drag,row,rows,from,to:from,y:e.clientY,step,pid:e.pointerId,moved:false};
+      try{ h.setPointerCapture(e.pointerId); }catch(_){}
+      row.classList.add('dragging'); list.classList.add('sorting'); haptic('tick'); });
+    list.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.pid) return;
+      const dy=e.clientY-drag.y; if(Math.abs(dy)>3) drag.moved=true;
+      const n=drag.rows.length, min=-drag.from*drag.step, max=(n-1-drag.from)*drag.step, y=Math.max(min-12,Math.min(max+12,dy));
+      drag.row.style.transform=`translateY(${y}px)`;
+      const to=Math.max(0,Math.min(n-1,drag.from+Math.round(y/drag.step)));
+      if(to!==drag.to){ drag.to=to; haptic('tick');
+        drag.rows.forEach((r,i)=>{ if(r===drag.row) return; const shift=drag.from<to&&i>drag.from&&i<=to?-drag.step:drag.from>to&&i<drag.from&&i>=to?drag.step:0; r.style.transform=shift?`translateY(${shift}px)`:''; }); } });
+    const drop=e=>{ if(!drag||e.pointerId!==drag.pid) return; const g=drag; drag=null; list.classList.remove('sorting');
+      if(g.to!==g.from){ movePin(g.id,g.to); pinsChanged(); paintLib(null,null); }
+      else { g.rows.forEach(r=>{ r.style.transform=''; }); g.row.classList.remove('dragging'); } };
+    list.addEventListener('pointerup',drop); list.addEventListener('pointercancel',drop);
+    list.addEventListener('lostpointercapture',drop);
   }
   $('allTools').onclick=openLibrary;
   /* the + button (bottom corner, in thumb reach): start from a photo, or a new design */
   /* the photo-first tool used last on this device gets a small "Last time" tag (the order never changes) */
   const lastTag=id=>store('studio:lastQuick')===id?' <em class="fi-tag">Last time</em>':'';
   function openNew(){
-    const q=quickTools(), fab=$('fab');
-    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i+1}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}<span class="fab-sep" aria-hidden="true"></span><button type="button" class="fab-item" data-fab-tpl style="--i:1"><span class="fi-ic">${ICON.template}</span><span class="fi-txt"><b>Templates</b><span>Ready-made stories and posts</span></span></button>${TOOLS.create?`<a class="fab-item" href="${toolPage('create')}" style="--i:0"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Start from a blank page</span></span></a>`:''}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
+    const q=quickTools().filter(([,t])=>(t.qi||9)<=3), fab=$('fab');   // the three photo tools; Carousel and Highlight covers are in All tools
+    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i+1}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}<span class="fab-sep" aria-hidden="true"></span>${TOOLS.create?`<a class="fab-item" href="${toolPage('create')}" style="--i:1"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Start from a blank page</span></span></a>`:''}<button type="button" class="fab-more" data-fab-more style="--i:0">More tools${ICON.next}</button></div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
     d.setAttribute('aria-labelledby','fabH'); fab.setAttribute('aria-expanded','true'); haptic('tick');
     d.querySelector('.fab-x').onclick=()=>d.close();
-    d.querySelector('[data-fab-tpl]').onclick=()=>{ d.close(); openView('templates'); };
+    d.querySelector('[data-fab-more]').onclick=()=>{ d.close(); openLibrary(); };
     d.addEventListener('click',e=>{ if(e.target===d) d.close(); });   // the clear space around the menu
     d.addEventListener('close',()=>fab.setAttribute('aria-expanded','false'));
   }
@@ -2070,7 +2099,7 @@ async function home(){
     (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
       out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
-    cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; typeF='all'; goSaved(); paintPage(); }}));
+    cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));
     return out.concat(searchActions());
   }
   function searchActions(){ const a=[];
@@ -2122,45 +2151,37 @@ async function home(){
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
     $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    endSelect(true); $('typeChips').hidden=$('colChips').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    endSelect(true); $('colChips').hidden=$('sortBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
-  const typeOf=d=>(TOOLS[d.tool]||{}).type||'story';
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" draggable="false" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em>Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b>${esc(d.name)}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(d.name)}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
-  /* few designs: a "New design" card fills the gap (it opens the + menu) */
-  const newCard=()=>`<button type="button" class="sv-new" data-new aria-label="New design: start from a photo or a template"><span class="sv-new-ic" aria-hidden="true">${ICON.plus}</span><b>New design</b><span>From a photo or a template</span></button>`;
   function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
     const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,10);
     $('savedCount').textContent=all.length?String(all.length):'';
-    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(all.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${all.length}</a>`:'')+(recent.length<4?newCard():''):emptyNote;
+    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(all.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${all.length}</a>`:''):emptyNote;
     fillThumbs(recent);
   }
-  /* the Saved page: type chips (only the types you have), collection chips, sort; a grid of pictures */
+  /* the Saved page: one row of collection chips (All first), the sort button, a grid of pictures */
   function paintPage(){
     if(!loaded){ if(member||!me) $('savedGrid').innerHTML=skel(6); return; }
     if(!member) return;
-    const has=!!all.length, n={};
-    all.forEach(d=>{ const t=typeOf(d); n[t]=(n[t]||0)+1; if(d.kind==='template') n.template=(n.template||0)+1; });
-    const types=Object.keys(TYPE_LABEL).filter(t=>n[t]);
-    if(typeF!=='all'&&!n[typeF]) typeF='all';
+    const has=!!all.length;
     if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
-    $('sort').value=sortBy;
-    $('typeChips').hidden=!has||types.length<2&&!n.template;
-    $('typeChips').innerHTML=`<button type="button" class="chip" data-type="all" aria-pressed="${typeF==='all'}">All <i>${all.length}</i></button>`+types.map(t=>`<button type="button" class="chip" data-type="${t}" aria-pressed="${typeF===t}">${esc(TYPE_LABEL[t])} <i>${n[t]}</i></button>`).join('');
+    $('sortLbl').textContent=sortBy==='name'?'A to Z':SORTS[sortBy]; $('sortBtn').setAttribute('aria-label','Sort: '+SORTS[sortBy]); $('sortBtn').hidden=!has||!!sel;
     $('colChips').hidden=!has||!cols.length;
-    $('colChips').innerHTML=cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
+    $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
       return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
-    const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&(typeF==='all'||(typeF==='template'?d.kind==='template':typeOf(d)===typeF)));
-    list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):(a,b)=>lastUse(b)-lastUse(a));
+    const list=all.filter(d=>filter==='all'||d.collections.includes(filter.slice(2)));
+    list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='oldest'?(a,b)=>lastUse(a)-lastUse(b):(a,b)=>lastUse(b)-lastUse(a));
     $('spCount').textContent=has?(list.length===all.length?all.length+' design'+(all.length===1?'':'s'):list.length+' of '+all.length):'';
     $('savedTip').hidden=!has||!list.length||list.length>=6;   // a few designs: a tip under them, so the page isn't bare
     shown=list; $('selBtn').hidden=!has;
@@ -2169,18 +2190,25 @@ async function home(){
     const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=colOn&&!colOn.count
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
-      :note(ICON.search,'No saved design matches that','Try another type or collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
-    $('savedGrid').innerHTML=list.map(svCard).join('')+(list.length&&list.length<6&&!sel?newCard():'');
+      :note(ICON.search,'No saved design matches that','Try another collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
+    $('savedGrid').innerHTML=list.map(svCard).join('');
     fillThumbs(list); paintSel();
   }
-  $('sort').addEventListener('change',e=>{ sortBy=e.target.value==='name'?'name':'recent'; store('studio:savedSort',sortBy); paintPage(); });
-  $('typeChips').addEventListener('click',e=>{ const b=e.target.closest('[data-type]'); if(b){ typeF=b.dataset.type; haptic('tick'); paintPage(); } });
-  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: all collections
-  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ typeF='all'; filter='all'; paintPage(); } });
+  /* Sort: a small sheet in Studio's style (not the browser's list), a tick on the choice; picking one closes it */
+  $('sortBtn').addEventListener('click',()=>{ const btn=$('sortBtn'); haptic('tick');
+    const d=dialog(`<div class="dlg-body sort-sheet"><h3 id="sortH">Sort by</h3><div class="sort-opts" role="radiogroup" aria-labelledby="sortH">${Object.entries(SORTS).map(([k,l])=>`<button type="button" class="sort-opt" role="radio" data-sort="${k}" aria-checked="${k===sortBy}"><span>${l}</span>${ICON.check}</button>`).join('')}</div></div>`,'sort-dlg');
+    btn.setAttribute('aria-expanded','true'); d.setAttribute('aria-labelledby','sortH');
+    d.querySelector('.sort-opt[aria-checked="true"]').focus({preventScroll:true});
+    d.querySelector('.sort-opts').addEventListener('click',e=>{ const o=e.target.closest('[data-sort]'); if(!o) return;
+      sortBy=o.dataset.sort; store('studio:savedSort',sortBy); haptic('tick'); d.close(); paintPage(); });
+    d.querySelector('.sort-opts').addEventListener('keydown',e=>{ if(!/^Arrow(Up|Down)$/.test(e.key)) return; e.preventDefault(); const o=[...d.querySelectorAll('.sort-opt')], i=o.indexOf(document.activeElement); o[(i+(e.key==='ArrowDown'?1:o.length-1))%o.length].focus(); });
+    d.addEventListener('close',()=>{ btn.setAttribute('aria-expanded','false'); }); });
+  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: All
+  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } });
   /* the chosen collection's ⋯: a small menu with Rename and Delete (Delete still asks first) */
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('#colMore'); if(!b) return; e.stopPropagation(); haptic('tick');
     popMenu(b,[{id:'colRename',icon:ICON.pencil,label:'Rename collection',run:renameCol},{id:'colDelete',icon:ICON.trash,label:'Delete collection',danger:true,run:deleteCol}]); });
-  /* "New design" (empty and sparse Saved): the + menu */
+  /* "Make a design" (empty Saved): the + menu */
   document.addEventListener('click',e=>{ if(e.target.closest('[data-new]')) $('fab').click(); });
   function renameCol(){ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
     const d=dialog(`<form method="dialog" class="dlg-body"><h3>Rename collection</h3><input type="text" id="crName" dir="auto" maxlength="40"><div class="status" id="crSt"></div><div class="dlg-actions"><button type="button" class="mini" id="crX">Cancel</button><button type="submit" class="btn">Rename</button></div></form>`);
@@ -2231,7 +2259,7 @@ async function home(){
     back.innerHTML=on?ICON.close:ICON.back; back.setAttribute('aria-label',on?'Stop selecting':'Back to home');
     const sb=$('selBtn'), every=on&&shown.length&&n===shown.length;
     sb.textContent=on?(every?'Clear':'Select all'):'Select'; sb.setAttribute('aria-pressed',String(on));
-    $('sort').hidden=on;
+    $('sortBtn').hidden=on||!all.length;
     document.querySelectorAll('#savedGrid .sv-card').forEach(c=>{ const p=on&&sel.has(c.dataset.id), a=c.querySelector('.sv-open');
       c.classList.toggle('picked',p); if(on){ a.setAttribute('role','checkbox'); a.setAttribute('aria-checked',String(p)); } else { a.removeAttribute('role'); a.removeAttribute('aria-checked'); } });
     const col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
@@ -2406,7 +2434,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
-  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePinUp,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

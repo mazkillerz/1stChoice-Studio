@@ -65,11 +65,10 @@
     <button type="button" class="sp-back" id="savedBack" aria-label="Back to home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
     <div class="sp-title"><h1 id="savedH">Saved designs</h1><span class="sp-count" id="spCount"></span></div>
     <button type="button" class="sp-sel" id="selBtn" hidden>Select</button>
-    <label class="sr-only" for="sort">Sort saved designs</label><select id="sort" class="sel sort"><option value="recent">Recent</option><option value="name">Name</option></select>
   </div>
-  <div class="sp-filters">
-    <div class="chips sp-chips" id="typeChips" role="group" aria-label="Show only" hidden></div>
+  <div class="sp-bar">
     <div class="chips sp-chips" id="colChips" role="group" aria-label="Collections" hidden></div>
+    <button type="button" class="sort-btn" id="sortBtn" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg><span id="sortLbl">Recent</span></button>
   </div>
   <div class="sv-grid" id="savedGrid" aria-live="polite"></div>
   <div class="empty" id="savedEmpty" hidden></div>
