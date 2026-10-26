@@ -910,8 +910,6 @@ body.on-saved nav.top{display:none}
 .sp-title{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.1}
 .sp-title h1{margin:0;font:400 27px/1.15 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;outline:none}
 .sp-count{font-size:var(--fs-xs);color:var(--muted);font-weight:500;min-height:1em}
-.sp-head .sort{flex:none;width:auto;min-width:0;max-width:118px;min-height:var(--tap)}
-.sp-filters{display:flex;flex-direction:column;gap:10px;padding:6px 0 18px}
 .sp-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter));padding:2px var(--gutter-r) 2px var(--gutter);-webkit-overflow-scrolling:touch}
 .sp-chips::-webkit-scrollbar{display:none}
 .sp-chips .chip{flex:none;min-height:var(--tap)}
@@ -931,10 +929,9 @@ body.on-saved nav.top{display:none}
 .sv-check{display:none;position:absolute;top:7px;inset-inline-start:7px;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:rgba(22,18,16,.32);box-shadow:0 2px 8px rgba(0,0,0,.25);align-items:center;justify-content:center;color:#fff}
 .sv-check svg{width:18px;height:18px;stroke-width:3;opacity:0;transform:scale(.4);transition:opacity .15s,transform .3s var(--spring)}
 body.selecting .sv-check{display:flex}
-body.selecting .sv-more,body.selecting .sv-new,body.selecting .sv-thumb em,body.selecting .sv-tip{display:none}
+body.selecting .sv-more,body.selecting .sv-thumb em,body.selecting .sv-tip{display:none}
 body.selecting .sv-open{cursor:pointer}
 .sv-card.picked .sv-check{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.sp-head .sort[hidden]{display:none}
 .sv-card.picked .sv-check svg{opacity:1;transform:none}
 body.selecting .sv-card.picked .sv-thumb{transform:scale(.93);box-shadow:0 0 0 3px var(--accent),var(--shadow-1)}
 body.selecting .hubbar,body.selecting .fab{display:none}
@@ -1060,7 +1057,6 @@ body{line-height:1.5;font-feature-settings:"kern" 1}
 #tools .grid{gap:var(--sp-2)}
 .foot{padding-top:var(--sp-6)}
 .sp-head{padding-bottom:var(--sp-2)}
-.sp-filters{gap:var(--sp-2);padding:var(--sp-1) 0 var(--sp-4)}
 /* a scrolling chip row clips everything outside its box: give the chosen chip's shadow room below (net layout unchanged) */
 .sp-chips{padding-top:4px;padding-bottom:14px;margin-top:-4px;margin-bottom:-14px}
 .sv-grid{gap:var(--sp-3) 10px}
@@ -1110,15 +1106,6 @@ body{line-height:1.5;font-feature-settings:"kern" 1}
 .sv-skel .sv-line{height:10px;margin:2px 0 4px}
 .sv-skel .sv-line.short{width:44%;margin:0 0 2px}
 /* "New design" fills the gap when there are only a few designs (it opens the + menu) */
-.sv-new{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:100%;padding:16px 8px;border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:16px;background:color-mix(in srgb,var(--accent) 5%,transparent);color:var(--fg);font:inherit;text-align:center;cursor:pointer;transition:transform .42s var(--spring),background-color .15s}
-.sv-grid .sv-new{min-height:220px}
-.sv-row .sv-new{flex:0 0 auto;width:112px;aspect-ratio:9/19}
-.sv-new:active{transform:scale(.96);transition-duration:.09s}
-@media (hover:hover){.sv-new:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}}
-.sv-new:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.sv-new-ic{width:44px;height:44px;margin-bottom:6px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);box-shadow:var(--glow)}
-.sv-new b{font:600 var(--fs-s)/1.25 var(--sans)}
-.sv-new>span:last-child{font-size:var(--fs-xs);line-height:1.3;color:var(--muted)}
 /* a tip under a short list */
 .sv-tip{display:flex;align-items:flex-start;gap:10px;margin:var(--sp-5) 0 0;padding:12px 14px;border-radius:var(--r-l);background:color-mix(in srgb,var(--gold) 13%,var(--surface));color:var(--fg);font-size:var(--fs-s);line-height:1.45}
 .sv-tip svg{flex:none;margin-top:1px;color:color-mix(in srgb,var(--gold) 55%,var(--fg))}
@@ -1263,15 +1250,6 @@ body.hub .top .home{margin-inline-end:var(--sp-1)}
 /* found by tests/taste.mjs (1.0.0): group headings in All tools start where the row thumbnails start (1px border + 6px padding),
    and the last small controls reach the 44px tap size (text links, sliders, the layer bar's ✓) */
 .lib .tgroup{margin-inline:7px 0}
-/* All tools › Order on your home (1.2.0) */
-.pin-order{display:flex;flex-direction:column;gap:var(--sp-2);margin-bottom:var(--sp-2)}
-.pin-order:empty{display:none}
-.lib .po-h{margin:var(--sp-1) 0 0 7px;font:500 var(--fs-xs)/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.pin-ord{display:flex;align-items:center;gap:var(--sp-3);min-height:52px;background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-1);padding-inline:14px 4px}
-.pin-ord b{flex:1;font:500 var(--fs-m) var(--sans);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pin-ord .po-n{width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font:600 var(--fs-xs) var(--sans);background:var(--bg);color:var(--muted)}
-.pin-ord .pin-btn{color:var(--fg)}
-.pin-ord .pin-btn:disabled{visibility:hidden}
 .link{min-height:44px}
 input[type=range]{min-height:44px}
 .done.icon::after{inset:-4px}   /* the layer bar's ✓ stays 40px (a taller bar would cover a logo at the bottom of the story) but takes a 48px tap */
@@ -1310,3 +1288,54 @@ input[type=range]{min-height:44px}
 @media (prefers-reduced-motion:reduce){.pk-img.in-r,.pk-img.in-l{animation:none}}
 /* Shared photo waiting (1.3.0): the same card as Install, the photo cropped to its square */
 .shared-wait .install-ic img{object-fit:cover;background:var(--chip)}
+
+/* ---------- 1.5.0: a calmer hub ---------- */
+/* All tools: pinned tools on top with a drag handle; the last row clears the phone's gesture bar */
+.lib-dlg .dlg-body.lib{padding-bottom:calc(max(var(--safe-b),16px) + 24px)}
+.lib .lib-hint{margin:-4px 0 0 7px;font-size:var(--fs-xs);color:var(--muted)}
+.lib-pins{display:flex;flex-direction:column;gap:var(--sp-2)}
+.lib-row.pinned{padding-inline-end:0}
+.drag-h{width:44px;height:var(--tap);flex:none;margin-inline-start:-6px;padding:0;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:grab;touch-action:none;border-radius:var(--r-l)}
+.drag-h:focus{outline:none}.drag-h:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.lib-pins .lib-row{transition:transform .22s var(--ease),box-shadow .2s}
+.lib-list.sorting{-webkit-user-select:none;user-select:none}
+.lib-list.sorting .drag-h{cursor:grabbing}
+:root .lib-row.dragging{position:relative;z-index:3;transition:box-shadow .2s;box-shadow:var(--shadow-2),0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
+@media (prefers-reduced-motion:reduce){.lib-pins .lib-row{transition:none}}
+/* + menu: a small "More tools" under New design */
+.fab-more{display:flex;align-items:center;justify-content:flex-start;gap:2px;min-height:44px;margin-top:2px;padding:0 10px;border:0;border-radius:16px;background:none;color:var(--accent);font:500 var(--fs-s) var(--sans);cursor:pointer;animation:fab-item-in .42s var(--ease) backwards;animation-delay:70ms}
+.fab-more svg{width:18px;height:18px}
+.fab-more:active{background:var(--chip)}
+@media (hover:hover){.fab-more:hover{background:var(--chip)}}
+.fab-more:focus{outline:none}.fab-more:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+/* Saved: one row of collection chips (All first) and the sort button at its end */
+.sp-bar{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) 0 var(--sp-4)}
+.sp-bar .sp-chips{flex:1;min-width:0;margin-inline-end:0;padding-inline-end:4px}
+.sp-bar .sp-chips[hidden]{display:none}
+.sp-bar .sp-chips:not([hidden])+.sort-btn{margin-inline-start:0}
+.sp-bar .sp-chips{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+.sp-bar .sp-chips:dir(rtl){-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 28px),transparent)}
+.sp-bar .sp-chips{padding-inline-end:28px}
+.sort-btn{flex:none;margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;min-height:var(--tap);padding:0 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:none;color:var(--fg);font:500 var(--fs-s) var(--sans);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:transform .42s var(--spring),background-color .15s}
+.sort-btn[hidden]{display:none}
+.sort-btn svg{color:var(--muted)}
+.sort-btn:active{transform:scale(.94);background:var(--chip);transition-duration:.09s}
+.sort-btn:focus{outline:none}.sort-btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sort-dlg .dlg-body{gap:var(--sp-2)}
+.sort-dlg .dlg-body{padding-bottom:calc(max(var(--safe-b),16px) + 16px)}
+@media (min-width:561px){.dlg.sort-dlg{width:min(360px,calc(100vw - 24px))}}
+.sort-opts{display:flex;flex-direction:column;margin:0 -12px}
+.sort-opt{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);min-height:52px;padding:0 12px;border:0;border-radius:var(--r-m);background:none;color:var(--fg);font:400 var(--fs-m) var(--sans);text-align:start;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sort-opt svg{width:22px;height:22px;color:var(--accent);opacity:0}
+.sort-opt[aria-checked="true"]{font-weight:600}
+.sort-opt[aria-checked="true"] svg{opacity:1}
+.sort-opt:active{background:var(--chip)}
+@media (hover:hover){.sort-opt:hover{background:var(--chip)}}
+.sort-opt:focus{outline:none}.sort-opt:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+/* design cards: posts and stories fill the same 3:4 picture; the Template badge has its own corner (bottom), the ⋯ keeps the top;
+   one clean line for the name, whatever the language */
+.sv-thumb{aspect-ratio:3/4}
+.sv-thumb img{object-fit:cover;object-position:50% 50%}
+.sv-thumb em.sv-badge{top:auto;bottom:6px;inset-inline-start:6px;inset-inline-end:auto;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-txt b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:none}
+

@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 15 (1.4.0, 25 Oct 2026) was a **Mazoon** session, run as 3 parallel helpers: Highlight covers Product type (#10, part), Create template search + `?tpl=` opens the picker on that template (#6, part of #20), taste checks for Carousel, Highlight covers and Create. The next session, 1.5.0, is the **Simplify** session (with a pattern review); after it comes a **team** session.
-**Simplify session:** every 5th minor version. The next one is 1.5.0 (with a pattern review).
+**Last session:** 16 (1.5.0, 26 Oct 2026) was an owner-directed **Simplify** session (Mazoon's six-point list): All tools drag ordering (pinned on top, each tool once), a 3-tool + menu with More tools, a Studio sort sheet, one chip row on Saved, 3:4 cards with the Template badge in its own corner and one-line names, no New design tile. The next session, 1.6.0, is a **team** session.
+**Simplify session:** every 5th minor version. The next one is 1.10.0 (with a pattern review).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -24,10 +24,13 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.5.0: one-line card names cut English dates on a phone ("Restock – 24 …"); watch whether the team misses the date. An idea: show the date as the card's second line (it is in the name today) or two lines only when the name has one script.
+- 1.5.0: Saved: the chosen collection's ⋯ can sit under the row's end fade on a narrow phone; the row scrolls it into view, but check on a real phone.
+- 1.5.0 full sweep: tapscan lists tick boxes (24px) and colour wells (38px) on tool Style/Words sheets; they sit inside larger rows (taste passes), same as 1.4.0. Confirm each row is the hit area.
+- 1.5.0: drag in All tools has no auto-scroll; fine for up to ~8 pinned tools (the pinned list is at the top of the sheet). Add edge auto-scroll if someone pins most tools.
 - 1.3.0: Peek opens from the picture in a design's menu (press and hold → picture). Watch whether the team finds it; a quicker way would be press and hold straight into Peek with the actions under it (changes a familiar gesture: ask first).
 - 1.3.0: test time: `home7` (~145 s) and `polish71` (~135 s) run for any hub or CSS change; split them by area in the 1.5.0 Simplify session so a small hub change runs a part.
 - 1.0.0 follow-ups: Collage's logo at default settings sits at y≈1700–1780, below the story safe line (1620); kept so old designs stay identical; decide with Mazoon whether new collages move it up. Create's story templates put the logo at the bottom 1740 too.
-- 1.1.0: the + menu now has 5 photo tools (7 rows). If it grows again, group it (e.g. Stories / Posts) or show the 3 most used and a More.
 - 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
 - 1.4.0: `tests/taste.mjs` now covers Carousel, Highlight covers and Create (first view); the note/toast monitor still only watches Restock, and the lab is not covered yet.
@@ -53,6 +56,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.5.0: + menu slimmed to 3 photo tools + New design + More tools (was the 1.1.0 audit note); All tools ordering by drag; sort sheet; Saved filters in one row; card fixes.
 - 1.4.0 (Mazoon, 3 parallel helpers): Highlight covers **Product** type (the brand kit's HD can pictures in the circle, picker in Style); Create template search (English + Arabic, empty state, ✕) and `?tpl=` on an open design shows the picker on that template; taste checks for Carousel, Highlight, Create + labels on icon-only controls; checkbox rows aligned with their sheet heading (4px).
 - 1.3.0 (team): Peek, a saved design big with swipe to the next (#23); the shared photo waits on Home ("Your photo is in", Pick / ✕); `tests/run.mjs --quick`, `--dry`, origin/main as base, studio.js mapped by tool()/home(), slowest first (26 → 13 suites, 487 → 193 s). Hub tool thumbnails checked: kept (a fresh render was worse).
 - 1.2.0 (owner-directed, Mazoon): Studio's own logo (the dragon from the owner: app icons 180/192/256/512, a separate maskable icon, the mark next to the brand logo on Home, inverted in dark; old "1st" icons in `_archive/app icons 1st mark (2026-10-25)/`); pins keep the order you set, All tools › Order on your home moves one up (#19).
