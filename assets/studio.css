@@ -722,6 +722,7 @@ label.opt-row{cursor:pointer}
 
 /* Several photos in a row (1.8.0): Skip on the ready note (a quiet word, never a filled button) and the "still waiting" banner */
 .ready-pop.has-skip{padding-right:6px}
+.ready-pop.has-skip .rp-txt span{text-wrap:balance}
 .rp-skip{flex:none;margin-left:4px;min-height:48px;min-width:56px;padding:0 14px;border:0;border-radius:var(--r-pill);background:transparent;color:var(--accent);font:600 var(--fs-m) var(--sans);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .rp-skip:active{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .rp-skip:focus:not(:focus-visible){outline:none}
