@@ -48,6 +48,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Hub views since 1.0.0:** Home, Templates (`#templates`, `assets/templates.js` renders it from `tplEntries()`), Saved (`#saved`); `openView(v)` gives a page its own Back entry and `goHome()` returns. Settings is the gear (`openSettings()`); the welcome tour (`assets/welcome.js`) opens once on a device that never used Studio, never under automation (`navigator.webdriver`), and again from Settings or `?welcome=1`.
 - **What's New milestones:** a `milestone: <title>` line under a version heading draws the big-number banner (1.0.0). Keep it for real milestones.
 - **Parallel helpers (since 1.4.0):** when asked for parallel sessions, give each helper a worktree (`isolation: worktree`), its own files and its own port (`BASE=http://127.0.0.1:808x/`); tell it to check its base is the session branch (worktrees can start from an old `main`) and to follow the taste rules (weights 400/500/600, RTL with an icon inside an input). The lead keeps VERSION, `sw.js`, changelog, notes and `run.mjs`, then merges, shoots and releases.
+- **Shot scripts and tests that tap the preview:** recompute `#view`'s box and the scale (`box.width/1080`) after anything that changes a sheet's height, and on desktop scroll `#view` into view first (the inspector is long and the page scrolls).
 - **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku` (see **Testing → Who runs the tests**). Give a subagent files that nobody else is editing at the same time.
 
 ## Design system
@@ -106,7 +107,8 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Quick start, "Your photo is in", several photos in a row (`queue` tools) | `quicksave`, `queue`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
 | Saved page, collections, a design's menu, Peek, select mode, card names | `home7`, `polish71`, `extra`, `select`, `peek`, `cardnames` |
-| Search (`assets/search.*`) | `search` |
+| Search (`assets/search.*`, `searchEntries` in `home()`) | `search` |
+| Copy / Paste style, the inspector's More tab | `copystyle` |
 | Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
 | Create (`tools/create*`) | `create` |
 | What's New, changelog | `whatsnew` |

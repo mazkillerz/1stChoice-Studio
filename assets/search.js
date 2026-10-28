@@ -91,7 +91,7 @@ function make(cfg){
     if(tile) pic=`<span class="us-ic" aria-hidden="true">${e.icon||(e.quick?ic('camera'):ic('next'))}</span>`;
     else if(e.thumb||e.thumbAsync){
       const u=e.thumb||thumbs.get(e.id);
-      pic=`<span class="us-th" data-tid="${esc(e.id||'')}" aria-hidden="true">${u?`<img src="${esc(u)}" alt="" decoding="async">`:''}</span>`;
+      pic=`<span class="us-th"${e.shape&&e.shape!=='story'?` data-shape="${esc(e.shape)}"`:''} data-tid="${esc(e.id||'')}" aria-hidden="true">${u?`<img src="${esc(u)}" alt="" decoding="async">`:''}</span>`;
       if(!u&&e.thumbAsync) want(e);
     } else pic=`<span class="us-ic" aria-hidden="true">${e.icon||''}</span>`;
     const sub=!tile&&e.sub?`<span class="us-s">${esc(e.sub)}</span>`:'', badge=!tile&&e.badge?`<span class="us-badge">${esc(e.badge)}</span>`:'';
