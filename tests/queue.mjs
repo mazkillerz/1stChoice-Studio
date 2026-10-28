@@ -72,7 +72,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   /* the last draft is dropped after the team save settles; under parallel load that can take a moment, so wait for it (up to 5 s) */
   const countDrafts=()=>pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)).length);
   let drafts=await countDrafts(); for(let t=0;drafts&&t<25;t++){ await pg.waitForTimeout(200); drafts=await countDrafts(); }
-  ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts');
+  ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts '+(drafts?await pg.evaluate(()=>JSON.stringify(Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)).map(k=>{ let d={}; try{ d=JSON.parse(localStorage[k]); }catch(_){} return [k,d.at,d.json&&JSON.parse(d.json).photos&&JSON.parse(d.json).photos.map(p=>p&&p.key)]; }))+' url='+location.search):''));
 
   /* a computer shows "Skip to the next photo" before saving */
   if(!vp.touch){ await quick(['pair.jpg','shelf.jpg']); const k=await photoKey();

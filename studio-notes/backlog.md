@@ -24,6 +24,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- **Open, check first next session:** `queue.mjs` "no leftover unfinished stories" fails about 1 run in 4 under 3-way parallel load (seen in the 1.8.0, 1.10.0 and 1.12.0 release runs), even after a 5 s wait, and never alone or in 3 targeted loaded runs. One draft stays after the third queued story goes to the team: possibly a real race between the 800 ms draft timer (async photo blobs) and the team save / `nextInQueue()`. The check now prints the leftover key, its time and photo keys when it fails: read that output before changing code.
 - 1.11.0: the "New" badge on a Templates card sits on top of the headline in the preview (all New post cards); move the badge below the frame or start previews lower.
 - 1.11.0 idea: let `tplEntries()` show a brand-kit `sub` for Create templates (today all say "Post · Create"), e.g. "Post · ready in one tap".
 - 1.11.0: owner to confirm the Did you know post's numbered lines (١ كولد برو · ٢ منعش · ٣ يصحصحك) or send real facts to approve.
