@@ -1706,7 +1706,7 @@ async function tool(cfg){
   async function continueQueue(k){ $('queueBar').hidden=true; takeQueue(k);
     const x=!k.m.saved&&k.m.draft&&listDrafts(B.id,cfg.id).find(d=>d.id===k.m.draft);
     if(x&&!design&&draftId!==x.id){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); }   // the story you were on, not saved yet: back to it first
-    if(x){ qSaved=false; quickReady=false; showReady(false,...queueNote()); syncQueue(); return; }
+    if(x){ qSaved=false; quickReady=true; showReady(false,...queueNote()); syncQueue(); return; }   // as when it first came in: Save in one tap
     qSaved=true; await nextInQueue(); }
   let kept=null;
   $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
@@ -1886,7 +1886,7 @@ async function tool(cfg){
   if(QUEUE&&q.get('quick')!=='1'){ const k=await keptQueue();
     if(k){ kept=k;
       const dsg=q.get('design'), here=dsg?dsg===k.m.design:want&&want!=='1'&&!k.m.saved&&(!k.m.draft||k.m.draft===want);
-      if(here){ takeQueue(k); qSaved=!!dsg; if(qSaved) offerQueue(k); else showReady(false,...queueNote()); syncQueue(); }
+      if(here){ takeQueue(k); qSaved=!!dsg; if(qSaved) offerQueue(k); else { quickReady=true; showReady(false,...queueNote()); } syncQueue(); }
       else if(q.get('queue')==='1'){ history.replaceState(null,'',location.pathname); await continueQueue(k); }
       else offerQueue(k); } }
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
