@@ -22,6 +22,8 @@ Saved designs use `fakecloud.js` (same API as `assets/cloud.js`, stored in the b
     node tests/highlight.mjs  # Highlight covers: covers per page, icon/word/photo, + adds a cover, 2× PNG per cover, team save + reopen
     node tests/simplify.mjs   # 0.5.0: bar Save opens the Save sheet, Save makes the PNG, then Add to the team (no second picture); an open saved design starts with the team switch off; hub groups + order
     node tests/quicksave.mjs  # Quick start ready bar: one-tap "Looks good · Save" (2× PNG + team), Change words, hides on edit; text-place pad size
+    node tests/queue.mjs      # 1.6.0 several photos, a story each: Next photo (2 of 3), one tap per story, a new team design each, Skip on a computer
+    node tests/cardnames.mjs  # 1.6.0 Saved cards: automatic names drop the date the caption gives; old dates read "18 Oct"
     node tests/home7.mjs      # 0.7.0: the + button and row cameras, Saved row + Saved page (chips, sort, hold/⋯/right-click actions, rename/duplicate/delete), bottom bar highlight, scroll lock, one-tap Save sheet
     node tests/fresh.mjs      # 0.7.0: the Fresh look is the default (accent, no switch, old setting removed), save tick + haptic, reduced motion
     node tests/select.mjs     # 0.8.0: Saved page select mode (tick, Select all, Collection / Take out / Delete for many, ✕ / Escape / Back), Select more, 7 a row on a computer

@@ -54,7 +54,7 @@ for(const vp of [PHONE,DESK]){
   ok(N+'menu: More tools link at the end',await pg.isVisible('dialog.fab-dlg .fab-more[data-fab-more]'));
   ok(N+'menu: every item is finger-sized and on screen',items.every(x=>x.h>=48&&x.inside),items.map(x=>Math.round(x.h)).join());
   ok(N+'menu: New design links to Create',(await pg.getAttribute('dialog.fab-dlg a.fab-item','href')||'').endsWith('tools/create.html'));
-  ok(N+'menu: photo inputs for Restock, Photo story and Collage (Collage takes several)',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock","photo-story","collage*"]');
+  ok(N+'menu: photo inputs for Restock, Photo story and Collage (each takes several: a story each, or a collage)',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock*","photo-story*","collage*"]');
   const xr=await pg.$eval('dialog.fab-dlg .fab-x',e=>{ const r=e.getBoundingClientRect(); return Math.min(r.width,r.height); });
   ok(N+'the close button is at least 56px',xr>=56,xr);
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
@@ -78,7 +78,7 @@ for(const vp of [PHONE,DESK]){
   await Promise.all([pg.waitForURL(/restock\.html/),pg.setInputFiles('#toolGrid input[data-quick="restock"]',S+'pair.jpg')]); await pg.waitForTimeout(2500);
   ok(N+'the row camera opens Restock with the photo in',await real(pg)===1&&!(await pg.isVisible('#draftBar')));
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.setItem('studio:pins','["restock","photo-story","collage"]')); await pg.reload(); await pg.waitForTimeout(800);
-  ok(N+'Collage\'s camera takes several photos',await pg.$eval('#toolGrid input[data-quick="collage"]',e=>e.multiple)&&!(await pg.$eval('#toolGrid input[data-quick="restock"]',e=>e.multiple)));
+  ok(N+'Collage and Restock cameras take several photos (1.6.0: a story each)',await pg.$eval('#toolGrid input[data-quick="collage"]',e=>e.multiple)&&(await pg.$eval('#toolGrid input[data-quick="restock"]',e=>e.multiple)));
   await Promise.all([pg.waitForURL(/collage\.html/),pg.setInputFiles('#toolGrid input[data-quick="collage"]',[S+'pair.jpg',S+'hand.jpg'])]); await pg.waitForTimeout(3000);
   ok(N+'Collage opens with both photos and two boxes',await real(pg)===2&&await pg.evaluate(()=>Studio.debug.S.count)===2);
 

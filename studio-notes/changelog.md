@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.6.0 · 28 Oct 2026
+
+### Several shops in a row
+type: feature
+Visited three shops? Tap **+**, then **Restock**, and pick all three photos at once. The first photo goes in, ready to save in one tap. After saving, tap **Next photo (2 of 3)**: the next photo comes in with the same words and look, and one more tap saves it. Each one is its own story and goes to the team on its own. Three restock stories took 11 taps (back to Home, +, Restock and Save for each one after the first), now they take 7. Picking one photo works just like before. **Photo story** does the same, and so does sharing several photos to Studio from your gallery.
+![before](assets/whatsnew/1.6.0-plus-before.jpg)
+![after](assets/whatsnew/1.6.0-queue-after.jpg)
+
+### Names that fit on Saved
+type: design
+Saved cards cut names with a date short: "Restock – 24 …". The line under the name already says when it was made, so an automatic name now shows just **Restock**, and the full name is still in the design's menu and in search. A name you typed is never changed. Designs older than a week now say **18 Oct** instead of the phone's 10/18/2026.
+![before](assets/whatsnew/1.6.0-cards-before.jpg)
+![after](assets/whatsnew/1.6.0-cards-after.jpg)
+
 ## 1.5.0 · 26 Oct 2026
 
 ### Put your tools in order with one drag
