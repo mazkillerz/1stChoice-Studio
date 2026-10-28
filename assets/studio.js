@@ -646,8 +646,8 @@ async function tool(cfg){
     nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}<span aria-hidden="true">Snap</span></button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
-    <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
-    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span></div></div>
+    <div class="banner queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini" id="queueClear">Clear</button><button type="button" class="mini queue-go" id="queueGo">Continue</button></span></div><div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
+    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span><button type="button" class="rp-skip" id="readySkip" hidden>Skip</button></div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in Photo.')}</div>
@@ -1664,20 +1664,28 @@ async function tool(cfg){
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
     } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
-  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
+  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; keepQueue(); if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
   function showResult(files,offerShare){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; celebrate(); if(qTotal){ qSaved=true; syncQueue(); } } });
+  /* the photos still waiting are kept on this phone (IndexedDB), so leaving the tool, or the phone reloading the page after the
+     share sheet, never drops them (1.8.0). The photos are written once ({files,total}); the place in the row is a small record
+     beside them ({pos,saved,draft,design}) that changes as you go. Both go once the last photo is in, or with Clear. */
+  const QK=queueKey(B.id,cfg.id), QPOS=QK+':pos';
+  function keepFiles(){ if(QUEUE&&queue.length) return idb.put(QK,{files:queue.slice(),total:qTotal,at:Date.now()}); }
+  function keepQueue(){ if(!QUEUE||!qTotal) return; if(!queue.length) return dropQueue();
+    idb.put(QPOS,{pos:qPos,saved:qSaved,draft:draftId,design:design&&design.id||null,at:Date.now()}); }
+  function dropQueue(){ idb.del(QK); idb.del(QPOS); }
   /* the photos still waiting: "Next photo (2 of 3)" once this one is saved; before that, a quieter "Skip to the next photo" */
-  function syncQueue(){ const b=$('queueNext'), on=QUEUE&&queue.length>0&&!saving; b.hidden=!on; $('save').classList.toggle('ghost',on&&qSaved);   // Next is the main step now: Save again goes quiet
+  function syncQueue(){ keepQueue(); const b=$('queueNext'), on=QUEUE&&queue.length>0&&!saving; b.hidden=!on; $('save').classList.toggle('ghost',on&&qSaved);   // Next is the main step now: Save again goes quiet
     if(!on) return;
     b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=(qSaved?'Next photo':'Skip to the next photo')+' ('+(qPos+1)+' of '+qTotal+')'; }
   function queueNote(){ const last=qPos===qTotal; return [last?'Last photo: '+qPos+' of '+qTotal:'Photo '+qPos+' of '+qTotal+' is in',
     qPos===1?(isPhone()?'Tap Save, then the next one comes in':'Save it, then the next one comes in'):'Same words and look. '+(isPhone()?'Tap Save':'Save')+' when it looks good']; }
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
-    qPos++; qSaved=false; $('queueNext').hidden=true;
+    qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
     clearTimeout(draftTimer); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was
     history.replaceState(null,'',location.pathname); delete $('teamName').dataset.touched;
@@ -1686,6 +1694,24 @@ async function tool(cfg){
     resetSaveSheet(); startHistory(); dirty=true; saveDraft(hist.stack[0]);
     quickReady=true; showReady(false,...queueNote()); syncQueue(); }
   $('queueNext').addEventListener('click',nextInQueue);
+  /* Skip on the ready note: the next photo without saving this one (it stays in Continue editing), same as the Save sheet's Skip */
+  $('readySkip').addEventListener('click',()=>{ haptic('tick'); nextInQueue(); });
+  /* coming back to the tool with photos still waiting: "2 photos still waiting" with Clear / Continue */
+  async function keptQueue(){ if(!QUEUE) return null; const w=await idb.get(QK); if(!w||!w.files||!w.files.length) return null;
+    const m=(await idb.get(QPOS))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1));
+    if(!left.length){ dropQueue(); return null; } return {total:w.total||left.length+1,m,left}; }
+  function offerQueue(k){ const n=k.left.length; $('queueTxt').textContent=n===1?'1 photo still waiting':n+' photos still waiting';
+    $('draftBar').hidden=true; $('queueBar').hidden=false; }
+  function takeQueue(k){ queue=k.left.slice(); qTotal=k.total; qPos=Math.max(1,k.m.pos||1); }
+  async function continueQueue(k){ $('queueBar').hidden=true; takeQueue(k);
+    const x=!k.m.saved&&k.m.draft&&listDrafts(B.id,cfg.id).find(d=>d.id===k.m.draft);
+    if(x&&!design&&draftId!==x.id){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); }   // the story you were on, not saved yet: back to it first
+    if(x){ qSaved=false; quickReady=false; showReady(false,...queueNote()); syncQueue(); return; }
+    qSaved=true; await nextInQueue(); }
+  let kept=null;
+  $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
+  $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
+    status('The waiting photos are cleared here. They are still in your phone’s photos.',3500); });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
@@ -1727,10 +1753,11 @@ async function tool(cfg){
     r.classList.add('out'); setTimeout(()=>{ if(r.classList.contains('out')){ r.hidden=true; r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; } },280); }
   function showReady(many,txt,sub){ const r=$('readyBar'); $('readyTxt').textContent=txt||(many?'Your photos are in':'Your photo is in');
     $('readySub').textContent=sub||(isPhone()?'Tap Save when it looks good':'Save it when it looks good');
-    r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),3200);
+    const skip=QUEUE&&qTotal>0&&queue.length>0; $('readySkip').hidden=!skip; r.classList.toggle('has-skip',skip);   // a photo is waiting: Skip goes straight to it
+    r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),skip?4000:3200);
     const sv=$('barSave'); sv.classList.remove('nudge'); void sv.offsetWidth; sv.classList.add('nudge'); setTimeout(()=>sv.classList.remove('nudge'),2600); }   // a soft pulse on Save: the note points at it
   { const r=$('readyBar'); let y0=null, dy=0;
-    r.addEventListener('pointerdown',e=>{ y0=e.clientY; dy=0; clearTimeout(readyT); try{ r.setPointerCapture(e.pointerId); }catch(_){} });
+    r.addEventListener('pointerdown',e=>{ if(e.target.closest('#readySkip')){ clearTimeout(readyT); return; } y0=e.clientY; dy=0; clearTimeout(readyT); try{ r.setPointerCapture(e.pointerId); }catch(_){} });
     r.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); r.style.transform=`translateY(${dy}px)`; r.style.opacity=String(Math.max(.2,1-dy/90)); });
     const end=()=>{ if(y0==null) return; y0=null; if(dy>24||dy<6){ r.style.transform=`translateY(${Math.max(dy,0)}px)`; hideReady(); } else { r.style.transform=''; r.style.opacity=''; readyT=setTimeout(()=>hideReady(),1500); } };
     r.addEventListener('pointerup',end); r.addEventListener('pointercancel',end); }
@@ -1854,12 +1881,20 @@ async function tool(cfg){
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
   /* quietly check whether this phone is signed in to the team, so Save to the team is ready (on) when the Save sheet opens */
   setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
+  /* photos still waiting from an earlier visit (1.8.0): the page reloaded on the story you were on (after the share sheet, or
+     with ?draft=) picks the row up again as it was; anything else (a fresh visit, ?queue=1 from Home) offers or continues it */
+  if(QUEUE&&q.get('quick')!=='1'){ const k=await keptQueue();
+    if(k){ kept=k;
+      const dsg=q.get('design'), here=dsg?dsg===k.m.design:want&&want!=='1'&&!k.m.saved&&(!k.m.draft||k.m.draft===want);
+      if(here){ takeQueue(k); qSaved=!!dsg; if(qSaved) offerQueue(k); else showReady(false,...queueNote()); syncQueue(); }
+      else if(q.get('queue')==='1'){ history.replaceState(null,'',location.pathname); await continueQueue(k); }
+      else offerQueue(k); } }
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ photoStyleNow(); if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       if(PG) await quickPages(fs);
       else { const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
-        if(QUEUE&&slotCount()===1&&fs.length>1){ queue=fs.slice(1,QUEUE_MAX); qTotal=queue.length+1; qPos=1; } }
+        if(QUEUE&&slotCount()===1&&fs.length>1){ queue=fs.slice(1,QUEUE_MAX); qTotal=queue.length+1; qPos=1; await keepFiles(); } }
       flush(); quickReady=true; if(qTotal) showReady(false,...queueNote()); else showReady(fs.length>1); syncQueue(); }
     else status('That photo did not come through. Tap Add your photo.'); }
   /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
@@ -1871,6 +1906,8 @@ async function tool(cfg){
 
 /* ---------- Quick start: the hub hands photos to a tool through IndexedDB (too big for the URL) ---------- */
 const quickKey=(brand,tool)=>'studio:quick:'+brand+':'+tool;
+/* several photos in a row (queue tools): the photos still waiting, kept so leaving or a reload never drops them (1.8.0) */
+const queueKey=(brand,tool)=>'studio:queue:'+brand+':'+tool;
 /* how many photos a Quick start keeps: up to the tool's max (Collage 9, Carousel 10, Highlight covers 12);
    a one-photo tool with queue (Restock, Photo story) takes up to 10 and makes a story from each, one after the other (1.6.0) */
 const QUEUE_MAX=10;
@@ -2009,6 +2046,18 @@ async function home(){
     bar.hidden=false;
     $('sharedGo').onclick=()=>{ bar.hidden=true; openShared(fs.length).then(()=>{ const d=document.querySelector('dialog.dlg[open]'); if(d) d.addEventListener('close',()=>setTimeout(sharedWaiting,60)); }); };
     $('sharedX').onclick=()=>{ bar.hidden=true; idb.del('studio:shared'); if(u) URL.revokeObjectURL(u); hubToast('Forgot the shared photo.'); }; }
+  /* photos still waiting in Restock or Photo story (several shops in a row, left before the last one): a row like the shared
+     photo's, "2 photos still waiting", Continue opens the tool on the next one; ✕ clears them (1.8.0) */
+  async function queueWaiting(){ document.querySelectorAll('.queue-wait').forEach(e=>e.remove());
+    for(const [id,t] of Object.entries(TOOLS).filter(([,t])=>t.queue).reverse()){
+      const k=queueKey(B.id,id), w=await idb.get(k); if(!w||!w.files||!w.files.length) continue;
+      const m=(await idb.get(k+':pos'))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1)); if(!left.length){ idb.del(k); idb.del(k+':pos'); continue; }
+      let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
+      const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
+      el.innerHTML=`<a class="qw-go" href="${toolPage(id)}?queue=1"><span class="install-ic" aria-hidden="true">${u?`<img alt="" src="${u}">`:''}</span><span class="install-txt"><b>${n===1?'1 photo still waiting':n+' photos still waiting'}</b><span>${esc(t.title)} · tap to continue</span></span><span class="qw-chev" aria-hidden="true">${ICON.next}</span></a><button type="button" class="mini icon" aria-label="Clear the ${n===1?'photo':n+' photos'} waiting for ${esc(t.title)}">✕</button>`;
+      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
+      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } } }
+  queueWaiting();
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
