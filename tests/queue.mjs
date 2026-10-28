@@ -45,7 +45,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   /* three photos */
   await quick(['pair.jpg','shelf.jpg','hands.jpg']);
   ok(N+'three photos: the note says "Photo 1 of 3 is in"',await ready()==='Photo 1 of 3 is in',await ready());
-  ok(N+'the note tells you the next one comes after Save',/next one comes in/.test(await pg.textContent('#readySub')));
+  ok(N+'the note tells you the next one comes after Save',/Save (it )?for the next one/.test(await pg.textContent('#readySub')));
+  ok(N+'the note\'s hint is one line (next to Skip)',await pg.$eval('#readySub',s=>Math.round(s.getBoundingClientRect().height/(parseFloat(getComputedStyle(s).lineHeight)||20))===1));
   const k1=await photoKey(), words1=await pg.evaluate(()=>JSON.stringify({s:Studio.debug.S.style,v:Studio.debug.S.values}));
   const before=await designs();
   let r=await saveOnce();

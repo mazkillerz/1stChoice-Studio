@@ -1717,7 +1717,7 @@ async function tool(cfg){
     if(!on) return;
     b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=(qSaved?'Next photo':'Skip to the next photo')+' ('+(qPos+1)+' of '+qTotal+')'; }
   function queueNote(){ const last=qPos===qTotal; return [last?'Last photo: '+qPos+' of '+qTotal:'Photo '+qPos+' of '+qTotal+' is in',
-    qPos===1?(isPhone()?'Tap Save, then the next one comes in':'Save it, then the next one comes in'):'Same words and look. '+(isPhone()?'Tap Save':'Save')+' when it looks good']; }
+    qPos===1?(isPhone()?'Tap Save for the next one':'Save it for the next one'):'Same words and look']; }   // one line next to Skip, even on a 360px phone
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
     qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
