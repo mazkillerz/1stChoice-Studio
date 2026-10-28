@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.8.0 · 28 Oct 2026
+
+### Your photos keep waiting
+type: feature
+Picked three shop photos for **Restock** and the phone reloaded after the share sheet, or you went back to Home in between? The photos still waiting used to be gone, and you had to pick them again. Now they stay on your phone. Home shows **2 photos still waiting**: tap it and the next one comes in, ready to save in one tap. Opening Restock again offers them too, with **Continue** (back to the story you were on if you hadn't saved it yet) or **Clear**. A reload right after saving brings the same offer; a reload before saving brings you back to that photo. They're cleared by themselves once the last one is in, or with ✕. **Photo story** works the same.
+![before](assets/whatsnew/1.8.0-home-before.jpg)
+![after](assets/whatsnew/1.8.0-home-after.jpg)
+
+### Skip a photo straight from the note
+type: design
+With several photos, the "Photo 1 of 3 is in" note now has a small **Skip**: one tap brings in the next photo without saving this one (it stays in Continue editing). Before, skipping meant editing something first so the Save sheet would open, then **Skip to the next photo**: 3 taps or more, now 1. Saving each photo is still one tap, and Skip is a quiet word, not another big button.
+![before](assets/whatsnew/1.8.0-note-before.jpg)
+![after](assets/whatsnew/1.8.0-note-after.jpg)
+
 ## 1.7.0 · 28 Oct 2026
 
 ### Copy style, paste style
