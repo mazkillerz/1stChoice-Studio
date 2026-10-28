@@ -6,7 +6,7 @@ One **lead** session coordinates five version sessions. Each version session bui
 |---|---|---|---|---|
 | 1.8.0 | Team | `claude/v1.8-queue` | Several shops in a row keeps waiting photos across leaving/reloading (IndexedDB `studio:queue:<brand>:<tool>`, "N photos still waiting" on return), Skip on the ready note. `assets/studio.js` (queue parts of `tool()` + the Home "waiting" row in `home()`), `assets/studio.css` (new rules only, before the fresh-look block), `tests/queue-keep.mjs` | 1 |
 | 1.9.0 | Mazoon | `claude/v1.9-batch` | Batch export (#5): **Save all** for paged tools (Carousel, Highlight covers, other `pages` tools): every page at full quality in one share sheet (several files), ZIP / one-by-one download fallback on computers. Save engine + Save sheet in `assets/studio.js`, new `assets/batch.js` if needed, `tests/batch.mjs` | 1 |
-| 1.10.0 | Simplify | `claude/v1.10-simplify` | Pattern review + Simplify session per the skill (old CSS leftovers, shared Arabic normaliser for Create + search, split `home7`/`polish71`, tap-count cuts, full sweep). Starts **after 1.8.0 and 1.9.0 are on `main`** | 2 |
+| 1.10.0 | Simplify | `claude/v1.10-simplify` | Pattern review + Simplify session per the skill (old CSS leftovers, shared Arabic normaliser for Create + search, split `home7`/`polish71`, tap-count cuts, full sweep). Starts **after 1.8.0 and 1.9.0 are on `main`** | 1 + 2 |
 | 1.11.0 | Team | `claude/v1.11-posts` | One-tap post presets (#3: Did you know / Your choice / Ice cold as presets on Templates + search, approved words only) and the Create template picker opening straight on a search hit (#20). `brands/1stchoice/brand.js` (presets), `assets/templates.*`, `assets/search.*`, `tools/create*.js`, `tests/postpresets.mjs` | 1 |
 | 1.12.0 | Mazoon | `claude/v1.12-stickers` | Stickers pack (#9): brand-neutral shapes (arrows, sparkles, bursts, circles, underline, badge) drawn as vectors, added from the tool page's Add/layers menu, recolourable, saved in the recipe. New `assets/stickers.js`, small hook in `tool()` in `assets/studio.js`, `tests/stickers.mjs` | 1 |
 
@@ -24,4 +24,4 @@ One **lead** session coordinates five version sessions. Each version session bui
 ## Session ids
 - Lead: `session_01Y65H7Xe9APNhwLbBgQTqBK`
 - 1.8.0: `session_01Y65H7YqL8rr1j9hKGFxGpK` · 1.9.0: `session_01Y65H7ZmENLej2cfJpLkB6L` · 1.11.0: `session_01Y65H7aV6HQhsuLCZk8xT2U` · 1.12.0: `session_01Y65H7Wok6NumBM3nmFY5Wu`
-- 1.10.0: started by the lead once 1.9.0 is on `main`.
+- 1.10.0: `session_01Y65H7Znq7QhTrq1gYiXucQ` (phase 1 now: pattern review + cleanup away from the queue/save areas; phase 2 full sweep after 1.8.0 + 1.9.0 are on `main`).
