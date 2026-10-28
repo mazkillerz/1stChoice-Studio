@@ -97,6 +97,53 @@ LAYOUTS['your-choice']=async function(t,w,def){
   return [f];
 };
 
+/* ---------- feed-post (1080×1350) versions of the three above: the same pieces, fitted to a 4:5 post.
+   Shared shape: headline at the top, a card band 290–970, a pill at 1020, the logo at the bottom (like "Restock post"). ---------- */
+const POST={top:290,H:680,pill:1020,logoW:190,logoB:1270};
+
+/* "Ice cold" post: headline, a small line, the product on a soft panel, the map pill, the logo. */
+LAYOUTS['hero-panel-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper}), small=!!w.small, top=small?350:POST.top, H=970-top;
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:small?70:90});
+  if(small) t.add(f,t.text(w.small,{fontSize:44,fill:C.muted,label:'Small line'}),{cx:540,y:262});
+  t.add(f,t.el.panel(920,H,{fill:w.panel||C.panel,r:64}),{cx:540,y:top});
+  await fit(t,f,AS(def,'product','cans-pair'),800,H-120,{cx:540,cy:top+H/2});
+  if(w.pill) t.add(f,t.el.pill(w.pill,{icon:'pin',h:88,label:'Map in bio'}),{cx:540,y:POST.pill});
+  await t.logo(f,POST.logoW,{cx:540,bottom:POST.logoB});
+  return [f];
+};
+
+/* "Did you know" post: the can on a card at one side, three numbered lines at the other. */
+LAYOUTS['did-you-know-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper}), rtl=t.rtl, {top,H}=POST, cw=340;
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
+  t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),rtl?{x:72,y:top}:{right:1008,y:top});
+  await fit(t,f,AS(def,'product','can-classic-shadow'),cw-70,H-90,{cx:rtl?72+cw/2:1008-cw/2,cy:top+H/2});
+  const edge=rtl?1008:440, r=48, tw=320;
+  for(let i=0;i<3;i++){ const cy=top+110+i*230;
+    t.add(f,t.el.numCircle(i+1,{r,size:56}),{cx:rtl?edge-r:edge+r,cy});
+    const x=para(t,WD(t,w,'line'+(i+1)),{width:tw,fontSize:46,align:START(t),label:'Line '+(i+1)});
+    t.add(f,x,{cy,[rtl?'right':'x']:rtl?edge-2*r-24:edge+2*r+24}); }
+  t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:POST.pill});
+  await t.logo(f,POST.logoW,{cx:540,bottom:POST.logoB});
+  return [f];
+};
+
+/* "Your choice" post: two cards side by side, one flavour each, a pill to tag a friend. */
+LAYOUTS['your-choice-post']=async function(t,w,def){
+  const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper}), fl=(t.B.flavours||[]).slice(0,2);
+  t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
+  const cw=440, gap=40, {top,H}=POST, ids=[AS(def,'one','can-classic'),AS(def,'two','can-passion')];
+  const order=t.rtl?[1,0]:[0,1];   // first flavour sits at the reading start
+  for(let s=0;s<2;s++){ const i=order[s], x=(1080-cw*2-gap)/2+s*(cw+gap), cx=x+cw/2;
+    t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),{x,y:top});
+    t.add(f,t.text(fl[i]?fl[i].name:t.write(),{fontSize:52,label:'Flavour'}),{cx,y:top+40});
+    await fit(t,f,ids[i],cw-100,H-190,{cx,cy:top+H/2+50}); }
+  t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:POST.pill});
+  await t.logo(f,POST.logoW,{cx:540,bottom:POST.logoB});
+  return [f];
+};
+
 /* "Chat": a late-night chat with a friend, three slides. */
 LAYOUTS['chat']=async function(t,w,def){
   const C=t.C, rtl=t.rtl, W=1080, H=1350, M=64;
