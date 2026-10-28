@@ -5,12 +5,24 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 17 | 1.6.0 | 4 (two new suites 42/42 and 19/19, gates green; my own shot caught three filled buttons in the Save sheet, fixed before release) | 5 (both items in one pass, no rework) | 0 reported after 1.5.0 | see release | Count filled buttons on every new state of a sheet (after save, not only the first view) |
 | 16 | 1.5.0 | 4 (all six asks shipped; three taste findings of my own caught by taste.mjs and fixed before release: handle 40px, pinned thumbs off the line, More tools off the icon line) | 4 (one pass; test updates by a helper in parallel) | 0 reported after 1.4.0 (this list was new work, not fixes) | see release | Run taste.mjs right after the first visual pass, before screenshots for What's New |
 | 15 | 1.4.0 | 4 (all suites green; two slips caught by the lead in review: weight 700, Arabic under ✕) | 5 (3 items in one pass with 3 parallel helpers) | 0 reported after 1.3.0 | 33/33 pass | Brief helpers with the taste rules (weights, RTL with an icon in the box) and that worktrees may start from an old main |
 | 14 | 1.3.0 | 4 (new suite 90/90, 13 suites green; shots checked in both themes) | 4 (both items shipped; one dead end on thumbnails, reverted) | 0 reported after 1.2.0; mid-session: tests too slow (fixed in run.mjs + skill) | 32/32 pass | Check `--changed --dry` before a long run; compare a regenerated asset with the old one before replacing it |
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 17 · 1.6.0 · 28 Oct 2026 (team)
+
+**Worked**
+- Reusing the engine's own pieces (Quick start's IndexedDB hand-off, `setPhoto`, `resetSaveSheet`, `startHistory`, the ready note) made "a story from each photo" about 30 lines in `tool()`: no offscreen rendering, no new page.
+- Testing the whole loop (3 photos → save → Next → save → Next → save) in one suite on phone and desktop, counting team designs in fakecloud, proved each story is a new design and no drafts are left.
+- "Before" shots from a `git worktree` of origin/main on :8081 with the same seeded data as the "after" shots.
+
+**Didn't work / watch out**
+- The first build left three filled buttons in the Save sheet after saving (Done, Next photo, Save again): the taste rule applies to every state of a sheet, not just its first view. Save again now goes ghost while Next is the main step.
+- What's New pictures of a whole Saved page are ~120 KB at quality 72: crop to the part that shows the change.
 
 ## Session 16 · 1.5.0 · 26 Oct 2026 (owner-directed Simplify: hub and Saved)
 
