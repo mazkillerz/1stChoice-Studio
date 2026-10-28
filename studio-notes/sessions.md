@@ -20,3 +20,8 @@ One **lead** session coordinates five version sessions. Each version session bui
 
 ## Merge order (lead)
 1.8.0 → 1.9.0 → (start 1.10.0 from `main`) → 1.10.0 → 1.11.0 → 1.12.0. Before each merge the lead merges `main` into the branch, bumps `VERSION` + `sw.js`, folds in the pending notes, runs `node tests/run.mjs --changed`, then merges to `main`.
+
+## Session ids
+- Lead: `session_01Y65H7Xe9APNhwLbBgQTqBK`
+- 1.8.0: `session_01Y65H7YqL8rr1j9hKGFxGpK` · 1.9.0: `session_01Y65H7ZmENLej2cfJpLkB6L` · 1.11.0: `session_01Y65H7aV6HQhsuLCZk8xT2U` · 1.12.0: `session_01Y65H7Wok6NumBM3nmFY5Wu`
+- 1.10.0: started by the lead once 1.9.0 is on `main`.
