@@ -10,8 +10,11 @@ for(const u of (process.argv[2]||'tools/offer.html,tools/carousel.html').split('
   for(const s of ['',...sheets]){ if(s){ await pg.tap(`#bar [data-open="${s}"]`); await pg.waitForTimeout(400); }
     const small=await pg.evaluate(()=>[...document.querySelectorAll('button,a,input,select,[role=button],label.check')].filter(e=>{const r=e.getBoundingClientRect(); const cs=getComputedStyle(e);
       /* an invisible ::after hit area (position:absolute; inset:-Npx) makes the tap target bigger than the box */
-      const a=getComputedStyle(e,'::after'), px=v=>parseFloat(v)||0; let w=r.width, h=r.height;
-      if(a.content!=='none'&&a.position==='absolute'){ w=Math.max(w,r.width-px(a.left)-px(a.right)); h=Math.max(h,r.height-px(a.top)-px(a.bottom)); }
+      const px=v=>parseFloat(v)||0, hit=(el,r)=>{ const a=getComputedStyle(el,'::after'); let w=r.width, h=r.height;
+        if(a.content!=='none'&&a.position==='absolute'){ w=Math.max(w,r.width-px(a.left)-px(a.right)); h=Math.max(h,r.height-px(a.top)-px(a.bottom)); } return [w,h]; };
+      let [w,h]=hit(e,r);
+      /* an input inside a label (a tick box row, a colour well in a swatch): tapping the label works the input, so the label is the target (1.10.0) */
+      const lb=e.tagName==='INPUT'&&e.closest('label'); if(lb){ const [lw,lh]=hit(lb,lb.getBoundingClientRect()); w=Math.max(w,lw); h=Math.max(h,lh); }
       return !e.classList.contains('sr-only')&&r.width>0&&r.height>0&&cs.visibility!=='hidden'&&r.bottom>0&&r.top<innerHeight&&(h<44||w<44);}).map(e=>`${e.tagName.toLowerCase()}${e.id?'#'+e.id:''}.${[...e.classList].join('.')} ${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)} "${(e.textContent||e.getAttribute('aria-label')||'').trim().slice(0,20)}"`));
     console.log(u,s||'(main)',[...new Set(small)].join(' | ')); }
 }
