@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.11.0 · 28 Oct 2026
+
+### Posts in one tap
+type: feature
+Need a feed post today? Open **Templates → Posts** (or search "post") and tap **Ice cold post**, **Did you know post** or **Your choice post**. Each opens as a finished 1080×1350 post with the brand's approved words and the HD cans, so **Save → Save image** gives you the picture (2160×2700, like every post). Every word and can can still be changed. Before, these three were only stories, and a post meant starting from a blank page in Create: now it's 3 taps from Templates to a saved post (the post, Save, Save image).
+![before](assets/whatsnew/1.11.0-posts-before.jpg)
+![after](assets/whatsnew/1.11.0-posts-after.jpg)
+
+### Find templates by their Arabic words
+type: fix
+Searching for a word on a template, like يسرسح or اختيارك, found nothing: search only knew the template names in English. Now Create templates are found by their Arabic words too (with or without harakat), and tapping one opens Create with that template already built and ready to save. If Create is already open on a design, it opens the template picker on that template instead, so nothing you made is replaced.
+![before](assets/whatsnew/1.11.0-search-before.jpg)
+![after](assets/whatsnew/1.11.0-search-after.jpg)
+
 ## 1.10.0 · 28 Oct 2026
 
 ### Carousel and covers from photos, right from All tools

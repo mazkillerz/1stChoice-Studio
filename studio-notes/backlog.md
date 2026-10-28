@@ -2,16 +2,14 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 21 (1.10.0, 28 Oct 2026) was the **Simplify** session (with pattern review; parallel, see `sessions.md`). The next session, 1.11.0, is a **team** session; 1.12.0 a **Mazoon** session.
+**Last session:** 22 (1.11.0, 28 Oct 2026) was a **team** session (parallel, see `sessions.md`): one-tap posts (#3) and search finds Create templates by their Arabic words (#20). The next session, 1.12.0, is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.15.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
-| 20 | Search: the Create template picker opening straight to a search hit | 2 | 3 | 2 | 2 | 5 | Real previews in search shipped in 1.7.0 (from `assets/thumbs/<brand>/tpl/`). |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
-| 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
 | 5 | Batch export: save several drafts / saved designs in one go from Saved select mode | 3 | 4 | 3 | 3 | 7 | Paged tools done in 1.9.0 (Save all + ZIP on a computer); this half needs offscreen rendering of other designs. |
 | 6 | Template collections in Create (favourites, recently used) | 2 | 3 | 2 | 3 | 4 | Search box shipped in 1.4.0. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
@@ -25,6 +23,9 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.11.0: the "New" badge on a Templates card sits on top of the headline in the preview (all New post cards); move the badge below the frame or start previews lower.
+- 1.11.0 idea: let `tplEntries()` show a brand-kit `sub` for Create templates (today all say "Post · Create"), e.g. "Post · ready in one tap".
+- 1.11.0: owner to confirm the Did you know post's numbered lines (١ كولد برو · ٢ منعش · ٣ يصحصحك) or send real facts to approve.
 - 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
 - 1.9.0: on a computer the low-memory fallback message still says "This phone was low on memory".
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
@@ -59,6 +60,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.11.0 (team): Ice cold / Did you know / Your choice as finished 1080×1350 posts in Templates → Posts and search (#3); search finds Create templates by their Arabic words, and `?tpl=` behaviour locked in tests (#20).
 - 1.10.0 (Simplify): 79 lines of old hub CSS removed (computed-style diff: 0 changes over 72 states); one Arabic normaliser (`Studio.normText`) for hub search and Create, Arabic digits ٠–٩ now searchable; `home7` / `polish71` split into parts; All tools camera (Carousel / Highlight from photos 4 → 3 taps); the several-photos note back to one line; tapscan counts a wrapping label as the hit area; Save all on a computer says ZIP.
 - 1.9.0 (Mazoon): Save all N slides/covers ("Saving n of N" + Cancel, one share sheet on a phone, one in-browser ZIP on a computer, files `<design>-01.png`…); `quickpages.mjs` fixed (red since 1.5.0: it picked Carousel/Highlight from the + menu).
 - 1.8.0 (team): photos keep waiting (IndexedDB `studio:queue:<brand>:<tool>` + `…:pos`; Home row "N photos still waiting" with ✕; tool banner Continue / Clear; a reload on the same story restores it with one-tap Save) and a quiet Skip on the ready note (3+ taps → 1). Fixed `simplify.mjs` grouping check (red since 1.5.0).

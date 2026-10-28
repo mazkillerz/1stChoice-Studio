@@ -118,7 +118,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71-saved`, `polish71-bar`, `fresh` |
 | Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
-| Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews | `templates`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
+| Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews, Create post templates | `templates`, `postpresets`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
 | Welcome tour, Settings sheet (`assets/welcome.*`) | `welcome`, `taste` |
 | Restock / Photo story / Collage drawing (`tools/restock.js`, `photo-story.js`, `collage.js`) | `restock-styles`, `photostory-styles`, `collage-grids` (each compares the old styles pixel for pixel) |
 | Photo looks, Swap two / Shuffle, Move tab, styles with no photo (`tool()`) | `full`, `restock-styles`, `taste` |
