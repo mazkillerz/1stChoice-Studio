@@ -12,6 +12,8 @@ import { chromium } from 'playwright';
 import fs from 'fs'; import os from 'os';
 import { seedDesigns, seedScript } from './seed.js';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
+/* PART=hub|saved|save (comma list) runs only those parts; home7-hub.mjs, home7-saved.mjs and home7-save.mjs set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const S=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const SEED=seedDesigns();
@@ -33,7 +35,7 @@ const gridNames=(pg,sel='#savedGrid')=>pg.$$eval(sel+' .sv-card .sv-txt b',l=>l.
 const fresh=async(pg,url='index.html')=>{ await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear()); await pg.goto(BASE+url); await pg.waitForTimeout(900); };   // clear = seeded again on the next load
 const homeShown=pg=>pg.evaluate(()=>{ const v=el=>{ const e=document.getElementById(el); return !!e&&!e.hidden&&e.getClientRects().length>0; }; return {home:v('homeView'),saved:v('saved')}; });
 
-for(const vp of [PHONE,DESK]){
+if(part('hub')) for(const vp of [PHONE,DESK]){
   const N=vp.name+': ', tap=(pg,s)=>vp.touch?pg.tap(s):pg.click(s);
   const ctx=await mk(vp); const pg=await page(ctx,vp.name);
 
@@ -105,7 +107,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the Saved page, on a phone (touch: press and hold) ---------- */
-{ const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'saved page');
+if(part('saved')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'saved page');
   await fresh(pg,'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(500);
   const cards=()=>pg.$$eval('#savedGrid .sv-card',c=>c.length);
   ok(N+'Saved page: 8 cards, newest first',await cards()===8&&JSON.stringify(await gridNames(pg))===JSON.stringify(NEWEST));
@@ -135,6 +137,9 @@ for(const vp of [PHONE,DESK]){
   ok(N+'the sort choice is remembered',(await pg.textContent('#sortLbl')).trim()==='A to Z'&&JSON.stringify(await gridNames(pg))===JSON.stringify(want));
   await pick('recent');
   ok(N+'sort by Recent is newest first again',JSON.stringify(await gridNames(pg))===JSON.stringify(NEWEST));
+  /* taste row 12: no focus ring left on the Sort button after a tap (the sheet hands focus back to it) */
+  const ring=await pg.$eval('#sortBtn',b=>{ const cs=getComputedStyle(b); return cs.outlineStyle==='none'||parseFloat(cs.outlineWidth)===0?'':cs.outlineStyle+' '+cs.outlineWidth; });
+  ok(N+'no focus ring stays on the Sort button after choosing',!ring,ring);
   /* the actions sheet: press and hold (does not navigate), ⋯ */
   const url0=pg.url(), card0='#savedGrid .sv-card[data-id="seed0"]';
   const el=pg.locator(card0+' .sv-open'); const bb=await el.boundingBox(), x=bb.x+bb.width/2, y=bb.y+bb.height/2;
@@ -214,7 +219,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the Saved page, on a computer (right-click, hover) ---------- */
-{ const vp=DESK, N='desktop: ', ctx=await mk(vp); const pg=await page(ctx,'saved page desktop');
+if(part('saved')) { const vp=DESK, N='desktop: ', ctx=await mk(vp); const pg=await page(ctx,'saved page desktop');
   await fresh(pg,'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(500);
   ok(N+'Saved page: 8 cards in a grid',(await pg.$$eval('#savedGrid .sv-card',c=>c.length))===8&&await pg.evaluate(()=>{ const t=[...document.querySelectorAll('#savedGrid .sv-card')].map(c=>Math.round(c.getBoundingClientRect().top)); return new Set(t).size<8; }));
   ok(N+'the bottom bar is a phone thing (hidden here)',!(await pg.isVisible('.hubbar')));
@@ -228,7 +233,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the bottom bar (phone) ---------- */
-{ const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'bottom bar');
+if(part('hub')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'bottom bar');
   await fresh(pg);
   const bar=async()=>pg.evaluate(()=>{ const cur=document.querySelector('.hubbar a[aria-current="true"]'), pill=document.querySelector('.hubbar .pill').getBoundingClientRect();
     const sv=cur.querySelector('svg.ic-on').getBoundingClientRect(), sp=cur.querySelector('span').getBoundingClientRect(); const topIcon=sv.top, bottomLabel=sp.bottom;
@@ -258,7 +263,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the page behind a pop-up cannot scroll ---------- */
-for(const vp of [PHONE,DESK]){
+if(part('hub')) for(const vp of [PHONE,DESK]){
   const N=vp.name+': ', ctx=await mk(vp); const pg=await page(ctx,vp.name+' scroll lock'); const tap=s=>vp.touch?pg.tap(s):pg.click(s);
   const cdp=vp.touch?await ctx.newCDPSession(pg):null;
   /* a real finger swipe through CDP touch events (Input.synthesizeScrollGesture does nothing in headless Chromium): up by dy scrolls down */
@@ -297,7 +302,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the Save sheet (tool page) ---------- */
-{ const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'save sheet');
+if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await page(ctx,'save sheet');
   const dls=[]; pg.on('download',d=>dls.push(d));
   const savedNow=async()=>Object.values((await fdb(pg)).designs).filter(d=>!/^seed\d/.test(d.id));
   const sheetOpen=async()=>{ await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(500); };
@@ -376,7 +381,7 @@ for(const vp of [PHONE,DESK]){
 }
 
 /* ---------- the Save card on a computer ---------- */
-{ const vp=DESK, N='desktop: ', ctx=await mk(vp); const pg=await page(ctx,'save card desktop'); const dls=[]; pg.on('download',d=>dls.push(d));
+if(part('save')) { const vp=DESK, N='desktop: ', ctx=await mk(vp); const pg=await page(ctx,'save card desktop'); const dls=[]; pg.on('download',d=>dls.push(d));
   await fresh(pg); await pg.evaluate(()=>localStorage.setItem('studio:lastCols:1stchoice','["Restocks"]'));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900);
   await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1800);

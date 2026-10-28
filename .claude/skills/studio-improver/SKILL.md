@@ -49,6 +49,8 @@ Everything else in this skill can be rewritten by the skill itself.
 - **What's New milestones:** a `milestone: <title>` line under a version heading draws the big-number banner (1.0.0). Keep it for real milestones.
 - **Parallel helpers (since 1.4.0):** when asked for parallel sessions, give each helper a worktree (`isolation: worktree`), its own files and its own port (`BASE=http://127.0.0.1:808x/`); tell it to check its base is the session branch (worktrees can start from an old `main`) and to follow the taste rules (weights 400/500/600, RTL with an icon inside an input). The lead keeps VERSION, `sw.js`, changelog, notes and `run.mjs`, then merges, shoots and releases.
 - **Shot scripts and tests that tap the preview:** recompute `#view`'s box and the scale (`box.width/1080`) after anything that changes a sheet's height, and on desktop scroll `#view` into view first (the inspector is long and the page scrolls).
+- **Engine gotchas (folded in from lessons.md at the 1.10.0 pattern review):** a `let`/`const` that init code reaches early must be declared above its first reader, or it hits the temporal dead zone (0.5.0, 0.7.0); grow a tap area with an invisible `::after`, never by resizing a control in a bar (0.2.0, 1.0.0); scope delegated click handlers to their own container (`[data-f] .chip`, 1.0.0); a variant class that sets colours needs its own selected-state rule (specificity slips 0.6.0, 0.7.1, 1.0.0); `:focus-within` on a label that wraps a file input lights up when a dialog opens, use `:has(:focus-visible)`, and new buttons get `:focus:not(:focus-visible){outline:none}`; a page that does not load studio.js gets no brand web fonts; a dialog opened from code focuses its first button, so focus the dialog itself (`tabIndex=-1`).
+- **Shared text matching (since 1.10.0):** `Studio.normText(s)` / `Studio.normMap(s)` in `studio.js` fold Arabic (harakat, tatweel, alef/yeh/teh marbuta/waw/kaf forms, Arabic digits) and case; hub search (`assets/search.js`) and Create's template search use them. A new search box uses the same function, never its own regex.
 - **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku` (see **Testing → Who runs the tests**). Give a subagent files that nobody else is editing at the same time.
 
 ## Design system
@@ -64,7 +66,7 @@ Everything else in this skill can be rewritten by the skill itself.
 3. **Pick work.** First check the session count at the top of `backlog.md`: if this release's minor number is a multiple of 5 (1.5.0, 1.10.0, 2.5.0…), it's a **Simplify session** (see below) and there's no new feature; a major version (2.0.0) also runs the full sweep and the pattern review. Otherwise choose one UI/UX improvement plus one feature. Alternate the feature each session (the last session's type is at the top of `backlog.md`):
    - Team session: speed up restock photos and other team workflows, and make it easier for the team to adopt more tools.
    - Mazoon session: power tools like post makers, story makers, highlight covers, and anything else useful.
-4. **Build.** Keep the scope small enough to finish and test in one session. Write `tests/<feature>.mjs` alongside each new feature or fix and add it to the test map (see Testing).
+4. **Build.** Keep the scope small enough to finish and test in one session. After the first working version of a visual change, run `node tests/taste.mjs` and look at one phone shot in each theme before writing tests or What's New (every late slip in 1.4.0–1.7.0 was found at release). Write `tests/<feature>.mjs` alongside each new feature or fix and add it to the test map (see Testing).
 5. **Quality gates.**
    - **Taste checks are green** (`tests/taste.mjs`): alignment, contrast incl. selected states, notes that cover content, tap budget, clutter, RTL, small phones, tap targets. A new screen gets added to it in the same session.
    - Everything that worked before still works: the smoke test and the targeted suites are green (Testing levels 1 and 2). The full sweep proves it for every screen each 5th version.
@@ -90,7 +92,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 - **Once, before the merge:** `node tests/run.mjs --changed` = smoke + taste + the suites mapped to the files changed since `origin/main` (it fetches it first: a stale local `main` once made it run all 26 suites for 8 min). Run it again only if app code changed after it.
 - `--dry` prints which suites it would run and why, in a second; check it before a long run. `studio.js` is mapped by where the lines changed: inside `tool()` → tool-page suites, inside `home()` → hub suites, only the `VERSION` line → `whatsnew`. The slowest suites start first.
 - Keep `MAP`, `TOOL_SUITES`, `HUB_SUITES` and `SLOW` in `tests/run.mjs` in step with the table below when you add a suite.
-- 4 at a time by default (`JOBS=n`). Long poles: `collage-grids` ~210 s, `full` ~180 s, `home7` ~145 s, `polish71` ~135 s. Never `pkill -f` a pattern that is also in your own command line (it kills the shell running it).
+- 4 at a time by default (`JOBS=n`). Long poles: `collage-grids` ~210 s, `full` ~180 s. `home7` and `polish71` run in parts since 1.10.0 (`home7-hub`, `home7-saved`, `home7-save`, `polish71-saved`, `polish71-search`, `polish71-bar`: each sets `PART` and imports the whole file); the whole files still run by name and in the full sweep. Split the next suite that passes ~120 s the same way. Never `pkill -f` a pattern that is also in your own command line (it kills the shell running it).
 
 **Level 1: smoke, every session (about 30 s).** `node tests/smoke.mjs` runs the core flows at phone size (390×844, touch) in light and dark mode: home, Restock from a photo, Save in one tap (2160×3840 PNG + team), Save after an edit (Save sheet), search (English and Arabic, the Arabic row right to left), and opening a saved design from Saved with its photo back. Run it at the start (audit) and right before merging. It replaces checking these flows by hand. Keep it small: core flows only, under a minute. If a core flow changes on purpose, update `smoke.mjs` in the same session; a new feature gets its own suite instead.
 
@@ -103,23 +105,25 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Area changed | Suites |
 | --- | --- |
 | Tool pages: layers, inspector, sheets, photos, drafts (`tool()` in studio.js, `tools/*.js`) | `full`, `v5`, `polish` |
-| Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
+| Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7-save` |
 | Quick start, "Your photo is in", several photos in a row (`queue` tools) | `quicksave`, `queue`, `whatsnew` |
-| Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
-| Saved page, collections, a design's menu, Peek, select mode, card names | `home7`, `polish71`, `extra`, `select`, `peek`, `cardnames` |
-| Search (`assets/search.*`, `searchEntries` in `home()`) | `search` |
+| Hub home: pins, + menu, Saved row, bottom bar | `home7-hub`, `pins`, `pinorder`, `fresh` |
+| Saved page, collections, a design's menu, Peek, select mode, card names | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames` |
+| Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search` |
 | Copy / Paste style, the inspector's More tab | `copystyle` |
-| Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
-| Create (`tools/create*`) | `create` |
+| Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `highlight-product`, `quickpages` |
+| Create (`tools/create*`) | `create`, `create-search` |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
-| Colours, tokens, type, Arabic text handling | `contrast`, `polish71`, `fresh` |
+| Colours, tokens, type, Arabic text handling | `contrast`, `polish71-saved`, `polish71-bar`, `fresh` |
 | Board, lab (`lab/`) | `lab`, `lab-pro`, `board-penpot` |
 | Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews | `templates`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
 | Welcome tour, Settings sheet (`assets/welcome.*`) | `welcome`, `taste` |
 | Restock / Photo story / Collage drawing (`tools/restock.js`, `photo-story.js`, `collage.js`) | `restock-styles`, `photostory-styles`, `collage-grids` (each compares the old styles pixel for pixel) |
 | Photo looks, Swap two / Shuffle, Move tab, styles with no photo (`tool()`) | `full`, `restock-styles`, `taste` |
 | Any screen (the owner's recurring issues) | `taste` (every session, with smoke) |
+
+**Test-writing tips (folded in from lessons.md):** a touch press-and-hold needs `pointerdown`/`pointerup` with `pointerType:'touch'` (CDP touchStart does not start the timer); a touch drag needs CDP `Input.dispatchTouchEvent` (touchStart, ~10 touchMoves, touchEnd); `fakecloud.collections()` keeps insertion order while the real one sorts, so compare sorted lists; `page.click` scrolls the target into view (click from `page.evaluate` in shot scripts); Board merges panel clicks within 250 ms into one undo step, so wait ≥ 400 ms between steps that undo.
 
 **Level 3: full sweep, Simplify sessions and major versions** (1.5.0, 1.10.0, 2.0.0…), or when Mazoon asks for a check of every screen. Every suite in `tests/` (one at a time; they share the server), `tests/contrast.mjs`, shots of every screen in light and dark with Arabic names seeded (the `tests/look8.mjs` pattern), `tests/tapscan.mjs` over every tool, and a desktop pass. Fix what it finds or add it to the backlog. Other sessions skip it.
 

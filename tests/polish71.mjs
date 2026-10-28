@@ -10,6 +10,8 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import { seedDesigns, seedScript } from './seed.js';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
+/* PART=saved|search|bar (comma list) runs only those parts; polish71-saved.mjs, polish71-search.mjs and polish71-bar.mjs set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n').slice(0,4).join(' | ')); process.exit(1); });   // keep what passed so far visible
@@ -47,7 +49,7 @@ const colNames=pg=>pg.$$eval('#colChips .chip.col span',l=>l.map(x=>x.textConten
 for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
   const N=`${vp.name} ${scheme}: `, tap=(pg,s,o)=>vp.touch?pg.tap(s,o):pg.click(s,o);
   /* =========== Saved page, 8 designs: chosen chip, ⋯ menu, captions, tile + tip =========== */
-  { const {ctx,pg}=await mk(vp,scheme,eight()); await savedPage(pg);
+  if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,eight()); await savedPage(pg);
     ok(N+'8 designs: no New design tile and no tip (6+ designs)',!(await pg.$('#savedGrid .sv-new'))&&!(await pg.isVisible('#savedTip'))&&await cards(pg)===8);
     ok(N+'no collection chosen: no ⋯ button',!(await pg.$('#colMore'))&&!(await pg.$('.col-sel')));
     /* captions: framed cards, an Arabic name and its time group on the right */
@@ -119,7 +121,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     await ctx.close(); }
 
   /* =========== Saved page, a few designs: New design tile + tip; no-match note; sparse list =========== */
-  { const db=eight(); db.cols.Empty={id:'Empty',name:'Empty',brand:'1stchoice'}; const {ctx,pg}=await mk(vp,scheme,db); await savedPage(pg);
+  if(part('saved')) { const db=eight(); db.cols.Empty={id:'Empty',name:'Empty',brand:'1stchoice'}; const {ctx,pg}=await mk(vp,scheme,db); await savedPage(pg);
     await tap(pg,'#colChips .chip[data-f="c:Restocks"]'); await pg.waitForTimeout(500);
     const t2=await pg.evaluate(()=>{ const g=document.getElementById('savedGrid'), tip=document.getElementById('savedTip');
       return {cards:g.querySelectorAll('.sv-card').length,tile:!!document.querySelector('.sv-new'),tipVisible:!!tip&&!tip.hidden&&tip.getClientRects().length>0,tipTxt:tip&&tip.textContent.trim()}; });
@@ -134,7 +136,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     ok(N+'Show all brings the 8 designs back, without the tile and the tip',await cards(pg)===8&&!(await pg.$('#savedGrid .sv-new'))&&!(await pg.isVisible('#savedTip')));
     /* the exact boundary: 5 designs show tile + tip, 6 do not */
     await ctx.close(); }
-  for(const [n,want] of [[1,true],[5,true],[6,false]]){
+  if(part('saved')) for(const [n,want] of [[1,true],[5,true],[6,false]]){
     const {ctx,pg}=await mk(vp,scheme,few(n)); await savedPage(pg);
     const s=await pg.evaluate(()=>({cards:document.querySelectorAll('#savedGrid .sv-card').length,tile:!!document.querySelector('#savedGrid .sv-new'),tip:!document.getElementById('savedTip').hidden&&document.getElementById('savedTip').getClientRects().length>0}));
     ok(N+n+' design'+(n>1?'s':'')+': no tile, tip '+(want?'shows':'is absent'),s.cards===n&&!s.tile&&s.tip===want,s);
@@ -142,15 +144,15 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
       const h=await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); const nw=r.querySelector('.sv-new'); return {cards:r.querySelectorAll('.sv-card').length,tile:!!nw,last:!!nw&&r.lastElementChild===nw}; });
       ok(N+'home Saved row with '+n+': no New design tile',!h.tile&&h.cards===n,h); }
     await ctx.close(); }
-  { const {ctx,pg}=await mk(vp,scheme,few(3)); await homePage(pg);
+  if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,few(3)); await homePage(pg);
     ok(N+'home row: 3 designs, no tile',await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); return r.querySelectorAll('.sv-card').length===3&&!r.querySelector('.sv-new'); }));
     await ctx.close(); }
-  { const {ctx,pg}=await mk(vp,scheme,few(4)); await homePage(pg);
+  if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,few(4)); await homePage(pg);
     ok(N+'home row: 4 designs have no tile',await pg.evaluate(()=>{ const r=document.getElementById('savedRowList'); return r.querySelectorAll('.sv-card').length===4&&!r.querySelector('.sv-new'); }));
     await ctx.close(); }
 
   /* =========== empty Saved: a friendly note and Make a design =========== */
-  { const {ctx,pg}=await mk(vp,scheme,empty()); await savedPage(pg);
+  if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,empty()); await savedPage(pg);
     const e=await pg.evaluate(()=>{ const n=document.querySelector('#savedEmpty .sv-note'), bt=n&&n.querySelector('[data-new]'); return {note:!!n,ic:!!(n&&n.querySelector('.sn-ic svg')),title:n&&n.querySelector('.sn-txt b').textContent.trim(),p:n&&n.querySelector('.sn-txt p').textContent.trim(),btn:bt&&bt.textContent.trim(),btnH:bt&&Math.round(bt.getBoundingClientRect().height),
       grid:document.querySelectorAll('#savedGrid .sv-card,#savedGrid .sv-new').length,tip:!document.getElementById('savedTip').hidden,chips:!document.getElementById('colChips').hidden}; });
     ok(N+'empty Saved: .sv-note with icon, title, line and a "Make a design" button',e.note&&e.ic&&e.title==='Nothing saved yet'&&e.p.length>10&&e.btn==='Make a design'&&e.btnH>=44,e);
@@ -163,7 +165,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     await ctx.close(); }
 
   /* =========== design sheet header mirrors for an Arabic name =========== */
-  { const {ctx,pg}=await mk(vp,scheme,eight()); await savedPage(pg);
+  if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,eight()); await savedPage(pg);
     await tap(pg,'#savedGrid .sv-card[data-id="seed0"] .sv-more'); await pg.waitForSelector('dialog.design-dlg[open] .ds-top',{timeout:5000}); await pg.waitForTimeout(400);
     const ds=await pg.evaluate(()=>{ const t=document.querySelector('dialog.design-dlg[open] .ds-top'), h=t.querySelector('h3'), im=t.querySelector('img,.ds-ph'), c=r=>(r.left+r.right)/2;
       return {dir:t.getAttribute('dir'),rtl:t.matches(':dir(rtl)'),name:h.textContent,picRightOfName:c(im.getBoundingClientRect())>c(h.getBoundingClientRect()),nameDir:getComputedStyle(h).direction}; });
@@ -175,7 +177,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     await ctx.close(); }
 
   /* =========== search: our own clear button, Arabic rows mirror =========== */
-  { const {ctx,pg}=await mk(vp,scheme,eight()); await homePage(pg);
+  if(part('search')) { const {ctx,pg}=await mk(vp,scheme,eight()); await homePage(pg);
     await tap(pg,'#uq'); await pg.waitForTimeout(400);
     const x0=await pg.evaluate(()=>{ const x=document.querySelector('.us-field .us-x'); return {has:!!x,vis:!!x&&x.getClientRects().length>0&&!x.hidden,label:x&&x.getAttribute('aria-label'),inField:!!x&&!!x.closest('.us-field')}; });
     ok(N+'search: our clear button exists inside the field, hidden while empty',x0.has&&!x0.vis&&x0.inField&&x0.label==='Clear search',x0);
@@ -199,7 +201,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
 }
 
 /* =========== phone only: bar icons, Snap label, interface font =========== */
-for(const scheme of ['light','dark']){
+if(part('bar')) for(const scheme of ['light','dark']){
   const N=`phone ${scheme}: `;
   { const {ctx,pg}=await mk(PHONE,scheme,eight()); await homePage(pg);
     const bar=()=>pg.evaluate(()=>[...document.querySelectorAll('.hubbar a')].map(a=>{ const off=a.querySelector('svg.ic-off'), on=a.querySelector('svg.ic-on'), v=e=>!!e&&getComputedStyle(e).display!=='none'&&e.getClientRects().length>0, sz=e=>{ const r=e.getBoundingClientRect(); return Math.round(r.width)+'x'+Math.round(r.height); };
