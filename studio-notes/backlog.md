@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 16 (1.5.0, 26 Oct 2026) was an owner-directed **Simplify** session (Mazoon's six-point list): All tools drag ordering (pinned on top, each tool once), a 3-tool + menu with More tools, a Studio sort sheet, one chip row on Saved, 3:4 cards with the Template badge in its own corner and one-line names, no New design tile. The next session, 1.6.0, is a **team** session.
+**Last session:** 17 (1.6.0, 28 Oct 2026) was a **team** session: Several shops in a row (Restock and Photo story take several photos, a story each, Next photo in the Save sheet) and shorter automatic names on Saved cards. The next session, 1.7.0, is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.10.0 (with a pattern review).
 
 ## Next up
@@ -24,7 +24,11 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
-- 1.5.0: one-line card names cut English dates on a phone ("Restock – 24 …"); watch whether the team misses the date. An idea: show the date as the card's second line (it is in the name today) or two lines only when the name has one script.
+- 1.6.0: Several shops in a row keeps the waiting photos only in the open page: leaving the tool (or the phone reloading it after the share sheet) drops the rest. If the team hits this, keep the queue in IndexedDB (`studio:queue:<brand>:<tool>`) and offer "2 photos still waiting" on return.
+- 1.6.0: on a phone, Skip to the next photo only shows in the Save sheet after an edit (an untouched Quick start saves in one tap and never opens the sheet first). Watch whether the team wants a Skip on the ready note.
+- 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
+- 1.6.0: `peek` "Peek fits the screen" (desktop) failed once under 4 parallel suites and passed 2 of 2 alone: a timing check; give it a wait for the open animation if it repeats.
+- 1.6.0: a design opened again (used_at later than its name's date) shows its full automatic name, which can still be cut on the card; fine for now.
 - 1.5.0: Saved: the chosen collection's ⋯ can sit under the row's end fade on a narrow phone; the row scrolls it into view, but check on a real phone.
 - 1.5.0 full sweep: tapscan lists tick boxes (24px) and colour wells (38px) on tool Style/Words sheets; they sit inside larger rows (taste passes), same as 1.4.0. Confirm each row is the hit area.
 - 1.5.0: drag in All tools has no auto-scroll; fine for up to ~8 pinned tools (the pinned list is at the top of the sheet). Add edge auto-scroll if someone pins most tools.
@@ -56,6 +60,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.6.0 (team): Several shops in a row (`queue:true` tools: Restock, Photo story; + menu, row camera, search shortcut and share sheet take several photos); Saved cards drop the automatic date when the caption gives it, and old dates read "18 Oct" (was the 1.5.0 audit note).
 - 1.5.0: + menu slimmed to 3 photo tools + New design + More tools (was the 1.1.0 audit note); All tools ordering by drag; sort sheet; Saved filters in one row; card fixes.
 - 1.4.0 (Mazoon, 3 parallel helpers): Highlight covers **Product** type (the brand kit's HD can pictures in the circle, picker in Style); Create template search (English + Arabic, empty state, ✕) and `?tpl=` on an open design shows the picker on that template; taste checks for Carousel, Highlight, Create + labels on icon-only controls; checkbox rows aligned with their sheet heading (4px).
 - 1.3.0 (team): Peek, a saved design big with swipe to the next (#23); the shared photo waits on Home ("Your photo is in", Pick / ✕); `tests/run.mjs --quick`, `--dry`, origin/main as base, studio.js mapped by tool()/home(), slowest first (26 → 13 suites, 487 → 193 s). Hub tool thumbnails checked: kept (a fresh render was worse).

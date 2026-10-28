@@ -31,6 +31,7 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Tests:** serve with `npx http-server -p 8080 -c-1 .`, then follow **Testing** below (smoke every session, targeted suites for what changed, the full sweep only in Simplify sessions). In a cloud sandbox Playwright is global: if ESM can't find it, link it: `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright node_modules/ && ln -s /opt/node-tools/node_modules/playwright-core node_modules/` (node_modules is git-ignored).
 - **Audit + screenshot helpers:** `node tests/tapscan.mjs tools/a.html,tools/b.html` lists every control under 44px per sheet; `node tests/shot.mjs <page> <sheet|-> <out.jpg> [selector]` takes the What's New phone shots.
 - **Contrast, RTL and real-font shots** (full sweep, or when colours, tokens or Arabic text handling change): `node tests/contrast.mjs` scans every main screen in light and dark for text below WCAG AA and Arabic text running left-to-right (run it on the old commit too, so a clean result means something). `node tests/look8.mjs <outDir> [base] [names]` shoots the owner-flagged screens in both themes with Arabic names seeded. For real Google Fonts in the sandbox, launch with `proxy:{server:process.env.HTTPS_PROXY,bypass:'127.0.0.1,localhost'}` and set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` (otherwise local pages go through the proxy).
+- **One-photo tools that take several photos (since 1.6.0):** `queue:true` in `TOOLS` makes Quick start keep the extra photos (up to `QUEUE_MAX`) and offer **Next photo** in the Save sheet; a new story each time (new draft, `design` cleared). Use it instead of a batch renderer for "one story per photo" jobs.
 - **New paged tools** (a set of covers, slides…): use `pages`, `pagePhotos` and `pageNoun` in `Studio.tool` instead of new engine code (since 1.1.0 `quickKind` + `quick`/`multi`/`max`/`qi` in `TOOLS` give it Quick start, one photo per page); the hub list is `TOOLS` in `studio.js`, its thumbnails are `assets/thumbs/<brand>/<id>.jpg` + `-sm.jpg` (320×569), and both tool files go in the `sw.js` shell.
 - **Wording in test data:** anything a test types that can end up in a shipped image (thumbnails, screenshots) must be an approved phrase from `brand.js`.
 - **Owner-directed sessions:** when Mazoon names the work, do that instead of the backlog pick. The gates still apply, and the session still counts in the team/Mazoon rotation (by who it helps most).
@@ -102,9 +103,9 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | --- | --- |
 | Tool pages: layers, inspector, sheets, photos, drafts (`tool()` in studio.js, `tools/*.js`) | `full`, `v5`, `polish` |
 | Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
-| Quick start, "Your photo is in" | `quicksave`, `whatsnew` |
+| Quick start, "Your photo is in", several photos in a row (`queue` tools) | `quicksave`, `queue`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
-| Saved page, collections, a design's menu, Peek, select mode | `home7`, `polish71`, `extra`, `select`, `peek` |
+| Saved page, collections, a design's menu, Peek, select mode, card names | `home7`, `polish71`, `extra`, `select`, `peek`, `cardnames` |
 | Search (`assets/search.*`) | `search` |
 | Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
 | Create (`tools/create*`) | `create` |
@@ -162,7 +163,7 @@ Before picking work, spend a few minutes improving the process itself:
   - Contrast ≥ 4.5:1 in light AND dark, including selected, pressed and disabled states; a selected state must look different from the unselected one.
   - Notes and pop-ups never block the design: a note covers ≤ 15% of the preview, is one or two lines, and goes away in ≤ 4 s or with a tap; dialogs fit inside the screen at 390×844 and 1280×800 and lock the page behind.
   - Tap budget: Restock from a photo ≤ 2 taps to a saved picture, Photo story ≤ 2, a no-photo Restock ≤ 1 after opening, Save + team ≤ 2. A change may never raise a count.
-  - Clutter: at most two filled accent buttons on a first view (plus +), no two controls with the same label, new options behind a tap.
+  - Clutter: at most two filled accent buttons on a first view (plus +), and in every later state of a sheet too (e.g. the Save sheet after saving); no two controls with the same label, new options behind a tap.
   - RTL: Arabic text runs right to left (dir="auto" on the wrapper), times and numbers in `<bdi>`, every text input takes Arabic correctly.
   - Small phones (360px): no sideways scrolling, no clipped labels, the last row scrolls clear of the bottom bar.
   - Every icon-only control has a label or a tooltip; no two tools share an icon.
