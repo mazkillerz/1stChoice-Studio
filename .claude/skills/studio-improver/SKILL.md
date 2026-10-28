@@ -104,13 +104,13 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Area changed | Suites |
 | --- | --- |
 | Tool pages: layers, inspector, sheets, photos, drafts (`tool()` in studio.js, `tools/*.js`) | `full`, `v5`, `polish` |
-| Save engine, Save sheet, team save | `quicksave`, `simplify`, `home7` |
+| Save engine, Save sheet, team save, Save all (`assets/batch.js`) | `quicksave`, `simplify`, `home7`, `batch` |
 | Quick start, "Your photo is in", several photos in a row (`queue` tools) | `quicksave`, `queue`, `queue-keep`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar | `home7`, `pins`, `pinorder`, `fresh` |
 | Saved page, collections, a design's menu, Peek, select mode, card names | `home7`, `polish71`, `extra`, `select`, `peek`, `cardnames` |
 | Search (`assets/search.*`, `searchEntries` in `home()`) | `search` |
 | Copy / Paste style, the inspector's More tab | `copystyle` |
-| Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages` |
+| Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `quickpages`, `batch` |
 | Create (`tools/create*`) | `create` |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
