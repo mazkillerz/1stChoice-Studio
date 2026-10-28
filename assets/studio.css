@@ -743,6 +743,7 @@ html.scroll-lock,html:has(dialog[open]),html:has(body.us-open){overflow:hidden;o
 .row-cam.busy,.fab-item.busy{opacity:.55;pointer-events:none}
 .grid.view-grid .tool-item.has-cam .tool-row{padding-inline-end:0}
 .grid.view-grid .row-cam{top:8px;margin-top:0;inset-inline-end:8px;background:color-mix(in srgb,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:var(--shadow-1)}
+.lib-row .lib-cam{position:relative;top:auto;inset-inline-end:auto;margin:0 4px 0 0;flex:none}   /* All tools: the camera sits in the row, before the star */
 
 /* the + button: bottom corner, in thumb reach; it opens a small menu just above itself */
 .fab{position:fixed;z-index:45;inset-inline-end:max(24px,var(--safe-r));bottom:calc(24px + var(--safe-b));width:60px;height:60px;padding:0;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--glow),var(--shadow-2);transition:transform .45s var(--spring),box-shadow .2s;animation:fab-in .55s var(--spring) .25s backwards}
