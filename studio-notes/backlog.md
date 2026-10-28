@@ -25,6 +25,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
 - 1.8.0: `queue.mjs` "no leftover unfinished stories" fails now and then under 3–4 parallel suites (draft timer), passes alone every time. Give it a wait on the draft timer if it shows up again.
 - 1.8.0 ideas: a small "2 waiting" tag on the Restock / Photo story rows in Your tools; one wording for the note's Skip and the Save sheet's "Skip to the next photo".
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
