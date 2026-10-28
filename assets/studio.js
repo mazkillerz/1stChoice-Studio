@@ -1713,7 +1713,7 @@ async function tool(cfg){
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
-  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true&&!design; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncSaveAll(); syncQueue();
+  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true&&!design; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
     hideReady();
@@ -1729,11 +1729,11 @@ async function tool(cfg){
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
-    if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncSaveAll(); syncQueue(); return; }
+    if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
     if(!team&&asked&&await checkTeam()) team=true;
     if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
     if(team) $('teamOnly').dataset.off='1';
-    $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncSaveAll(); syncQueue();
+    $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue();
   }
   $('save').addEventListener('click',()=>doSave());
   /* Quick start: a small "Your photo is in" note over the bottom of the preview. It fades by itself after about 3 seconds;
