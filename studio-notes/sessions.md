@@ -25,3 +25,6 @@ One **lead** session coordinates five version sessions. Each version session bui
 - Lead: `session_01Y65H7Xe9APNhwLbBgQTqBK`
 - 1.8.0: `session_01Y65H7YqL8rr1j9hKGFxGpK` · 1.9.0: `session_01Y65H7ZmENLej2cfJpLkB6L` · 1.11.0: `session_01Y65H7aV6HQhsuLCZk8xT2U` · 1.12.0: `session_01Y65H7Wok6NumBM3nmFY5Wu`
 - 1.10.0: `session_01Y65H7Znq7QhTrq1gYiXucQ` (phase 1 now: pattern review + cleanup away from the queue/save areas; phase 2 full sweep after 1.8.0 + 1.9.0 are on `main`).
+
+## Result (28 Oct 2026, ~2 h 15 min)
+All five released to `main` in order: 1.8.0 → 1.9.0 → 1.10.0 → 1.11.0 → 1.12.0, each after its own `run.mjs --changed` run. Merge conflicts: one (studio.css, 1.8.0 + 1.12.0 both added rules; kept both). Found on the way: two suites red on `main` since 1.5.0 (simplify, quickpages; fixed), an empty Add an element card on a computer (fixed), Save all wording on a computer (fixed), and an open flaky check in `queue.mjs` (backlog, top of the audit list). The pending notes in `studio-notes/pending/` are folded into the changelog, README, backlog, lessons, taste and the skill; they stay as the sessions' record.
