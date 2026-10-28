@@ -22,7 +22,7 @@ const order=await pg.$$eval('.lib-row a',as=>as.map(a=>a.getAttribute('href').re
 ok('All tools: Restock is the first tool',order[0]==='restock',order.join(','));
 ok('All tools: every tool is listed',order.length===10&&['create','new-place','photo-story','cinematic','collage','split','restock','offer','carousel','highlight'].every(t=>order.includes(t)));
 const groups=await pg.$$eval('.lib .tgroup',h=>h.map(x=>x.textContent));
-ok('All tools: tools are grouped',groups.length===3,groups.join(' / '));
+ok('All tools: tools are grouped',groups.filter(g=>g!=='On your home').length===3,groups.join(' / '));   // 1.5.0 added the On your home heading above the groups
 await pg.click('#libDone'); await pg.waitForTimeout(300);
 ok('hub: two view choices',await pg.$$eval('[data-view="tools"] button',bs=>bs.length)===2);
 ok('hub: an old "compact" choice shows as grid',await pg.$eval('#toolGrid',g=>g.classList.contains('view-grid')));
