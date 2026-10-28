@@ -20,19 +20,21 @@ const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:
 await ctx.route(/supabase\.co/,r=>r.abort());
 await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
 const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(String(e)));
-await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:welcome','1'); }); await pg.reload(); await pg.waitForTimeout(600);
+await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:welcome','1'); localStorage.setItem('studio:pins',JSON.stringify(['restock','carousel','highlight'])); }); await pg.reload(); await pg.waitForTimeout(600);
 
 /* 1. the + menu */
 const openFab=async()=>{ await pg.tap('#fab'); await pg.waitForSelector('.fab-menu',{timeout:4000}); await pg.waitForTimeout(350); };
 await openFab();
 const menu=await pg.$$eval('.fab-menu .fab-item',els=>els.map(e=>({t:(e.querySelector('b')||e).textContent.trim(),ic:(e.querySelector('.fi-ic')||{}).innerHTML||'',q:(e.querySelector('input[data-quick]')||{}).dataset?.quick||''})));
 const q=menu.filter(m=>m.q);
-ok('+ menu: Carousel and Highlight covers start from photos',['carousel','highlight'].every(id=>q.some(m=>m.q===id)),q.map(m=>m.q).join(','));
+ok('+ menu: the photo tools start from photos (since 1.5.0 Carousel and Highlight covers start from their own row\'s camera)',q.length>=3,q.map(m=>m.q).join(','));
+ok('pinned Carousel and Highlight covers rows have a camera button',await pg.$$eval('#toolGrid input[data-quick]',els=>['carousel','highlight'].every(id=>els.some(e=>e.dataset.quick===id))));
 ok('+ menu: every photo tool has its own icon',new Set(q.map(m=>m.ic)).size===q.length,q.length+' tools');
 ok('+ menu: still fits on a phone screen',await pg.$eval('.fab-menu',e=>{ const r=e.getBoundingClientRect(); return r.top>=0&&r.bottom<=innerHeight; }));
+await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
 
 /* 2. carousel from 5 photos */
-await Promise.all([pg.waitForURL(/carousel\.html/,{timeout:15000}),pg.setInputFiles('.fab-menu input[data-quick="carousel"]',ALL.slice(0,5))]);
+await Promise.all([pg.waitForURL(/carousel\.html/,{timeout:15000}),pg.setInputFiles('#toolGrid input[data-quick="carousel"]',ALL.slice(0,5))]);
 await pg.waitForSelector('#readyBar:not([hidden])',{timeout:15000}).catch(()=>{});
 const ready=await pg.isVisible('#readyBar')&&(await pg.textContent('#readyTxt'))==='Your photos are in';
 const car=await pg.evaluate(()=>{ const S=Studio.debug.S, per=S.photos.length/10; return {pages:S.P.length,real:S.P.map((p,i)=>!!(S.photos[i*per]&&S.photos[i*per].img&&!S.photos[i*per].sample)),page:S.page}; });
@@ -45,16 +47,16 @@ let size=''; if(dls[0]){ const f=os.tmpdir()+'/qp-'+dls[0].suggestedFilename(); 
 ok('carousel: one tap on Save saves at full size (2160x2700 slides)',dls.length>=1&&size==='2160x2700',dls.length+' files, '+size);
 
 /* 3. highlight covers from 3 photos */
-await pg.goto(BASE+'index.html'); await pg.waitForTimeout(500); await openFab();
-await Promise.all([pg.waitForURL(/highlight\.html/,{timeout:15000}),pg.setInputFiles('.fab-menu input[data-quick="highlight"]',ALL.slice(5,8))]);
+await pg.goto(BASE+'index.html'); await pg.waitForTimeout(500);
+await Promise.all([pg.waitForURL(/highlight\.html/,{timeout:15000}),pg.setInputFiles('#toolGrid input[data-quick="highlight"]',ALL.slice(5,8))]);
 await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S.photos.some(p=>p.img&&!p.sample),null,{timeout:15000}).catch(()=>{}); await pg.waitForTimeout(600);
 const hl=await pg.evaluate(()=>{ const S=Studio.debug.S, per=S.photos.length/12; return {pages:S.P.length,kinds:S.P.map(p=>p.values.kind),real:S.P.map((p,i)=>!!(S.photos[i*per]&&S.photos[i*per].img&&!S.photos[i*per].sample))}; });
 ok('highlight: 3 photos make 3 covers',hl.pages===3,hl.pages);
 ok('highlight: every cover is a photo cover with its photo',hl.kinds.every(k=>k==='photo')&&hl.real.every(Boolean),JSON.stringify(hl));
 
 /* 4. 13 photos: the first 10 */
-await pg.goto(BASE+'index.html'); await pg.waitForTimeout(500); await openFab();
-await Promise.all([pg.waitForURL(/carousel\.html/,{timeout:15000}),pg.setInputFiles('.fab-menu input[data-quick="carousel"]',ALL)]);
+await pg.goto(BASE+'index.html'); await pg.waitForTimeout(500);
+await Promise.all([pg.waitForURL(/carousel\.html/,{timeout:15000}),pg.setInputFiles('#toolGrid input[data-quick="carousel"]',ALL)]);
 await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S.P.length>=10,null,{timeout:20000}).catch(()=>{}); await pg.waitForTimeout(800);
 ok('carousel: 13 photos keep the first 10 slides',await pg.evaluate(()=>Studio.debug.S.P.length)===10);
 

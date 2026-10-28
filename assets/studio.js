@@ -711,7 +711,7 @@ async function tool(cfg){
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul>
     <button type="button" class="link reset-layout" id="resetLayout">${ICON.undo} Put everything back where it started</button></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
-    <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
+    <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span><button type="button" class="link save-cancel" id="saveCancel" hidden>Cancel</button></div>
     <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
     <button type="button" class="btn queue-next" id="queueNext" hidden><span id="queueNextTxt">Next photo</span>${ICON.next}</button>
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
@@ -1191,9 +1191,9 @@ async function tool(cfg){
     $('teamAsNewRow').hidden=!design;
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save '+PN.many:'Save story');
+    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):saveAllLabel();
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
-    if(on) paintTeamCols();
+    if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
   function pickDefaultCols(){ teamPicked.clear(); const d=design?design.collections:store(LAST_COLS);
@@ -1616,18 +1616,30 @@ async function tool(cfg){
   function fname(ext,kind,n,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
   function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
-  let lastFiles=null, saving=false;
+  /* Save all pages (1.9.0): paged tools save every page in one go, named <design>-01.png, -02.png… (the design's name, else the
+     tool and the time); a phone gets one share sheet with all of them, a computer one ZIP (assets/batch.js). Cancel stops before anything is saved. */
+  function saveAllLabel(){ return !PG?'Save story':pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
+  function syncSaveAll(){ if(!PG) return; if(!saving) $('saveThis').hidden=pageCount()<2||$('save').hidden; if(!imgDone&&!$('teamOn').checked) $('saveTxt').textContent=saveAllLabel();
+    $('photosRow').textContent=pageCount()>1?'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.':'Always a full-quality picture to your Photos.'; }
+  function batchBase(stamp){ const n=(design?design.name:($('teamName').dataset.touched?$('teamName').value:'')).trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
+    return n||fname('x',null,0,stamp).replace(/\.x$/,''); }
+  let lastFiles=null, saving=false, cancelSave=false;
+  $('saveCancel').addEventListener('click',()=>{ cancelSave=true; $('saveCancel').disabled=true; $('progressTxt').textContent='Stopping…'; });
   async function save(withPhotos,only){
-    if(saving) return; saving=true; syncQueue();
+    if(saving) return; saving=true; cancelSave=false; syncQueue();
     const sel=S.sel; S.sel=null;
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
     progress(.02,'Getting the HD pictures…'); await assetsHD();   // saving uses the HD can cut-outs, never the light preview copies
     const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
+    const base=PG?batchBase(stamp):'', z2=n=>String(n).padStart(2,'0');
+    $('saveCancel').hidden=pages<2; $('saveCancel').disabled=false;
+    const stopped=()=>{ if(!cancelSave) return false; progress(null); done(null); status('Stopped. Nothing was saved.',3500); return true; };
     try{
       for(const [li,pg] of list.entries()){
-        const tag=pages>1?UC(PN.one)+' '+(li+1)+' of '+pages+': ':'';
-        progress((li+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
+        if(stopped()) return 'cancelled';
+        const tag=pages>1?'Saving '+(li+1)+' of '+pages+'…':'';
+        progress((li+.1)/pages,tag||'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
         /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
         async function renderAt(K){
           const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
@@ -1635,7 +1647,7 @@ async function tool(cfg){
           try{
             withPage(pg,()=>draw(ctx,false,K));
             if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
-            progress((li+.55)/pages,tag+'Making the PNG…');
+            progress((li+.55)/pages,tag||'Making the PNG…');
             const b=await new Promise(r=>c.toBlob(r,type));
             return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
           }catch(_){ return null; }
@@ -1645,8 +1657,10 @@ async function tool(cfg){
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
         if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
-        files.push(new File([blob],fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
+        files.push(new File([blob],PG&&withPhotos?base+'-'+z2(pg+1)+'.'+ext:fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
       }
+      if(stopped()) return 'cancelled';
+      $('saveCancel').hidden=true;
       progress(1,'Done');
       const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
       const what=pages>1?files.length+' '+PN.many:(withPhotos?'Your story':'The frame');
@@ -1659,10 +1673,14 @@ async function tool(cfg){
         if(r==='cancelled'){ progress(null); done(null); status('Not saved. Tap Save again when you are ready.'); showResult(files,true); return; }
         if(r==='needtap'){ progress(null); showResult(files,true); finish('Ready!','Tap “Save to Photos” to put it in your photos.'+small,true); return; }
       }
+      /* a computer: several pages come as one ZIP (browsers stop a page that downloads many files at once); one by one if the ZIP can't be made */
+      if(!inClaude&&!touch&&!isPhone()&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); if(!window.StudioBatch) await loadScript(ROOT+'assets/batch.js'); zip=await window.StudioBatch.zip(files,stamp); }catch(_){ zip=null; }
+        if(zip){ const name=base+'.zip', url=URL.createObjectURL(zip), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000);
+          showResult(files,false); finish('Saved!','Your '+files.length+' '+PN.many+' are in your downloads in one ZIP ('+name+'), numbered in order.'+small); return; } }
       if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
       showResult(files,false);
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
-    } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
+    } finally { saving=false; cancelSave=false; $('saveCancel').hidden=true; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
   function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; keepQueue(); if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
   function showResult(files,offerShare){
@@ -1737,7 +1755,7 @@ async function tool(cfg){
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
-    await save(true,only);
+    if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
     if(!team&&asked&&await checkTeam()) team=true;
     if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
     if(team) $('teamOnly').dataset.off='1';
@@ -1779,7 +1797,7 @@ async function tool(cfg){
       <button type="button" class="mini icon sall" data-pg="all" aria-label="See all ${PN.many}" title="See all ${PN.many}">${ICON.grid}</button>`;
     S.P.forEach((_,i)=>drawThumb(i));
     const cur=el.querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest'});
-    fit();
+    fit(); syncSaveAll();
   }
   function drawThumb(i,canvas){
     const c=canvas||$('pager').querySelector(`.sthumb[data-pg="${i}"] canvas`); if(!c) return; const x=c.getContext('2d');
