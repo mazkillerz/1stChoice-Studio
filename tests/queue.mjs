@@ -69,7 +69,9 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   r=await saveOnce();
   ok(N+'story 3 saved; the done note says it was the last; nothing left waiting',r.got===1&&/last of your 3/.test(await pg.textContent('#doneTxt'))&&await pg.$eval('#queueNext',e=>e.hidden)&&(await designs())===before+3,await pg.textContent('#doneTxt'));
   ok(N+'after the last one Save is a normal button again',!(await pg.$eval('#save',e=>e.classList.contains('ghost'))));
-  const drafts=await pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)).length);
+  /* the last draft is dropped after the team save settles; under parallel load that can take a moment, so wait for it (up to 5 s) */
+  const countDrafts=()=>pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)).length);
+  let drafts=await countDrafts(); for(let t=0;drafts&&t<25;t++){ await pg.waitForTimeout(200); drafts=await countDrafts(); }
   ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts');
 
   /* a computer shows "Skip to the next photo" before saving */

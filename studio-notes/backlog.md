@@ -28,7 +28,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
 - 1.9.0: on a computer the low-memory fallback message still says "This phone was low on memory".
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
-- 1.8.0: `queue.mjs` "no leftover unfinished stories" fails now and then under 3–4 parallel suites (draft timer), passes alone every time. Give it a wait on the draft timer if it shows up again.
 - 1.8.0 ideas: a small "2 waiting" tag on the Restock / Photo story rows in Your tools; one wording for the note's Skip and the Save sheet's "Skip to the next photo".
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
 - 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
