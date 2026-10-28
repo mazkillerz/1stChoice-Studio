@@ -120,6 +120,10 @@ Studio.registerBrand({
       {id:'ice-cold',label:'Ice cold',layout:'hero-panel',size:'story',words:{head:'يسرسح ثلج',small:'خذلك كولد برو',pill:'الخريطة في البايو'},assets:{product:'cans-pair-shadow'}},
       {id:'did-you-know',label:'Did you know',layout:'did-you-know',size:'story',words:{head:'تعرف ويش؟',pill:'جربته؟'},assets:{product:'can-classic-shadow'}},
       {id:'your-choice',label:'Your choice',layout:'your-choice',size:'story',words:{head:'اختيارك؟',pill:'منشن ربعك'},assets:{one:'can-classic',two:'can-passion'}},
+      /* one-tap feed posts (1080×1350): the three above, ready to save as they open. keys = extra search words */
+      {id:'ice-cold-post',label:'Ice cold post',badge:'New',cat:'post',layout:'hero-panel-post',size:'post',keys:'feed instagram',words:{head:'يسرسح ثلج',small:'خذلك كولد برو',pill:'الخريطة في البايو'},assets:{product:'cans-pair-shadow'}},
+      {id:'did-you-know-post',label:'Did you know post',badge:'New',cat:'post',layout:'did-you-know-post',size:'post',keys:'feed instagram facts',words:{head:'تعرف ويش؟',line1:'كولد برو',line2:'منعش',line3:'يصحصحك',pill:'جربته؟'},assets:{product:'can-classic-shadow'}},
+      {id:'your-choice-post',label:'Your choice post',badge:'New',cat:'post',layout:'your-choice-post',size:'post',keys:'feed instagram flavours',words:{head:'اختيارك؟',pill:'منشن ربعك'},assets:{one:'can-classic',two:'can-passion'}},
       {id:'chat',label:'Chat (late friend)',layout:'chat',size:'post',pages:3,words:{name:'ربيعي',pill:'اطلب الحين'},assets:{photo:'cans-pair'}},
       {id:'bingo',label:'Bingo 4×4',layout:'bingo',size:'post',look:'cream',words:{},assets:{product:'can-classic'}},
       {id:'spot',label:'Spot the difference',layout:'spot',size:'story',words:{head:'صبر شوي...'},assets:{product:'cans-pair'}},
