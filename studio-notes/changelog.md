@@ -13,6 +13,28 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.9.0 · 28 Oct 2026
+
+### Save every slide in one go
+type: feature
+A carousel or a set of highlight covers now says how much it saves: **Save all 6 slides** (with the team switch on, the line under Save says "All 6 slides go to your Photos"). One tap makes every slide at full quality and the counter shows **Saving 3 of 6**; changed your mind? Tap **Cancel** and nothing is saved, not even to the team. On a phone all of them open in one share sheet; on a computer they come as one ZIP (browsers used to stop after the first few downloads). Every file is named after your design and numbered in order: **My-carousel-01.png**, **-02.png**… **Save this slide only** is still one tap, in the same place.
+![before](assets/whatsnew/1.9.0-saveall-before.jpg)
+![after](assets/whatsnew/1.9.0-saveall-after.jpg)
+
+## 1.8.0 · 28 Oct 2026
+
+### Your photos keep waiting
+type: feature
+Picked three shop photos for **Restock** and the phone reloaded after the share sheet, or you went back to Home in between? The photos still waiting used to be gone, and you had to pick them again. Now they stay on your phone. Home shows **2 photos still waiting**: tap it and the next one comes in, ready to save in one tap. Opening Restock again offers them too, with **Continue** (back to the story you were on if you hadn't saved it yet) or **Clear**. A reload right after saving brings the same offer; a reload before saving brings you back to that photo. They're cleared by themselves once the last one is in, or with ✕. **Photo story** works the same.
+![before](assets/whatsnew/1.8.0-home-before.jpg)
+![after](assets/whatsnew/1.8.0-home-after.jpg)
+
+### Skip a photo straight from the note
+type: design
+With several photos, the "Photo 1 of 3 is in" note now has a small **Skip**: one tap brings in the next photo without saving this one (it stays in Continue editing). Before, skipping meant editing something first so the Save sheet would open, then **Skip to the next photo**: 3 taps or more, now 1. Saving each photo is still one tap, and Skip is a quiet word, not another big button.
+![before](assets/whatsnew/1.8.0-note-before.jpg)
+![after](assets/whatsnew/1.8.0-note-after.jpg)
+
 ## 1.7.0 · 28 Oct 2026
 
 ### Copy style, paste style

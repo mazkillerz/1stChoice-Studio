@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.7.0';
+const VERSION='1.9.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -662,8 +662,8 @@ async function tool(cfg){
     nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}<span aria-hidden="true">Snap</span></button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
-    <div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
-    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span></div></div>
+    <div class="banner queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini" id="queueClear">Clear</button><button type="button" class="mini queue-go" id="queueGo">Continue</button></span></div><div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div>
+    <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span><button type="button" class="rp-skip" id="readySkip" hidden>Skip</button></div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
     <div class="hint" id="hint">${esc(cfg.sampleNote||'Example photos. Add yours in Photo.')}</div>
@@ -727,7 +727,7 @@ async function tool(cfg){
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul>
     <button type="button" class="link reset-layout" id="resetLayout">${ICON.undo} Put everything back where it started</button></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
-    <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span></div>
+    <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span><button type="button" class="link save-cancel" id="saveCancel" hidden>Cancel</button></div>
     <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
     <button type="button" class="btn queue-next" id="queueNext" hidden><span id="queueNextTxt">Next photo</span>${ICON.next}</button>
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
@@ -1207,9 +1207,9 @@ async function tool(cfg){
     $('teamAsNewRow').hidden=!design;
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):(cfg.pages?'Save '+PN.many:'Save story');
+    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):saveAllLabel();
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
-    if(on) paintTeamCols();
+    if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
   function pickDefaultCols(){ teamPicked.clear(); const d=design?design.collections:store(LAST_COLS);
@@ -1632,18 +1632,30 @@ async function tool(cfg){
   function fname(ext,kind,n,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
   function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
-  let lastFiles=null, saving=false;
+  /* Save all pages (1.9.0): paged tools save every page in one go, named <design>-01.png, -02.png… (the design's name, else the
+     tool and the time); a phone gets one share sheet with all of them, a computer one ZIP (assets/batch.js). Cancel stops before anything is saved. */
+  function saveAllLabel(){ return !PG?'Save story':pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
+  function syncSaveAll(){ if(!PG) return; if(!saving) $('saveThis').hidden=pageCount()<2||$('save').hidden; if(!imgDone&&!$('teamOn').checked) $('saveTxt').textContent=saveAllLabel();
+    $('photosRow').textContent=pageCount()>1?'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.':'Always a full-quality picture to your Photos.'; }
+  function batchBase(stamp){ const n=(design?design.name:($('teamName').dataset.touched?$('teamName').value:'')).trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
+    return n||fname('x',null,0,stamp).replace(/\.x$/,''); }
+  let lastFiles=null, saving=false, cancelSave=false;
+  $('saveCancel').addEventListener('click',()=>{ cancelSave=true; $('saveCancel').disabled=true; $('progressTxt').textContent='Stopping…'; });
   async function save(withPhotos,only){
-    if(saving) return; saving=true; syncQueue();
+    if(saving) return; saving=true; cancelSave=false; syncQueue();
     const sel=S.sel; S.sel=null;
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
     progress(.02,'Getting the HD pictures…'); await assetsHD();   // saving uses the HD can cut-outs, never the light preview copies
     const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
+    const base=PG?batchBase(stamp):'', z2=n=>String(n).padStart(2,'0');
+    $('saveCancel').hidden=pages<2; $('saveCancel').disabled=false;
+    const stopped=()=>{ if(!cancelSave) return false; progress(null); done(null); status('Stopped. Nothing was saved.',3500); return true; };
     try{
       for(const [li,pg] of list.entries()){
-        const tag=pages>1?UC(PN.one)+' '+(li+1)+' of '+pages+': ':'';
-        progress((li+.1)/pages,tag+'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
+        if(stopped()) return 'cancelled';
+        const tag=pages>1?'Saving '+(li+1)+' of '+pages+'…':'';
+        progress((li+.1)/pages,tag||'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
         /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
         async function renderAt(K){
           const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
@@ -1651,7 +1663,7 @@ async function tool(cfg){
           try{
             withPage(pg,()=>draw(ctx,false,K));
             if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
-            progress((li+.55)/pages,tag+'Making the PNG…');
+            progress((li+.55)/pages,tag||'Making the PNG…');
             const b=await new Promise(r=>c.toBlob(r,type));
             return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
           }catch(_){ return null; }
@@ -1661,8 +1673,10 @@ async function tool(cfg){
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
         if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
-        files.push(new File([blob],fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
+        files.push(new File([blob],PG&&withPhotos?base+'-'+z2(pg+1)+'.'+ext:fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
       }
+      if(stopped()) return 'cancelled';
+      $('saveCancel').hidden=true;
       progress(1,'Done');
       const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
       const what=pages>1?files.length+' '+PN.many:(withPhotos?'Your story':'The frame');
@@ -1675,25 +1689,37 @@ async function tool(cfg){
         if(r==='cancelled'){ progress(null); done(null); status('Not saved. Tap Save again when you are ready.'); showResult(files,true); return; }
         if(r==='needtap'){ progress(null); showResult(files,true); finish('Ready!','Tap “Save to Photos” to put it in your photos.'+small,true); return; }
       }
+      /* a computer: several pages come as one ZIP (browsers stop a page that downloads many files at once); one by one if the ZIP can't be made */
+      if(!inClaude&&!touch&&!isPhone()&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); if(!window.StudioBatch) await loadScript(ROOT+'assets/batch.js'); zip=await window.StudioBatch.zip(files,stamp); }catch(_){ zip=null; }
+        if(zip){ const name=base+'.zip', url=URL.createObjectURL(zip), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000);
+          showResult(files,false); finish('Saved!','Your '+files.length+' '+PN.many+' are in your downloads in one ZIP ('+name+'), numbered in order.'+small); return; } }
       if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
       showResult(files,false);
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
-    } finally { saving=false; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
+    } finally { saving=false; cancelSave=false; $('saveCancel').hidden=true; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
-  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
+  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; keepQueue(); if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
   function showResult(files,offerShare){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
   }
   $('shareAgain').addEventListener('click',async()=>{ if(!lastFiles) return; const r=await shareFiles(lastFiles); if(r==='shared'){ done('Saved!','Your '+(lastFiles.length>1?PN.many+' are':'story is')+' ready to post.'); $('shareAgain').hidden=true; celebrate(); if(qTotal){ qSaved=true; syncQueue(); } } });
+  /* the photos still waiting are kept on this phone (IndexedDB), so leaving the tool, or the phone reloading the page after the
+     share sheet, never drops them (1.8.0). The photos are written once ({files,total}); the place in the row is a small record
+     beside them ({pos,saved,draft,design}) that changes as you go. Both go once the last photo is in, or with Clear. */
+  const QK=queueKey(B.id,cfg.id), QPOS=QK+':pos';
+  function keepFiles(){ if(QUEUE&&queue.length) return idb.put(QK,{files:queue.slice(),total:qTotal,at:Date.now()}); }
+  function keepQueue(){ if(!QUEUE||!qTotal) return; if(!queue.length) return dropQueue();
+    idb.put(QPOS,{pos:qPos,saved:qSaved,draft:draftId,design:design&&design.id||null,at:Date.now()}); }
+  function dropQueue(){ idb.del(QK); idb.del(QPOS); }
   /* the photos still waiting: "Next photo (2 of 3)" once this one is saved; before that, a quieter "Skip to the next photo" */
-  function syncQueue(){ const b=$('queueNext'), on=QUEUE&&queue.length>0&&!saving; b.hidden=!on; $('save').classList.toggle('ghost',on&&qSaved);   // Next is the main step now: Save again goes quiet
+  function syncQueue(){ keepQueue(); const b=$('queueNext'), on=QUEUE&&queue.length>0&&!saving; b.hidden=!on; $('save').classList.toggle('ghost',on&&qSaved);   // Next is the main step now: Save again goes quiet
     if(!on) return;
     b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=(qSaved?'Next photo':'Skip to the next photo')+' ('+(qPos+1)+' of '+qTotal+')'; }
   function queueNote(){ const last=qPos===qTotal; return [last?'Last photo: '+qPos+' of '+qTotal:'Photo '+qPos+' of '+qTotal+' is in',
     qPos===1?(isPhone()?'Tap Save, then the next one comes in':'Save it, then the next one comes in'):'Same words and look. '+(isPhone()?'Tap Save':'Save')+' when it looks good']; }
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
-    qPos++; qSaved=false; $('queueNext').hidden=true;
+    qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
     clearTimeout(draftTimer); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was
     history.replaceState(null,'',location.pathname); delete $('teamName').dataset.touched;
@@ -1702,6 +1728,24 @@ async function tool(cfg){
     resetSaveSheet(); startHistory(); dirty=true; saveDraft(hist.stack[0]);
     quickReady=true; showReady(false,...queueNote()); syncQueue(); }
   $('queueNext').addEventListener('click',nextInQueue);
+  /* Skip on the ready note: the next photo without saving this one (it stays in Continue editing), same as the Save sheet's Skip */
+  $('readySkip').addEventListener('click',()=>{ haptic('tick'); nextInQueue(); });
+  /* coming back to the tool with photos still waiting: "2 photos still waiting" with Clear / Continue */
+  async function keptQueue(){ if(!QUEUE) return null; const w=await idb.get(QK); if(!w||!w.files||!w.files.length) return null;
+    const m=(await idb.get(QPOS))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1));
+    if(!left.length){ dropQueue(); return null; } return {total:w.total||left.length+1,m,left}; }
+  function offerQueue(k){ const n=k.left.length; $('queueTxt').textContent=n===1?'1 photo still waiting':n+' photos still waiting';
+    $('draftBar').hidden=true; $('queueBar').hidden=false; }
+  function takeQueue(k){ queue=k.left.slice(); qTotal=k.total; qPos=Math.max(1,k.m.pos||1); }
+  async function continueQueue(k){ $('queueBar').hidden=true; takeQueue(k);
+    const x=!k.m.saved&&k.m.draft&&listDrafts(B.id,cfg.id).find(d=>d.id===k.m.draft);
+    if(x&&!design&&draftId!==x.id){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); }   // the story you were on, not saved yet: back to it first
+    if(x){ qSaved=false; quickReady=true; showReady(false,...queueNote()); syncQueue(); return; }   // as when it first came in: Save in one tap
+    qSaved=true; await nextInQueue(); }
+  let kept=null;
+  $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
+  $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
+    status('The waiting photos are cleared here. They are still in your phone’s photos.',3500); });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
@@ -1727,7 +1771,7 @@ async function tool(cfg){
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
-    await save(true,only);
+    if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
     if(!team&&asked&&await checkTeam()) team=true;
     if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
     if(team) $('teamOnly').dataset.off='1';
@@ -1743,10 +1787,11 @@ async function tool(cfg){
     r.classList.add('out'); setTimeout(()=>{ if(r.classList.contains('out')){ r.hidden=true; r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; } },280); }
   function showReady(many,txt,sub){ const r=$('readyBar'); $('readyTxt').textContent=txt||(many?'Your photos are in':'Your photo is in');
     $('readySub').textContent=sub||(isPhone()?'Tap Save when it looks good':'Save it when it looks good');
-    r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),3200);
+    const skip=QUEUE&&qTotal>0&&queue.length>0; $('readySkip').hidden=!skip; r.classList.toggle('has-skip',skip);   // a photo is waiting: Skip goes straight to it
+    r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),skip?4000:3200);
     const sv=$('barSave'); sv.classList.remove('nudge'); void sv.offsetWidth; sv.classList.add('nudge'); setTimeout(()=>sv.classList.remove('nudge'),2600); }   // a soft pulse on Save: the note points at it
   { const r=$('readyBar'); let y0=null, dy=0;
-    r.addEventListener('pointerdown',e=>{ y0=e.clientY; dy=0; clearTimeout(readyT); try{ r.setPointerCapture(e.pointerId); }catch(_){} });
+    r.addEventListener('pointerdown',e=>{ if(e.target.closest('#readySkip')){ clearTimeout(readyT); return; } y0=e.clientY; dy=0; clearTimeout(readyT); try{ r.setPointerCapture(e.pointerId); }catch(_){} });
     r.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); r.style.transform=`translateY(${dy}px)`; r.style.opacity=String(Math.max(.2,1-dy/90)); });
     const end=()=>{ if(y0==null) return; y0=null; if(dy>24||dy<6){ r.style.transform=`translateY(${Math.max(dy,0)}px)`; hideReady(); } else { r.style.transform=''; r.style.opacity=''; readyT=setTimeout(()=>hideReady(),1500); } };
     r.addEventListener('pointerup',end); r.addEventListener('pointercancel',end); }
@@ -1768,7 +1813,7 @@ async function tool(cfg){
       <button type="button" class="mini icon sall" data-pg="all" aria-label="See all ${PN.many}" title="See all ${PN.many}">${ICON.grid}</button>`;
     S.P.forEach((_,i)=>drawThumb(i));
     const cur=el.querySelector('.sthumb[aria-current="true"]'); if(cur) cur.scrollIntoView({block:'nearest',inline:'nearest'});
-    fit();
+    fit(); syncSaveAll();
   }
   function drawThumb(i,canvas){
     const c=canvas||$('pager').querySelector(`.sthumb[data-pg="${i}"] canvas`); if(!c) return; const x=c.getContext('2d');
@@ -1870,12 +1915,20 @@ async function tool(cfg){
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
   /* quietly check whether this phone is signed in to the team, so Save to the team is ready (on) when the Save sheet opens */
   setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
+  /* photos still waiting from an earlier visit (1.8.0): the page reloaded on the story you were on (after the share sheet, or
+     with ?draft=) picks the row up again as it was; anything else (a fresh visit, ?queue=1 from Home) offers or continues it */
+  if(QUEUE&&q.get('quick')!=='1'){ const k=await keptQueue();
+    if(k){ kept=k;
+      const dsg=q.get('design'), here=dsg?dsg===k.m.design:want&&want!=='1'&&!k.m.saved&&(!k.m.draft||k.m.draft===want);
+      if(here){ takeQueue(k); qSaved=!!dsg; if(qSaved) offerQueue(k); else { quickReady=true; showReady(false,...queueNote()); } syncQueue(); }
+      else if(q.get('queue')==='1'){ history.replaceState(null,'',location.pathname); await continueQueue(k); }
+      else offerQueue(k); } }
   /* Quick start (hub): the photos picked on the home page wait in IndexedDB; put them in, as a new draft */
   if(q.get('quick')==='1'){ const qk=quickKey(B.id,cfg.id), fs=await idb.get(qk); idb.del(qk); history.replaceState(null,'',location.pathname);
     if(fs&&fs.length){ photoStyleNow(); if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       if(PG) await quickPages(fs);
       else { const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
-        if(QUEUE&&slotCount()===1&&fs.length>1){ queue=fs.slice(1,QUEUE_MAX); qTotal=queue.length+1; qPos=1; } }
+        if(QUEUE&&slotCount()===1&&fs.length>1){ queue=fs.slice(1,QUEUE_MAX); qTotal=queue.length+1; qPos=1; await keepFiles(); } }
       flush(); quickReady=true; if(qTotal) showReady(false,...queueNote()); else showReady(fs.length>1); syncQueue(); }
     else status('That photo did not come through. Tap Add your photo.'); }
   /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
@@ -1887,6 +1940,8 @@ async function tool(cfg){
 
 /* ---------- Quick start: the hub hands photos to a tool through IndexedDB (too big for the URL) ---------- */
 const quickKey=(brand,tool)=>'studio:quick:'+brand+':'+tool;
+/* several photos in a row (queue tools): the photos still waiting, kept so leaving or a reload never drops them (1.8.0) */
+const queueKey=(brand,tool)=>'studio:queue:'+brand+':'+tool;
 /* how many photos a Quick start keeps: up to the tool's max (Collage 9, Carousel 10, Highlight covers 12);
    a one-photo tool with queue (Restock, Photo story) takes up to 10 and makes a story from each, one after the other (1.6.0) */
 const QUEUE_MAX=10;
@@ -2027,6 +2082,18 @@ async function home(){
     bar.hidden=false;
     $('sharedGo').onclick=()=>{ bar.hidden=true; openShared(fs.length).then(()=>{ const d=document.querySelector('dialog.dlg[open]'); if(d) d.addEventListener('close',()=>setTimeout(sharedWaiting,60)); }); };
     $('sharedX').onclick=()=>{ bar.hidden=true; idb.del('studio:shared'); if(u) URL.revokeObjectURL(u); hubToast('Forgot the shared photo.'); }; }
+  /* photos still waiting in Restock or Photo story (several shops in a row, left before the last one): a row like the shared
+     photo's, "2 photos still waiting", Continue opens the tool on the next one; ✕ clears them (1.8.0) */
+  async function queueWaiting(){ document.querySelectorAll('.queue-wait').forEach(e=>e.remove());
+    for(const [id,t] of Object.entries(TOOLS).filter(([,t])=>t.queue).reverse()){
+      const k=queueKey(B.id,id), w=await idb.get(k); if(!w||!w.files||!w.files.length) continue;
+      const m=(await idb.get(k+':pos'))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1)); if(!left.length){ idb.del(k); idb.del(k+':pos'); continue; }
+      let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
+      const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
+      el.innerHTML=`<a class="qw-go" href="${toolPage(id)}?queue=1"><span class="install-ic" aria-hidden="true">${u?`<img alt="" src="${u}">`:''}</span><span class="install-txt"><b>${n===1?'1 photo still waiting':n+' photos still waiting'}</b><span>${esc(t.title)} · tap to continue</span></span><span class="qw-chev" aria-hidden="true">${ICON.next}</span></a><button type="button" class="mini icon" aria-label="Clear the ${n===1?'photo':n+' photos'} waiting for ${esc(t.title)}">✕</button>`;
+      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
+      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } } }
+  queueWaiting();
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;

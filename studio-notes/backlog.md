@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 18 (1.7.0, 28 Oct 2026) was a **Mazoon** session: Copy style / Paste style for any layer (More tab, kept per device) and real template previews in search (#20, first half). The next session, 1.8.0, is a **team** session.
+**Last session:** 20 (1.9.0, 28 Oct 2026) was a **Mazoon** session (parallel, see `sessions.md`): Save all N slides/covers in paged tools (#5, part). The next session, 1.10.0, is a **Simplify** session; 1.11.0 is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.10.0 (with a pattern review).
 
 ## Next up
@@ -12,7 +12,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 20 | Search: the Create template picker opening straight to a search hit | 2 | 3 | 2 | 2 | 5 | Real previews in search shipped in 1.7.0 (from `assets/thumbs/<brand>/tpl/`). |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
-| 5 | Batch export: save every slide/page or several drafts in one go (ZIP or share sheet with many files) | 3 | 4 | 3 | 3 | 7 | |
+| 5 | Batch export: save several drafts / saved designs in one go from Saved select mode | 3 | 4 | 3 | 3 | 7 | Paged tools done in 1.9.0 (Save all + ZIP on a computer); this half needs offscreen rendering of other designs. |
 | 6 | Template collections in Create (favourites, recently used) | 2 | 3 | 2 | 3 | 4 | Search box shipped in 1.4.0. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
 | 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | 1.7.0 Copy/Paste style covers one kept style; a named list of several is the next step if Mazoon asks. |
@@ -25,10 +25,12 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.9.0: on a computer the low-memory fallback message still says "This phone was low on memory".
+- 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
+- 1.8.0: `queue.mjs` "no leftover unfinished stories" fails now and then under 3–4 parallel suites (draft timer), passes alone every time. Give it a wait on the draft timer if it shows up again.
+- 1.8.0 ideas: a small "2 waiting" tag on the Restock / Photo story rows in Your tools; one wording for the note's Skip and the Save sheet's "Skip to the next photo".
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
 - 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
-- 1.6.0: Several shops in a row keeps the waiting photos only in the open page: leaving the tool (or the phone reloading it after the share sheet) drops the rest. If the team hits this, keep the queue in IndexedDB (`studio:queue:<brand>:<tool>`) and offer "2 photos still waiting" on return.
-- 1.6.0: on a phone, Skip to the next photo only shows in the Save sheet after an edit (an untouched Quick start saves in one tap and never opens the sheet first). Watch whether the team wants a Skip on the ready note.
 - 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
 - 1.6.0: `peek` "Peek fits the screen" (desktop) failed once under 4 parallel suites and passed 2 of 2 alone: a timing check; give it a wait for the open animation if it repeats.
 - 1.6.0: a design opened again (used_at later than its name's date) shows its full automatic name, which can still be cut on the card; fine for now.
@@ -63,6 +65,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.9.0 (Mazoon): Save all N slides/covers ("Saving n of N" + Cancel, one share sheet on a phone, one in-browser ZIP on a computer, files `<design>-01.png`…); `quickpages.mjs` fixed (red since 1.5.0: it picked Carousel/Highlight from the + menu).
+- 1.8.0 (team): photos keep waiting (IndexedDB `studio:queue:<brand>:<tool>` + `…:pos`; Home row "N photos still waiting" with ✕; tool banner Continue / Clear; a reload on the same story restores it with one-tap Save) and a quiet Skip on the ready note (3+ taps → 1). Fixed `simplify.mjs` grouping check (red since 1.5.0).
 - 1.6.0 (team): Several shops in a row (`queue:true` tools: Restock, Photo story; + menu, row camera, search shortcut and share sheet take several photos); Saved cards drop the automatic date when the caption gives it, and old dates read "18 Oct" (was the 1.5.0 audit note).
 - 1.5.0: + menu slimmed to 3 photo tools + New design + More tools (was the 1.1.0 audit note); All tools ordering by drag; sort sheet; Saved filters in one row; card fixes.
 - 1.4.0 (Mazoon, 3 parallel helpers): Highlight covers **Product** type (the brand kit's HD can pictures in the circle, picker in Style); Create template search (English + Arabic, empty state, ✕) and `?tpl=` on an open design shows the picker on that template; taste checks for Carousel, Highlight, Create + labels on icon-only controls; checkbox rows aligned with their sheet heading (4px).
