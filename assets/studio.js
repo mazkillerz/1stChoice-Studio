@@ -61,6 +61,22 @@ function prev(im){
   const k=PREV_MAX/Math.max(im.width,im.height); c=stepDown(im,Math.round(im.width*k),Math.round(im.height*k)); PREV.set(im,c); return c;
 }
 function rr(ctx,x,y,w,h,r){r=typeof r==='number'?[r,r,r,r]:(r||[0,0,0,0]);const [a,b,c,d]=r.map(v=>Math.max(0,Math.min(v,w/2,h/2)));ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath();}
+/* text matching shared by the hub search and Create's template search: lower case, no harakat / tatweel / Quranic marks,
+   one form of alef, yeh, teh marbuta, waw and kaf, Arabic digits as 0-9, one space between words.
+   normMap(s).m[i] = where normalised character i came from in s (so a match can be highlighted in the original). */
+const AR_FOLD={'\u0623':'\u0627','\u0625':'\u0627','\u0622':'\u0627','\u0671':'\u0627','\u0629':'\u0647','\u0649':'\u064A','\u06CC':'\u064A','\u0626':'\u064A','\u0624':'\u0648','\u06A9':'\u0643'};
+const AR_MARK=/[\u0610-\u061A\u064B-\u065F\u0670\u0640\u06D6-\u06ED]/, AR_DIG='\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9';
+function normMap(s){
+  s=String(s==null?'':s); let n='', m=[];
+  for(let i=0;i<s.length;i++){
+    const c=s[i]; if(AR_MARK.test(c)) continue;
+    if(/\s/.test(c)){ if(n&&n[n.length-1]!==' '){ n+=' '; m.push(i); } continue; }
+    for(const ch of c.toLowerCase()){ const d=AR_DIG.indexOf(ch); n+=d>=0?String(d%10):(AR_FOLD[ch]||ch); m.push(i); }
+  }
+  if(n.endsWith(' ')){ n=n.slice(0,-1); m.pop(); }
+  return {n,m};
+}
+const normText=s=>normMap(s).n;
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); return true; }catch(_){ return null; }}
 
@@ -2492,5 +2508,5 @@ async function home(){
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

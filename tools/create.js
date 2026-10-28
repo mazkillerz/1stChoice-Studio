@@ -324,7 +324,7 @@ function tplThumb(def){ if(TH.has(def.id)) return Promise.resolve(TH.get(def.id)
   thumbChain=p.catch(()=>{}); return p; }
 /* template search: label, id, layout, size and words; Arabic is normalised (marks, alef/yaa/taa forms) so spellings match */
 const TPL_SEARCH=`<div class="cr-tsearch"><input type="search" id="crTplQ" dir="auto" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search templates" aria-label="Search templates"><button type="button" class="cr-tclear" id="crTplClear" aria-label="Clear search" title="Clear" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;
-const normQ=t=>String(t||'').toLowerCase().replace(/[\u0610-\u061A\u064B-\u065F\u0670\u0640]/g,'').replace(/[\u0622\u0623\u0625\u0671]/g,'\u0627').replace(/[\u0649\u06CC]/g,'\u064A').replace(/\u0629/g,'\u0647').replace(/\u06A9/g,'\u0643').replace(/[-_]+/g,' ');
+const normQ=t=>Studio.normText(String(t||'').replace(/[-_]+/g,' '));   // the hub search's matching, plus - and _ as spaces
 function tplSearch(body,list){ const q=body.querySelector('#crTplQ'); if(!q) return; const clr=body.querySelector('#crTplClear'), none=body.querySelector('#crTplNone');
   const hay=new Map(list.map(d=>[d.id,normQ([d.label,d.id,d.layout,d.size].concat(Object.values(d.words||{})).join(' '))]));
   const run=()=>{ const toks=normQ(q.value).split(/\s+/).filter(Boolean); let n=0;

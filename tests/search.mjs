@@ -43,6 +43,9 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   ok(N+'the match is highlighted',await pg.$eval('#usPanel .us-sec[data-k="tool"] .us-t',e=>e.innerHTML.includes('<mark>')));
   await type('رجع متوفّر');
   ok(N+'Arabic with harakat finds the saved design',(await titles('design')).includes('رجع متوفر'),(await titles('design')).join(','));
+  /* 1.10.0: one normaliser for the hub search and Create (Studio.normText): marks, letter forms, Persian yeh/kaf, Arabic digits */
+  const nt=await pg.evaluate(()=>[Studio.normText('رجع متوفّر'),Studio.normText('أإآٱ ة ى ی ئ ؤ ک'),Studio.normText('٢٨ أكتوبر  ۱۲'),Studio.normText('Restock\u0640')]);
+  ok(N+'Studio.normText folds marks, letter forms and Arabic digits',nt[0]==='رجع متوفر'&&nt[1]==='اااا ه ي ي ي و ك'&&nt[2]==='28 اكتوبر 12'&&nt[3]==='restock',nt);
   await type('team template');
   ok(N+'team templates are found',(await titles('template')).includes('تعرف ويش؟'));
   await type('install');

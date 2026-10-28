@@ -6,21 +6,8 @@
 const KEY='studio:recentSearches', MAX_RECENT=6;
 /* kind -> heading and how many rows show before "Show N more" */
 const GROUPS=[['tool','Tools',1e9],['draft','Continue editing',3],['template','Templates',5],['design','Saved designs',6],['action','Settings and actions',5]];
-/* Arabic matching: ignore harakat/tatweel, unify alef/teh marbuta/yeh/waw forms, Arabic digits become 0-9 */
-const AR={'أ':'ا','إ':'ا','آ':'ا','ٱ':'ا','ة':'ه','ى':'ي','ؤ':'و','ئ':'ي'};
-const DIA=/[ً-ٰٟـۖ-ۭ]/, DIG='٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹';
-/* normalise a string; m[i] = index in the original text of normalised char i (so highlights still line up) */
-function nmap(s){
-  s=String(s==null?'':s); let n='', m=[];
-  for(let i=0;i<s.length;i++){
-    let c=s[i]; if(DIA.test(c)) continue;
-    if(/\s/.test(c)){ if(n&&n[n.length-1]!==' '){ n+=' '; m.push(i); } continue; }
-    for(const ch of c.toLowerCase()){ const d=DIG.indexOf(ch); n+=d>=0?String(d%10):(AR[ch]||ch); m.push(i); }
-  }
-  if(n.endsWith(' ')){ n=n.slice(0,-1); m.pop(); }
-  return {n,m};
-}
-const norm=s=>nmap(s).n;
+/* Arabic-aware matching (marks, letter forms, Arabic digits) comes from the engine, so Create's template search matches the same way */
+const nmap=s=>Studio.normMap(s), norm=s=>Studio.normText(s);
 /* our own clear button (the browser's native one jumps onto the magnifier when the text is Arabic): a soft disc with a small x */
 const X_ICON='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" fill-opacity=".16" stroke="none"/><path d="M15.5 8.5 8.5 15.5"/><path d="m8.5 8.5 7 7"/></svg>';
 const thumbs=new Map(), pending=new Set();   // saved-design thumbnails resolved so far (kept across re-inits)

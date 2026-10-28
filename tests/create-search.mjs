@@ -35,6 +35,8 @@ for(const scheme of ['light','dark']){
   ok(scheme+': Arabic words never run under the clear button',await pg.evaluate(()=>{ const q=document.getElementById('crTplQ'), c=document.getElementById('crTplClear').getBoundingClientRect(), r=q.getBoundingClientRect(); return !document.getElementById('crTplClear').hidden && r.right-parseFloat(getComputedStyle(q).paddingRight)<=c.left+1; }));
   /* Arabic normalisation: same word with a tatweel still matches */
   await pg.fill('#crTplQ',word[0]+'ـ'+word.slice(1)); ok(scheme+': Arabic tatweel ignored',(await shown(pg)).includes(aw.id));
+  /* the same matching as the hub search (Studio.normText): a word typed with harakat still matches */
+  await pg.fill('#crTplQ',word.split('').join('\u064E')); ok(scheme+': Arabic harakat ignored (shared normaliser)',(await shown(pg)).includes(aw.id),word);
   await pg.fill('#crTplQ','zzqqxx'); ok(scheme+': nonsense shows empty state',(await shown(pg)).length===0&&await pg.locator('#crTplNone').isVisible()&&/No templates match/.test(await pg.locator('#crTplNone').textContent()));
   await pg.tap('#crTplClear'); await pg.waitForTimeout(150);
   ok(scheme+': clear restores all',(await shown(pg)).length===n&&!(await pg.locator('#crTplNone').isVisible())&&(await pg.locator('#crTplQ').inputValue())==='');
