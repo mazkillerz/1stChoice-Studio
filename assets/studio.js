@@ -1674,7 +1674,7 @@ async function tool(cfg){
         if(r==='needtap'){ progress(null); showResult(files,true); finish('Ready!','Tap “Save to Photos” to put it in your photos.'+small,true); return; }
       }
       /* a computer: several pages come as one ZIP (browsers stop a page that downloads many files at once); one by one if the ZIP can't be made */
-      if(!inClaude&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); if(!window.StudioBatch) await loadScript(ROOT+'assets/batch.js'); zip=await window.StudioBatch.zip(files,stamp); }catch(_){ zip=null; }
+      if(!inClaude&&!touch&&!isPhone()&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); if(!window.StudioBatch) await loadScript(ROOT+'assets/batch.js'); zip=await window.StudioBatch.zip(files,stamp); }catch(_){ zip=null; }
         if(zip){ const name=base+'.zip', url=URL.createObjectURL(zip), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000);
           showResult(files,false); finish('Saved!','Your '+files.length+' '+PN.many+' are in your downloads in one ZIP ('+name+'), numbered in order.'+small); return; } }
       if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
