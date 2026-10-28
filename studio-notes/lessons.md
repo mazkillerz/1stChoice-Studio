@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 18 | 1.7.0 | 4 (new suite 58/58, search +6 checks; gates green) | 5 (both items in one pass) | 0 reported after 1.6.0 | see release | In shot scripts recompute the preview's box AND scale after any sheet changes size |
 | 17 | 1.6.0 | 4 (two new suites 42/42 and 19/19, gates green; my own shot caught three filled buttons in the Save sheet, fixed before release) | 5 (both items in one pass, no rework) | 0 reported after 1.5.0 | see release | Count filled buttons on every new state of a sheet (after save, not only the first view) |
 | 16 | 1.5.0 | 4 (all six asks shipped; three taste findings of my own caught by taste.mjs and fixed before release: handle 40px, pinned thumbs off the line, More tools off the icon line) | 4 (one pass; test updates by a helper in parallel) | 0 reported after 1.4.0 (this list was new work, not fixes) | see release | Run taste.mjs right after the first visual pass, before screenshots for What's New |
 | 15 | 1.4.0 | 4 (all suites green; two slips caught by the lead in review: weight 700, Arabic under ✕) | 5 (3 items in one pass with 3 parallel helpers) | 0 reported after 1.3.0 | 33/33 pass | Brief helpers with the taste rules (weights, RTL with an icon in the box) and that worktrees may start from an old main |
@@ -12,6 +13,17 @@ What worked, what failed, and process tweaks. Newest session first.
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Session 18 · 1.7.0 · 28 Oct 2026 (Mazoon)
+
+**Worked**
+- Picking a feature that rides on data the inspector already keeps (`S.layers[id]` + the extra's own fields) made Copy/Paste style ~30 lines with undo for free (history snapshots on render).
+- Search previews were a two-line change: the thumbnails already existed for the Templates page (`tplThumb`); a `shape` field + three CSS rules keep posts 4:5 and covers round on one left edge.
+
+**Didn't work / watch out**
+- The desktop inspector is long and the page scrolls: a test that taps the preview after tapping a button low in the panel must scroll `#view` back into view first.
+- A colour-mix() hover background breaks a simple rgb() contrast parser: move the mouse away before measuring on desktop.
+- The More part had no column gap on desktop (rows touched): give every inspector part `insp-col`.
 
 ## Session 17 · 1.6.0 · 28 Oct 2026 (team)
 

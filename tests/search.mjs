@@ -47,6 +47,18 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   ok(N+'team templates are found',(await titles('template')).includes('تعرف ويش؟'));
   await type('install');
   ok(N+'settings and actions are found',(await titles('action')).includes('Install Studio'));
+  /* 1.7.0: templates show their real preview, in their own shape (posts 4:5, covers round), not a generic icon */
+  await type('post'); await pg.waitForTimeout(900);
+  const tp=await pg.$$eval('#usPanel .us-sec[data-k="template"] .us-row',rs=>rs.map(r=>{ const th=r.querySelector('.us-th'), im=th&&th.querySelector('img'), b=th&&th.getBoundingClientRect(); return {t:r.querySelector('.us-t').textContent,img:!!(im&&im.complete&&im.naturalWidth),shape:th&&th.dataset.shape||'story',ar:b?+(b.width/b.height).toFixed(2):0}; }));
+  const rp=tp.find(x=>x.t==='Restock post');
+  ok(N+'a Create template in search shows its real preview',!!rp&&rp.img,JSON.stringify(rp));
+  ok(N+'a post template keeps its 4:5 shape',!!rp&&rp.shape==='post'&&Math.abs(rp.ar-.8)<.03,JSON.stringify(rp));
+  ok(N+'every template row in search has a picture, none the generic icon',tp.length>0&&tp.every(x=>x.img),JSON.stringify(tp.filter(x=>!x.img)));
+  await type('highlight'); await pg.waitForTimeout(900);
+  const hl=await pg.$$eval('#usPanel .us-sec[data-k="template"] .us-th',l=>l.map(th=>({shape:th.dataset.shape,r:getComputedStyle(th).borderTopLeftRadius,w:th.getBoundingClientRect().width,h:th.getBoundingClientRect().height})));
+  ok(N+'highlight cover templates are round',hl.length>0&&hl.some(x=>x.shape==='circle'&&Math.abs(x.w-x.h)<1&&x.r==='50%'),JSON.stringify(hl.slice(0,3)));
+  const lefts=await pg.$$eval('#usPanel .us-row .us-th,#usPanel .us-row .us-ic',l=>[...new Set(l.map(e=>Math.round(e.getBoundingClientRect().left)))]);
+  ok(N+'pictures of every shape share one left edge',lefts.length===1,JSON.stringify(lefts));
   await type('zzzq');
   ok(N+'nothing found is friendly',/Nothing found/.test(await pg.textContent('#usPanel'))&&/like Restock/.test(await pg.textContent('#usPanel')));
   await type('photo');

@@ -1,6 +1,6 @@
 # Taste
 Mazoon's design taste and the issues he keeps raising. Read at the start of every session; update at the end (Reflect step). Newest evidence wins.
-_Last reviewed: 2026-10-28 (1.6.0: no fix requests after 1.5.0; earlier: 1.3.0: no fix requests after 1.2.0; asked for faster tests mid-session; earlier: 1.1.0: no new fix requests after 1.0.0; earlier: 1.0.0, after the release: rows 4 and 10 raised again in the 1.0.0 brief and fixed; rows 1–8 and 10 are now checked automatically by tests/taste.mjs, rows 9 and 11 by the suites named in the table)_
+_Last reviewed: 2026-10-28 (1.7.0: no fix requests after 1.6.0; 1.6.0: no fix requests after 1.5.0; earlier: 1.3.0: no fix requests after 1.2.0; asked for faster tests mid-session; earlier: 1.1.0: no new fix requests after 1.0.0; earlier: 1.0.0, after the release: rows 4 and 10 raised again in the 1.0.0 brief and fixed; rows 1–8 and 10 are now checked automatically by tests/taste.mjs, rows 9 and 11 by the suites named in the table)_
 
 Evidence key: **[S]** his own words in a session or brief. **[C]** taken from an owner-directed session's changelog, commit or notes (his exact words not visible). **(inferred)** my reading; ask before leaning on it.
 Built from 15 past Studio sessions (first prompt read in 8; only the newest part of 7 long ones, so their early briefs are known through changelog, PLAN and commits), plus lessons, changelog, backlog, PLAN, docs/review-v5 and git log.

@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.7.0 · 28 Oct 2026
+
+### Copy style, paste style
+type: feature
+Made one line look just right and want the others to match? Tap it, open **More**, tap **Copy style**. Then tap another line and **More → Paste style**: it takes the same colour, font, alignment, line height, shadow, background pill and opacity, and keeps its own size and place. It works on buttons and shapes too (shapes also take the outline and corners), and the copied style stays on your phone, so you can paste it in your next story or another tool. Matching a line's colour, font and alignment by hand took 6 taps (Colour, a swatch, Font, the font list, a font, Align); now it's 2 (More, Paste style). Undo brings the old look back. **Paste style** only shows once you've copied something.
+![before](assets/whatsnew/1.7.0-style-before.jpg)
+![after](assets/whatsnew/1.7.0-style-after.jpg)
+
+### Templates you can see in search
+type: design
+Searching "post" listed the Create templates with the same grey icon, so you had to open each one to see it. Now every template in search shows its real picture, in its own shape: posts 4:5, highlight covers round, stories tall, all lined up on one edge.
+![before](assets/whatsnew/1.7.0-search-before.jpg)
+![after](assets/whatsnew/1.7.0-search-after.jpg)
+
 ## 1.6.0 · 28 Oct 2026
 
 ### Several shops in a row

@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.6.0';
+const VERSION='1.7.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -170,6 +170,7 @@ const ICON={
   install:svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/>',20),
   home:svg('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   folder:svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',18),
+  paint:svg('<rect x="2" y="2" width="16" height="6" rx="2"/><path d="M10 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="8" y="16" width="4" height="6" rx="1"/>',20),
   copy:svg('<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',20),
   pencil:svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',20),
   list:svg('<rect x="3" y="4" width="5" height="5" rx="1"/><path d="M11 6.5h10"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 17.5h10"/>',20),
@@ -682,7 +683,8 @@ async function tool(cfg){
           <div id="inspShape" hidden><span class="lbl">Outline</span><div id="inspStroke"></div><div class="insp-row" id="inspSWRow"><label class="lbl" for="inspSW">Outline width</label><input type="range" id="inspSW" min="0" max="40" step="1" value="0"></div>
             <div class="insp-row" id="inspRRow"><label class="lbl" for="inspR">Corners</label><input type="range" id="inspR" min="0" max="300" step="2" value="0"></div></div>
           <div class="insp-row"><label class="lbl" for="inspOp">Opacity</label><input type="range" id="inspOp" min="0.05" max="1" step="0.05" value="1"></div></div>
-        <div class="insp-part" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+        <div class="insp-part insp-col" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
+          <div class="insp-row btns" id="inspStyleRow"><button type="button" class="mini" id="inspCopyStyle">${ICON.copy}<span>Copy style</span></button><button type="button" class="mini" id="inspPasteStyle" hidden>${ICON.paint}<span>Paste style</span></button></div>
           <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
@@ -1307,6 +1309,7 @@ async function tool(cfg){
       $('inspShadow').checked=l.shadow!=null?!!l.shadow:!!b.shadow; const pill=!!(l.bg&&l.bg!=='none'); $('inspPill').checked=pill;
       if($('inspPillPal').dataset.for!==id||!$('inspPillPal').firstChild){ $('inspPillPal').innerHTML=palettePicker('pill',l.bg||C.ink); $('inspPillPal').dataset.for=id; } else syncPalette($('inspPillPal').firstChild,l.bg||C.ink);
       $('inspPillPal').hidden=!pill; }
+    $('inspPasteStyle').hidden=!copiedStyle();
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
     const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
@@ -1365,6 +1368,29 @@ async function tool(cfg){
     ['pointerup','pointercancel','pointerleave'].forEach(t=>box.addEventListener(t,e=>{ if(rep&&(t!=='pointerleave'||nb(e))) stop(); }));
     box.addEventListener('click',e=>{ const b=nb(e); if(b&&e.detail===0){ const [dx,dy]=dir(b); step(dx,dy); n=0; } });   // keyboard
     box.addEventListener('contextmenu',e=>{ if(nb(e)) e.preventDefault(); }); }
+  /* ---- copy style / paste style: the look of one layer (colour, font, line options, shadow, pill, opacity, outline) onto another.
+     Kept on this device, so a look copied in one story can be pasted in the next one. Size, place and rotation stay as they are. ---- */
+  const STYLE_KEY='studio:style';
+  const copiedStyle=()=>{ const st=store(STYLE_KEY); return st&&typeof st==='object'?st:null; };
+  function styleOf(id){
+    const l=S.layers[id]||{}, x=extra(id), tx=textExtra(id), ad=x&&x.type==='asset'&&assetDef(x.ref), st={};
+    const color=tx?tx.color:ad&&!ad.file?(l.color||x.color):l.color; if(color) st.color=color;
+    ['font','align','lh','ls','bg','op'].forEach(k=>{ if(l[k]!=null) st[k]=l[k]; });
+    const b=reg.find(r=>r.id===id), sh=l.shadow!=null?l.shadow:tx?tx.shadow:b&&b.typ?b.shadow:null; if(sh!=null) st.shadow=!!sh;
+    if(ad&&!ad.file&&!ad.line){ if(x.stroke){ st.stroke=x.stroke; st.sw=x.sw||6; } if(x.r!=null) st.r=x.r; }
+    return st;
+  }
+  async function pasteStyle(id,st){
+    const b=reg.find(r=>r.id===id), l=LL(id), x=extra(id), tx=textExtra(id), ad=x&&x.type==='asset'&&assetDef(x.ref);
+    const kind=b&&b.kind, textish=kind==='text'||kind==='pill', typ=kind==='text'&&b&&b.typ, shape=ad&&!ad.file, canColor=!(ad&&ad.file&&!ad.tint);
+    if(canColor){ if(tx){ if(st.color) tx.color=st.color; } else if(shape){ if(st.color) l.color=st.color; } else if(st.color) l.color=st.color; else l.color=null; }
+    if(textish){ if(st.font){ status('Loading font…'); await ensureFont(st.font); status(''); } if(st.font) l.font=st.font; else delete l.font; }
+    if(typ){ ['align','lh','ls','bg'].forEach(k=>{ if(st[k]!=null) l[k]=st[k]; else delete l[k]; }); if(st.shadow!=null){ l.shadow=st.shadow; if(tx) tx.shadow=st.shadow; } }
+    if(st.op!=null) l.op=st.op; else delete l.op;
+    if(shape&&!ad.line){ x.stroke=st.stroke||null; x.sw=st.stroke?st.sw||6:0; if(st.r!=null&&ad.radius!=null) x.r=st.r; }
+  }
+  $('inspCopyStyle').addEventListener('click',()=>{ const id=S.sel; if(!id) return; store(STYLE_KEY,styleOf(id)); haptic('tick'); syncInspector(); status('Style copied. Tap another layer, then More → Paste style.',2600); });
+  $('inspPasteStyle').addEventListener('click',async()=>{ const id=S.sel, st=copiedStyle(); if(!id||!st) return; await pasteStyle(id,st); haptic('tick'); syncInspector(); render(); status('Style pasted. Tap undo to bring the old one back.',2600); });
   $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=textExtra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
   $('inspHide').addEventListener('click',()=>{ const id=S.sel; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.hidden=!l.hidden; syncInspector(); render(); });
   $('inspDelete').addEventListener('click',()=>{ S.extras=S.extras.filter(x=>x.id!==S.sel); delete S.layers[S.sel]; select(null); });
@@ -2120,8 +2146,8 @@ async function home(){
     const pins=getPins(), out=[];
     Object.entries(TOOLS).forEach(([id,t])=>out.push({kind:'tool',id:'tool:'+id,title:t.title,sub:t.blurb,keys:[TOOL_GROUPS[t.group],t.quick,t.keys].filter(Boolean).join(' '),thumb:toolThumb(id),href:toolPage(id),pinned:pins.includes(id),togglePin:()=>togglePin(id,true)}));
     cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:TOOLS[x.tool].title,sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
-    if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:'template create '+(d.size||'story'),icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id)}));
-    (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id)}); });
+    if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:'template create '+(d.size||'story'),thumb:tplThumb(d.id),shape:d.layout==='highlight'?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id)}));
+    (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
       out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
     cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));

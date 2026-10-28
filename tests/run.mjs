@@ -15,7 +15,7 @@ import fs from 'fs';
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
-  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue']],
+  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','copystyle']],
   [/assets\/studio\.(js|css)|index\.html/,['home7','pins','pinorder','fresh','peek','select','extra','cardnames']],
   [/assets\/search\./,['search']],
   [/tools\/create/,['create','create-search']],
@@ -31,7 +31,7 @@ const MAP=[
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue'], HUB_SUITES=['home7','pins','pinorder','fresh','peek','select','extra','cardnames'];
+const TOOL_SUITES=['full','v5','polish','queue','copystyle'], HUB_SUITES=['home7','pins','pinorder','fresh','peek','select','extra','cardnames','search'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */

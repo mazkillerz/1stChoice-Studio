@@ -2,20 +2,21 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 17 (1.6.0, 28 Oct 2026) was a **team** session: Several shops in a row (Restock and Photo story take several photos, a story each, Next photo in the Save sheet) and shorter automatic names on Saved cards. The next session, 1.7.0, is a **Mazoon** session.
+**Last session:** 18 (1.7.0, 28 Oct 2026) was a **Mazoon** session: Copy style / Paste style for any layer (More tab, kept per device) and real template previews in search (#20, first half). The next session, 1.8.0, is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.10.0 (with a pattern review).
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
-| 20 | Search: real template previews (reuse Create's kept previews in IndexedDB, `TPL_LOOK`) and the Create template picker opening straight to a search hit | 2 | 3 | 3 | 2 | 6 | Search rows show an icon for brand templates today. |
+| 20 | Search: the Create template picker opening straight to a search hit | 2 | 3 | 2 | 2 | 5 | Real previews in search shipped in 1.7.0 (from `assets/thumbs/<brand>/tpl/`). |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 3 | Post maker presets (1080×1350) for Did-you-know / Your-choice / Ice cold as one-tap tools on the hub | 3 | 4 | 3 | 2 | 8 | Templates exist in Create; surface them. |
 | 5 | Batch export: save every slide/page or several drafts in one go (ZIP or share sheet with many files) | 3 | 4 | 3 | 3 | 7 | |
 | 6 | Template collections in Create (favourites, recently used) | 2 | 3 | 2 | 3 | 4 | Search box shipped in 1.4.0. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
-| 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | |
+| 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | 1.7.0 Copy/Paste style covers one kept style; a named list of several is the next step if Mazoon asks. |
+| 22 | Paste style on several layers at once (select mode / "Paste on every text"), and in Create/Board | 1 | 3 | 2 | 2 | 4 | Follow-up to 1.7.0 Copy style. |
 | 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
 | 10 | Highlight covers: emoji covers; Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
@@ -24,6 +25,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
+- 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
 - 1.6.0: Several shops in a row keeps the waiting photos only in the open page: leaving the tool (or the phone reloading it after the share sheet) drops the rest. If the team hits this, keep the queue in IndexedDB (`studio:queue:<brand>:<tool>`) and offer "2 photos still waiting" on return.
 - 1.6.0: on a phone, Skip to the next photo only shows in the Save sheet after an edit (an untouched Quick start saves in one tap and never opens the sheet first). Watch whether the team wants a Skip on the ready note.
 - 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
