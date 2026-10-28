@@ -5,6 +5,9 @@ const TOOLS=['new-place','photo-story','cinematic','collage','split','restock','
 const SAMPLES=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const pngSize=f=>{ const b=fs.readFileSync(f); return b.readUInt32BE(16)+'x'+b.readUInt32BE(20); };
+/* the PNGs inside a stored ZIP (what Save all makes on a computer since 1.9.0) */
+const unzipPngs=buf=>{ const out=[]; let p=0; while(buf.readUInt32LE(p)===0x04034b50){ const size=buf.readUInt32LE(p+18), nl=buf.readUInt16LE(p+26), xl=buf.readUInt16LE(p+28), d=buf.slice(p+30+nl+xl,p+30+nl+xl+size);
+  out.push({name:buf.slice(p+30,p+30+nl).toString('utf8'),wh:d.readUInt32BE(16)+'x'+d.readUInt32BE(20)}); p+=30+nl+xl+size; } return out; };
 const rows=[]; const b=await chromium.launch();
 for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{width:1280,height:800},false]]){
   const ctx=await b.newContext({viewport:vp,deviceScaleFactor:mob?2:1,isMobile:mob,hasTouch:mob,acceptDownloads:true,serviceWorkers:'block'});
@@ -60,10 +63,12 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
     ok('team switch is on (signed in) and the button offers Save & add to team',await pg.isChecked('#teamOn')&&/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
     const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
     await pg.fill('#teamName','Test '+t); await tap('#save');   // one tap: the 2× PNG(s), then the team
-    for(let i=0;i<60&&dls.length<pages;i++) await pg.waitForTimeout(300);
-    const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/'+tag+'-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }
+    const zipped=pages>1&&!mob;   // 1.9.0: a computer gets every page in one ZIP
+    for(let i=0;i<60&&dls.length<(zipped?1:pages);i++) await pg.waitForTimeout(300);
+    const sizes=[], names=[]; for(const d of dls){ const f=os.tmpdir()+'/'+tag+'-'+d.suggestedFilename(); await d.saveAs(f);
+      if(/\.zip$/.test(f)) unzipPngs(fs.readFileSync(f)).forEach(e=>{ names.push(e.name); sizes.push(e.wh); }); else { names.push(d.suggestedFilename()); sizes.push(pngSize(f)); } }
     const want=t==='carousel'?'2160x2700':'2160x3840';
-    ok('save makes full-size PNG'+(pages>1?'s':''),dls.length===pages&&sizes.every(s=>s===want),sizes.join(', ')+(pages>1?' · '+dls.map(d=>d.suggestedFilename().replace(/^.*-(\d+)\.png$/,'#$1')).join(' '):''));
+    ok('save makes full-size PNG'+(pages>1?'s':'')+(zipped?' (one ZIP)':''),(zipped?dls.length===1:dls.length===pages)&&sizes.length===pages&&sizes.every(s=>s===want),sizes.join(', ')+(pages>1?' · '+names.map(n=>n.replace(/^.*-(\d+)\.png$/,'#$1')).join(' '):''));
     await pg.waitForSelector('#doneBox',{state:'visible',timeout:5000}).catch(()=>{});
     ok('success message',await pg.isVisible('#doneBox'),await pg.textContent('#doneTitle'));
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});

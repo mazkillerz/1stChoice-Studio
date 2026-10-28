@@ -202,6 +202,7 @@ body.sheet-open .cta-photo{display:none}
 .progress{display:flex;flex-direction:column;gap:6px;align-items:stretch;font-weight:500;font-size:var(--fs-s);color:var(--muted);text-align:center}
 .progress-bar{height:8px;border-radius:var(--r-pill);background:var(--chip);overflow:hidden}
 .progress-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:inherit;transition:width .35s var(--ease)}
+.progress .save-cancel{min-height:48px;min-width:96px;align-self:center;margin-top:2px}   /* Save all pages: stop before anything is saved (1.9.0) */
 .done-box{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-m);background:color-mix(in srgb,var(--ok) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--ok) 35%,var(--line))}
 .done-box>div{display:flex;flex-direction:column;line-height:1.35}
 .done-box b{font:600 var(--fs-l) var(--sans)}
