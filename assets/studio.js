@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.9.0';
+const VERSION='1.10.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1636,7 +1636,8 @@ async function tool(cfg){
      tool and the time); a phone gets one share sheet with all of them, a computer one ZIP (assets/batch.js). Cancel stops before anything is saved. */
   function saveAllLabel(){ return !PG?'Save story':pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
   function syncSaveAll(){ if(!PG) return; if(!saving) $('saveThis').hidden=pageCount()<2||$('save').hidden; if(!imgDone&&!$('teamOn').checked) $('saveTxt').textContent=saveAllLabel();
-    $('photosRow').textContent=pageCount()>1?'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.':'Always a full-quality picture to your Photos.'; }
+    const zipped=!inClaude&&!matchMedia('(pointer:coarse)').matches&&!isPhone();   // a computer gets one ZIP (see save())
+    $('photosRow').textContent=pageCount()>1?(zipped?'All '+pageCount()+' '+PN.many+' download at full quality in one ZIP, numbered in order.':'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.'):'Always a full-quality picture to your Photos.'; }
   function batchBase(stamp){ const n=(design?design.name:($('teamName').dataset.touched?$('teamName').value:'')).trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
     return n||fname('x',null,0,stamp).replace(/\.x$/,''); }
   let lastFiles=null, saving=false, cancelSave=false;

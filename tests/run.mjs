@@ -16,12 +16,12 @@ import fs from 'fs';
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle']],
-  [/assets\/studio\.(js|css)|index\.html/,['home7','pins','pinorder','fresh','peek','select','extra','cardnames']],
-  [/assets\/search\./,['search']],
+  [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages']],
+  [/assets\/search\./,['search','polish71-search','create-search']],
   [/tools\/create/,['create','create-search']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
-  [/assets\/studio\.css/,['contrast','polish71']],
+  [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar']],
   [/^lab\//,['lab','lab-pro','board-penpot']],
   [/assets\/templates\.|brands\//,['templates']],
   [/assets\/welcome\./,['welcome']],
@@ -32,7 +32,8 @@ const MAP=[
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch'], HUB_SUITES=['home7','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep'];
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save'],
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
@@ -74,7 +75,8 @@ const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={'collage-grids':210,full:180,home7:145,polish71:135,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,batch:75,'queue-keep':70,v5:50,taste:51,smoke:35,select:35};
+const SLOW={'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+  'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));
 const bad=out.filter(r=>r.code);

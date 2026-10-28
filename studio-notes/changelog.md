@@ -13,6 +13,28 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.10.0 · 28 Oct 2026
+
+### Carousel and covers from photos, right from All tools
+type: design
+Tools that start from photos now have the same camera button in All tools that they have on your home. Carousel and Highlight covers start from your photos in 3 taps (All tools, camera, Save) instead of 4: before, you opened the tool, tapped Add your photos and picked them there. Tools on your home keep their camera there, so their rows in All tools stay the same.
+![before](assets/whatsnew/1.10.0-alltools-before.jpg)
+![after](assets/whatsnew/1.10.0-alltools-after.jpg)
+
+### A shorter note for several photos
+type: design
+With several shop photos in a row, the note over your story ran to three lines next to Skip. It's two now: "Photo 1 of 3 is in" and "Tap Save for the next one", so it covers less of the design.
+![before](assets/whatsnew/1.10.0-note-before.jpg)
+![after](assets/whatsnew/1.10.0-note-after.jpg)
+
+### Arabic numbers in search
+type: fix
+Searching with Arabic numbers (٢٨ أكتوبر) found nothing, because search dropped them with the harakat. Now ٢٨ and 28 find the same designs, and Create's template search matches Arabic exactly like the search on the home page.
+
+### Save all on a computer says ZIP
+type: fix
+On a computer the Save card for a carousel said "All 4 slides go to your Photos", but there they come as one ZIP in your downloads. It now says so: "All 4 slides download at full quality in one ZIP, numbered in order." Phones still say Photos.
+
 ## 1.9.0 · 28 Oct 2026
 
 ### Save every slide in one go

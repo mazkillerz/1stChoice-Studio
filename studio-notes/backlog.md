@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 20 (1.9.0, 28 Oct 2026) was a **Mazoon** session (parallel, see `sessions.md`): Save all N slides/covers in paged tools (#5, part). The next session, 1.10.0, is a **Simplify** session; 1.11.0 is a **team** session.
-**Simplify session:** every 5th minor version. The next one is 1.10.0 (with a pattern review).
+**Last session:** 21 (1.10.0, 28 Oct 2026) was the **Simplify** session (with pattern review; parallel, see `sessions.md`). The next session, 1.11.0, is a **team** session; 1.12.0 a **Mazoon** session.
+**Simplify session:** every 5th minor version. The next one is 1.15.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -25,6 +25,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
+- 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
 - 1.9.0: on a computer the low-memory fallback message still says "This phone was low on memory".
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
 - 1.8.0: `queue.mjs` "no leftover unfinished stories" fails now and then under 3–4 parallel suites (draft timer), passes alone every time. Give it a wait on the draft timer if it shows up again.
@@ -35,28 +36,22 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - 1.6.0: `peek` "Peek fits the screen" (desktop) failed once under 4 parallel suites and passed 2 of 2 alone: a timing check; give it a wait for the open animation if it repeats.
 - 1.6.0: a design opened again (used_at later than its name's date) shows its full automatic name, which can still be cut on the card; fine for now.
 - 1.5.0: Saved: the chosen collection's ⋯ can sit under the row's end fade on a narrow phone; the row scrolls it into view, but check on a real phone.
-- 1.5.0 full sweep: tapscan lists tick boxes (24px) and colour wells (38px) on tool Style/Words sheets; they sit inside larger rows (taste passes), same as 1.4.0. Confirm each row is the hit area.
 - 1.5.0: drag in All tools has no auto-scroll; fine for up to ~8 pinned tools (the pinned list is at the top of the sheet). Add edge auto-scroll if someone pins most tools.
 - 1.3.0: Peek opens from the picture in a design's menu (press and hold → picture). Watch whether the team finds it; a quicker way would be press and hold straight into Peek with the actions under it (changes a familiar gesture: ask first).
-- 1.3.0: test time: `home7` (~145 s) and `polish71` (~135 s) run for any hub or CSS change; split them by area in the 1.5.0 Simplify session so a small hub change runs a part.
 - 1.0.0 follow-ups: Collage's logo at default settings sits at y≈1700–1780, below the story safe line (1620); kept so old designs stay identical; decide with Mazoon whether new collages move it up. Create's story templates put the logo at the bottom 1740 too.
 - 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
 - 1.4.0: `tests/taste.mjs` now covers Carousel, Highlight covers and Create (first view); the note/toast monitor still only watches Restock, and the lab is not covered yet.
-- 1.4.0: Create has its own Arabic normaliser for template search (`normQ` in create.js); share one with `assets/search.js` in the Simplify session.
 - 1.0.0: on a computer the tool page shows the Save card right after Photo (above Style and Words); check whether that order is what Mazoon wants.
 - 1.0.0: Templates library ideas: favourites (star a template), "recently used", and team templates with real previews in the Team row (they use the saved thumbnail today).
 - Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
 - Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
 - The Quick start note fades after 3.2 s: check on a real phone that it is long enough to read, and that Save's pulse is noticed.
 - Board and the lab pages now get the interface font (IBM Plex Sans Arabic) through studio.css but keep their own 800 weights (drawn as 700); align them with the 400/500/600 scale with backlog #18.
-- Old CSS left unused since 0.7.1: `.col-tools`, `.banner.ready` rules, `.link` in col tools. Remove in the next Simplify session (0.10.0) with the 0.5/0.6 leftovers below.
 - A saved design opened on a phone shows no "Saved design" label (`#designBar` is hidden on phones by `.panel>.banner{display:none}`); the Save sheet's switch says "Update “name” in the team" instead. Check whether the team misses the label.
 - Picture-only save when signed in is now 3 taps (Save, switch off, Save); picture + team is 2 (was 3–5). Watch whether the team wants a direct picture-only button; if so add it under the Save button.
 - Select mode (0.8.0): on a phone, check whether the team finds **Select** at the top right or only through press and hold → Select more. Swipe-to-tick across several cards (like Photos) would be faster for long lists.
 - Select mode: Save the pictures of several designs in one go would fit the same bar (needs each tool to render offscreen: see #5 Batch export).
-- Old hub CSS left from 0.5/0.6 (`.qbtn`, `.quick*`, `.dgrid`, `.dcard`, `.rcard`, `.recent`, `#saved .sec-head`) is unused since 0.7.0: remove it in the next Simplify session (0.10.0).
-- tapscan still reports the custom-colour `input[type=color]` (38px) inside `.sw-btn`: its parent's `::after` gives the hit area. Teach tapscan to check the parent's `::after` too.
 - Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
 - Inspector (layer editor) Done is still 40px tall visually; since 0.2.0 every Done has an invisible 48px hit area. Only enlarge it visibly if full.mjs stays green.
 - Create: Templates already show a shimmer while loading (checked 0.2.0); only pre-rendered thumbnails would improve it further.
@@ -65,6 +60,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.10.0 (Simplify): 79 lines of old hub CSS removed (computed-style diff: 0 changes over 72 states); one Arabic normaliser (`Studio.normText`) for hub search and Create, Arabic digits ٠–٩ now searchable; `home7` / `polish71` split into parts; All tools camera (Carousel / Highlight from photos 4 → 3 taps); the several-photos note back to one line; tapscan counts a wrapping label as the hit area; Save all on a computer says ZIP.
 - 1.9.0 (Mazoon): Save all N slides/covers ("Saving n of N" + Cancel, one share sheet on a phone, one in-browser ZIP on a computer, files `<design>-01.png`…); `quickpages.mjs` fixed (red since 1.5.0: it picked Carousel/Highlight from the + menu).
 - 1.8.0 (team): photos keep waiting (IndexedDB `studio:queue:<brand>:<tool>` + `…:pos`; Home row "N photos still waiting" with ✕; tool banner Continue / Clear; a reload on the same story restores it with one-tap Save) and a quiet Skip on the ready note (3+ taps → 1). Fixed `simplify.mjs` grouping check (red since 1.5.0).
 - 1.6.0 (team): Several shops in a row (`queue:true` tools: Restock, Photo story; + menu, row camera, search shortcut and share sheet take several photos); Saved cards drop the automatic date when the caption gives it, and old dates read "18 Oct" (was the 1.5.0 audit note).
