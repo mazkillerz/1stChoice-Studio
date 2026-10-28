@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.12.0 · 28 Oct 2026
+
+### Stickers
+type: feature
+Point at the can, circle the price, add a little sparkle. In any tool, open **Layers** and tap **Sticker**: a sheet of 14 stickers (arrows, sparkles, a starburst, a star, a heart, a seal, a scribble circle and underline, a wavy line, a speech bubble, shine lines and a tick). Tap one and it lands on your story as a normal layer: drag it, pinch to size it, turn it, give it any brand colour or your own, make it see-through, duplicate it or undo. Stickers are drawn, not pictures, so they stay sharp in the full-size save, and they come back when you open a saved design. Adding one is 3 taps (Layers, Sticker, the sticker). They have no words in them, so they fit any brand.
+![before](assets/whatsnew/1.12.0-stickers-before.jpg)
+![after](assets/whatsnew/1.12.0-stickers-after.jpg)
+
+### No more empty card on a computer
+type: fix
+On a computer the tool page always showed an empty **Add an element** card in the left column, even before you tapped Element. It now shows only while you're picking an element, like Add an asset and the new sticker sheet.
+
 ## 1.11.0 · 28 Oct 2026
 
 ### Posts in one tap

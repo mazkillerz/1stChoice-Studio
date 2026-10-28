@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 22 (1.11.0, 28 Oct 2026) was a **team** session (parallel, see `sessions.md`): one-tap posts (#3) and search finds Create templates by their Arabic words (#20). The next session, 1.12.0, is a **Mazoon** session.
+**Last session:** 23 (1.12.0, 28 Oct 2026) was a **Mazoon** session, the last of five parallel version sessions (see `sessions.md`): Stickers pack (#9). The next session, 1.13.0, is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.15.0.
 
 ## Next up
@@ -15,11 +15,12 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
 | 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | 1.7.0 Copy/Paste style covers one kept style; a named list of several is the next step if Mazoon asks. |
 | 22 | Paste style on several layers at once (select mode / "Paste on every text"), and in Create/Board | 1 | 3 | 2 | 2 | 4 | Follow-up to 1.7.0 Copy style. |
-| 9 | Stickers pack (brand-approved shapes, arrows, sparkles) | 2 | 3 | 3 | 2 | 6 | Wording must come from brand.js. |
 | 10 | Highlight covers: emoji covers; Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
+| 25 | Flip (mirror) for stickers and shapes in the Move tab, so an arrow can point the other way | 1 | 2 | 2 | 1 | 4 | From 1.12.0. |
+| 26 | Stickers in Create and Board (own editors) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
@@ -60,6 +61,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.12.0 (Mazoon): Stickers pack (14 drawn stickers as asset layers `sticker:<id>`, Layers → Sticker, recolour/opacity/copy style/undo for free, old designs pixel-identical); fixed the empty Add an element card on a computer.
 - 1.11.0 (team): Ice cold / Did you know / Your choice as finished 1080×1350 posts in Templates → Posts and search (#3); search finds Create templates by their Arabic words, and `?tpl=` behaviour locked in tests (#20).
 - 1.10.0 (Simplify): 79 lines of old hub CSS removed (computed-style diff: 0 changes over 72 states); one Arabic normaliser (`Studio.normText`) for hub search and Create, Arabic digits ٠–٩ now searchable; `home7` / `polish71` split into parts; All tools camera (Carousel / Highlight from photos 4 → 3 taps); the several-photos note back to one line; tapscan counts a wrapping label as the hit area; Save all on a computer says ZIP.
 - 1.9.0 (Mazoon): Save all N slides/covers ("Saving n of N" + Cancel, one share sheet on a phone, one in-browser ZIP on a computer, files `<design>-01.png`…); `quickpages.mjs` fixed (red since 1.5.0: it picked Carousel/Highlight from the + menu).

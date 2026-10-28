@@ -112,6 +112,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Saved page, collections, a design's menu, Peek, select mode, card names | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames` |
 | Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search` |
 | Copy / Paste style, the inspector's More tab | `copystyle` |
+| Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`) | `stickers`, `copystyle`, `full` |
 | Highlight covers, paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `highlight-product`, `quickpages`, `batch` |
 | Create (`tools/create*`) | `create`, `create-search` |
 | What's New, changelog | `whatsnew` |

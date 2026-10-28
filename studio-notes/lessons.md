@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 23 | 1.12.0 | 4 (new suite stickers 72/0; release run green; one CSS merge conflict, both sides kept) | 5 (riding on the asset layer gave move/colour/undo/recipe for free) | 0 | 33/33 pass | New layer types: reuse an existing layer kind with a new `ref` prefix instead of a new recipe type |
 | 22 | 1.11.0 | 4 (new suite postpresets 88/0; release run green) | 5 (first of the five to finish; a 5-minute probe showed #20 was already half done) | 0 | 33/33 pass | Probe the real behaviour before building a backlog item |
 | 21 | 1.10.0 | 4 (38/38 suites one at a time, contrast + tapscan clean; found two suites red on main since 1.5.0 and a taste check pointing at a missing file) | 4 (both phases done; the one-at-a-time sweep hit the 30-min background limit once) | 0 reported after 1.7.0 | 33/33 pass | Start the full sweep with a 2-hour background limit; run every suite once at the start of a Simplify session, not only at the end |
 | 20 | 1.9.0 | 4 (new suite batch 99/0; release run green) | 5 (parallel session; the engine already saved every page, so the work was count, Cancel, names and ZIP) | 0 | 33/33 pass | Read the current engine before building a backlog item |

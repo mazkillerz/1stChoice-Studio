@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.11.0';
+const VERSION='1.12.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -226,6 +226,7 @@ const SHAPES=[
 /* draw a shape filling a w×h box: fill colour ('none' = no fill), optional outline colour + width, corner radius */
 function drawShape(c,a,w,h,fill,o){
   o=o||{}; const r=o.r!=null?o.r:(a.radius||0);
+  if(a.draw){ c.save(); c.scale(w/a.w,h/a.h); a.draw(c,fill&&fill!=='none'?fill:'#000'); c.restore(); return; }   // a sticker (assets/stickers.js)
   c.save(); c.beginPath();
   if(a.free) a.path(c,w,h,r); else { c.scale(w/a.w,h/a.h); a.path(c,a.w,a.h,r); }
   c.restore();
@@ -235,7 +236,8 @@ function drawShape(c,a,w,h,fill,o){
 }
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
-function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||brandAssets().find(x=>x.id===ref)||null; }
+const stickerList=()=>window.STUDIO_STICKERS||[];   // assets/stickers.js, loaded by tool()
+function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
 function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
 function loadAsset(ref){
@@ -529,7 +531,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         },{kind:'asset'});
       } else {
         const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
-        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:'asset'});
+        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
       }
     },
     /* numbers in the brand's digits (Arabic brands write ٢٠٪, not 20%) */
@@ -614,7 +616,9 @@ async function tool(cfg){
   const app=document.getElementById('app');
   app.innerHTML='<p class="hint" style="width:100%">Loading…</p>';
   if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
+  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):loadScript(ROOT+'assets/stickers.js').then(()=>true,()=>false);   // loads alongside the brand
   const B=await useBrand();
+  const hasStickers=await stickersReady;
   const opts=v=>typeof v==='function'?v(B):v;
   const clone=o=>JSON.parse(JSON.stringify(o));
   const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
@@ -706,6 +710,7 @@ async function tool(cfg){
     </section>
     <section class="sheet" id="sh-assets" data-sheet="assets" aria-labelledby="h-assets">${sheetHead('assets','Add an asset')}<div class="sheet-body" id="assetList"></div></section>
     <section class="sheet" id="sh-comps" data-sheet="comps" aria-labelledby="h-comps">${sheetHead('comps','Add an element')}<div class="sheet-body"><div class="comp-grid" id="compList"></div><p class="small">Each one is a normal layer: move, size, turn, recolour, change the font, hide or delete it.</p></div></section>
+    ${hasStickers?`<section class="sheet" id="sh-stickers" data-sheet="stickers" aria-labelledby="h-stickers">${sheetHead('stickers','Add a sticker')}<div class="sheet-body"><div class="sticker-grid" id="stickerList"></div><p class="small">Stickers stay sharp at any size. Move, size, turn or recolour them like any layer.</p></div></section>`:''}
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
@@ -723,7 +728,7 @@ async function tool(cfg){
   if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
-    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button></div>
+    <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button>${hasStickers?`<button type="button" class="mini" id="addSticker" aria-controls="sh-stickers">${ICON.sparkle} Sticker</button>`:''}</div>
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul>
     <button type="button" class="link reset-layout" id="resetLayout">${ICON.undo} Put everything back where it started</button></div></section>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
@@ -774,7 +779,7 @@ async function tool(cfg){
   function openSheet(n,opt){
     const el=sheetEl(n); if(!el) return;
     if(!isPhone()){   // desktop: cards are always there; bring this one into view
-      if(n==='assets'||n==='comps'||n==='insp') el.classList.add('active');
+      if(n==='assets'||n==='comps'||n==='stickers'||n==='insp') el.classList.add('active');
       if(!(opt&&opt.quiet)) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       return;
     }
@@ -787,7 +792,7 @@ async function tool(cfg){
   /* move focus into a sheet opened from the bar (screen readers land on its title), and back to the bar on close */
   function focusSheet(n){ const h=sheetEl(n)?.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); setTimeout(()=>h.focus({preventScroll:true}),60); } }
   function closeSheet(n){
-    if(!isPhone()){ if(n==='assets'||n==='comps'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
+    if(!isPhone()){ if(n==='assets'||n==='comps'||n==='stickers'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
     if(n&&n!==openName) return; if(!openName) return;
     const el=sheetEl(openName); el.classList.remove('open'); el.setAttribute('inert',''); el.style.transform='';
     if(openName==='insp'&&S.sel){ S.sel=null; render(); }
@@ -1300,13 +1305,13 @@ async function tool(cfg){
     $('inspSize').value=x&&!x.type?x.size/60:l.k;
     $('inspHide').textContent=l.hidden?'Show':'Hide'; $('inspDelete').hidden=!x; $('inspDup').hidden=!x; $('inspOrder').hidden=!x;
     if(x){ const i=S.extras.indexOf(x); $('inspBack').disabled=i<=0; $('inspFwd').disabled=i>=S.extras.length-1; }
-    const C=B.colors, kind=b&&b.kind, isShape=isAsset&&ad&&!ad.file, comp=x&&x.type==='comp'?COMP(x.comp):null;
+    const C=B.colors, kind=b&&b.kind, isShape=isAsset&&ad&&!ad.file, plain=isShape&&!!(ad.line||ad.sticker), comp=x&&x.type==='comp'?COMP(x.comp):null;
     /* colour: the brand palette (+ Custom) for everything that can take a colour; photos and cut-outs keep theirs */
     const canColor=!(isAsset&&ad&&ad.file&&!ad.tint);
     const cur=x&&!x.type?x.color:isShape?(l.color||x.color):l.color;
-    $('inspColors').innerHTML=canColor?`<span class="lbl">${isShape?'Fill':kind==='pill'&&!comp?'Button colour':'Colour'}</span>`+palettePicker('col',cur,{auto:x&&!x.type?null:isShape?null:(isAsset?'Original':'Auto'),none:isShape&&!ad.line}):'';
-    $('inspShape').hidden=!isShape||!!ad.line;
-    if(isShape&&!ad.line){ if(!$('inspStroke').firstChild||$('inspStroke').dataset.for!==id){ $('inspStroke').innerHTML=palettePicker('stroke',x.stroke||'none',{none:true}); $('inspStroke').dataset.for=id; } else syncPalette($('inspStroke').firstChild,x.stroke||'none');
+    $('inspColors').innerHTML=canColor?`<span class="lbl">${isShape&&!ad.sticker?'Fill':kind==='pill'&&!comp?'Button colour':'Colour'}</span>`+palettePicker('col',cur,{auto:x&&!x.type?null:isShape?null:(isAsset?'Original':'Auto'),none:isShape&&!plain}):'';
+    $('inspShape').hidden=!isShape||plain;
+    if(isShape&&!plain){ if(!$('inspStroke').firstChild||$('inspStroke').dataset.for!==id){ $('inspStroke').innerHTML=palettePicker('stroke',x.stroke||'none',{none:true}); $('inspStroke').dataset.for=id; } else syncPalette($('inspStroke').firstChild,x.stroke||'none');
       if(document.activeElement!==$('inspSW')) $('inspSW').value=x.sw||0; $('inspRRow').hidden=ad.radius==null; if(document.activeElement!==$('inspR')) $('inspR').value=x.r!=null?x.r:ad.radius||0; }
     if(document.activeElement!==$('inspOp')) $('inspOp').value=l.op!=null?l.op:1;
     $('inspWH').hidden=!(isShape&&ad.free); if(isShape&&ad.free){ $('inspW').value=x.w; $('inspH').value=x.h||Math.round(x.w*ad.h/ad.w); }
@@ -1393,7 +1398,7 @@ async function tool(cfg){
     const color=tx?tx.color:ad&&!ad.file?(l.color||x.color):l.color; if(color) st.color=color;
     ['font','align','lh','ls','bg','op'].forEach(k=>{ if(l[k]!=null) st[k]=l[k]; });
     const b=reg.find(r=>r.id===id), sh=l.shadow!=null?l.shadow:tx?tx.shadow:b&&b.typ?b.shadow:null; if(sh!=null) st.shadow=!!sh;
-    if(ad&&!ad.file&&!ad.line){ if(x.stroke){ st.stroke=x.stroke; st.sw=x.sw||6; } if(x.r!=null) st.r=x.r; }
+    if(ad&&!ad.file&&!ad.line&&!ad.sticker){ if(x.stroke){ st.stroke=x.stroke; st.sw=x.sw||6; } if(x.r!=null) st.r=x.r; }
     return st;
   }
   async function pasteStyle(id,st){
@@ -1403,7 +1408,7 @@ async function tool(cfg){
     if(textish){ if(st.font){ status('Loading font…'); await ensureFont(st.font); status(''); } if(st.font) l.font=st.font; else delete l.font; }
     if(typ){ ['align','lh','ls','bg'].forEach(k=>{ if(st[k]!=null) l[k]=st[k]; else delete l[k]; }); if(st.shadow!=null){ l.shadow=st.shadow; if(tx) tx.shadow=st.shadow; } }
     if(st.op!=null) l.op=st.op; else delete l.op;
-    if(shape&&!ad.line){ x.stroke=st.stroke||null; x.sw=st.stroke?st.sw||6:0; if(st.r!=null&&ad.radius!=null) x.r=st.r; }
+    if(shape&&!ad.line&&!ad.sticker){ x.stroke=st.stroke||null; x.sw=st.stroke?st.sw||6:0; if(st.r!=null&&ad.radius!=null) x.r=st.r; }
   }
   $('inspCopyStyle').addEventListener('click',()=>{ const id=S.sel; if(!id) return; store(STYLE_KEY,styleOf(id)); haptic('tick'); syncInspector(); status('Style copied. Tap another layer, then More → Paste style.',2600); });
   $('inspPasteStyle').addEventListener('click',async()=>{ const id=S.sel, st=copiedStyle(); if(!id||!st) return; await pasteStyle(id,st); haptic('tick'); syncInspector(); render(); status('Style pasted. Tap undo to bring the old one back.',2600); });
@@ -1487,6 +1492,9 @@ async function tool(cfg){
   }
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
+  if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
+    $('addSticker').addEventListener('click',()=>{ paintStickers($('stickerList')); openSheet('stickers'); });
+    $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
   onAssetLoad=()=>render();
@@ -1496,7 +1504,7 @@ async function tool(cfg){
   /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
   const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
-  const KIND={text:'Text',pill:'Button',logo:'Logo',asset:'Asset'};
+  const KIND={text:'Text',pill:'Button',logo:'Logo',asset:'Asset',sticker:'Sticker'};
   let layersSig='';
   function paintLayers(){
     if(isPhone()&&openName!=='layers'){ layersSig=''; return; }   // only keep the list up to date while it's on screen
