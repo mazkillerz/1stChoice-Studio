@@ -367,3 +367,4 @@
 /* flex layout (preview, 1.17.0) */
 .board-app .ps-tag{font:500 10.5px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-inline-start:8px}
 .board-app .seg2 [data-seg="flexDir"]{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+@media (pointer:coarse){.ps .mini[data-act^="flex"]{min-height:48px}.board-app .seg2 [data-seg^="flex"]{height:auto;min-height:48px}}

@@ -142,6 +142,8 @@ function colorPop(anchor,value,onChange,opt){ opt=opt||{}; let h=hex6(value), a=
 UI.colorPop=colorPop;
 
 /* ---------- applying changes to the selection ---------- */
+/* if board-flex.js could not load (offline before the cache has it): the preview is simply off, saved stacks keep their places */
+if(!BD.flex) BD.flex={enabled:()=>false,setEnabled(){},items:()=>[],of:()=>null,parentOf:()=>null,hug:()=>false,reflow:()=>false,dropped(){},quick(){},set(){},resize(){},add(){},remove(){},stack(){}};
 const targets=()=>S.sel.filter(n=>!isLocked(n));
 function apply(fn,opt){ const list=targets(); list.forEach(fn); list.forEach(n=>{ BD.applyFill(n); BD.decorate(n); if(n.isCached&&n.isCached()) BD.applyFx(n); const p=n.getParent(); if(p&&kind(p)==='mask') BD.decorate(p); }); BD.tr.forceUpdate(); BD.main.batchDraw(); BD.paintUI(); BD.changed(); if(opt&&opt.repaint) UI.paintProps(); placeQbar(); }
 Object.assign(UI,{targets,apply});
