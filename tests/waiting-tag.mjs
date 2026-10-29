@@ -88,6 +88,18 @@ for(const vp of [{name:'phone light',width:390,height:844,touch:true,scheme:'lig
   await home();
   ok(N+'after a reload: still gone',!(await tagOf('#toolGrid .tool-item','restock')));
 
+  /* 1.22.0: a row with photos waiting continues them in one tap (?queue=1); other rows open the tool as before */
+  const hrefs=async sel=>pg.$$eval(sel,l=>l.map(r=>({id:r.dataset.id,href:(r.querySelector('a.tool-row,a.lib-open')||{}).getAttribute?.('href')||''})));
+  ok(N+'cleared Restock row opens the tool plainly again (no ?queue=1)',((await hrefs('#toolGrid .tool-item')).find(x=>x.id==='restock')||{}).href.endsWith('restock.html'),JSON.stringify(await hrefs('#toolGrid .tool-item')));
+  await openLib();
+  const lh=await hrefs('dialog[open] .lib-row');
+  ok(N+'All tools: only Photo story (1 waiting) links with ?queue=1',lh.filter(x=>/\?queue=1$/.test(x.href)).map(x=>x.id).join()==='photo-story'&&lh.filter(x=>x.href).every(x=>!/\?.*\?/.test(x.href)),JSON.stringify(lh.filter(x=>/queue/.test(x.href))));
+  const went=[]; pg.on('framenavigated',f=>{ if(f===pg.mainFrame()) went.push(f.url()); });
+  await pg.evaluate(()=>document.querySelector('dialog[open] .lib-row[data-id="photo-story"] a.lib-open').click());
+  await pg.waitForURL(/photo-story\.html/,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(1800);
+  const cont=await pg.evaluate(()=>({url:location.search,bar:document.getElementById('queueBar').hidden,draftBar:document.getElementById('draftBar').hidden}));
+  ok(N+'tapping the Photo story row continues the waiting photo at once (no Continue banner, a new story)',went.some(u=>/photo-story\.html\?queue=1$/.test(u))&&cont.bar&&cont.draftBar&&/^\?draft=/.test(cont.url),JSON.stringify({went,cont}));
+
   /* the low-memory fallback: the full size fails once, the save steps down and says why; "device" on a computer */
   await pg.goto(BASE+'tools/photo-story.html'); await pg.waitForTimeout(1200);
   await pg.evaluate(()=>document.getElementById('draftFresh')?.click());

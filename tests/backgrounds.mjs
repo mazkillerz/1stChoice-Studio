@@ -10,6 +10,7 @@
    9. Undo that removes the chosen layer (a new text layer) closes the layer bar and clears the selection.
    10. Dark theme: the Background buttons render and the pressed one looks different from the others.
    11. No page errors.
+   12. Carousel (1.22.0): the Background group for all slides, Plain = no value, Dots on every slide, Save at 2160x2700.
    Run like tests/smoke.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -188,6 +189,34 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   ok('Dark theme: 6 Background buttons render with a size',dk.length===6&&dk.every(x=>x.w>=44&&x.h>=44),dk.length);
   const on=dk.find(x=>x.p==='true'), off=dk.find(x=>x.p==='false');
   ok('Dark theme: the pressed button looks different from an unpressed one',!!on&&!!off&&(on.bg!==off.bg||on.bc!==off.bc||on.col!==off.col),{on,off});
+  await ctx.close();
+}
+
+/* 12. Carousel (1.22.0): Background under Background colour for all slides; Plain by default and pixel-identical to no value;
+   a finish shows on a Words-only slide, and it is the same on every slide (a setting for All slides) */
+{
+  const {ctx,pg}=await mk({tool:'carousel'});
+  await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(300);
+  await set(pg,null,{kind:'words'}); await settle(pg); await openStyle(pg);
+  const bs=await btns(pg);
+  ok('Carousel: Background group has the 6 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs);
+  const order=await pg.evaluate(()=>{ const fw=[...document.querySelectorAll('#sh-style [data-fw]')].map(x=>x.dataset.fw); return {bg:fw.indexOf('bg'),gfx:fw.indexOf('gfx'),gThis:fw.indexOf('gThis')}; });
+  ok('Carousel: Background sits right under Background colour, in All slides (before This slide)',order.gfx===order.bg+1&&order.gfx<order.gThis,order);
+  const h0=await gfxHash(pg,undefined), hp=await gfxHash(pg,'plain');
+  ok('Carousel: Plain draws exactly what an older carousel (no value) draws',h0===hp,[h0,hp]);
+  await pg.tap('[data-seg="gfx"] .seg[data-v="dots"]'); await pg.waitForTimeout(400);
+  const hd=await settle(pg);
+  const v=await pg.evaluate(()=>({here:Studio.debug.S.values.gfx,pressed:document.querySelector('[data-seg="gfx"] .seg[data-v="dots"]').getAttribute('aria-pressed'),
+    others:Studio.debug.S.P.map(p=>p.values.gfx),rec:JSON.stringify(Studio.debug.recipe&&Studio.debug.recipe()||'').includes('"gfx":"dots"')}));
+  ok('Carousel: tapping Dots changes the slide and is pressed',hd!==hp&&v.here==='dots'&&v.pressed==='true',v);
+  ok('Carousel: Dots is on every slide and in the recipe',v.others.length>1&&v.others.every(x=>x==='dots')&&v.rec,v);
+  await closeStyle(pg);
+  await pg.evaluate(()=>{ navigator.canShare=()=>false; Studio.debug.S.P.forEach(p=>p.values.kind='words'); Studio.debug.render(); });   // downloads, and no slide waits for a photo 
+  await pg.tap('#barSave'); await pg.waitForTimeout(700);   // a phone: the bar's Save opens the Save sheet; Save there makes the slides
+  if(!pg.dls.length) await pg.evaluate(()=>document.getElementById('save').click());
+  for(let i=0;i<80&&!pg.dls.length;i++) await pg.waitForTimeout(300);
+  const sz=pg.dls[0]?await pngSize(pg.dls[0]):'';
+  ok('Carousel + Dots: Save makes full-size 2160x2700 slides',sz==='2160x2700',sz);
   await ctx.close();
 }
 

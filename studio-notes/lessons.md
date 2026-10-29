@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 33 | 1.22.0 | 4 (backgrounds 37/0 with a Carousel part: Plain = no value pixel-identical; waiting-tag 57/0; found and fixed a stale banner on queue continue) | 5 (both items in one pass; dropped Highlight covers after one look at the shot) | 0 | see release | Shoot a tool's real preview before adding a visual option to it: the Highlight shot showed the finish had no room |
 | 32 | 1.21.0 | 4 (old designs pixel-identical in restock-styles 56/0 and photostory-styles 16/0 before the commit; new suite backgrounds 31/0) | 5 (feature + audit fix in one pass; suite written by a sonnet helper while shots and notes went on) | 0 | see release | Look at a new finish at phone-preview size, not only zoomed: Glow on white was invisible in the preview at first |
 | 31 | 1.20.0 | 4 (full sweep 49/49 green; new suite brandkit; Offer/Restock start lines now chosen by the kit, not by matching 1st Choice text) | 4 (lean: one sweep at the end; two proposals dropped after checking their cost) | 0 | 35/35 pass | Test plumbing with a second brand at every major version, not only when the backlog says so |
 | 30 | 1.19.0 | 4 (new suite textstyles; release run green) | 5 (both items in one pass) | 0 | pass | Shoot the More tab at 360px too before release |
@@ -29,6 +30,12 @@ What worked, what failed, and process tweaks. Newest session first.
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
 
+
+## 1.22.0 (session 33, Mazoon)
+- Worked: `{...Studio.groundField(),global:true}` + `h.ground()` gave Carousel backgrounds in two lines, the same on every slide.
+- Worked: shooting the tool before building made the call on Highlight covers easy (the finish only shows in a ring that a 60px cover can't show).
+- Watch out: rows in All tools are drawn from the templates (`toolRow`/`libRow`), not through `paintWaitTags()`; anything that depends on `waitN` must be in the template too (`rowHref`).
+- Watch out: a phone save of several pages goes to the share sheet; tests set `navigator.canShare=()=>false` to get downloads, and every slide needs its photo (set kinds to Words only).
 
 ## 1.21.0 (session 32, team)
 - Worked: drawing the finish in story units (shapes in one path, seeded speckles) keeps preview and the 2× save identical with no cache; `h.ground()` makes adding it to a tool a two-line change.

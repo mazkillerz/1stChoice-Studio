@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 32 was 1.21.0 (29 Oct 2026), a **team** session: built-in Backgrounds (Plain, Fade, Glow, Dots, Lines, Grain) for Restock and Photo story, the owner's chosen backlog item; plus Undo/Redo keeping the chosen layer (audit finding). The next session, 1.22.0, is a **Mazoon** session. (Sessions 24–31: 1.13.0–1.20.0, see `sessions.md`.)
+**Last session:** session 33 was 1.22.0 (29 Oct 2026), a **Mazoon** session: Background finishes in Carousel (#39, for all slides), plus a tap cut: a tool row with an "N waiting" tag continues the queue in one tap (#38), and continuing the queue no longer leaves the "unfinished story" banner up (found while testing). The next session, 1.23.0, is a **team** session. (Sessions 24–31: 1.13.0–1.20.0, see `sessions.md`.)
 **Simplify session:** every 5th minor version. The next one is 1.25.0.
 
 ## Next up
@@ -24,9 +24,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 35 | Text styles in Create and Board (own editors) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
 | 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
 | 37 | New place and Cinematic bars get `quick` (camera in All tools, like Offer in 1.15.0) if the team uses them | 2 | 1 | 1 | 1 | 3 | From 1.15.0; the share sheet keeps its five tools. |
-| 38 | Tapping a row with an "N waiting" tag continues the queue directly (`?queue=1`) | 2 | 1 | 1 | 1 | 3 | From 1.13.0: today it opens the tool, whose banner offers Continue (one extra tap). |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
-| 39 | Backgrounds in more tools: Carousel, Highlight covers, Cinematic, New place, Collage gaps (`Studio.groundField()` + `h.ground()`, one line each) | 2 | 3 | 2 | 1 | 6 | From 1.21.0. Ask whether the owner wants them everywhere or only on stories. |
+| 39 | Backgrounds in more tools: Cinematic, New place, Offer, Collage gaps (`Studio.groundField()` + `h.ground()`, one line each) | 2 | 2 | 2 | 1 | 5 | From 1.21.0; Carousel got it in 1.22.0 (global). Highlight covers deliberately skipped: the finish only shows in a thin ring round the disc and a cover is seen ~60px wide, so it reads as noise. Ask the owner which story tools want it. |
 | 40 | Background finishes as starting points in brand presets (e.g. a Restock preset with Glow) and in Templates | 2 | 2 | 2 | 1 | 5 | From 1.21.0. |
 
 ## UX audit findings (open)

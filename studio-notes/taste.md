@@ -85,7 +85,7 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 - His own Studio logo: the black dragon (25 Oct 2026, 1.2.0). Studio's mark, not the brand's: it never goes on designs. [C 25 Oct]
 
 ## Open questions to ask him
-- Backgrounds (1.21.0): are the finishes strong enough on white on a real phone, and should other tools (Carousel, Highlight covers, Collage) get them too?
+- Backgrounds (1.21.0): are the finishes strong enough on white on a real phone? Carousel has them since 1.22.0; Highlight covers left out on purpose (no room on a small cover). Which other tools want them (Cinematic, New place, Offer, Collage gaps)?
 - Saved cards align captions with each name's direction, so a mixed grid has captions on both sides. One side for all?
 - The "Your photo is in" note fades after about 3 s. Long enough to read and notice the Save pulse?
 - Does the team miss a "Saved design" label on a phone (hidden today)?
