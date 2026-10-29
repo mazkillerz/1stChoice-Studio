@@ -13,6 +13,38 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.15.0 · 29 Oct 2026
+
+### Save on a computer without losing half the screen
+type: design
+On a computer the Save card used to stick to the bottom of the screen and cover about half of the steps while you edited Style or Words. Now it waits at the end of the steps, and a slim bar at the bottom carries the same Save button until you get there. One click still saves (it brings the card up so you see the tick), and more than twice as much of the steps stays in view.
+![before](assets/whatsnew/1.15.0-savecard-before.jpg)
+![after](assets/whatsnew/1.15.0-savecard-after.jpg)
+
+### One blue button in the Save sheet
+type: design
+On a phone the Save sheet showed three blue buttons (Done, Save and the bar's Save). Done is now a quiet grey button in every sheet, in the same place and size, so the blue one is always the thing that saves.
+![before](assets/whatsnew/1.15.0-savesheet-before.jpg)
+![after](assets/whatsnew/1.15.0-savesheet-after.jpg)
+
+### Buttons instead of underlined links
+type: design
+Reset photo, More options, Only save to the team and the other small actions were underlined like web links. They are now blue text buttons that light up when you press them, like See all and More tools. Same words, same place.
+![before](assets/whatsnew/1.15.0-buttons-before.jpg)
+![after](assets/whatsnew/1.15.0-buttons-after.jpg)
+
+### Offer from a photo
+type: feature
+Offer now has a camera in All tools, like Carousel and Highlight covers: tap it, pick the product photo, and it lands in the offer ready to save. 3 taps instead of 4 (All tools, camera, Save). Pin Offer and the camera is on your Home too.
+![before](assets/whatsnew/1.15.0-offer-before.jpg)
+![after](assets/whatsnew/1.15.0-offer-after.jpg)
+
+### Shorter notes
+type: design
+The Photo sheet's note is one short sentence now, and "Keep the photos" in the Save sheet's More options has its explanation on the line under it instead of squeezed beside it.
+![before](assets/whatsnew/1.15.0-labels-before.jpg)
+![after](assets/whatsnew/1.15.0-labels-after.jpg)
+
 ## 1.14.0 · 29 Oct 2026
 
 ### Flip
