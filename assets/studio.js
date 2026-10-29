@@ -351,6 +351,7 @@ async function useBrand(id){
     const l=document.createElement('link'); l.rel='stylesheet'; l.dataset.brandFonts='1'; l.href='https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap'; document.head.appendChild(l);
   }
   document.documentElement.style.setProperty('--display','"'+BRAND.fonts.display+'",system-ui,sans-serif');
+  Object.entries(BRAND.colors||{}).forEach(([k,v])=>document.documentElement.style.setProperty('--b-'+k,v));   // brand colours for style swatches
   document.documentElement.style.setProperty('--brand-sans','"'+BRAND.fonts.body+'",system-ui,sans-serif');   // the interface keeps its own font (--sans)
   document.querySelectorAll('[data-brand-logo]').forEach(i=>{i.src=BRAND.base+BRAND.logo;i.alt=BRAND.name;});
   document.querySelectorAll('[data-brand-name]').forEach(e=>{e.textContent=BRAND.name;});
@@ -1529,7 +1530,7 @@ async function tool(cfg){
   /* ---- assets library: brand files (logo, cans, stickers) and shapes, added as movable layers ---- */
   function assetThumb(a){
     if(a.file) return `<img alt="" src="${esc(assetPrevUrl(a))}"${a.tint?' data-logo':''} loading="lazy" onerror="this.closest('button').classList.add('missing');this.remove()">`;
-    const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); drawShape(x,a,a.w,a.h,getComputedStyle(document.body).color||'#161210');
+    const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); drawShape(x,a,a.w,a.h,getComputedStyle(document.body).color||'#111');
     return `<img alt="" src="${c.toDataURL()}">`;
   }
   function paintAssets(){

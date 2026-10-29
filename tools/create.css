@@ -112,7 +112,7 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 .cr-jump button{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 13px var(--sans);cursor:pointer}
 .cr-els{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cr-el{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);color:var(--fg);font:500 11.5px var(--sans);cursor:pointer;min-height:92px;justify-content:space-between;text-align:center}
-.cr-el .im{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border-radius:9px;color:#161210;background:repeating-conic-gradient(#0000000a 0 25%,transparent 0 50%) 0 0/12px 12px,#fff}   /* always a light 'page' so dark elements show in dark mode too */
+.cr-el .im{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border-radius:9px;color:var(--b-ink,#111);background:repeating-conic-gradient(#0000000a 0 25%,transparent 0 50%) 0 0/12px 12px,#fff}   /* always a light 'page' so dark elements show in dark mode too */
 .cr-el .im img{max-width:92%;max-height:60px;display:block}
 .cr-el .im svg{width:34px;height:34px}
 .cr-icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}

@@ -17,7 +17,7 @@ Studio.tool({
   pages:{min:2,max:10,start:4},
   photos:{count:2}, quickKind:'photo', sampleNote:'Example photos. Add your photos (pick several at once to fill the slides); keep the important part in the middle (the grid shows 3:4).',
   stylesTitle:'All slides',
-  styles:[{id:'white',label:'White',swatch:csw('#fff')},{id:'cream',label:'Cream',swatch:csw('#F3EADC')},{id:'black',label:'Black',swatch:csw('#000')}],
+  styles:[{id:'white',label:'White',swatch:csw('#fff')},{id:'cream',label:'Cream',swatch:csw('var(--b-cream,#f4efe6)')},{id:'black',label:'Black',swatch:csw('#000')}],
   /* photos each slide takes */
   pagePhotos:(value,c)=>{ const k=value('kind'); if(k==='two') return 2; if(k==='words'||k==='number'||k==='end') return 0;
     if(k==='pano'){ const info=panoInfo(c.page,i=>{ try{ return c.pageValue(i,'kind'); }catch(_){ return null; } }); return info&&info.part?0:1; } return 1; },

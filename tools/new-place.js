@@ -7,7 +7,7 @@ Studio.tool({
     {id:'A',label:'White',swatch:sw('#fff','left:4px;right:4px;top:12px;height:16px;border-radius:3px')},
     {id:'B',label:'Black',swatch:sw('#000','left:4px;right:4px;top:12px;height:16px;border-radius:3px')},
     {id:'C',label:'Photo on top',swatch:sw('#fff','left:0;right:0;top:0;height:28px;border-radius:0 0 4px 4px')},
-    {id:'D',label:'Cream',swatch:sw('#F3EADC','left:4px;right:4px;top:12px;height:16px;border-radius:3px')}
+    {id:'D',label:'Cream',swatch:sw('var(--b-cream,#f4efe6)','left:4px;right:4px;top:12px;height:16px;border-radius:3px')}
   ],
   lightBackground:style=>style!=='B',
   fields:[

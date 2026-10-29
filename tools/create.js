@@ -67,7 +67,7 @@ const sel=()=>S.sel.filter(n=>n.getStage());
 const textsIn=n=>kind(n)==='text'?[n]:(n.find?n.find(c=>kind(c)==='text'):[]);
 const isPhoto=n=>kind(n)==='image';
 const isSlot=n=>CR.isSlot(n);
-const pal=()=>(B.palette&&B.palette.length?B.palette:[{name:'White',hex:'#FFFFFF'},{name:'Ink',hex:'#161210'}]);
+const pal=()=>(B.palette&&B.palette.length?B.palette:[{name:'White',hex:'#FFFFFF'},{name:'Ink',hex:'#111111'}]);
 const hex6=v=>{ const k=Konva.Util.colorToRGBA(v||'#000'); return k?'#'+[k.r,k.g,k.b].map(x=>x.toString(16).padStart(2,'0')).join(''):'#000000'; };
 function after(){ BD.main.batchDraw(); BD.tr.forceUpdate(); BD.paintUI(); }
 function relayout(n){ CR.relayoutAround(n); after(); }
