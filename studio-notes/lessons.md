@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 32 | 1.21.0 | 4 (old designs pixel-identical in restock-styles 56/0 and photostory-styles 16/0 before the commit; new suite backgrounds 31/0) | 5 (feature + audit fix in one pass; suite written by a sonnet helper while shots and notes went on) | 0 | see release | Look at a new finish at phone-preview size, not only zoomed: Glow on white was invisible in the preview at first |
 | 31 | 1.20.0 | 4 (full sweep 49/49 green; new suite brandkit; Offer/Restock start lines now chosen by the kit, not by matching 1st Choice text) | 4 (lean: one sweep at the end; two proposals dropped after checking their cost) | 0 | 35/35 pass | Test plumbing with a second brand at every major version, not only when the backlog says so |
 | 30 | 1.19.0 | 4 (new suite textstyles; release run green) | 5 (both items in one pass) | 0 | pass | Shoot the More tab at 360px too before release |
 | 29 | 1.18.0 | 5 (new suite batch-saved 36/0, byte-identical PNGs vs open + Save for three tools) | 5 (reused the tool page in a hidden frame instead of a second renderer) | 0 | pass | Reuse the existing renderer; prove identical output |
@@ -27,6 +28,12 @@ What worked, what failed, and process tweaks. Newest session first.
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
+
+
+## 1.21.0 (session 32, team)
+- Worked: drawing the finish in story units (shapes in one path, seeded speckles) keeps preview and the 2× save identical with no cache; `h.ground()` makes adding it to a tool a two-line change.
+- Worked: running the pixel-compare suites (restock-styles, photostory-styles) BEFORE committing, since they compare against HEAD; a shallow clone breaks photostory-styles (it looks back in history): `git fetch --depth=400 origin main` first.
+- Missed at first: alphas tuned on a zoomed crop were too faint at preview size on white. Judge a visual effect in the real phone preview.
 
 ## Session 31 · 1.20.0 · 29 Oct 2026 (Simplify, wave 2)
 

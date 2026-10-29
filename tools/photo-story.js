@@ -60,6 +60,7 @@ Studio.tool({
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true},
     {id:'bg',type:'color',in:'style',label:'Frame colour',default:null,auto:'Style colour',when:{style:PS_GROUNDS}},
+    Studio.groundField({style:['caption','poster','arch']}),
     {id:'pos',type:'place',in:'style',label:'Text place',default:'bottom-start',when:{style:PS_PHOTO}},
     {id:'hsize',type:'seg',in:'style',label:'Headline size',options:[{v:'s',l:'Small'},{v:'m',l:'Medium'},{v:'l',l:'Large'}],default:'m'},
     {id:'fade',type:'range',in:'style',label:'Shade',min:0,max:100,step:5,default:100,unit:'%',when:{style:PS_PHOTO}},
@@ -107,7 +108,7 @@ Studio.tool({
       return;
     }
 
-    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
+    h.ground(ground,o.value('gfx'));
     if(st==='caption'){
       /* the photo fills the top, a calm band below holds the words (kept above the story's bottom safe zone) */
       const ww=psWords(h,{head,small,hp:'start',vp:'bottom',size,color:ink,sub:soft,shadow:false,tone,logo});

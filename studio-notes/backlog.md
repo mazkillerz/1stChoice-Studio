@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 24–30 were 1.13.0–1.19.0 (29 Oct 2026, parallel round, see `sessions.md`); the last of them (1.19.0) was a **Mazoon** session. Session 31 was 1.20.0 (Simplify: brand-kit plumbing #11 done, full sweep green). The next session, 1.21.0, is a **team** session.
+**Last session:** session 32 was 1.21.0 (29 Oct 2026), a **team** session: built-in Backgrounds (Plain, Fade, Glow, Dots, Lines, Grain) for Restock and Photo story, the owner's chosen backlog item; plus Undo/Redo keeping the chosen layer (audit finding). The next session, 1.22.0, is a **Mazoon** session. (Sessions 24–31: 1.13.0–1.20.0, see `sessions.md`.)
 **Simplify session:** every 5th minor version. The next one is 1.25.0.
 
 ## Next up
@@ -26,9 +26,12 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 37 | New place and Cinematic bars get `quick` (camera in All tools, like Offer in 1.15.0) if the team uses them | 2 | 1 | 1 | 1 | 3 | From 1.15.0; the share sheet keeps its five tools. |
 | 38 | Tapping a row with an "N waiting" tag continues the queue directly (`?queue=1`) | 2 | 1 | 1 | 1 | 3 | From 1.13.0: today it opens the tool, whose banner offers Continue (one extra tap). |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
+| 39 | Backgrounds in more tools: Carousel, Highlight covers, Cinematic, New place, Collage gaps (`Studio.groundField()` + `h.ground()`, one line each) | 2 | 3 | 2 | 1 | 6 | From 1.21.0. Ask whether the owner wants them everywhere or only on stories. |
+| 40 | Background finishes as starting points in brand presets (e.g. a Restock preset with Glow) and in Templates | 2 | 2 | 2 | 1 | 5 | From 1.21.0. |
 
 ## UX audit findings (open)
-- 1.14.0 (older than that release): **Undo / Redo clear the selection** (`applyRecipe` sets `S.sel=null`) while the phone's layer bar stays open on the old layer, so its buttons do nothing until you tap the layer again. Fix idea: after `restore()` keep `S.sel` if that layer still exists, or close the layer bar.
+- 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
+- 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
 - 1.14.0: the Cover type row (Highlight covers) is 4 + 1 (Emoji alone on a second row); a Simplify session could make `segCols()` give 5 options a 3 + 2 layout engine-wide.
 - 1.13.0: some wording still says "phone" on a computer: "This phone is out of room for drafts", "You have N unfinished … stories on this phone", the queue Clear status "still in your phone's photos". (The low-memory save message and "Your device could not make the image" say device on a computer since 1.13.0.)
