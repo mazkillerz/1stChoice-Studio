@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.19.0 · 29 Oct 2026
+
+### Text styles
+type: feature
+Made a headline look you like? Keep it. Tap a text, open **More** and tap **Save this style**: it goes into a short **Text styles** list on this phone (named Style 1, Style 2…; tap its **⋯** to rename it, Arabic names too). Next time, tap a text and tap the style: colour, font, line options, shadow, background pill and opacity all go on at once, size and place stay. The list is there in every story and every tool, up to 8 styles; until you save one, only the Save button shows. The style's **⋯** menu also has **Use on all text** and **Remove**. Undo brings the old look back.
+![before](assets/whatsnew/1.19.0-textstyles-before.jpg)
+![after](assets/whatsnew/1.19.0-textstyles-after.jpg)
+
+### Paste on all text
+type: feature
+After **Copy style**, a new **Paste on all text** button under Paste style puts that look on every line of words in the story in one tap, instead of one text at a time: 2 taps instead of 3 more for every text (buttons and tags keep theirs). One tap of undo brings all of them back.
+
 ## 1.18.0 · 29 Oct 2026
 
 ### Save the pictures of several designs at once
