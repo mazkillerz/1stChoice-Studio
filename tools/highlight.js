@@ -70,8 +70,8 @@ Studio.tool({
   pagePhotos:value=>value('kind')==='photo'?1:0, quickKind:'photo',
   stylesTitle:'All covers',
   styles:[
-    {id:'white',label:'White',swatch:hsw('#fff','#F3F3F1')},
-    {id:'cream',label:'Cream',swatch:hsw('#F3EADC','#E5D5C0')},
+    {id:'white',label:'White',swatch:hsw('#fff','var(--b-panel,#f2f2f2)')},
+    {id:'cream',label:'Cream',swatch:hsw('var(--b-cream,#f4efe6)','var(--b-blob,#e6e0d8)')},
     {id:'black',label:'Black',swatch:hsw('#000','#2a2826')}
   ],
   fields:[
@@ -92,7 +92,7 @@ Studio.tool({
     const {ctx,W,H,C}=h, st=o.style, kind=o.value('kind'), bgc=o.value('bg');
     const ground=bgc||(st==='black'?C.night:st==='cream'?(C.cream||C.paper):C.paper), dark=!h.isLight(ground);
     const ink=o.value('ink')||(dark?(C.accent||C.paper):(st==='cream'?(C.brown||C.ink):C.ink));
-    const disc=dark?'rgba(255,255,255,.08)':(st==='cream'&&!bgc?(C.blob||C.panel):(C.panel||'#f3f3f1'));
+    const disc=dark?'rgba(255,255,255,.08)':(st==='cream'&&!bgc?(C.blob||C.panel):(C.panel||'#f2f2f2'));
     const cx=W/2, cy=H/2, R=W/2;   // the circle Instagram shows
     ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
     if(kind==='photo'){ h.photo(0,0,0,W,H,{mode:'cover'}); h.text('word','Word','',0,0); h.text('sub','Small word','',0,0); }

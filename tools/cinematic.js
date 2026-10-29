@@ -4,7 +4,7 @@ Studio.tool({
   photos:{count:1}, sampleNote:'Example photo. Made for wide photos: the whole photo shows, nothing is cut.',
   styles:[
     {id:'white',label:'White bars',swatch:'<span class="swatch" style="background:#fff"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
-    {id:'cream',label:'Cream bars',swatch:'<span class="swatch" style="background:#F3EADC"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
+    {id:'cream',label:'Cream bars',swatch:'<span class="swatch" style="background:var(--b-cream,#f4efe6)"><i style="left:0;right:0;top:15px;height:16px"></i></span>'},
     {id:'black',label:'Black bars',swatch:'<span class="swatch" style="background:#000"><i style="left:0;right:0;top:15px;height:16px"></i></span>'}
   ],
   lightBackground:style=>style!=='black',

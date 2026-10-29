@@ -4,9 +4,9 @@ Studio.tool({
   photos:{count:2}, sampleNote:'Example photos. Close-up on top, wide below. Drag each photo to move it.',
   styles:[
     {id:'white',label:'White label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#fff"></i></span>'},
-    {id:'cream',label:'Cream label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#F3EADC"></i></span>'},
+    {id:'cream',label:'Cream label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:var(--b-cream,#f4efe6)"></i></span>'},
     {id:'black',label:'Black label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#000"></i></span>'},
-    {id:'gold',label:'Gold label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:#D6B078"></i></span>'}
+    {id:'gold',label:'Gold label',swatch:'<span class="swatch" style="background:#b8a58f"><i style="left:2px;right:2px;top:19px;height:8px;border-radius:4px;background:var(--b-accent,#c9a66b)"></i></span>'}
   ],
   fields:[
     {id:'cut',type:'seg',in:'style',label:'Where the cut is',options:[{v:'50',l:'Middle'},{v:'60',l:'Lower'},{v:'40',l:'Higher'}]},

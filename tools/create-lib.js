@@ -9,8 +9,8 @@ const uid=()=>U.uid();
 
 /* ---------- brand bits ---------- */
 const B=()=>BD.B||{};
-const C=()=>{ const c=(B().colors)||{}; return {ink:c.ink||'#161210',paper:c.paper||'#FFFFFF',muted:c.muted||'#5f5c57',grey:c.grey||'#6E6E6E',panel:c.panel||'#F3F3F1',cream:c.cream||'#F3EADC',
-  brown:c.brown||'#7A563A',blob:c.blob||'#E5D5C0',accent:c.accent||'#D6B078',yellow:c.yellow||'#F6C040',berry:c.berry||'#BE2C5C',bubble:'#E9E9EB',soft:'#C9C9C9'}; };
+const C=()=>{ const c=(B().colors)||{}; return {ink:c.ink||'#111111',paper:c.paper||'#FFFFFF',muted:c.muted||'#5f5f5f',grey:c.grey||'#707070',panel:c.panel||'#f2f2f2',cream:c.cream||'#f4efe6',
+  brown:c.brown||'#6b5b4b',blob:c.blob||'#e6e0d8',accent:c.accent||'#c9a66b',yellow:c.yellow||'#f2c94c',berry:c.berry||'#c2185b',bubble:'#E9E9EB',soft:'#C9C9C9'}; };
 const rtl=()=>B().dir==='rtl';
 const ph=()=>B().phrases||{};
 const write=()=>ph().write||'Text';

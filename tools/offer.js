@@ -6,19 +6,19 @@ Studio.tool({
   photos:{count:1}, sampleNote:'Example photo. Use a clear product photo (cans not touching).',
   styles:[
     {id:'white',label:'White',swatch:osw('#fff','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
-    {id:'cream',label:'Cream',swatch:osw('#F3EADC','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
+    {id:'cream',label:'Cream',swatch:osw('var(--b-cream,#f4efe6)','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
     {id:'black',label:'Black',swatch:osw('#000','left:4px;right:4px;top:8px;height:14px;border-radius:3px')},
     {id:'photo',label:'Full photo',swatch:osw('#b8a58f','inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.65))')}
   ],
   fields:[
-    {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines,default:b=>b.phrases.headlines.find(x=>x==='ما يتفوت')},
+    {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines,default:b=>((b.defaults||{}).offer||{}).head||b.phrases.headlines[0]},
     {id:'tiles',type:'tiles',label:'Offer tiles',max:3,addLabel:'Add a tile',smallLabel:'Top line, e.g. ×3',bigLabel:'Big line, e.g. 20%',
       default:[{small:'×3',big:'20%'}],hint:'Up to 3 tiles. Numbers are written in the brand’s digits automatically.'},
     {id:'dates',type:'dates',label:'Show the dates'},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,default:'__none'},
     {id:'place',type:'place',in:'style',cols:false,label:'Words place',default:'bottom-center',when:{style:'photo'}},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',when:{style:['white','cream','black']}},
-    {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>b.phrases.buttons.find(x=>x==='اطلب الحين')||b.phrases.buttons[0]}
+    {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>((b.defaults||{}).offer||{}).pill||b.phrases.buttons[0]}
   ],
   draw(h,o){
     const {ctx,W,H,C}=h, st=o.style, full=st==='photo', bgc=full?null:o.value('bg'), ground=bgc||(st==='black'?C.night:st==='white'?C.paper:(C.cream||C.paper)), dark=bgc?!h.isLight(ground):st==='black';

@@ -52,6 +52,8 @@ Studio.registerBrand({
   /* the product pictures tools draw without a photo (Restock "Cans"): one can per flavour above, and both together
      (the pair cut-out keeps a gap between the cans: cans never touch) */
   products:{both:'cans-pair-shadow'},
+  /* which approved line a tool starts with (tools fall back to the first line of each list) */
+  defaults:{offer:{head:'ما يتفوت',pill:'اطلب الحين'},restock:{small:'الكمية محدودة'}},
   /* Wording from the owner's Omani phrasebook. Only approved lines go here. */
   phrases:{
     headlines:['يسرسح ثلج','جربته؟','ترا فنان','ما يتفوت','عالميييي','تعرف ويش؟','مشتهيه؟','صبر شوي...','اطلب الحين','وين تلقانا؟','رجع متوفر','وفرنا كمية جديدة','خذلك كولد برو','هذا ولا هذا؟','أنت أي واحد؟','اختيارك؟','منشن ربعك','صباح الخير','روّق','الجو حرّ اليوم؟'],

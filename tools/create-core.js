@@ -99,7 +99,7 @@ BD.ensureFont=async function(fam,style){ if(!fam) return; const key=fam+'|'+(sty
   try{ const w=(String(style||'').match(/\d{3}/)||[/bold/.test(style||'')?'700':'400'])[0]; await document.fonts.load(w+' 40px "'+fam+'"','عربي abc'); }catch(_){} };
 BD.displayFont=()=>(B&&B.fonts&&B.fonts.display)||'system-ui';
 BD.bodyFont=()=>(B&&B.fonts&&B.fonts.body)||'system-ui';
-BD.brandColors=()=>{ const c=(B&&B.colors)||{}; return {ink:c.ink||'#161210',paper:c.paper||'#ffffff',accent:c.accent||'#D6B078',cream:c.cream||'#F3EADC',blob:c.blob||'#E5D5C0',brown:c.brown||'#7A563A'}; };
+BD.brandColors=()=>{ const c=(B&&B.colors)||{}; return {ink:c.ink||'#111111',paper:c.paper||'#ffffff',accent:c.accent||'#c9a66b',cream:c.cream||'#f4efe6',blob:c.blob||'#e6e0d8',brown:c.brown||'#6b5b4b'}; };
 
 /* ---------- making things ---------- */
 function makeFrame(x,y,w,h,opt){ opt=opt||{};

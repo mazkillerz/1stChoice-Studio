@@ -49,12 +49,12 @@ Studio.tool({
   styles:[
     {id:'full',label:'Full photo',swatch:'<span class="swatch" style="background:#b8a58f"></span>'},
     {id:'white',label:'White frame',swatch:'<span class="swatch" style="background:#fff"><i style="inset:4px 4px 8px;border-radius:4px"></i></span>'},
-    {id:'cream',label:'Cream frame',swatch:'<span class="swatch" style="background:#F3EADC"><i style="inset:4px 4px 8px;border-radius:4px"></i></span>'},
+    {id:'cream',label:'Cream frame',swatch:'<span class="swatch" style="background:var(--b-cream,#f4efe6)"><i style="inset:4px 4px 8px;border-radius:4px"></i></span>'},
     {id:'black',label:'Black frame',swatch:'<span class="swatch" style="background:#000"><i style="inset:4px 4px 8px;border-radius:4px"></i></span>'},
     {id:'whole',label:'Whole photo',swatch:psw('#8d7b68','<i style="left:4px;right:4px;top:14px;height:17px;border-radius:3px;background:#d9c7b0"></i>')},
     {id:'caption',label:'Caption',swatch:psw('#fff','<i style="left:0;right:0;top:0;height:30px"></i>')},
     {id:'poster',label:'Poster',swatch:psw('#fff','<i style="left:4px;right:4px;top:15px;bottom:6px;border-radius:4px"></i>')},
-    {id:'arch',label:'Arch',swatch:psw('#F3EADC','<i style="left:6px;right:6px;top:5px;bottom:7px;border-radius:12px 12px 0 0"></i>')}
+    {id:'arch',label:'Arch',swatch:psw('var(--b-cream,#f4efe6)','<i style="left:6px;right:6px;top:5px;bottom:7px;border-radius:12px 12px 0 0"></i>')}
   ],
   fields:[
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines},

@@ -59,7 +59,7 @@
   /* the picker: one tile per sticker, drawn for real in the text colour (so it reads in light and dark) */
   const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch]);
   window.paintStickers=function(el){
-    if(!el) return; const col=getComputedStyle(el).color||'#161210'; if(el.dataset.painted===col) return;   // once per text colour (theme)
+    if(!el) return; const col=getComputedStyle(el).color||'#111'; if(el.dataset.painted===col) return;   // once per text colour (theme)
     el.innerHTML=LIST.map(s=>`<button type="button" class="asset-tile sticker-tile" data-sticker="${esc(s.id)}" title="${esc(s.label)}"><canvas aria-hidden="true"></canvas><span>${esc(s.label)}</span></button>`).join('');
     const dpr=Math.min(3,window.devicePixelRatio||1), box=56;
     LIST.forEach(s=>{ const cv=el.querySelector(`[data-sticker="${s.id}"] canvas`), k=box/Math.max(s.w,s.h);
