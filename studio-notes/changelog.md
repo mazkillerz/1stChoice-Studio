@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.21.0 · 29 Oct 2026
+
+### Backgrounds for Restock and Photo story
+type: feature
+Restock and Photo story now have a Background choice in Style, under the background colour: Plain, Fade, Glow, Dots, Lines or Grain. Each one is a quiet finish made from the colour you picked, so it works on white, cream, a dark colour or any other, and the words stay easy to read. Plain is the look you had before, and it stays the default: every story you already made, and every new one, looks exactly the same until you pick something. Restock has it on every style except Full photo; Photo story on Caption, Poster and Arch. Restock from a photo is still two taps.
+![before](assets/whatsnew/1.21.0-backgrounds-before.jpg)
+![after](assets/whatsnew/1.21.0-backgrounds-after.jpg)
+
+### Undo keeps your layer chosen
+type: fix
+When a layer was chosen and you tapped Undo or Redo, the layer bar stayed open but nothing was chosen any more, so its buttons did nothing until you tapped the layer again. Now the layer stays chosen and the bar keeps working. If Undo takes that layer away (say, text you just added), the bar closes.
+
 ## 1.20.0 · 29 Oct 2026
 
 ### Ready for a second brand

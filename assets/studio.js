@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.20.0';
+const VERSION='1.21.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -422,18 +422,18 @@ function groundFx(ctx,kind,color,W,H){
   ctx.save();
   if(kind==='fade'){   // light grounds deepen toward the bottom; dark grounds lift toward the top
     const g=ctx.createLinearGradient(0,0,0,H);
-    if(dk){ g.addColorStop(0,a(0,.11)); g.addColorStop(.75,a(0,0)); } else { g.addColorStop(.2,a(0,0)); g.addColorStop(1,a(.09,0)); }
+    if(dk){ g.addColorStop(0,a(0,.11)); g.addColorStop(.75,a(0,0)); } else { g.addColorStop(.15,a(0,0)); g.addColorStop(1,a(.14,0)); }
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   } else if(kind==='glow'){   // a soft light high up, gently darker at the edges
     const g=ctx.createRadialGradient(W/2,H*.3,0,W/2,H*.3,H*.82);
-    g.addColorStop(0,dk?'rgba(255,255,255,.13)':'rgba(255,255,255,.55)'); g.addColorStop(.45,dk?'rgba(255,255,255,.04)':'rgba(255,255,255,0)'); g.addColorStop(1,dk?'rgba(0,0,0,.2)':'rgba(0,0,0,.08)');
+    g.addColorStop(0,dk?'rgba(255,255,255,.13)':'rgba(255,255,255,.55)'); g.addColorStop(.38,dk?'rgba(255,255,255,.04)':'rgba(255,255,255,0)'); g.addColorStop(1,dk?'rgba(0,0,0,.2)':'rgba(0,0,0,.15)');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   } else if(kind==='dots'){
-    const sp=40; ctx.fillStyle=a(.075,.1); ctx.beginPath();
+    const sp=40; ctx.fillStyle=a(.09,.1); ctx.beginPath();
     for(let y=sp/2,row=0;y<H;y+=sp,row++) for(let x=(row%2?sp:sp/2);x<W+sp;x+=sp){ ctx.moveTo(x+3.2,y); ctx.arc(x,y,3.2,0,Math.PI*2); }
     ctx.fill();
   } else if(kind==='lines'){
-    const sp=46; ctx.strokeStyle=a(.06,.085); ctx.lineWidth=3; ctx.beginPath();
+    const sp=46; ctx.strokeStyle=a(.075,.085); ctx.lineWidth=3; ctx.beginPath();
     for(let x=-H;x<W+sp;x+=sp){ ctx.moveTo(x,H); ctx.lineTo(x+H,0); }
     ctx.stroke();
   } else if(kind==='grain'){   // paper-like speckles: mostly the ground's shadow tone, a few light ones
