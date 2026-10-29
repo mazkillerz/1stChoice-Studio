@@ -71,8 +71,9 @@ C.markText=function(t){ const c=compOf(t); if(c&&isCopy(c)) t.setAttr('ovr',true
 function clearOvr(g){ g.find(n=>n.getAttr('ovr')).forEach(n=>n.setAttr('ovr',undefined)); }
 function walk(g,fn,path){ (g.getChildren?g.getChildren():[]).forEach((c,i)=>{ const p=(path?path+'.':'')+i; fn(c,p); walk(c,fn,p); }); }
 const TXT_OVR=['text','ovr','width','height','direction','autoW'];
-function sigOf(g,ovr){ const strip=(o,p)=>{ const a=Object.assign({},o.a); delete a.id; delete a.ovr; if(ovr.has(p)) TXT_OVR.forEach(k=>delete a[k]); return {c:o.c,a,k:(o.k||[]).map((k,i)=>strip(k,p+'.'+i))}; };
-  return JSON.stringify((g.getChildren()).map((ch,i)=>strip(BD.toObj(ch),String(i)))); }
+/* inside a flex stack the layout places things, so their x/y (and the stack's box size) don't count as a difference */
+function sigOf(g,ovr){ const strip=(o,p,flow)=>{ const a=Object.assign({},o.a); delete a.id; delete a.ovr; if(ovr.has(p)) TXT_OVR.forEach(k=>delete a[k]); if(flow){ delete a.x; delete a.y; } if(a.name==='flex-bg'){ delete a.width; delete a.height; } return {c:o.c,a,k:(o.k||[]).map((k,i)=>strip(k,p+'.'+i,!!o.a.flex))}; };
+  return JSON.stringify((g.getChildren()).map((ch,i)=>strip(BD.toObj(ch),String(i),!!g.getAttr('flex')))); }
 function inside(a,b){ let p=a.getParent(); while(p){ if(p===b) return true; p=p.getParent(); } return false; }
 
 /* make every copy match its main (runs before each undo step is stored) */
@@ -82,6 +83,7 @@ C.sync=function(){
   BD.main.find(n=>isMain(n)).forEach(n=>{ const id=n.getAttr('comp'); if(mains.has(id)) n.setAttr('compMain',undefined); else mains.set(id,n); });   // a duplicate of a main becomes a copy
   let n=0;
   mains.forEach((m,id)=>{ C.copiesOf(id).forEach(c=>{ if(inside(c,m)||inside(m,c)) return;
+    const mf=m.getAttr('flex'); if(JSON.stringify(mf||null)!==JSON.stringify(c.getAttr('flex')||null)) c.setAttr('flex',mf?JSON.parse(JSON.stringify(mf)):undefined);   // a copy stacks like its main
     const ovr=new Map(); walk(c,(x,p)=>{ if(x.getAttr('ovr')&&kind(x)==='text') ovr.set(p,{text:x.text(),w:x.getAttr('autoW')?null:x.width(),autoW:x.getAttr('autoW')}); });
     const keys=new Set(ovr.keys()); if(sigOf(c,keys)===sigOf(m,keys)) return;
     const wasSel=S.sel.some(s=>s===c||inside(s,c)), entered=S.entered&&(S.entered===c||inside(S.entered,c));

@@ -26,6 +26,7 @@ const IC={
   flipX:svg('<path d="M12 3v18M8 7l-5 5 5 5M16 7l5 5-5 5"/>',17),flipY:svg('<path d="M3 12h18M7 8l5-5 5 5M7 16l5 5 5-5"/>',17),
   front:svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',17),back2:svg('<rect x="4" y="4" width="12" height="12" rx="2"/><path d="M20 8v10a2 2 0 0 1-2 2H8"/>',17),
   al:svg('<path d="M4 3v18M8 7h12v4H8zM8 14h7v4H8z"/>',17),ah:svg('<path d="M12 3v18M6 7h12v4H6zM8 14h8v4H8z"/>',17),ar:svg('<path d="M20 3v18M4 7h12v4H4zM9 14h7v4H9z"/>',17),
+  flexCol:svg('<rect x="5" y="3" width="14" height="6" rx="1.5"/><rect x="5" y="15" width="14" height="6" rx="1.5"/><path d="M12 9v6"/>',17),flexRow:svg('<rect x="3" y="5" width="6" height="14" rx="1.5"/><rect x="15" y="5" width="6" height="14" rx="1.5"/><path d="M9 12h6"/>',17),
   at:svg('<path d="M3 4h18M7 8h4v12H7zM14 8h4v7h-4z"/>',17),av:svg('<path d="M3 12h18M7 6h4v12H7zM14 8h4v8h-4z"/>',17),ab:svg('<path d="M3 20h18M7 4h4v12H7zM14 9h4v7h-4z"/>',17),
   dh:svg('<path d="M4 3v18M20 3v18M9 8h6v8H9z"/>',17),dv:svg('<path d="M3 4h18M3 20h18M8 9h8v6H8z"/>',17),
   tl:svg('<path d="M4 6h16M4 12h10M4 18h13"/>',16),tc:svg('<path d="M4 6h16M7 12h10M5.5 18h13"/>',16),tr:svg('<path d="M4 6h16M10 12h10M7 18h13"/>',16),tj:svg('<path d="M4 6h16M4 12h16M4 18h16"/>',16),
@@ -141,6 +142,8 @@ function colorPop(anchor,value,onChange,opt){ opt=opt||{}; let h=hex6(value), a=
 UI.colorPop=colorPop;
 
 /* ---------- applying changes to the selection ---------- */
+/* if board-flex.js could not load (offline before the cache has it): the preview is simply off, saved stacks keep their places */
+if(!BD.flex) BD.flex={enabled:()=>false,setEnabled(){},items:()=>[],of:()=>null,parentOf:()=>null,hug:()=>false,reflow:()=>false,dropped(){},quick(){},set(){},resize(){},add(){},remove(){},stack(){}};
 const targets=()=>S.sel.filter(n=>!isLocked(n));
 function apply(fn,opt){ const list=targets(); list.forEach(fn); list.forEach(n=>{ BD.applyFill(n); BD.decorate(n); if(n.isCached&&n.isCached()) BD.applyFx(n); const p=n.getParent(); if(p&&kind(p)==='mask') BD.decorate(p); }); BD.tr.forceUpdate(); BD.main.batchDraw(); BD.paintUI(); BD.changed(); if(opt&&opt.repaint) UI.paintProps(); placeQbar(); }
 Object.assign(UI,{targets,apply});
@@ -250,6 +253,7 @@ function contextMenu(x,y,world){ const sel=S.sel, one=sel[0], k=one&&kind(one), 
   if(BD.tools.canMask(sel)) e.push({label:'Mask (put inside the shape)',run:BD.tools.mask}); if(sel.some(n=>kind(n)==='mask')) e.push({label:'Release mask',run:BD.tools.unmask});
   if(BD.bool.can(sel)) e.push({label:'Combine shapes…',icon:IC.union,run:()=>boolMenu(x,y)}); if(sel.some(n=>kind(n)==='bool')) e.push({label:'Release combined shapes',run:BD.bool.release});
   compItems(sel).forEach(i=>e.push(i));
+  BD.flex.items(sel).forEach(i=>e.push(i));
   e.push({label:sel.every(isLocked)?'Unlock':'Lock',key:mod+'+Shift+L',run:()=>BD.act.lock()},{label:'Hide',key:mod+'+Shift+H',run:()=>BD.act.hide(true)});
   if(objs.length) e.push({label:'Flip horizontal',key:'Shift+H',run:()=>BD.act.flip('x')},{label:'Flip vertical',key:'Shift+V',run:()=>BD.act.flip('y')},{label:'Repeat in a grid…',run:()=>UI.repeatDialog()});
   if(objs.length===1&&frameOf(one)) e.push('-',{label:'Fill the frame',run:()=>BD.act.fillFrame(one)});
@@ -517,6 +521,7 @@ function commands(){ const c=[], sel=S.sel, has=sel.length>0, objs=sel.filter(n=
   add('Find and replace text…',()=>UI.findDialog(),{key:mod+'+F',group:'Board'}); add('Replace a colour everywhere…',()=>UI.colorsDialog(),{group:'Board'}); add('Keyboard shortcuts',()=>UI.shortcuts(),{key:'?',group:'Board'});
   BD.units.list.forEach(u=>add('Units: '+UNIT_NAMES[u]+' ('+u+')',()=>setUnit(u),{group:'View'})); add((S.rulers?'Hide':'Show')+' rulers and guides',()=>setRulers(!S.rulers),{key:'Shift+R',group:'View'}); add('Zoom to fit everything',BD.view.fitAll,{key:'Shift+1',group:'View'}); add('Zoom to 100%',()=>BD.view.zoomAt(1,{x:BD.stage.width()/2,y:BD.stage.height()/2}),{key:'Shift+0',group:'View'});
   add((S.snap?'Turn off':'Turn on')+' snapping',()=>{ S.snap=!S.snap; },{group:'View'});
+  add((BD.flex.enabled()?'Turn off':'Turn on')+' flex layout (preview): stack things in rows and columns',()=>{ BD.flex.setEnabled(!BD.flex.enabled()); UI.paintProps(); toast(BD.flex.enabled()?'Flex layout is on. Pick a frame or group, or several things, and stack them.':'Flex layout is off.'); },{group:'Preview'});
   if(has){ add('Duplicate',()=>BD.act.duplicate(),{key:mod+'+D',group:'Selection'}); add('Delete',BD.act.del,{key:'Del',group:'Selection'}); add('Lock or unlock',()=>BD.act.lock(),{group:'Selection'}); add('Hide',()=>BD.act.hide(true),{group:'Selection'});
     add('Bring to front',()=>BD.act.order('front'),{group:'Selection'}); add('Send to back',()=>BD.act.order('back'),{group:'Selection'}); add('Copy style',BD.act.copyStyle,{group:'Selection'}); add('Paste style',BD.act.pasteStyle,{group:'Selection'});
     if(objs.length){ ['left','hcenter','right','top','vcenter','bottom'].forEach(a=>add('Align '+({hcenter:'centre',vcenter:'middle'}[a]||a),()=>BD.act.align(a),{group:'Selection'})); add('Flip horizontal',()=>BD.act.flip('x'),{group:'Selection'}); add('Flip vertical',()=>BD.act.flip('y'),{group:'Selection'}); add('Repeat in a grid…',()=>UI.repeatDialog(),{group:'Selection'}); add('Fill the frame',()=>BD.act.fillFrame(objs[0]),{group:'Selection'}); }
@@ -524,6 +529,7 @@ function commands(){ const c=[], sel=S.sel, has=sel.length>0, objs=sel.filter(n=
     if(objs.length>2){ add('Space evenly across',()=>BD.act.distribute('x'),{group:'Selection'}); add('Space evenly down',()=>BD.act.distribute('y'),{group:'Selection'}); }
     if(BD.bool.can(sel)) BD.bool.OPS.forEach(([op,l,h])=>add('Combine shapes: '+l,()=>BD.bool.make(op),{group:'Selection'})); if(sel.some(n=>kind(n)==='bool')) add('Release combined shapes',BD.bool.release,{group:'Selection'});
     compItems(sel).forEach(i=>add(i.label,i.run,{group:'Component'}));
+    BD.flex.items(sel).forEach(i=>add(i.label,i.run,{key:i.key,group:'Layout'}));
     if(BD.tools.canMask(sel)) add('Mask photo inside shape',BD.tools.mask,{group:'Selection'}); if(sel.some(n=>kind(n)==='mask')) add('Release mask',BD.tools.unmask,{group:'Selection'}); }
   return c; }
 function openPalette(){ palette.hidden=false; palQ.value=''; palSel=0; paintPalette(); setTimeout(()=>palQ.focus(),10); }
@@ -570,6 +576,7 @@ window.addEventListener('keydown',e=>{
   if(e.shiftKey&&(k==='@'||e.code==='Digit2')){ e.preventDefault(); BD.view.fitSel(); return; }
   if(e.shiftKey&&(k===')'||e.code==='Digit0')){ e.preventDefault(); BD.view.zoomAt(1,{x:BD.stage.width()/2,y:BD.stage.height()/2}); return; }
   if(e.shiftKey&&K==='r'){ setRulers(!S.rulers); return; }
+  if(e.shiftKey&&K==='a'&&BD.flex.enabled()){ e.preventDefault(); BD.flex.quick(); return; }
   if(e.shiftKey&&K==='h'){ BD.act.flip('x'); return; }
   if(e.shiftKey&&K==='v'){ BD.act.flip('y'); return; }
   if(e.shiftKey&&K==='p'){ S.pen.mode='marker'; lastDraw='marker'; BD.setTool('pen'); return; }

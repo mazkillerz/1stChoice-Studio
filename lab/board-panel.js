@@ -48,6 +48,9 @@ function paintProps(){
   const g=geomOf(), dp=BD.units.dpiOf(n);
   if(objs.length) h+=sec('align','Align',`<div class="al">${['left:al','hcenter:ah','right:ar','top:at','vcenter:av','bottom:ab'].map(x=>{ const [a,i]=x.split(':'); return `<button type="button" class="ib" data-align="${a}" aria-label="Align ${a}" title="Align ${a==='hcenter'?'centre':a==='vcenter'?'middle':a}${list.length===1?' in the frame':''}">${IC[i]}</button>`; }).join('')}${list.length>2?`<button type="button" class="ib" data-dist="x" title="Space evenly across" aria-label="Space evenly across">${IC.dh}</button><button type="button" class="ib" data-dist="y" title="Space evenly down" aria-label="Space evenly down">${IC.dv}</button>`:''}</div>`);
   if(!(isFrame(n)&&list.length===1)) h+=sec('pos',list.length>1?'Selection size':'Position and size',`<div class="grid2">${ufield('X','x',g.x,dp)}${ufield('Y','y',g.y,dp)}${ufield('W','w',g.w,dp,{min:0})}${ufield('H','h',g.h,dp,{min:0})}${g.r!=null?field('↻','rot',g.r,{step:.1,title:'Rotation (degrees)',sfx:'<em>°</em>'}):''}<button type="button" class="ib ratio" data-act="ratio" aria-pressed="${!!S.lockRatio}" title="Keep proportions when typing a size" aria-label="Keep proportions">${IC.link}</button></div>${S.unit!=='px'?`<p class="hint">At ${dp} dpi${frameOf(n)&&frameOf(n).getAttr('print')?' (this print frame)':''}.</p>`:''}`);
+  if(list.length===1&&kind(n)==='group') h+=flexPanel(n);
+  if(list.length===1&&!isFrame(n)&&BD.flex.parentOf(n)) h+=sec('flexIn','In a stack',`<p class="hint">The stack <b dir="auto">${esc(nameOf(BD.flex.parentOf(n)))}</b> places this. Drag it to change the order.</p><button type="button" class="mini" data-act="flexSel">Select the stack</button>`);
+  else if(list.length>1&&BD.flex.enabled()&&objs.length===list.length&&objs.every(x=>x.getParent()===objs[0].getParent())) h+=sec('flexStack','Stack',`<p class="hint">Put these in a group that lines them up and moves them along when one gets bigger.</p><div class="row"><button type="button" class="mini" data-act="flexStack:col">${IC.flexCol} Column</button><button type="button" class="mini" data-act="flexStack:row">${IC.flexRow} Row</button></div>`,{extra:'<span class="ps-tag">Preview</span>'});
   if(k==='frame'&&list.length===1) h+=framePanel(n);
   if(all&&k==='text') h+=textPanel(list);
   if(all&&k==='arc'&&list.length===1) h+=arcPanel(n);
@@ -64,6 +67,19 @@ function paintProps(){
   h+=compPanel(list);
   props.innerHTML=h;
 }
+/* flex layout (preview): stack what's inside a frame or group in a column or a row */
+function flexPanel(c){ const F=BD.flex, f=F.of(c), tag={extra:'<span class="ps-tag">Preview</span>'}; if(!f&&!F.enabled()) return '';
+  if(!f) return sec('flex','Layout',`<p class="hint">Stack what's inside in a column or a row. It moves along when a text gets longer.</p><div class="row"><button type="button" class="mini" data-act="flexAdd:col">${IC.flexCol} Column</button><button type="button" class="mini" data-act="flexAdd:row">${IC.flexRow} Row</button></div>`,tag);
+  const dp=BD.units.dpiOf(c), row=f.dir==='row', hug=F.hug(c), fr=isFrame(c);
+  const AL=row?[['start','Top',IC.at],['center','Middle',IC.av],['end','Bottom',IC.ab]]:[['start','Left',IC.al],['center','Centre',IC.ah],['end','Right',IC.ar]];
+  return sec('flex','Layout',seg('flexDir',f.dir,[['col','Column',IC.flexCol+'<span>Column</span>'],['row','Row',IC.flexRow+'<span>Row</span>']])+
+    `<div class="grid2">${ufield('Gap','flexGap',f.gap||0,dp,{min:0,title:'Space between the things'})}${ufield('Pad ↔','flexPx',f.px||0,dp,{min:0,title:'Padding left and right'})}${ufield('Pad ↕','flexPy',f.py||0,dp,{min:0,title:'Padding top and bottom'})}</div>`+
+    `<span class="lbl sub">Align</span>`+seg('flexAlign',f.align||'start',AL)+
+    toggle('flexHug',hug,fr?'Frame fits its contents':'Box fits its contents')+
+    (hug?'':`<span class="lbl sub">Spread</span>`+seg('flexJustify',f.justify||'start',[['start','Start'],['center','Centre'],['end','End'],['between','Space between','Even']]))+
+    (row?toggle('flexRtl',!!f.rtl,'Right to left (Arabic order)'):'')+
+    (fr?'':`<div class="row">${swatch('flexFill',f.fill||'','Box colour',true)}</div>`+(f.fill?range('Corners','flexR',f.r||0,0,200,1,'px'):''))+
+    `<p class="hint">Drag things inside to change the order. Locked things stay where they are.</p><button type="button" class="link" data-act="flexRemove">Remove layout</button>`,tag); }
 function boolPanel(g){ const op=g.getAttr('boolOp')||'union', base=BD.bool.base(g), f=base&&typeof base.fill()==='string'?base.fill():'';
   return sec('bool','Combine shapes',`<div class="seg2 bool-ops" role="group">${BD.bool.OPS.map(([v,l,t])=>`<button type="button" data-seg="boolOp" data-v="${v}" aria-pressed="${op===v}" title="${esc(t)}" aria-label="${esc(l)}">${IC[v]}<span>${esc(l)}</span></button>`).join('')}</div>
     <div class="row">${swatch('boolFill',f,'Colour')}</div><p class="hint">The bottom shape gives the colour. ${matchMedia('(pointer:coarse)').matches?'Double-tap':'Double-click'} to move a shape inside.</p><button type="button" class="mini" data-act="boolRelease">Release shapes</button>`); }
@@ -84,6 +100,7 @@ function boardPanel(){ const fs=frames();
       <label class="f wide"><span>Print quality</span><select data-k="bdpi" class="b-sel">${[150,300,600].map(d=>`<option value="${d}" ${S.dpi===d?'selected':''}>${d} dpi${d===300?' (standard)':''}</option>`).join('')}</select></label>
       <p class="hint">Used for mm/cm/in on screen frames and for new print frames.</p><button type="button" class="mini" data-act="printFrame">${IC.print} New print frame…</button>`)+
     sec('canvas','Canvas',`<div class="row">${swatch('workspace',S.bg||'','Canvas colour')}${S.bg?'<button type="button" class="link" data-act="bgReset">Reset</button>':''}</div>${toggle('grid',S.grid,'Dot grid')}${toggle('snap',S.snap,'Snap to edges, centres and equal gaps')}${toggle('rulers',S.rulers,'Rulers and guides')}${toggle('safe',S.safe,'Story safe zones')}`)+
+    sec('preview','Previews',`${toggle('flexOn',BD.flex.enabled(),'Flex layout: stack things in rows and columns')}<p class="hint">Try new Board features before they're finished. Kept on this device.</p>`)+
     sec('saved','Saved colours',(S.styles.colors.length?`<div class="sws">${S.styles.colors.map(c=>`<button type="button" class="sw" style="--c:${c}" data-delcolor="${c}" title="${c} (click to remove)" aria-label="Remove ${c}"></button>`).join('')}</div>`:'<p class="hint">Save colours from any colour picker.</p>'))+
     `<p class="ps-note">Tips: press <kbd>${UI.mod} K</kbd> to find any tool, <kbd>?</kbd> for shortcuts. Drag from the rulers to add guides. Hold <kbd>Alt</kbd> to measure.</p>`; }
 function penPanel(){ const p=S.pen, er=S.tool==='eraser'; return `<div class="ps-head"><span class="ps-ic">${er?IC.eraser:IC.pen}</span><b>${er?'Eraser':'Draw'}</b></div>`+
@@ -94,7 +111,7 @@ function framePanel(f){ const s=fsize(f), dp=BD.units.dpiOf(f), pr=BD.PRESETS.fi
       <div class="grid2">${ufield('W','w',s.w,dp,{min:1})}${ufield('H','h',s.h,dp,{min:1})}${ufield('X','x',f.x(),dp)}${ufield('Y','y',f.y(),dp)}</div>
       <div class="row"><button type="button" class="mini" data-act="swapWH">${IC.swap} Turn</button><button type="button" class="mini" data-act="fitContent">Fit to content</button></div>
       <label class="f wide" title="Copies this frame in another size and fits everything into it"><span>Copy to</span><select data-k="copyTo" class="b-sel"><option value="">Another size…</option><optgroup label="Screen">${BD.PRESETS.filter(p=>!(p.w===s.w&&p.h===s.h)).map(p=>`<option value="${p.id}">${esc(p.label)} · ${p.w}×${p.h}</option>`).join('')}</optgroup><optgroup label="Print">${BD.PRINT.map(p=>`<option value="print:${p.id}">${esc(p.label)} · ${p.w}×${p.h} mm</option>`).join('')}</optgroup></select></label>
-      ${toggle('clip',!f.getAttr('noClip'),'Hide things outside the frame')}`)+
+      ${toggle('clip',!f.getAttr('noClip'),'Hide things outside the frame')}`)+flexPanel(f)+
     sec('print','Print',`${toggle('isPrint',print,'This is for printing')}
       ${print?`<label class="f wide"><span>Quality</span><select data-k="fdpi" class="b-sel">${[150,300,600].map(d=>`<option value="${d}" ${dp===d?'selected':''}>${d} dpi</option>`).join('')}${[150,300,600].includes(dp)?'':`<option selected>${dp} dpi</option>`}</select></label>
       <div class="grid2">${field('Bleed','bleed',+BD.units.fmt(U.bleedOf(f),dp,S.unit==='px'?'mm':S.unit),{min:0,sfx:'<em>'+(S.unit==='px'?'mm':S.unit)+'</em>',title:'Extra design around the edge that gets cut off'})}${field('Safe','safe',+BD.units.fmt(f.getAttr('safe')||0,dp,S.unit==='px'?'mm':S.unit),{min:0,sfx:'<em>'+(S.unit==='px'?'mm':S.unit)+'</em>',title:'Keep text inside this margin'})}</div>
@@ -183,6 +200,7 @@ function rerot(n,r){ const b=wrect(n), c={x:b.x+b.width/2,y:b.y+b.height/2}; n.r
 function setW(n,w,h){ const k=kind(n), r=wrect(n);
   if(k==='frame'){ BD.setFrameSize(n,w??fsize(n).w,h??fsize(n).h); return; }
   let kx=w!=null?w/r.width:null, ky=h!=null?h/r.height:null; if(S.lockRatio){ if(kx!=null) ky=kx; else if(ky!=null) kx=ky; } kx=kx??1; ky=ky??1;
+  if(k==='group'&&BD.flex.of(n)&&!n.rotation()){ BD.flex.resize(n,kx,ky); return; }
   if(n.rotation()||['group','mask','bool','barcode','qr','path','icon','stroke','star','poly','ring','pen','arc'].includes(k)){ n.scaleX(n.scaleX()*kx); n.scaleY(n.scaleY()*ky); return; }
   if(k==='text'){ if(kx!==1&&ky===1){ n.width(Math.max(10,n.width()*kx)); n.setAttr('autoW',false); } else { n.fontSize(n.fontSize()*ky); if(!n.getAttr('autoW')) n.width(n.width()*kx); } return; }
   if(k==='rect'||k==='image'||k==='asset'){ n.width(n.width()*kx); n.height(n.height()*ky); if(k!=='rect'){ BD.applyCrop(n); BD.applyFx(n); } return; }
@@ -203,7 +221,7 @@ function liveSet(k,t,final){ const v=val(t), n=n0(), dp=n?BD.units.dpiOf(n):S.dp
   if(t.type==='number'&&t.value==='') return;
   switch(k){
     case 'x': case 'y': { const g=geomOf(); if(!g) return; const d=px(v)-(k==='x'?g.x:g.y); targets().forEach(m=>{ if(isFrame(m)) m[k](Math.round(m[k]()+d)); else U.moveByWorld(m,k==='x'?d:0,k==='y'?d:0); }); apply(()=>{}); return; }
-    case 'w': case 'h': if(v<=0) return; if(S.sel.length===1) apply(m=>setW(m,k==='w'?px(v):null,k==='h'?px(v):null)); else { setGroupSize(k==='w'?px(v):null,k==='h'?px(v):null); apply(()=>{}); } paintProps(); return;
+    case 'w': case 'h': if(v<=0) return; targets().forEach(m=>{ if(isFrame(m)&&BD.flex.hug(m)&&BD.flex.of(m)) BD.flex.set(m,{hug:undefined}); }); if(S.sel.length===1) apply(m=>setW(m,k==='w'?px(v):null,k==='h'?px(v):null)); else { setGroupSize(k==='w'?px(v):null,k==='h'?px(v):null); apply(()=>{}); } paintProps(); return;
     case 'rot': apply(m=>rerot(m,v)); return;
     case 'unit': UI.setUnit(v); return;
     case 'bdpi': S.dpi=+v; BD.scheduleSave(); BD.paintUI(); paintProps(); return;
@@ -212,6 +230,11 @@ function liveSet(k,t,final){ const v=val(t), n=n0(), dp=n?BD.units.dpiOf(n):S.dp
     case 'rulers': UI.setRulers(v); return;
     case 'safe': if(t.type==='checkbox'){ S.safe=v; BD.paintUI(); return; } apply(f=>f.setAttr('safe',Math.max(0,BD.units.fromUnit(v,dp,S.unit==='px'?'mm':S.unit)))); return;
     case 'penSize': S.pen.size=v; return;
+    case 'flexOn': BD.flex.setEnabled(v); paintProps(); UI.toast(v?'Flex layout is on. Pick a frame or group, or several things, and stack them.':'Flex layout is off.'); return;
+    case 'flexGap': case 'flexPx': case 'flexPy': flexSet({[{flexGap:'gap',flexPx:'px',flexPy:'py'}[k]]:Math.max(0,px(v))}); return;
+    case 'flexHug': flexSet({hug:v?true:false},true); return;
+    case 'flexRtl': flexSet({rtl:v||undefined},true); return;
+    case 'flexR': flexSet({r:v||undefined}); return;
     case 'fontFamily': { const fam=v; Promise.all(targets().map(m=>BD.ensureFont(fam,m.fontStyle()))).then(()=>apply(m=>{ m.fontFamily(fam); if(kind(m)==='text') BD.prepText(m); })); return; }
     case 'weight': Promise.all(targets().map(m=>BD.ensureFont(m.fontFamily(),v))).then(()=>apply(m=>{ setStyle(m,v,italicOf(m)); if(kind(m)==='text') BD.prepText(m); })); return;
     case 'fontSize': if(v>=1) apply(m=>m.fontSize(v)); return;
@@ -296,11 +319,18 @@ props.addEventListener('click',e=>{
     fxReset:()=>apply(m=>{ m.setAttr('fx',{}); BD.applyFx(m); },{repaint:true}),
     expSel:()=>UI.exportSel(), exportMore:()=>UI.exportDialog()};
   if(a.startsWith('bool:')){ BD.bool.make(a.slice(5)); return; }
+  if(a.startsWith('flexAdd:')){ BD.flex.add(n,{dir:a.slice(8)}); BD.select([n]); return; }
+  if(a.startsWith('flexStack:')){ BD.flex.stack(a.slice(10)); return; }
+  if(a==='flexRemove'){ BD.flex.remove(n); paintProps(); return; }
+  if(a==='flexSel'){ const p=BD.flex.parentOf(n); if(p) BD.select([p]); return; }
   if(acts[a]) acts[a](); });
 function quickExport(fmt){ const sel=S.sel, fs=[...new Set(sel.map(n=>isFrame(n)?n:frameOf(n)).filter(Boolean))], list=fs.length?fs:frames();
   const print=list.some(f=>f.getAttr('print'));
   UI.runExport({frames:list,fmt,scale:print?1:2,bleed:print,marks:false,onePdf:true,zip:list.length>3}); }
 function segSet(key,v){
+  if(key==='flexDir') return flexSet({dir:v},true);
+  if(key==='flexAlign') return flexSet({align:v},true);
+  if(key==='flexJustify') return flexSet({justify:v},true);
   if(key==='align') return apply(m=>m.align(v),{repaint:true});
   if(key==='penMode'){ S.pen.mode=v; return paintProps(); }
   if(key==='boolOp'){ targets().filter(m=>kind(m)==='bool').forEach(m=>BD.bool.setOp(m,v)); return apply(()=>{},{repaint:true}); }
@@ -312,15 +342,17 @@ function segSet(key,v){
   if(key==='bcType') return apply(m=>{ m.setAttr('btype',v); BD.tools.buildBarcode(m); },{repaint:true});
   if(key==='qrEcc'){ targets().forEach(m=>m.setAttr('ecc',v)); Promise.all(targets().map(m=>BD.tools.buildQR(m))).then(()=>apply(()=>{},{repaint:true})); }
 }
+const flexSet=(patch,repaint)=>apply(m=>{ if(BD.flex.of(m)) BD.flex.set(m,patch); },{repaint});
 function setFillType(n,v){ if(v!=='solid'){ if(!n.getAttr('gradA')) n.setAttr('gradA',typeof n.fill()==='string'&&n.fill()?UI.hex6(n.fill()):'#ffffff'); if(!n.getAttr('gradB')) n.setAttr('gradB',BD.brandColors().ink); if(n.getAttr('gradAngle')==null) n.setAttr('gradAngle',180); }
   n.setAttr('fillType',v); if(v==='solid'){ n.fillPriority('color'); if(!n.fill()) n.fill(n.getAttr('gradA')||'#ffffff'); } BD.applyFill(n); }
 function colorFor(btn){ const key=btn.dataset.color, n=n0();
-  const get={boolFill:()=>{ const b=BD.bool.base(n); return b&&b.fill(); },workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff'};
+  const get={flexFill:()=>(BD.flex.of(n)||{}).fill||'',boolFill:()=>{ const b=BD.bool.base(n); return b&&b.fill(); },workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff'};
   let cur=(get[key]||(()=>''))()||'';
   UI.colorPop(btn,(typeof cur==='string'&&cur)||'#000000',v=>{
     const set={workspace:()=>{ S.bg=v||null; BD.wrap.style.backgroundColor=S.bg||''; BD.scheduleSave(); }, pen:()=>{ S.pen.color=v; },
       bgFill:()=>apply(f=>{ const bg=frameBg(f); bg.fill(v||'#ffffff'); bg.setAttr('fillType','solid'); BD.applyFill(bg); }),
       bgGradA:()=>apply(f=>{ const bg=frameBg(f); bg.setAttr('gradA',v); BD.applyFill(bg); }), bgGradB:()=>apply(f=>{ const bg=frameBg(f); bg.setAttr('gradB',v); BD.applyFill(bg); }),
+      flexFill:()=>flexSet({fill:v||undefined},!!v!==!!cur),
       boolFill:()=>apply(m=>{ const b=kind(m)==='bool'&&BD.bool.base(m); if(b){ b.fill(v||'#000000'); b.setAttr('fillType','solid'); BD.applyFill(b); } },{repaint:true}),
       oFill:()=>apply(m=>{ m.fill(v); if(kind(m)==='arrow') m.stroke(v||m.stroke()); }), oGradA:()=>apply(m=>m.setAttr('gradA',v)), oGradB:()=>apply(m=>m.setAttr('gradB',v)),
       stroke:()=>apply(m=>{ m.stroke(v); if(v&&!m.strokeWidth()) m.strokeWidth(kind(m)==='text'?4:6); if(kind(m)==='arrow') m.fill(v); }),
