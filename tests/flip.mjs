@@ -1,7 +1,7 @@
 /* Studio 1.14.0: Flip. The layer bar's Move tab has a Flip button for pictures, stickers and shapes (never text, never the tinted logo).
    Checks: the button (size, label, row layout, no sideways scroll); a tap mirrors the layer left to right in the preview with the same box;
    the recipe keeps it; Undo/Redo; a second tap removes it; text never mirrors even if a recipe says so; the full-size PNG (2160×3840) is mirrored too;
-   a layer without the key draws exactly as before; a brand can shows Flip and the logo does not.
+   a layer without the key draws exactly as before; brand cans (noFlip in the brand kit) and the logo do not show Flip.
    Phone 390×844 touch (light + dark) and desktop 1280×800. Run like tests/stickers.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -123,15 +123,14 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
       await pg.evaluate(id=>{ delete Studio.debug.S.layers[id].flip; Studio.debug.render(); },id);
     }
 
-    /* 9. a brand can shows Flip, the logo does not */
+    /* 9. a brand can (noFlip:true in the brand kit: its label must never read backwards) and the logo have no Flip */
     await pg.evaluate(()=>{ const S=Studio.debug.S; S.extras.push({id:'a99',type:'asset',ref:'can-classic',w:300,x:300,y:1450},{id:'a98',type:'asset',ref:'logo',w:260,x:800,y:1450});
       S.layers.a99={dx:0,dy:0,k:1,color:null,hidden:false}; S.layers.a98={dx:0,dy:0,k:1,color:null,hidden:false}; Studio.debug.render(); });
     await pg.waitForFunction(()=>['a99','a98'].every(i=>Studio.debug.reg().some(r=>r.id===i&&!r.empty)),null,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(500);
     if(vp.touch&&await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
     await tapBox('a99'); const s99=await sel(); await part('move'); const fc=await flipState();
-    ok(N+'a brand can (asset) shows Flip',s99==='a99'&&fc.vis&&fc.h>=48,{s99,fc});
-    if(main){ const h99=await hash(), b99=await rbox('a99'); await tap('#inspFlip'); await pg.waitForTimeout(400);
-      ok(N+'flipping the can redraws it (same box, flip flag set)',(await lay('a99')).flip===true&&await hash()!==h99&&JSON.stringify(await rbox('a99'))===JSON.stringify(b99)); }
+    ok(N+'a brand can (noFlip) has no Flip',s99==='a99'&&!fc.vis,{s99,fc});
+    { const hC=await hash(); await pg.evaluate(()=>{ Studio.debug.S.layers.a99.flip=true; Studio.debug.render(); }); ok(N+'can pixels identical with flip:true',hC===await hash()); await pg.evaluate(()=>{ delete Studio.debug.S.layers.a99.flip; Studio.debug.render(); }); }
     if(vp.touch&&await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
     await tapBox('a98'); const s98=await sel(); await part('move'); const fl=await flipState();
     ok(N+'the logo asset has no Flip, and flip:true on it changes nothing',s98==='a98'&&!fl.vis,{s98,fl});
