@@ -13,6 +13,22 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.13.0 · 29 Oct 2026
+
+### "2 waiting" on your tools
+type: design
+Picked several shop photos for Restock or Photo story and left before the last one? The tool's row in **Your tools** and in **All tools** now carries a small "2 waiting" tag, so you can see at a glance which tool still has photos lined up. It is a quiet tint, not another button; it goes as soon as the photos are done or cleared with ✕.
+![before](assets/whatsnew/1.13.0-waiting-before.jpg)
+![after](assets/whatsnew/1.13.0-waiting-after.jpg)
+
+### A story you leave at once is kept
+type: fix
+Studio keeps every unfinished story in **Continue editing**, but it waited a moment (0.8 s) before writing it. Leaving the page, or tapping **Skip** to the next photo, inside that moment could lose the story or its last change. Now leaving, hiding the app or skipping writes it straight away.
+
+### The right word on a computer
+type: fix
+When a computer runs short of memory while saving, Studio steps the picture down a little and tells you. It used to say "This phone was low on memory" on a computer too; it now says "device" there (a phone still says "phone").
+
 ## 1.12.0 · 28 Oct 2026
 
 ### Stickers
