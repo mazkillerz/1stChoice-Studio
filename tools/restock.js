@@ -41,6 +41,7 @@ Studio.tool({
   fields:[
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.restock||b.phrases.headlines},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',when:{style:['white','cream','cans','split','poster']}},
+    Studio.groundField({style:['white','cream','cans','split','poster']}),
     {id:'flav',type:'multi',label:'Flavours back in stock',options:b=>(b.flavours||[]).map(f=>({v:f.id,l:f.name}))},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,default:b=>((b.defaults||{}).restock||{}).small||'__none'},
     {id:'place',type:'place',in:'style',cols:false,label:'Words place',default:'bottom-center',when:{style:'photo'}},
@@ -100,7 +101,7 @@ Studio.tool({
       h.pill('pill','Button',pill,W/2,y,btn(C.paper,C.ink));
       return;
     }
-    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
+    h.ground(ground,o.value('gfx'));
     const logoTone=dark?'light':'dark';
 
     /* ---- Cans: the HD can cut-out(s) on a soft panel, no photo ---- */

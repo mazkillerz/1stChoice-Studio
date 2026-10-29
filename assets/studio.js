@@ -401,6 +401,49 @@ let onAssetLoad=null;
 /* Flip (mirror left to right): only for pictures, stickers and shapes. Words are never mirrored: text, buttons, the logo
    (a tinted asset) and any brand asset marked noFlip:true keep their way round even if a recipe says flip. */
 const canFlip=b=>!!b&&(b.kind==='asset'||b.kind==='sticker'||b.kind==='shape')&&!b.noFlip;
+/* Backgrounds (1.21.0): a calm, tone-on-tone finish over a solid ground (whatever colour the style or the person picked), so
+   it suits any brand and any colour. Drawn in story units, so the preview and a 2× save look the same. 'plain' (or nothing,
+   as in every older design) draws nothing extra: those designs stay pixel for pixel the same. Not a layer. */
+const gIc=(k,inner)=>`<svg width="30" height="46" viewBox="0 0 30 46" aria-hidden="true"><defs><clipPath id="gfxc-${k}"><rect x="1" y="1" width="28" height="44" rx="3.5"/></clipPath></defs><g clip-path="url(#gfxc-${k})">${inner}</g><rect x=".5" y=".5" width="29" height="45" rx="4" fill="none" stroke="currentColor" opacity=".35"/></svg>`;
+const GRAIN_IC=[[4,6],[11,4],[20,8],[25,13],[7,15],[15,12],[22,20],[3,24],[12,22],[18,28],[26,27],[6,33],[14,36],[22,35],[9,41],[19,42],[25,40],[4,11],[16,18],[10,29]];
+const GROUNDS=[
+  {v:'plain',l:'Plain',ic:gIc('plain','')},
+  {v:'fade',l:'Fade',ic:gIc('fade','<defs><linearGradient id="gfxf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor" stop-opacity=".55"/></linearGradient></defs><rect width="30" height="46" fill="url(#gfxf)"/>')},
+  {v:'glow',l:'Glow',ic:gIc('glow','<defs><radialGradient id="gfxg" cx=".5" cy=".3" r=".75"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor" stop-opacity=".6"/></radialGradient></defs><rect width="30" height="46" fill="url(#gfxg)"/>')},
+  {v:'dots',l:'Dots',ic:gIc('dots',Array.from({length:30},(_,i)=>`<circle cx="${3.5+(i%5)*5.75}" cy="${4+Math.floor(i/5)*7.6}" r="1.3" fill="currentColor" opacity=".7"/>`).join(''))},
+  {v:'lines',l:'Lines',ic:gIc('lines',Array.from({length:12},(_,i)=>`<path d="M${-46+i*7.5} 46 L${i*7.5} 0" stroke="currentColor" stroke-width="1.4" opacity=".55"/>`).join(''))},
+  {v:'grain',l:'Grain',ic:gIc('grain',GRAIN_IC.map(([x,y])=>`<rect x="${x}" y="${y}" width="1.6" height="1.6" fill="currentColor" opacity=".75"/>`).join(''))}
+];
+const GRAIN=(()=>{ let s=20261029; const r=()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+  return Array.from({length:9000},()=>[r(),r(),r()]); })();   // the same speckles every time: a design reopens exactly as it was
+function groundFx(ctx,kind,color,W,H){
+  if(!kind||kind==='plain'||!GROUNDS.some(g=>g.v===kind)) return;
+  const dk=!isLight(color), tone=dk?'255,255,255':'0,0,0', a=(l,d)=>`rgba(${tone},${dk?d:l})`;
+  ctx.save();
+  if(kind==='fade'){   // light grounds deepen toward the bottom; dark grounds lift toward the top
+    const g=ctx.createLinearGradient(0,0,0,H);
+    if(dk){ g.addColorStop(0,a(0,.11)); g.addColorStop(.75,a(0,0)); } else { g.addColorStop(.2,a(0,0)); g.addColorStop(1,a(.09,0)); }
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  } else if(kind==='glow'){   // a soft light high up, gently darker at the edges
+    const g=ctx.createRadialGradient(W/2,H*.3,0,W/2,H*.3,H*.82);
+    g.addColorStop(0,dk?'rgba(255,255,255,.13)':'rgba(255,255,255,.55)'); g.addColorStop(.45,dk?'rgba(255,255,255,.04)':'rgba(255,255,255,0)'); g.addColorStop(1,dk?'rgba(0,0,0,.2)':'rgba(0,0,0,.08)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  } else if(kind==='dots'){
+    const sp=40; ctx.fillStyle=a(.075,.1); ctx.beginPath();
+    for(let y=sp/2,row=0;y<H;y+=sp,row++) for(let x=(row%2?sp:sp/2);x<W+sp;x+=sp){ ctx.moveTo(x+3.2,y); ctx.arc(x,y,3.2,0,Math.PI*2); }
+    ctx.fill();
+  } else if(kind==='lines'){
+    const sp=46; ctx.strokeStyle=a(.06,.085); ctx.lineWidth=3; ctx.beginPath();
+    for(let x=-H;x<W+sp;x+=sp){ ctx.moveTo(x,H); ctx.lineTo(x+H,0); }
+    ctx.stroke();
+  } else if(kind==='grain'){   // paper-like speckles: mostly the ground's shadow tone, a few light ones
+    ctx.fillStyle=a(.085,.09); ctx.beginPath(); GRAIN.forEach(([x,y,z],i)=>{ if(i%3) ctx.rect(x*W,y*H,1.6+z*1.6,1.6+z*1.6); }); ctx.fill();
+    ctx.fillStyle=dk?'rgba(0,0,0,.18)':'rgba(255,255,255,.5)'; ctx.beginPath(); GRAIN.forEach(([x,y,z],i)=>{ if(!(i%3)) ctx.rect(x*W,y*H,1.6+z*1.6,1.6+z*1.6); }); ctx.fill();
+  }
+  ctx.restore();
+}
+/* the Background picker a tool puts in its Style sheet: Studio.groundField({style:[...]}) (when = the styles that have a ground) */
+const groundField=(when,label)=>({id:'gfx',type:'seg',in:'style',label:label||'Background',default:'plain',cols:3,...(when?{when}:{}),options:GROUNDS.map(({v,l,ic})=>({v,l,ic}))});
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
@@ -421,6 +464,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   }
   const h={W,H,ctx,rr,brand:B,C,dir,isLight,
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
+    /* fill the whole story with a ground colour and its Background finish (groundFx); kind 'plain' = just the colour */
+    ground(color,kind){ ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H); },
     photoAspect(i,opt){const p=S.photos[ix(i,opt)];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
       opt=opt||{}; const p=S.photos[ix(i,opt)], rot=(opt.rot||0)*Math.PI/180;   // rot: degrees, around the box centre
@@ -1124,7 +1169,13 @@ async function tool(cfg){
     syncUndo(); saveDraft(s); designChanged();
   }
   function designChanged(){ quickReady=false; if(imgDone&&!saving){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
-  function restore(s){ applyRecipe(JSON.parse(s.json),s.photos); syncUI(); syncInspector(); paintPager(); draw(vctx,true); syncUndo(); saveDraft(s); designChanged(); }
+  /* Undo / Redo keep the chosen layer chosen when it is still there (1.21.0: before, the layer bar stayed open on a layer that
+     was no longer chosen, so its buttons did nothing); a layer that the step removed closes the bar instead */
+  function restore(s){ const keep=S.sel, pg=S.page;
+    applyRecipe(JSON.parse(s.json),s.photos); syncUI(); paintPager(); draw(vctx,true);
+    if(keep&&S.page===pg&&reg.some(x=>x.id===keep)){ S.sel=keep; draw(vctx,true); }
+    else if(keep&&openName==='insp') closeSheet('insp');
+    syncInspector(); syncUndo(); saveDraft(s); designChanged(); }
   function flush(){ if(hist.timer){ clearTimeout(hist.timer); hist.timer=0; if(!pts.size) commit(); } }   // record an edit made just before Undo
   function undo(){ flush(); if(hist.i>0){ hist.i--; restore(hist.stack[hist.i]); } }
   function redo(){ flush(); if(hist.i<hist.stack.length-1){ hist.i++; restore(hist.stack[hist.i]); } }
@@ -2677,5 +2728,5 @@ async function home(){
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
