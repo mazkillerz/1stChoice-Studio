@@ -23,7 +23,7 @@ const MAP=[
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
-  [/^lab\//,['lab','lab-pro','board-penpot']],
+  [/^lab\//,['lab','lab-pro','board-penpot','board-flex']],
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav']],
   [/tools\/create-templates|assets\/search\./,['postpresets']],
   [/assets\/welcome\./,['welcome']],

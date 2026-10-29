@@ -13,6 +13,14 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.17.0 · 29 Oct 2026
+
+### Board: stacks that tidy themselves (preview)
+type: feature
+New in Board, as a preview you switch on: **flex layout**, an idea from Penpot. A frame or a group can stack what's inside it in a **column** or a **row**, with a gap, padding and alignment. Make a menu or a price list, then type a longer name: the lines below move down by themselves instead of overlapping. Pick a few things and tap **Stack** to put them in a stack that grows with its words (give it a box colour and round corners for a label or a pill). Drag something inside a stack to change the order. Rows can run right to left for Arabic. Stacks are saved with the board, undo like everything else and export at full quality. Boards made before look exactly the same. To try it: open Board, tap the Design panel with nothing selected, and turn on **Previews → Flex layout** (or open `lab/board.html?flex=1`). It stays on, on that device only.
+![before](assets/whatsnew/1.17.0-flex-before.jpg)
+![after](assets/whatsnew/1.17.0-flex-after.jpg)
+
 ## 1.16.0 · 29 Oct 2026
 
 ### Favourite templates, and the ones you used last
