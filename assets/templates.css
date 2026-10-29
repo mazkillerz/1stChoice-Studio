@@ -72,15 +72,48 @@
 .tp-ph{position:absolute;inset:0;display:none;place-items:center;color:var(--muted)}
 .tp-none .tp-ph{display:grid}
 .tp-ph svg{width:32px;height:32px;display:block}
-.tp-badge{position:absolute;z-index:1;inset-block-start:var(--sp-2);inset-inline-start:var(--sp-2);padding:2px 8px;border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font:600 var(--fs-xs)/1.4 var(--sans);box-shadow:var(--shadow-1)}
+/* the New badge: a small pill at the start of the line under the title, so it never covers a preview's headline (1.16.0) */
+.tp-badge{display:inline-block;vertical-align:1px;margin-inline-end:6px;padding:0 7px;border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font:600 var(--fs-xs)/1.5 var(--sans)}
 .tp-tx{display:block;margin-top:10px;padding-inline:2px}   /* dir="auto" is set on it: an Arabic title makes the title and the line under it start on the right */
 .tp-t{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font:600 var(--fs-m)/1.3 var(--sans);color:var(--fg);text-wrap:balance}
 .tp-s{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-s);line-height:1.35;color:var(--muted)}
+.tp-fav .tp-s,.tp-s:has(.tp-badge){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal}   /* with a star or badge beside it, the line may wrap once instead of being cut */
 .tp-bone{display:block;height:12px;width:78%;border-radius:6px;background:var(--chip);animation:tp-pulse 1.4s ease-in-out infinite}
 .tp-bone.short{width:46%;margin-top:6px}
 @media (hover:hover){
   .tp-card:hover .tp-frame{box-shadow:var(--shadow-2);transform:translateY(-3px)}
 }
+
+/* ---------- favourites: a star at the end of the title, a 48px tap area; filled in the accent when on (1.16.0) ---------- */
+.tp-fav{position:relative}
+.tp-fav .tp-tx{padding-right:36px}   /* room for the star; the star sits on the page's end side, the text keeps its own direction */
+[dir=rtl] .tp-fav .tp-tx{padding-right:2px;padding-left:36px}
+.tp-star{position:absolute;inset-inline-end:-8px;bottom:0;width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;border-radius:var(--r-pill);background:none;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .42s var(--spring),color .2s}
+.tp-star::after{content:"";position:absolute;inset:-2px}   /* 48px tap area */
+.tp-star svg{width:20px;height:20px;display:block;fill:none;transition:fill .2s}
+.tp-star[aria-pressed="true"]{color:var(--accent)}
+.tp-star[aria-pressed="true"] svg{fill:currentColor}
+.tp-star:active{transform:scale(.85);transition-duration:.09s;transition-timing-function:ease-out}
+.tp-star:focus:not(:focus-visible){outline:none}
+.tp-star:focus-visible{outline:3px solid var(--focus);outline-offset:-2px}
+/* level with the title: the preview's height is the card's width times its shape (container units; older browsers keep it at the bottom) */
+@supports (width:1cqw){
+  .tp-fav{container-type:inline-size}
+  .tp-fav .tp-star{bottom:auto;top:calc(100cqw * var(--ar,1.7778) - 2px)}
+}
+@media (hover:hover){ .tp-star:hover{color:var(--fg)} .tp-star[aria-pressed="true"]:hover{color:var(--accent)} }
+
+/* ---------- Recently used: one row of small previews (4 on a phone, more on wider screens) ---------- */
+.tp-recent{list-style:none;margin:0;padding:0 0 var(--sp-2);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2);align-items:start}
+.tp-recent>li:nth-child(n+5){display:none}
+@media (min-width:600px){.tp-recent{grid-template-columns:repeat(6,minmax(0,1fr))}.tp-recent>li:nth-child(n+5){display:block}.tp-recent>li:nth-child(n+7){display:none}}
+@media (min-width:1000px){.tp-recent{grid-template-columns:repeat(8,minmax(0,1fr))}.tp-recent>li:nth-child(n+7){display:block}}
+.tp-mini{padding-bottom:0}
+.tp-mini .tp-frame{border-radius:12px;aspect-ratio:3/4}   /* one even row: every shape shows its top part */
+.tp-mini .tp-img{object-position:50% 0}
+.tp-mini .tp-circle .tp-img{inset:auto;left:12%;top:50%;width:76%;height:auto;aspect-ratio:1;translate:0 -50%}
+.tp-mini .tp-ph svg{width:22px;height:22px}
+.tp-mt{display:block;margin-top:6px;padding-inline:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 var(--fs-s)/1.3 var(--sans);color:var(--fg)}
 
 /* ---------- notes: Team without templates, and nothing here yet ---------- */
 .tp-note{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-3);max-width:520px;padding:var(--sp-4);border-radius:var(--r-l);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-1)}

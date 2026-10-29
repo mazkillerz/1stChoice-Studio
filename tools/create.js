@@ -328,23 +328,38 @@ const normQ=t=>Studio.normText(String(t||'').replace(/[-_]+/g,' '));   // the hu
 function tplSearch(body,list){ const q=body.querySelector('#crTplQ'); if(!q) return; const clr=body.querySelector('#crTplClear'), none=body.querySelector('#crTplNone');
   const hay=new Map(list.map(d=>[d.id,normQ([d.label,d.id,d.layout,d.size].concat(Object.values(d.words||{})).join(' '))]));
   const run=()=>{ const toks=normQ(q.value).split(/\s+/).filter(Boolean); let n=0;
-    body.querySelectorAll('.cr-tpl').forEach(b=>{ const h=hay.get(b.dataset.tpl)||'', show=toks.every(t=>h.includes(t)); b.hidden=!show; if(show) n++; });
-    none.hidden=n>0; clr.hidden=!q.value; };
+    body.querySelectorAll('.cr-tw').forEach(w=>{ const b=w.querySelector('.cr-tpl'), h=hay.get(b.dataset.tpl)||'', show=toks.every(t=>h.includes(t)); w.hidden=!show; if(show) n++; });
+    none.hidden=n>0; clr.hidden=!q.value; const rec=body.querySelector('#crRecent'); if(rec) rec.hidden=!!toks.length; };
   q.addEventListener('input',run); clr.addEventListener('click',e=>{ e.stopPropagation(); q.value=''; run(); q.focus(); }); }
-async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.start, list=CR.templates();
+/* favourites + recently used: the same per-device lists as the hub's Templates page (ids 't:'+template id; assets/templates.js) */
+const favKey=()=>'studio:tplFav:'+(B&&B.id), recKey=()=>'studio:tplRecent:'+(B&&B.id), RECENT_MAX=8;
+const idList=k=>{ const v=L.store(k); return Array.isArray(v)?v.filter(x=>typeof x==='string'&&x):[]; };
+function idMark(k,id,on,max){ const l=idList(k).filter(x=>x!==id); if(on!==false) l.unshift(id); L.store(k,max?l.slice(0,max):l); }
+const STAR='<svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></svg>';
+const tplCard=(d,opt)=>{ const s=CR.templateSize(d), th=`<span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span>`;
+  if(opt.recent) return `<button type="button" class="cr-rec" data-rtpl="${esc(d.id)}" aria-label="${esc(d.label)}">${th}<span class="nm">${esc(d.label)}</span></button>`;
+  const on=opt.favs.has('t:'+d.id);
+  return `<div class="cr-tw"><button type="button" class="cr-tpl${opt.focus===d.id?' hl':''}" data-tpl="${esc(d.id)}">${th}<span class="nm">${esc(d.label)}</span></button><button type="button" class="cr-star" data-star="${esc(d.id)}" aria-pressed="${on}" aria-label="${esc('Favourite: '+d.label)}" title="${on?'Remove from favourites':'Add to favourites'}">${STAR}</button></div>`; };
+async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.start, all=CR.templates();
+  const favs=new Set(idList(favKey())), byId=new Map(all.map(d=>[d.id,d]));
+  const list=all.filter(d=>favs.has('t:'+d.id)).concat(all.filter(d=>!favs.has('t:'+d.id)));   // favourites first
+  const recent=idList(recKey()).filter(x=>x.startsWith('t:')).map(x=>byId.get(x.slice(2))).filter(Boolean).slice(0,3);
   const body=openSheet('templates',start?'What are you making?':'Templates',
     `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
-     <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>{ const s=CR.templateSize(d); return `<button type="button" class="cr-tpl${opt.focus===d.id?' hl':''}" data-tpl="${esc(d.id)}"><span class="th ${esc(d.size||'story')} loading">${s.pages>1?`<span class="n">${s.pages}</span>`:''}</span><span class="nm">${esc(d.label)}</span></button>`; }).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
+     ${recent.length?`<div id="crRecent"><span class="lbl">Recently used</span><div class="cr-tpls cr-recent">${recent.map(d=>tplCard(d,{recent:true})).join('')}</div></div>`:''}
+     <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>tplCard(d,{favs,focus:opt.focus})).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
-  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl]'), tt=e.target.closest('[data-team]'), si=e.target.closest('#crTeamSign');
+  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team]'), si=e.target.closest('#crTeamSign'), sr=e.target.closest('[data-star]');
+    if(sr){ const id='t:'+sr.dataset.star, on=sr.getAttribute('aria-pressed')!=='true'; idMark(favKey(),id,on); sr.setAttribute('aria-pressed',String(on)); sr.title=on?'Remove from favourites':'Add to favourites'; return; }   // order changes the next time the sheet opens, nothing jumps now
     if(sz){ closeSheet(true); if(start||isBlank()) startBlank(sz.dataset.size); else addBlank(sz.dataset.size); }
-    if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl,mode));
+    if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl||tp.dataset.rtpl,mode));
     if(tt) chooseMode(mode=>applyTeam(tt.dataset.team,mode));
     if(si){ if(await L.ensureMember('Team templates are shared with the team. Sign in to see them.')) paintTeam(); } });
   tplSearch(body,list); if(opt.focus){ const f=body.querySelector(`[data-tpl="${CSS.escape(opt.focus)}"]`); if(f) setTimeout(()=>f.scrollIntoView({block:'center'}),60); }
   paintTeam();
-  for(const d of list){ const url=await tplThumb(d); if(!sheet||sheet.name!=='templates') return; const th=body.querySelector(`[data-tpl="${CSS.escape(d.id)}"] .th`); if(th){ th.classList.remove('loading'); if(url) th.insertAdjacentHTML('afterbegin',`<img alt="" src="${url}">`); } } }
+  for(const d of recent.concat(list.filter(d=>!recent.includes(d)))){ const url=await tplThumb(d); if(!sheet||sheet.name!=='templates') return;
+    body.querySelectorAll(`[data-tpl="${CSS.escape(d.id)}"] .th,[data-rtpl="${CSS.escape(d.id)}"] .th`).forEach(th=>{ th.classList.remove('loading'); if(url) th.insertAdjacentHTML('afterbegin',`<img alt="" src="${url}">`); }); } }
 async function paintTeam(){ const box=$('crTeamT'); if(!box) return;
   try{ const C=await L.cloud(); if(!(await C.session())||!(await C.isMember())){ box.innerHTML='<div class="cr-empty">Templates the team saves show here. <button type="button" class="link" id="crTeamSign">Sign in</button></div>'; return; }
     const all=(await C.designs(B.id)).filter(d=>d.tool===TOOL&&d.kind==='template'); if(!$('crTeamT')) return;
@@ -358,7 +373,7 @@ function chooseMode(run){ if(isBlank()){ closeSheet(true); run('replace'); retur
     <div class="dlg-actions col"><button type="button" class="btn" id="tmAdd">Add as new pages</button><button type="button" class="btn ghost" id="tmRep">Replace everything</button><button type="button" class="link" id="tmNo">Cancel</button></div></div>`);
   d.querySelector('#tmNo').onclick=()=>d.close(); d.querySelector('#tmAdd').onclick=()=>{ d.close(); closeSheet(true); run('add'); }; d.querySelector('#tmRep').onclick=()=>{ d.close(); closeSheet(true); run('replace'); }; }
 function clearAll(){ BD.select([]); BD.main.destroyChildren(); BD.main.batchDraw(); }
-async function applyTemplate(id,mode){ BD.busy('Building the template…'); await thumbChain;
+async function applyTemplate(id,mode){ idMark(recKey(),'t:'+id,true,RECENT_MAX); BD.busy('Building the template…'); await thumbChain;
   try{ if(mode==='replace') clearAll(); const made=await CR.buildTemplate(id,{at:{x:0,y:0}}); afterBuild(made); }
   catch(err){ console.error(err); toast('Could not build that template.'); } finally{ BD.busy(null); } }
 async function applyTeam(id,mode){ BD.busy('Opening the team template…');
