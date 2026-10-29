@@ -712,6 +712,11 @@ label.opt-row{cursor:pointer}
 #crRecent[hidden]{display:none}
 @media (max-width:360px){.cr-recent .cr-rec:nth-child(n+3){display:none}}   /* two columns there: one row */
 
+/* Save pictures from Saved (1.18.0): the hidden frames that draw each design (assets/render.js) stay off screen and out of reach */
+.render-frame{position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;opacity:0;pointer-events:none}
+.bs-dlg .progress{text-align:start}
+.bs-dlg .progress[hidden]{display:none}
+
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */
 :root{

@@ -1664,6 +1664,19 @@ async function tool(cfg){
     $('photosRow').textContent=pageCount()>1?(zipped?'All '+pageCount()+' '+PN.many+' download at full quality in one ZIP, numbered in order.':'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.'):'Always a full-quality picture to your Photos.'; }
   function batchBase(stamp){ const n=(design?design.name:($('teamName').dataset.touched?$('teamName').value:'')).trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
     return n||fname('x',null,0,stamp).replace(/\.x$/,''); }
+  /* one page at size K → PNG blob, or null when the phone ran out of room. Save and Save pictures from Saved (render mode) both use it */
+  async function renderPage(pg,K,withPhotos,mid){
+    const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
+    const ctx=c.getContext('2d'); if(!ctx) return null;
+    try{
+      withPage(pg,()=>draw(ctx,false,K));
+      if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
+      if(mid) mid();
+      const b=await new Promise(r=>c.toBlob(r,'image/png'));
+      return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
+    }catch(_){ return null; }
+    finally{ freeSharp(); c.width=c.height=0; }
+  }
   let lastFiles=null, saving=false, cancelSave=false;
   $('saveCancel').addEventListener('click',()=>{ cancelSave=true; $('saveCancel').disabled=true; $('progressTxt').textContent='Stopping…'; });
   async function save(withPhotos,only){
@@ -1682,18 +1695,7 @@ async function tool(cfg){
         const tag=pages>1?'Saving '+(li+1)+' of '+pages+'…':'';
         progress((li+.1)/pages,tag||'Drawing at full size…'); await new Promise(r=>setTimeout(r,30));
         /* PNG = lossless: no JPEG blur or colour smudging on text, edges and photos. Same on iPhone and Android. */
-        async function renderAt(K){
-          const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
-          const ctx=c.getContext('2d'); if(!ctx) return null;
-          try{
-            withPage(pg,()=>draw(ctx,false,K));
-            if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
-            progress((li+.55)/pages,tag||'Making the PNG…');
-            const b=await new Promise(r=>c.toBlob(r,type));
-            return b&&b.size>1000?b:null;               // a tiny/empty blob means the phone ran out of room
-          }catch(_){ return null; }
-          finally{ freeSharp(); c.width=c.height=0; }
-        }
+        const renderAt=K=>renderPage(pg,K,withPhotos,()=>progress((li+.55)/pages,tag||'Making the PNG…'));
         /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
@@ -1970,6 +1972,11 @@ async function tool(cfg){
     else status('That photo did not come through. Tap Add your photo.'); }
   /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
   else if(noPhotoStyle()&&!design&&!draftId) quickReady=true;
+  /* Save pictures from Saved (1.18.0): assets/render.js opens this page in a hidden frame with ?design=…&render=1 and takes
+     each page's picture from here, drawn by the same renderPage() as Save, so the pixels are the same as opening it and saving */
+  if(q.get('render')==='1') Studio.renderer={ok:!!design&&design.kind!=='template',missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
+    async page(pg,max){ await assetsHD(); if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+      for(const K of [EXPORT_SCALE,1.5,1]){ if(max&&K>max) continue; const blob=await renderPage(pg,K,true); if(blob) return {blob,K}; } return null; }};   // the same steps down as Save
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
@@ -2449,8 +2456,15 @@ async function home(){
       c.classList.toggle('picked',p); if(on){ a.setAttribute('role','checkbox'); a.setAttribute('aria-checked',String(p)); } else { a.removeAttribute('role'); a.removeAttribute('aria-checked'); } });
     const col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('selOut').hidden=!col; if(col) $('selOut').setAttribute('aria-label','Take them out of “'+col.name+'”');
-    ['selCol','selOut','selDel'].forEach(id=>$(id).disabled=!n);
+    ['selCol','selOut','selSave','selDel'].forEach(id=>$(id).disabled=!n);
   }
+  /* Save pictures (1.18.0): each selected design's picture at full quality, in one share sheet (phone) or one ZIP (computer).
+     assets/render.js draws them in hidden frames of their tools, with the same code as Save. The button sits before Delete. */
+  { const b=document.createElement('button'); b.type='button'; b.className='sel-act'; b.id='selSave'; b.disabled=true; b.innerHTML=ICON.download+'<span>Save pictures</span>';
+    $('selBar').insertBefore(b,$('selDel'));
+    b.addEventListener('click',async()=>{ const list=picked(); if(!list.length) return; haptic('tick');
+      try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
+      await window.StudioRender.saveDesigns(list,{toast:hubToast,done:()=>{ if(sel) endSelect(true); }}); }); }
   function toggleSel(id){ if(!sel) return; sel.has(id)?sel.delete(id):sel.add(id); haptic('tick'); paintSel(); }
   $('selBtn').addEventListener('click',()=>{ if(!sel) return startSelect();
     if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
