@@ -28,7 +28,7 @@ const MAP=[
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav']],
   [/tools\/create-templates|assets\/search\./,['postpresets']],
   [/assets\/welcome\./,['welcome']],
-  [/tools\/restock/,['restock-styles']],[/tools\/photo-story/,['photostory-styles']],[/tools\/collage/,['collage-grids']],
+  [/tools\/restock/,['restock-styles','backgrounds']],[/tools\/photo-story/,['photostory-styles','backgrounds']],[/tools\/collage/,['collage-grids']],
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
   [/assets\/batch\.js/,['batch','batch-saved']],
   [/assets\/render\.js/,['batch-saved']],
@@ -36,7 +36,7 @@ const MAP=[
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved','textstyles','brandkit'],
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds'],
       HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
