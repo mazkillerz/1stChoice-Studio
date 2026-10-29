@@ -15,12 +15,13 @@
     const tick=()=>{ if(stop.now){ f.remove(); return rej(STOP); }
       let r=null; try{ r=f.contentWindow&&f.contentWindow.Studio&&f.contentWindow.Studio.renderer; }catch(_){}
       if(r) return res({f,r});
-      if(Date.now()-t0>45000){ f.remove(); return rej(new Error('timeout')); }
+      if(Date.now()-t0>30000){ f.remove(); return rej(new Error('timeout')); }
       setTimeout(tick,120); };
     tick(); }); }
   /* every page of one design: [{blob,K}…]; max = the size the batch has stepped down to (never back up within one batch) */
   async function design(d,stop,max,onPage){
-    const {f,r}=await frame(d,stop);
+    let got; try{ got=await frame(d,stop); }catch(err){ if(err===STOP) throw err; return {error:'could not be opened'}; }
+    const {f,r}=got;
     try{
       if(!r.ok) return {error:'could not be opened'};
       if(r.missing&&r.missing.length) return {error:'has a photo missing'};
@@ -53,6 +54,7 @@
     const halt=()=>{ if(!busy) return; stop.now=true; $('bsCancel').disabled=true; $('bsTxt').textContent='Stopping…'; };
     $('bsCancel').onclick=()=>{ if(busy) halt(); else dl.close(); };
     dl.addEventListener('cancel',e=>{ if(busy){ e.preventDefault(); halt(); } });
+    dl.addEventListener('close',()=>{ if(busy) stop.now=true; });
     const files=[], names=new Set(), skipped=[]; let used=0, W=0, H=0, at=new Date();
     const uniq=n=>{ let x=n, i=2; while(names.has(x.toLowerCase())) x=n+'-'+i++; names.add(x.toLowerCase()); return x; };
     try{
@@ -81,7 +83,7 @@
     /* a phone: one share sheet with every picture; it needs a fresh tap if the drawing took too long, so ask for one then */
     if(touch&&navigator.canShare&&navigator.canShare({files})){
       const share=async()=>{ const r=await shareFiles(files);
-        if(r==='shared'){ finish('Saved!','Choose “Save '+n+' Images” if you haven’t yet. Every picture is full quality.'); return true; }
+        if(r==='shared'){ finish('Saved!','Choose “'+(n===1?'Save Image':'Save '+n+' Images')+'” if you haven’t yet. Every picture is full quality.'); return true; }
         $('bsProg').hidden=true; $('bsH').textContent='Ready!'; $('bsNote').hidden=false;
         $('bsNote').textContent=(r==='cancelled'?'Not saved yet. ':'')+'Tap Save to Photos to put your '+pics+' in your photos.'+small;
         $('bsGo').hidden=false; $('bsGo').textContent='Save to Photos'; $('bsCancel').textContent='Close'; return false; };
