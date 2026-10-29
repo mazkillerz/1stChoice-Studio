@@ -135,8 +135,9 @@ for(const scheme of ['light','dark']){
   ok(N+'accessible name = title + sub (+ badge)',dir.en.label==='Restock, Story · Classic, New'&&dir.ar.label==='رجع متوفر, Story · Passion fruit',[dir.en.label,dir.ar.label]);
   const clamp=await pg.evaluate(()=>{ const a=document.querySelector('.tp-card[href$="t=s2"]'), t=a.querySelector('.tp-t'), s=a.querySelector('.tp-s'); const lh=parseFloat(getComputedStyle(t).lineHeight); return {lines:Math.round(t.getBoundingClientRect().height/lh),subOne:s.getBoundingClientRect().height<=parseFloat(getComputedStyle(s).lineHeight)+1,ell:getComputedStyle(s).textOverflow,w:t.getBoundingClientRect().width<=a.getBoundingClientRect().width}; });
   ok(N+'a long title stops at 2 lines, a long sub at 1 line with an ellipsis',clamp.lines===2&&clamp.subOne&&clamp.ell==='ellipsis'&&clamp.w,clamp);
-  const bd=await pg.evaluate(()=>{ const b=document.querySelector('.tp-card[href$="t=r1"] .tp-badge'), f=b.parentNode.getBoundingClientRect(), r=b.getBoundingClientRect(); return {dx:Math.round(r.left-f.left),dy:Math.round(r.top-f.top),h:Math.round(r.height)}; });
-  ok(N+'badge: small pill at the top-start corner',bd.dx>=4&&bd.dx<=14&&bd.dy>=4&&bd.dy<=14&&bd.h<=26,bd);
+  /* since 1.16.0 the badge sits at the start of the line under the title, never on the preview (it covered post headlines) */
+  const bd=await pg.evaluate(()=>{ const c=document.querySelector('.tp-card[href$="t=r1"]'), b=c.querySelector('.tp-badge'), f=c.querySelector('.tp-frame').getBoundingClientRect(), s=c.querySelector('.tp-s').getBoundingClientRect(), r=b.getBoundingClientRect(); return {inSub:!!b.closest('.tp-s'),below:Math.round(r.top-f.bottom),dx:Math.round(r.left-s.left),h:Math.round(r.height)}; });
+  ok(N+'badge: small pill at the start of the line under the title, below the preview',bd.inSub&&bd.below>=0&&bd.dx>=0&&bd.dx<=4&&bd.h<=26,bd);
 
   /* 11. contrast */
   const cn=await pg.evaluate(s=>window.__contrast(s),CONTRAST);
@@ -248,9 +249,9 @@ for(const scheme of ['light','dark']){
   /* right to left page: everything mirrors, the back arrow turns round, still no sideways scroll */
   await pg.tap('.tp-chip[data-id="all"]'); await pg.waitForTimeout(450);
   await pg.evaluate(()=>{ document.documentElement.dir='rtl'; }); await pg.waitForTimeout(200);
-  const rt=await pg.evaluate(()=>{ const r=s=>{ const e=document.querySelector(s); return e?Math.round(e.getBoundingClientRect().right):null; }; const bd=document.querySelector('.tp-card[href$="t=r1"] .tp-badge'), fr=bd.parentNode.getBoundingClientRect();
-    return {back:r('.tp-back'),h1:r('.tp-ttl'),chip:r('.tp-chip'),card:r('.tp-card'),vw:document.documentElement.scrollWidth<=document.documentElement.clientWidth,arrow:getComputedStyle(document.querySelector('.tp-back svg')).transform,badgeRight:Math.round(fr.right-bd.getBoundingClientRect().right)}; });
-  ok('right-to-left page: back button, title, chips and grid share the right edge, arrow turned round, badge at the right corner, no sideways scroll',rt.back===344&&rt.h1===344&&rt.chip===344&&rt.card===344&&rt.vw&&/matrix\(-1/.test(rt.arrow)&&rt.badgeRight>=4&&rt.badgeRight<=14,rt);
+  const rt=await pg.evaluate(()=>{ const r=s=>{ const e=document.querySelector(s); return e?Math.round(e.getBoundingClientRect().right):null; }; const bd=document.querySelector('.tp-card[href$="t=r1"] .tp-badge'), fr=bd.closest('.tp-card').querySelector('.tp-frame').getBoundingClientRect();
+    return {back:r('.tp-back'),h1:r('.tp-ttl'),chip:r('.tp-chip'),card:r('.tp-card'),vw:document.documentElement.scrollWidth<=document.documentElement.clientWidth,arrow:getComputedStyle(document.querySelector('.tp-back svg')).transform,badgeBelow:Math.round(bd.getBoundingClientRect().top-fr.bottom)}; });
+  ok('right-to-left page: back button, title, chips and grid share the right edge, arrow turned round, badge under the preview, no sideways scroll',rt.back===344&&rt.h1===344&&rt.chip===344&&rt.card===344&&rt.vw&&/matrix\(-1/.test(rt.arrow)&&rt.badgeBelow>=0,rt);
   await pg.evaluate(()=>{ document.documentElement.dir='ltr'; });
   await pg.setViewportSize({width:700,height:800}); await pg.tap('.tp-chip[data-id="all"]').catch(()=>{}); await pg.waitForTimeout(500);
   const c3=await pg.evaluate(()=>getComputedStyle(document.querySelector('.tp-grid')).gridTemplateColumns.split(' ').length);

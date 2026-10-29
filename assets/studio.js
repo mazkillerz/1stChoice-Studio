@@ -2180,13 +2180,14 @@ async function home(){
     const out=[];
     (B.presets||[]).forEach(p=>{ if(!TOOLS[p.tool]) return; out.push({id:'p:'+p.id,cat:p.cat||'story',title:p.label,sub:p.sub||TOOLS[p.tool].title,thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),badge:p.badge||'',keys:TOOLS[p.tool].title}); });
     if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>{ const hl=d.layout==='highlight';
-      out.push({id:'t:'+d.id,cat:d.cat||(hl?'highlight':d.size==='post'?'post':'story'),title:d.label,sub:(hl?'Cover':TPL_SIZE[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':'')+' · Create',thumb:tplThumb(d.id),shape:hl?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),badge:d.badge||''}); });
+      out.push({id:'t:'+d.id,cat:d.cat||(hl?'highlight':d.size==='post'?'post':'story'),title:d.label,sub:d.sub||(hl?'Cover':TPL_SIZE[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':'')+' · Create',thumb:tplThumb(d.id),shape:hl?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),badge:d.badge||''}); });
     all.filter(d=>d.kind==='template').forEach(d=>out.push({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
     return out; }
   let tplApi=null;
   function showTemplates(){
     if(!window.StudioTemplates||!$('templatesView')) return;
-    if(!tplApi) tplApi=StudioTemplates.init({root:$('templatesView'),cats:TPL_CATS,entries:tplEntries,esc,haptic,store,icons:ICON,
+    /* favourites + recently used, per device and brand; Create's template picker reads and writes the same two lists ('t:'+template id) */
+    if(!tplApi) tplApi=StudioTemplates.init({root:$('templatesView'),cats:TPL_CATS,entries:tplEntries,esc,haptic,store,icons:ICON,favKey:'studio:tplFav:'+B.id,recentKey:'studio:tplRecent:'+B.id,
       onBack:()=>goHome(),
       teamNote:()=>member?{text:'No team templates yet. Save a design with “Keep the photos” off, and it shows here for everyone.'}
                         :{text:'Templates your team saves show here.',action:{label:'Sign in',run:()=>$('acct').click()}}});
