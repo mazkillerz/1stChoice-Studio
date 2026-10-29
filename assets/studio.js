@@ -1689,13 +1689,14 @@ async function tool(cfg){
         /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
-        if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
+        if(!blob){ progress(null); status('Your '+(matchMedia('(pointer:coarse)').matches&&isPhone()?'phone':'device')+' could not make the image. Close other apps or tabs and try again.'); return; }
         files.push(new File([blob],PG&&withPhotos?base+'-'+z2(pg+1)+'.'+ext:fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
       }
       if(stopped()) return 'cancelled';
       $('saveCancel').hidden=true;
       progress(1,'Done');
-      const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
+      const dev=matchMedia('(pointer:coarse)').matches&&isPhone()?'phone':'device';   // a computer is not a phone (1.13.0)
+      const small=used<EXPORT_SCALE?' This '+dev+' was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
       const what=pages>1?files.length+' '+PN.many:(withPhotos?'Your story':'The frame');
       lastFiles=files;
       if(downloads){ try{ for(const f of files) await downloads.save({filename:f.name,data:f}); finish(what+' saved.',small); return; }catch(err){ if(err&&err.code==='declined'){ progress(null); status('Not saved.'); return; } } }
@@ -1987,7 +1988,11 @@ async function home(){
   /* a photo-first tool (Restock, Photo story, Collage) has a camera button on its row: one tap opens the phone's camera or photos,
      then the tool opens with the photo in. The file input sits inside the label, so the picker opens straight away. */
   const quickInput=(id,t)=>`<input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi||t.queue?' multiple':''}>`;
-  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" style="--i:${i}"><a class="tool-row" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
+  /* "2 waiting" (1.13.0): photos waiting in that tool's row (queue tools), counted by queueWaiting() below; calm, not a button */
+  const waitN={}, waitTag=id=>waitN[id]?`<em class="wait-tag" title="${waitN[id]===1?'1 photo':waitN[id]+' photos'} still waiting">${waitN[id]} waiting</em>`:'';
+  function paintWaitTags(){ document.querySelectorAll('.tool-item[data-id],.lib-row[data-id]').forEach(row=>{ const b=row.querySelector('.ttxt b'); if(!b) return; const old=b.querySelector('.wait-tag'), h=waitTag(row.dataset.id);
+    if(old) old.remove(); if(h) b.insertAdjacentHTML('beforeend',h); }); }
+  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" data-id="${id}" style="--i:${i}"><a class="tool-row" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
   function paintTools(){
     const pins=getPins(), n=Object.keys(TOOLS).length;
     $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
@@ -2015,7 +2020,7 @@ async function home(){
      in its group. Press and drag the handle to change the order on the home screen; on a keyboard the arrow keys move it. */
   /* a tool that starts from photos gets the Home row's camera here too (pinned ones have it on Home): one tap to pick, like Home */
   const libCam=(id,t)=>`<label class="row-cam lib-cam" title="${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}"><span class="sr-only">${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}</span>${ICON.camera}${quickInput(id,t)}</label>`;
-  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
+  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
   function libHtml(){ const pins=getPins(); let last=null, h='';
     if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots on the right to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
     Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
@@ -2103,13 +2108,15 @@ async function home(){
      photo's, "2 photos still waiting", Continue opens the tool on the next one; ✕ clears them (1.8.0) */
   async function queueWaiting(){ document.querySelectorAll('.queue-wait').forEach(e=>e.remove());
     for(const [id,t] of Object.entries(TOOLS).filter(([,t])=>t.queue).reverse()){
-      const k=queueKey(B.id,id), w=await idb.get(k); if(!w||!w.files||!w.files.length) continue;
+      const k=queueKey(B.id,id), w=await idb.get(k); waitN[id]=0; if(!w||!w.files||!w.files.length) continue;
       const m=(await idb.get(k+':pos'))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1)); if(!left.length){ idb.del(k); idb.del(k+':pos'); continue; }
+      waitN[id]=left.length;
       let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
       const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
       el.innerHTML=`<a class="qw-go" href="${toolPage(id)}?queue=1"><span class="install-ic" aria-hidden="true">${u?`<img alt="" src="${u}">`:''}</span><span class="install-txt"><b>${n===1?'1 photo still waiting':n+' photos still waiting'}</b><span>${esc(t.title)} · tap to continue</span></span><span class="qw-chev" aria-hidden="true">${ICON.next}</span></a><button type="button" class="mini icon" aria-label="Clear the ${n===1?'photo':n+' photos'} waiting for ${esc(t.title)}">✕</button>`;
-      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
-      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } } }
+      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); waitN[id]=0; paintWaitTags(); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
+      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } }
+    paintWaitTags(); }
   queueWaiting();
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
