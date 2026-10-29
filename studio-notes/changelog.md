@@ -13,6 +13,24 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.16.0 · 29 Oct 2026
+
+### Favourite templates, and the ones you used last
+type: feature
+Tap the star next to a template's name and it moves to a **Favourites** section at the top of **Templates**. Under it, **Recently used** shows the last templates you opened in one small row, so the template you use every day is one tap from the Templates tab, with no scrolling or picking a category. A category (Restock, Posts…) lists its favourites first too. Create's template picker has the same stars and a Recently used row (favourites come first the next time it opens). Both are kept on this phone; nothing shows until you star or open something, and tapping the star again takes it out.
+![before](assets/whatsnew/1.16.0-favourites-before.jpg)
+![after](assets/whatsnew/1.16.0-favourites-after.jpg)
+
+### The New label no longer covers the headline
+type: fix
+On post previews in Templates, the **New** label sat on top of the headline. It now sits on the line under the title, next to what the template is (for example "Post · ready in one tap"), and the previews are whole again.
+![before](assets/whatsnew/1.16.0-badge-before.jpg)
+![after](assets/whatsnew/1.16.0-badge-after.jpg)
+
+### Create templates say what they are
+type: design
+Every Create template in Templates said "Post · Create" or "Story · Create". Now each line says what you get: "Post · ready in one tap", "Story · three facts", "Square · a game", "Story · with your photo"… The line can wrap once instead of being cut off.
+
 ## 1.15.0 · 29 Oct 2026
 
 ### Save on a computer without losing half the screen

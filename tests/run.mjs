@@ -19,12 +19,12 @@ const MAP=[
   [/^assets\/stickers\.js$/,['stickers','copystyle']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15']],
   [/assets\/search\./,['search','polish71-search','create-search']],
-  [/tools\/create/,['create','create-search']],
+  [/tools\/create/,['create','create-search','tplfav']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
   [/^lab\//,['lab','lab-pro','board-penpot']],
-  [/assets\/templates\.|brands\//,['templates','postpresets']],
+  [/assets\/templates\.|brands\//,['templates','postpresets','tplfav']],
   [/tools\/create-templates|assets\/search\./,['postpresets']],
   [/assets\/welcome\./,['welcome']],
   [/tools\/restock/,['restock-styles']],[/tools\/photo-story/,['photostory-styles']],[/tools\/collage/,['collage-grids']],
@@ -35,7 +35,7 @@ let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
 const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15'],
-      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15'];
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
