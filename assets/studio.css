@@ -60,7 +60,10 @@ button,a,label,.chip,.seg{touch-action:manipulation}   /* no double-tap zoom on 
 .mini.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
 .mini.icon{width:var(--tap);padding:0}
 .mini:disabled{opacity:.4;cursor:default}
-.link{background:none;border:0;color:var(--muted);font:500 var(--fs-m) var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:var(--sp-2);min-height:40px;align-self:center}
+.link{background:none;border:0;border-radius:var(--r-pill);color:var(--accent);font:500 var(--fs-m) var(--sans);text-decoration:none;cursor:pointer;padding:var(--sp-2) var(--sp-3);min-height:40px;align-self:center;transition:background-color .15s}   /* a quiet text button (1.15.0: no underline; the owner turned down underlined links in 0.7.1) */
+.link:active{background:var(--chip)}
+@media (hover:hover){.link:hover{background:var(--chip)}}
+.link:focus:not(:focus-visible){outline:none}
 .chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
 .chip{border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:var(--r-pill);padding:6px 16px;font:600 var(--fs-m) var(--sans);cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:4px}
 .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
@@ -85,6 +88,7 @@ input::placeholder{color:var(--muted);opacity:.8}
 input[type=range]{width:100%;accent-color:var(--accent);min-height:36px}
 .check{display:flex;align-items:center;gap:10px;font-weight:500;min-height:var(--tap);cursor:pointer}
 .check input{width:24px;height:24px;accent-color:var(--accent);flex-shrink:0;margin-inline-start:0}
+.check-txt{display:flex;flex-direction:column;line-height:1.35}.check-txt .small{font-weight:400}   /* a label with its note under it (1.15.0) */
 .status{font-size:var(--fs-m);min-height:22px;text-align:center;font-weight:500}
 .status:empty{min-height:0}
 .inline{display:flex;gap:var(--sp-2);align-items:center}
@@ -129,7 +133,7 @@ body.sheet-open .cta-photo{display:none}
 .slot img{width:100%;height:64px;object-fit:cover;border-radius:8px;display:block}
 .slot input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .slot:focus-within{outline:3px solid var(--focus);outline-offset:2px}
-#fitBtn{align-self:flex-start;padding:0}
+#fitBtn{align-self:flex-start;margin-inline-start:calc(-1 * var(--sp-3))}   /* text on the left edge, the press shape around it */
 .swatch{width:30px;height:46px;border-radius:5px;border:1px solid var(--line);display:block;position:relative;overflow:hidden}
 .swatch i{position:absolute;background:#b8a58f}
 .add-row{display:flex;gap:var(--sp-2)}
@@ -192,8 +196,14 @@ body.sheet-open .cta-photo{display:none}
 
 /* save sheet */
 .save-sheet .sheet-body{gap:var(--sp-3)}
-@media (min-width:821px){.save-sheet{position:sticky;bottom:12px;z-index:3;box-shadow:var(--shadow)}
-  /* computer: a compact save card so it covers less of the steps above it */
+/* computer (1.15.0): the Save card stays at the end of the steps (it used to stick over half of them); while its button is out
+   of sight, the dock (height 0, sticky to the bottom of the steps) shows the same button. Phones keep the bottom bar. */
+.save-dock{display:none}
+@media (min-width:821px){.save-dock{display:block;position:sticky;bottom:12px;height:0;z-index:3;margin:0}
+  .save-dock>div{position:absolute;left:0;right:0;bottom:0;padding:10px;border-radius:var(--r-l);background:var(--raised);box-shadow:var(--shadow);transition:opacity .2s var(--ease),transform .2s var(--ease)}
+  .save-dock .btn{width:100%}
+  .save-dock[hidden]{display:block}.save-dock[hidden]>div{opacity:0;transform:translateY(8px);pointer-events:none;visibility:hidden;transition:opacity .2s var(--ease),transform .2s var(--ease),visibility 0s .2s}
+  /* computer: a compact save card */
   .save-sheet .sheet-body{gap:var(--sp-2)}
   .save-sheet .save-opts{display:grid;grid-template-columns:1fr 1fr}
   .save-sheet .save-opts .team-box{grid-column:1/-1}
@@ -266,6 +276,7 @@ body.sheet-open .cta-photo{display:none}
   .sheet-head .num{display:none}
   .sheet .done,.sheet[data-sheet] .done{display:inline-flex;align-items:center;margin-top:8px}
   .sheet:is([data-sheet="photo"],[data-sheet="style"],[data-sheet="words"],[data-sheet="layers"]) .done{min-height:48px;margin-top:6px}
+  .sheet .done:not(.icon){background:var(--chip);border-color:transparent;color:var(--fg)}   /* 1.15.0: a quiet Done, so Save stays the one blue button (the Save sheet had three) */
   .sheet[data-sheet="save"] .sheet-head{display:flex}
   .sheet-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--sp-2) 16px 16px}
   .save-sheet #save{display:none}
@@ -530,7 +541,7 @@ label.opt-row{cursor:pointer}
 .switch:checked::after{transform:translateX(20px)}
 .switch:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .team-box{display:flex;flex-direction:column;gap:var(--sp-2);padding:2px 2px 4px;animation:part-in .2s var(--ease)}
-.team-more{align-self:flex-start;padding:4px 2px;min-height:36px}
+.team-more{align-self:flex-start;padding:4px var(--sp-3);margin-inline-start:calc(-1 * var(--sp-3));min-height:36px}
 .team-more-box{display:flex;flex-direction:column;gap:var(--sp-2)}
 .team-status{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;font-size:var(--fs-s);color:var(--muted);min-height:28px}
 .team-status.ok{color:var(--ok)}
