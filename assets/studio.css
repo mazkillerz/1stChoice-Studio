@@ -430,7 +430,7 @@ input[type=date]:disabled{opacity:.5}
 .ttxt .tag{font:600 10px var(--sans);font-style:normal;background:var(--accent);color:var(--on-accent);padding:2px 7px;border-radius:var(--r-pill)}
 .chev{color:var(--muted);flex:none;display:flex}
 [dir=rtl] .chev{transform:scaleX(-1)}
-.toast-btn{margin-inline-start:10px;background:none;border:0;color:inherit;font:600 var(--fs-m) var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:36px;padding:0 4px}
+.toast-btn{margin-inline-start:10px;background:color-mix(in srgb,currentColor 16%,transparent);border:0;border-radius:var(--r-pill);color:inherit;font:600 var(--fs-m) var(--sans);text-decoration:none;cursor:pointer;min-height:36px;padding:0 12px}   /* Undo: a small pill, not an underlined link (1.15.0) */
 #hubToast{display:flex;align-items:center;gap:4px;bottom:calc(var(--bar-h) + var(--safe-b) + 14px)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .hubbar .pill{display:none}
@@ -613,7 +613,8 @@ label.opt-row{cursor:pointer}
 .wn-btn:hover{background:var(--chip)}
 .wn-dot{position:absolute;top:10px;inset-inline-end:10px;width:10px;height:10px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--bg);transform:scale(0);transition:transform var(--t) var(--ease)}
 .wn-btn.has-new .wn-dot{transform:scale(1)}
-.foot-ver{display:inline-flex;align-items:center;min-height:var(--tap);color:var(--muted);font-weight:500;text-underline-offset:3px}
+.foot-ver{display:inline-flex;align-items:center;min-height:var(--tap);color:var(--muted);font-weight:500;text-decoration:none}   /* 1.15.0: no underline (text buttons everywhere) */
+@media (hover:hover){.foot-ver:hover{color:var(--fg)}}
 
 /* ---------- Quick start (hub): pick a photo first, the tool opens with it in ---------- */
 .qtxt{display:flex;flex-direction:column;line-height:1.25;min-width:0}
