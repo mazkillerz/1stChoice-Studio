@@ -91,7 +91,7 @@ const TOOLS={
   'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story',type:'story',keys:'shop store location map opening'},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',type:'story',keys:'two pictures half'},
   'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',type:'story',keys:'film movie wide letterbox'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',group:'post',type:'story',keys:'sale deal promo price percent'},
+  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent'},
   'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
   'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
   'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'}
@@ -725,7 +725,7 @@ async function tool(cfg){
     for(let k=cfg.photos.min;k<=cfg.photos.max;k++) html+=`<button type="button" class="seg" data-count="${k}" aria-pressed="false">${k}</button>`;
     html+=`</div>`;
   }
-  html+=`<div class="slots" id="slots"></div><div class="swap-row" id="swapRow" hidden><button type="button" class="mini" id="swapBtn" aria-pressed="false">${ICON.swap}<span>Swap two</span></button><button type="button" class="mini" id="shuffleBtn">${ICON.shuffle}<span>Shuffle</span></button></div><div class="small">Tap a box to add a photo${cfg.pages?' for this '+PN.one:''}. Drag a photo in the preview to move it; pinch or use the slider to zoom.</div>
+  html+=`<div class="slots" id="slots"></div><div class="swap-row" id="swapRow" hidden><button type="button" class="mini" id="swapBtn" aria-pressed="false">${ICON.swap}<span>Swap two</span></button><button type="button" class="mini" id="shuffleBtn">${ICON.shuffle}<span>Shuffle</span></button></div><div class="small">Drag a photo in the preview to move it; pinch or use Zoom to resize.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div>
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
     <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
@@ -736,6 +736,7 @@ async function tool(cfg){
     <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button>${hasStickers?`<button type="button" class="mini" id="addSticker" aria-controls="sh-stickers">${ICON.sparkle} Sticker</button>`:''}</div>
     <ul id="layerList" class="layer-list" role="list" aria-label="Layers, top first"></ul>
     <button type="button" class="link reset-layout" id="resetLayout">${ICON.undo} Put everything back where it started</button></div></section>
+  <div class="save-dock" id="saveDock" hidden><div><button type="button" class="btn" id="dockSave"></button></div></div>
   <section class="sheet save-sheet" id="sh-save" data-sheet="save" aria-labelledby="h-save">${sheetHead('save','Save')}<div class="sheet-body">
     <div class="progress" id="progress" hidden><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="progressRole"><i id="progressBar"></i></div><span id="progressTxt">Making a full-quality copy…</span><button type="button" class="link save-cancel" id="saveCancel" hidden>Cancel</button></div>
     <div class="done-box" id="doneBox" role="status" aria-live="polite" hidden><span class="done-ic" aria-hidden="true">${ICON.check}</span><div><b id="doneTitle">Saved!</b><span id="doneTxt"></span></div></div>
@@ -750,7 +751,7 @@ async function tool(cfg){
           <div class="inline" id="teamNewRow" hidden><input type="text" id="teamNewCol" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection" enterkeyhint="done"><button type="button" class="mini" id="teamAddCol">Add</button></div></div>
         <button type="button" class="link team-more" id="teamMore" aria-expanded="false" aria-controls="teamMoreBox">More options</button>
         <div class="team-more-box" id="teamMoreBox" hidden>
-          <label class="check"><input type="checkbox" id="teamKeep"> Keep the photos <span class="small">(off = a template: layout and words only)</span></label>
+          <label class="check"><input type="checkbox" id="teamKeep"><span class="check-txt">Keep the photos<span class="small">Off: a template, layout and words only</span></span></label>
           <label class="check" id="teamAsNewRow" hidden><input type="checkbox" id="teamAsNew"> Save as a new design instead of updating</label>
         </div>
       </div>
@@ -1803,6 +1804,17 @@ async function tool(cfg){
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue();
   }
   $('save').addEventListener('click',()=>doSave());
+  /* computer (1.15.0): the dock repeats the Save button while the Save card is out of sight; a click brings the card up
+     (so its progress and tick show) and saves. It copies the button's words and state, so there is still one Save. */
+  { const dock=$('saveDock'), dk=$('dockSave'), sv=$('save'); let seen=true;
+    const sync=()=>{ dk.innerHTML=sv.innerHTML.replace(/\sid="[^"]*"/g,''); dk.disabled=sv.disabled; dk.className=sv.className; dock.hidden=seen||sv.hidden||!$('sh-save').offsetParent; };
+    new MutationObserver(sync).observe(sv,{attributes:true,childList:true,subtree:true,characterData:true});
+    if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; sync(); }).observe(sv); else seen=true;
+    const bring=()=>$('sh-save').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'end'});
+    let fromDock=false;   // the page can grow while it saves: bring the card up again when the tick shows
+    new MutationObserver(()=>{ if(fromDock&&!$('doneBox').hidden){ fromDock=false; bring(); } }).observe($('doneBox'),{attributes:true,attributeFilter:['hidden']});
+    dk.addEventListener('click',()=>{ fromDock=true; bring(); sv.click(); });
+    sync(); }
   /* Quick start: a small "Your photo is in" note over the bottom of the preview. It fades by itself after about 3 seconds;
      a swipe down or a tap on it or on the photo hides it sooner, and so does any tab or edit. It never stays over the design.
      Save stays where it always is (the bar on a phone, the Save card on a computer); until the first edit it saves in one tap. */
@@ -2088,7 +2100,7 @@ async function home(){
     history.replaceState(null,'',location.pathname+location.hash);
     const got=n>0?await idb.get('studio:shared'):null, fs=got&&got.files||[];
     if(!fs.length){ hubToast('That photo did not come through. Share it again, or tap + to pick it.'); return; }
-    const q=quickTools(), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });
+    const q=quickTools().filter(([,t])=>t.qi), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });   // the five photo tools; Offer's camera is in All tools
     const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses '+(fs.length>(t.max||9)?'the first ':'all ')+Math.min(fs.length,t.max||9)+' photos':t.queue?'A story from each, '+Math.min(fs.length,QUEUE_MAX)+' in a row':'Uses the first photo';
     const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
     d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice

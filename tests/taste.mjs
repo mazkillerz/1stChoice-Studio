@@ -8,7 +8,9 @@
     #6  contrast       every visible text >= 4.5:1 (3:1 large) in light AND dark, selected states included, and a selected control differs from its unselected sibling
     #3  pop-ups        toast <= 2 lines, <= 15% of the preview, gone in 4.5 s; "Your photo is in" <= 15% and gone in 4 s; dialogs inside the viewport (390 and 1280), no page scroll jump
     #1  tap budget     Restock / Photo story from a photo to a saved 2160x3840 PNG in <= 2 taps; Restock "Cans" with no photo in 1 tap
-    #2  clutter        first view of Home and each tool: <= 2 accent-filled controls (not the + button), no two controls with the same name
+    #2  clutter        first view of Home and each tool: <= 2 accent-filled controls (not the + button), no two controls with the same name;
+                       every state (open sheets too): <= 2 accent-filled buttons (chosen chips aside) (1.15.0)
+    #10 links          no button or link is underlined (1.15.0)
     #5  RTL            Arabic text runs right to left; text fields have dir=auto/rtl
     #8  small phones   at 360x740: no sideways scroll, no clipped text, the last item scrolls clear of the fixed bottom bar
     #7  tap targets    every visible control is >= 44x44 (or has a ::after hit area that reaches it)
@@ -148,7 +150,11 @@ const LIB=()=>{
     for(const e of ctl){ if(e.id==='fab'||e.classList.contains('fab')) continue; const cs=getComputedStyle(e), b=parse(cs.backgroundColor); if(cs.backgroundColor===acc||(b&&accP&&b.a>=1&&b.r===accP.r&&b.g===accP.g&&b.b===accP.b)) accent.push(`${desc(e)} "${T.name(e).slice(0,20)}"`); }
     for(const e of ctl){ const nm=T.name(e); if(nm) (names[nm]=names[nm]||[]).push(desc(e)); }
     const dups=Object.entries(names).filter(([,v])=>v.length>1).map(([k,v])=>`"${k.slice(0,26)}" x${v.length} (${v.slice(0,2).join(', ')})`);
-    return {accent,dups,n:ctl.length}; };
+    /* 1.15.0: the same count in every state of a screen (an open sheet too), without chosen chips (a state, not a button) */
+    const act=ctl.filter(e=>!(e.id==='fab'||e.classList.contains('fab'))&&!e.matches('.chip,.seg,[aria-pressed="true"],[aria-checked="true"]')&&(()=>{ const cs=getComputedStyle(e), b=parse(cs.backgroundColor); return cs.backgroundColor===acc||(b&&accP&&b.a>=1&&b.r===accP.r&&b.g===accP.g&&b.b===accP.b); })()).map(e=>`${desc(e)} "${T.name(e).slice(0,20)}"`);
+    return {accent,act,dups,n:ctl.length}; };
+  /* 1.15.0: a button or link never shows an underline (row 10: the owner turned down underlined links in 0.7.1) */
+  T.underlined=()=>[...document.body.querySelectorAll('button,a[href],[role=button]')].filter(e=>T.vis(e)&&!e.closest('.sr-only')&&getComputedStyle(e).textDecorationLine.includes('underline')).map(e=>`${desc(e)} "${T.name(e).slice(0,20)}"`);
   /* 4. dialogs inside the viewport */
   T.dialogs=()=>[...document.querySelectorAll('dialog[open]')].map(d=>{ const scrolls=/(auto|scroll)/.test(getComputedStyle(d).overflowY); const parts=[d,...[...d.children].filter(c=>{ if(scrolls) return false; const r=c.getBoundingClientRect(); return r.width>0&&r.height>0&&getComputedStyle(c).display!=='none'; })]; const out=[];
     parts.forEach(p=>{ const r=p.getBoundingClientRect(); if(r.left<-.5||r.top<-.5||r.right>innerWidth+.5||r.bottom>innerHeight+.5) out.push(`${desc(p)} ${Math.round(r.left)},${Math.round(r.top)}→${Math.round(r.right)},${Math.round(r.bottom)} in ${innerWidth}x${innerHeight}`); });
@@ -244,6 +250,8 @@ async function scan(c,name,fl={}){
   if(prof.layout){
     if(fl.first){ const k=await ev(()=>__taste.clutter()); A('clutter:accent').cnt++; num('clutter:accent',k.accent.length); if(k.accent.length>2) bad('clutter:accent',name,`${k.accent.length} accent-filled: ${k.accent.join(', ')}`);
       A('clutter:dups').cnt++; bad('clutter:dups',name,k.dups); }
+    { const k=await ev(()=>__taste.clutter()); A('clutter:states').cnt++; num('clutter:states',k.act.length); if(k.act.length>2) bad('clutter:states',name,`${k.act.length} accent-filled buttons: ${k.act.join(', ')}`);
+      const u=await ev(()=>__taste.underlined()); A('links:underline').cnt++; bad('links:underline',name,u); }
     const lists=await ev(()=>__taste.lists());
     for(const l of lists){ const xs=l.icons; if(xs.length>1){ const sp=Math.max(...xs)-Math.min(...xs); A('align:icons').cnt++; num('align:icons',sp); if(sp>1.01) bad('align:icons',name,`${l.list}: icons start at x=${xs.map(r1).join(',')} (spread ${r1(sp)}px)`); }
       for(const h of l.heads){ if(!xs.length) continue; const key=h.kind==='fab-h'?'align:heading':'align:group'; const dx=h.x-Math.min(...xs); A(key).cnt++; num(key,Math.abs(dx)); if(Math.abs(dx)>1.01) bad(key,name,`${l.list} heading "${h.text}" text starts at x=${r1(h.x)}, row icons at x=${r1(Math.min(...xs))} (${r1(dx)}px)`); } }
@@ -443,6 +451,8 @@ else ok('tap budget: Restock "Cans" with no photo saves a 2160x3840 PNG in 1 tap
 /* clutter */
 line('clutter:accent','light: first view of Home and each tool has at most 2 accent-filled controls (not counting +)',a=>({screens:a.cnt,most:a.max}));
 line('clutter:dups','light: no two visible controls share a name on the first view of Home and each tool',a=>({screens:a.cnt}));
+line('clutter:states','light: every state (open sheets too) has at most 2 accent-filled buttons (not counting + or chosen chips)',a=>({states:a.cnt,most:a.max}));
+line('links:underline','light: no button or link is underlined (secondary actions are text buttons)',a=>({states:a.cnt}));
 /* tap targets */
 line('tap','light: every visible control is >= 44x44 (or has a hit area that reaches it)',a=>({controls:a.cnt}));
 /* small phones */

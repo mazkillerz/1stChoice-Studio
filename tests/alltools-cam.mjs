@@ -1,7 +1,7 @@
 /* Studio 1.10.0 (Simplify): the camera button in All tools.
    A tool that starts from photos and is not pinned (Carousel, Highlight covers; Photo story and Collage on a device that only
    pinned Restock) gets the Home row's camera in the All tools sheet, before its star. Pinned tools keep star + drag handle only
-   (their camera is on Home); tools that need no photo (Offer, Create) get none.
+   (their camera is on Home); Create (no photo) gets none. Since 1.15.0 Offer has one too (its product photo).
    Picking photos with it opens the tool with them in, like Home's camera: Carousel from photos is 3 taps (All tools, camera, Save)
    instead of 4 (All tools, Carousel, Add your photos, Save).
    Phone (390 and 360, touch) and desktop (1280), light and dark. Run: server on :8080, then node tests/alltools-cam.mjs. */
@@ -28,7 +28,7 @@ for(const scheme of ['light','dark']) for(const vp of VPS){
   const R=id=>rows.find(r=>r.id===id)||{};
   ok(N+'Carousel and Highlight covers (not pinned) have a camera',R('carousel').cam&&R('highlight').cam,rows.filter(r=>r.cam).map(r=>r.id));
   ok(N+'Photo story and Collage (not pinned here) have one too',R('photo-story').cam&&R('collage').cam);
-  ok(N+'pinned Restock has none (its camera is on Home), nor do Offer and Create',!R('restock').cam&&R('restock').pinned&&!R('offer').cam&&!R('create').cam);
+  ok(N+'pinned Restock has none (its camera is on Home), nor does Create; Offer has one (1.15.0)',!R('restock').cam&&R('restock').pinned&&R('offer').cam&&!R('create').cam);
   ok(N+'each camera has a label and its own picker',rows.filter(r=>r.cam).every(r=>/from (a photo|photos)$/.test(r.label)&&r.input===r.id),rows.filter(r=>r.cam).map(r=>r.label));
   ok(N+'multi-photo tools pick several photos',R('carousel').multiple&&R('highlight').multiple&&R('collage').multiple);
   ok(N+'cameras are 48x48, inside the row, before the star',rows.filter(r=>r.cam).every(r=>r.w>=48&&r.h>=48&&r.before&&r.inRow),rows.filter(r=>r.cam).map(r=>r.id+':'+r.w+'x'+r.h));
