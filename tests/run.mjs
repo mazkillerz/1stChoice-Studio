@@ -15,27 +15,27 @@ import fs from 'fs';
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
-  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers']],
+  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip']],
   [/^assets\/stickers\.js$/,['stickers','copystyle']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages']],
   [/assets\/search\./,['search','polish71-search','create-search']],
   [/tools\/create/,['create','create-search']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
-  [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar']],
+  [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
   [/^lab\//,['lab','lab-pro','board-penpot']],
   [/assets\/templates\.|brands\//,['templates','postpresets']],
   [/tools\/create-templates|assets\/search\./,['postpresets']],
   [/assets\/welcome\./,['welcome']],
   [/tools\/restock/,['restock-styles']],[/tools\/photo-story/,['photostory-styles']],[/tools\/collage/,['collage-grids']],
-  [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','quickpages','batch']],
+  [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
   [/assets\/batch\.js/,['batch']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers'],
-      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages'];
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip'],
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */

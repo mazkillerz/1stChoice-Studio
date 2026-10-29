@@ -13,6 +13,36 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.14.0 · 29 Oct 2026
+
+### Flip
+type: feature
+Need the arrow to point the other way? Tap a sticker, shape or picture, open **Move** and tap **Flip**: it turns into its mirror image, left to right, without going upside down (Rotate used to turn a curved arrow on its head). Tap **Flip** again to put it back. It's kept in the saved design, Undo takes it back, and the full-size save comes out flipped too. Words never flip: the button doesn't show for text, buttons, the logo or the cans (a mirrored can would show its label backwards).
+![before](assets/whatsnew/1.14.0-flip-before.jpg)
+![after](assets/whatsnew/1.14.0-flip-after.jpg)
+
+### Emoji highlight covers
+type: feature
+Highlight covers have a new cover type: **Emoji**. Open **Style**, tap **Emoji** and pick one of 24 (a pin, a chat bubble, a star, a heart, coffee, ice, a gift, a price tag, a truck, a cart, a clock, a calendar, sparkles, a bolt, the sun, the moon, a yummy face, a thumbs up, a crown, a camera, a note, fire, a box and a question mark). It sits big in the middle of the circle on your cover's background, with the same Circle / Ring / Nothing behind it as the rest of the set. Each new cover starts with a different one. Emoji are drawn, not typed, so they're sharp in the save and look the same on every phone. In **Colour** you can turn one into a single brand colour; it moves, sizes and flips like any layer.
+![before](assets/whatsnew/1.14.0-emoji-before.jpg)
+![after](assets/whatsnew/1.14.0-emoji-after.jpg)
+
+## 1.13.0 · 29 Oct 2026
+
+### "2 waiting" on your tools
+type: design
+Picked several shop photos for Restock or Photo story and left before the last one? The tool's row in **Your tools** and in **All tools** now carries a small "2 waiting" tag, so you can see at a glance which tool still has photos lined up. It is a quiet tint, not another button; it goes as soon as the photos are done or cleared with ✕.
+![before](assets/whatsnew/1.13.0-waiting-before.jpg)
+![after](assets/whatsnew/1.13.0-waiting-after.jpg)
+
+### A story you leave at once is kept
+type: fix
+Studio keeps every unfinished story in **Continue editing**, but it waited a moment (0.8 s) before writing it. Leaving the page, or tapping **Skip** to the next photo, inside that moment could lose the story or its last change. Now leaving, hiding the app or skipping writes it straight away.
+
+### The right word on a computer
+type: fix
+When a computer runs short of memory while saving, Studio steps the picture down a little and tells you. It used to say "This phone was low on memory" on a computer too; it now says "device" there (a phone still says "phone").
+
 ## 1.12.0 · 28 Oct 2026
 
 ### Stickers

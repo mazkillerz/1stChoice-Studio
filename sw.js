@@ -5,12 +5,12 @@
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
    - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
      IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
-const VERSION='studio-v1-12-0';   // Studio 1.12.0
+const VERSION='studio-v1-14-0';   // Studio 1.14.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
   'assets/icon.png','assets/icon-192.png','assets/icon-512.png','assets/icon-512-maskable.png','assets/studio-dragon.png',
-  'brands/brands.js',
+  'brands/brands.js','tools/highlight-emoji.js',
   'tools/new-place.html','tools/new-place.js','tools/photo-story.html','tools/photo-story.js',
   'tools/cinematic.html','tools/cinematic.js','tools/collage.html','tools/collage.js','tools/split.html','tools/split.js',
   'tools/restock.html','tools/restock.js','tools/offer.html','tools/offer.js',

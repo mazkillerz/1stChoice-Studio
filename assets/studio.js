@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.12.0';
+const VERSION='1.14.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -194,6 +194,7 @@ const ICON={
   grip:svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',22),
   sort:svg('<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',18),
   up:svg('<path d="m18 15-6-6-6 6"/>',22), down:svg('<path d="m6 9 6 6 6-6"/>',22),
+  flip:svg('<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',20),
   centerX:svg('<path d="M12 2v20"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/>',20),
   centerY:svg('<path d="M2 12h20"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/>',20),
   /* one icon per photo tool, so the + menu and the welcome tell them apart */
@@ -396,6 +397,9 @@ const hasFx=fx=>!!fx&&(!!fx.look||!!+fx.light);
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
 let onAssetLoad=null;
+/* Flip (mirror left to right): only for pictures, stickers and shapes. Words are never mirrored: text, buttons, the logo
+   (a tinted asset) and any brand asset marked noFlip:true keep their way round even if a recipe says flip. */
+const canFlip=b=>!!b&&(b.kind==='asset'||b.kind==='sticker'||b.kind==='shape')&&!b.noFlip;
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
@@ -409,7 +413,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     const l=L(id); const cx=bx.x+bx.w/2+l.dx, cy=bx.y+bx.h/2+l.dy, k=l.k;
     if(l.hidden){ reg.push({id,label,hidden:true,...opt}); return; }
     const rot=(l.rot||0)*Math.PI/180;   // rotation in degrees, around the layer's centre
-    ctx.save(); if(l.op!=null&&l.op<1) ctx.globalAlpha*=Math.max(0,l.op); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
+    const fl=l.flip&&canFlip(opt)?-1:1;   // flip: mirrored in the layer's own frame, so it turns the same way after
+    ctx.save(); if(l.op!=null&&l.op<1) ctx.globalAlpha*=Math.max(0,l.op); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k*fl,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
     const rw=bx.w*k, rh=bx.h*k, c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot)), ew=rw*c+rh*s, eh=rw*s+rh*c;   // box around the turned layer
     reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
@@ -528,7 +533,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
           let src=a.tint&&c?tinted(base,c):base;
           ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
           ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
-        },{kind:'asset'});
+        },{kind:'asset',noFlip:!!(a.tint||a.noFlip)});
       } else {
         const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
         layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
@@ -691,7 +696,7 @@ async function tool(cfg){
         <div class="insp-part insp-col" data-part="move"><div class="insp-row move-row"><div class="nudge" role="group" aria-label="Nudge"><button type="button" class="nb" data-nudge="-1,0" aria-label="Nudge left">${ICON.back}</button><button type="button" class="nb" data-nudge="0,-1" aria-label="Nudge up">${ICON.up}</button><button type="button" class="nb" data-nudge="0,1" aria-label="Nudge down">${ICON.down}</button><button type="button" class="nb" data-nudge="1,0" aria-label="Nudge right">${ICON.next}</button></div>
           <div class="nudge" role="group" aria-label="Line up"><button type="button" class="nb wide" id="inspCenter" title="Centre across">${ICON.centerX}<span>Centre</span></button><button type="button" class="nb wide" id="inspMiddle" title="Middle, top to bottom">${ICON.centerY}<span>Middle</span></button></div></div>
           <div class="insp-row"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
-          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div></div>
+          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button><button type="button" class="mini" id="inspFlip" aria-pressed="false" title="Mirror left to right" hidden>${ICON.flip}<span>Flip</span></button></div></div></div>
         <div class="insp-part insp-col" data-part="font"><div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
           <div id="inspType">
           <div class="insp-row"><span class="lbl">Align</span><div class="row tight" role="group" aria-label="Align lines" id="inspAlign">${(B.dir==='rtl'?['right','center','left']:['left','center','right']).map(a=>`<button type="button" class="seg" data-align="${a}" aria-pressed="false">${a==='center'?'Centre':a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div></div>
@@ -1126,7 +1131,7 @@ async function tool(cfg){
 
   /* ---- drafts: every unfinished story is kept on this phone (photos included), as a list per tool ----
      This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
-  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, dirty=false, capWarned=false;
+  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
   const DKEY=()=>DBASE+':'+draftId;
   function saveDraft(s){
     if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing
@@ -1134,19 +1139,27 @@ async function tool(cfg){
     if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
       $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
       if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this phone. Remove old ones in Continue editing.',6000); } }
-    clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
-      if(design||!draftId) return;   // saved to the team meanwhile
-      const key=DKEY(), pfx=draftPfx||key, keys=[];
-      for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } } else keys[i]=null; }
-      if(design||!draftId||key!==DKEY()) return;
-      const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
-      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
-      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); });
-    },800);
+    draftNext=s; clearTimeout(draftTimer); draftTimer=setTimeout(()=>writeDraft(false),800);
   }
+  /* the write itself: the photos first, then the record that points at them. now=true (the page is being left, 1.13.0): the
+     record goes first, at once, so a story left within the 800 ms is still in Continue editing; its photos follow. */
+  async function writeDraft(now){
+    const s=draftNext, seq=++draftSeq; draftNext=null; clearTimeout(draftTimer); draftTimer=0;
+    if(!s||design||!draftId) return;   // saved to the team meanwhile
+    const key=DKEY(), pfx=draftPfx||key, ph=S.photos.slice(), keys=ph.map(p=>p.img&&!p.sample&&p.key?p.key:null);
+    const record=()=>{ const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
+      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); }); };
+    if(now) record();
+    for(const p of ph){ if(p.img&&!p.sample&&p.key&&p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } }
+    if(!now&&seq===draftSeq&&!design&&draftId&&key===DKEY()) record();   // a newer write started meanwhile: it has the newer story
+  }
+  /* leaving the page (or the phone hiding it) with an edit not written yet: write it now, not lost to the 800 ms wait */
+  function draftNow(){ flush(); if(draftNext) writeDraft(true); }
+  addEventListener('pagehide',draftNow); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') draftNow(); });
   function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
   /* the draft this page was writing is done (saved to the team): only that one goes */
-  function clearDraft(){ clearTimeout(draftTimer); if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
+  function clearDraft(){ clearTimeout(draftTimer); draftNext=null; if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
   async function loadDraft(x){
     const d=x.d, pfx=d.pfx||x.key, slots=[];
     for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(pfx+':'+k); if(blob){ slots[i]=await photoFromBlob(blob,k,true); slots[i].draftSaved=pfx; } }
@@ -1334,6 +1347,7 @@ async function tool(cfg){
     $('inspPasteStyle').hidden=!copiedStyle();
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
     const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
+    const fb=$('inspFlip'); fb.hidden=!canFlip(b); fb.setAttribute('aria-pressed',String(!!l.flip&&canFlip(b)));
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
     if(inspPart&&!has[inspPart]) inspPart=null;
     document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
@@ -1344,6 +1358,7 @@ async function tool(cfg){
   document.querySelector('#sh-insp .insp-tabs').addEventListener('click',e=>{ const tb=e.target.closest('.itab'); if(!tb) return; inspPart=inspPart===tb.dataset.part?null:tb.dataset.part; syncInspector();
     if(inspPart==='text') setTimeout(()=>{ $('inspText').focus(); },30); });
   $('inspRot').addEventListener('input',e=>{ if(S.sel) setRot(S.sel,snapRot(+e.target.value)); });
+  $('inspFlip').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); if(!id||!canFlip(b)) return; const l=LL(id); if(l.flip) delete l.flip; else l.flip=true; haptic('tick'); syncInspector(); render(); });
   document.querySelector('#sh-insp .rot-btns').addEventListener('click',e=>{ const b=e.target.closest('[data-rot]'); if(!b||!S.sel) return; const d=+b.dataset.rot, cur=(S.layers[S.sel]||{}).rot||0; setRot(S.sel,d?Math.round((cur+d)/15)*15:0); });
   /* the text box grows with its lines; Enter makes a new line (one-line layers: Enter = done) */
   function autoGrow(){ const t=$('inspText'); t.style.height='auto'; t.style.height=Math.min(160,t.scrollHeight+2)+'px'; }
@@ -1682,13 +1697,14 @@ async function tool(cfg){
         /* Full size first. Only if a phone truly can't, step down a little (never straight to small), and say so. */
         let blob=null;
         for(const K of [EXPORT_SCALE,1.5,1]){ if(K>used) continue; blob=await renderAt(K); if(blob){ used=K; break; } }
-        if(!blob){ progress(null); status('Your phone could not make the image. Close other apps or tabs and try again.'); return; }
+        if(!blob){ progress(null); status('Your '+(matchMedia('(pointer:coarse)').matches&&isPhone()?'phone':'device')+' could not make the image. Close other apps or tabs and try again.'); return; }
         files.push(new File([blob],PG&&withPhotos?base+'-'+z2(pg+1)+'.'+ext:fname(ext,withPhotos?null:'frame',PG?pg+1:0,stamp),{type}));
       }
       if(stopped()) return 'cancelled';
       $('saveCancel').hidden=true;
       progress(1,'Done');
-      const small=used<EXPORT_SCALE?' This phone was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
+      const dev=matchMedia('(pointer:coarse)').matches&&isPhone()?'phone':'device';   // a computer is not a phone (1.13.0)
+      const small=used<EXPORT_SCALE?' This '+dev+' was low on memory, so it is a little smaller ('+Math.round(W*used)+'×'+Math.round(H*used)+'). Close other tabs for full size.':'';
       const what=pages>1?files.length+' '+PN.many:(withPhotos?'Your story':'The frame');
       lastFiles=files;
       if(downloads){ try{ for(const f of files) await downloads.save({filename:f.name,data:f}); finish(what+' saved.',small); return; }catch(err){ if(err&&err.code==='declined'){ progress(null); status('Not saved.'); return; } } }
@@ -1731,7 +1747,7 @@ async function tool(cfg){
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
     qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
-    clearTimeout(draftTimer); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was
+    if(draftNext) writeDraft(true); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was (its last edit written now)
     history.replaceState(null,'',location.pathname); delete $('teamName').dataset.touched;
     if(isPhone()) closeSheet('save');
     await setPhoto(photoOffset(),f);
@@ -1991,7 +2007,11 @@ async function home(){
   /* a photo-first tool (Restock, Photo story, Collage) has a camera button on its row: one tap opens the phone's camera or photos,
      then the tool opens with the photo in. The file input sits inside the label, so the picker opens straight away. */
   const quickInput=(id,t)=>`<input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi||t.queue?' multiple':''}>`;
-  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" style="--i:${i}"><a class="tool-row" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
+  /* "2 waiting" (1.13.0): photos waiting in that tool's row (queue tools), counted by queueWaiting() below; calm, not a button */
+  const waitN={}, waitTag=id=>waitN[id]?`<em class="wait-tag" title="${waitN[id]===1?'1 photo':waitN[id]+' photos'} still waiting">${waitN[id]} waiting</em>`:'';
+  function paintWaitTags(){ document.querySelectorAll('.tool-item[data-id],.lib-row[data-id]').forEach(row=>{ const b=row.querySelector('.ttxt b'); if(!b) return; const old=b.querySelector('.wait-tag'), h=waitTag(row.dataset.id);
+    if(old) old.remove(); if(h) b.insertAdjacentHTML('beforeend',h); }); }
+  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" data-id="${id}" style="--i:${i}"><a class="tool-row" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
   function paintTools(){
     const pins=getPins(), n=Object.keys(TOOLS).length;
     $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
@@ -2019,7 +2039,7 @@ async function home(){
      in its group. Press and drag the handle to change the order on the home screen; on a keyboard the arrow keys move it. */
   /* a tool that starts from photos gets the Home row's camera here too (pinned ones have it on Home): one tap to pick, like Home */
   const libCam=(id,t)=>`<label class="row-cam lib-cam" title="${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}"><span class="sr-only">${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}</span>${ICON.camera}${quickInput(id,t)}</label>`;
-  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
+  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
   function libHtml(){ const pins=getPins(); let last=null, h='';
     if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots on the right to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
     Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
@@ -2107,13 +2127,15 @@ async function home(){
      photo's, "2 photos still waiting", Continue opens the tool on the next one; ✕ clears them (1.8.0) */
   async function queueWaiting(){ document.querySelectorAll('.queue-wait').forEach(e=>e.remove());
     for(const [id,t] of Object.entries(TOOLS).filter(([,t])=>t.queue).reverse()){
-      const k=queueKey(B.id,id), w=await idb.get(k); if(!w||!w.files||!w.files.length) continue;
+      const k=queueKey(B.id,id), w=await idb.get(k); waitN[id]=0; if(!w||!w.files||!w.files.length) continue;
       const m=(await idb.get(k+':pos'))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1)); if(!left.length){ idb.del(k); idb.del(k+':pos'); continue; }
+      waitN[id]=left.length;
       let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
       const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
       el.innerHTML=`<a class="qw-go" href="${toolPage(id)}?queue=1"><span class="install-ic" aria-hidden="true">${u?`<img alt="" src="${u}">`:''}</span><span class="install-txt"><b>${n===1?'1 photo still waiting':n+' photos still waiting'}</b><span>${esc(t.title)} · tap to continue</span></span><span class="qw-chev" aria-hidden="true">${ICON.next}</span></a><button type="button" class="mini icon" aria-label="Clear the ${n===1?'photo':n+' photos'} waiting for ${esc(t.title)}">✕</button>`;
-      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
-      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } } }
+      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); waitN[id]=0; paintWaitTags(); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
+      const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } }
+    paintWaitTags(); }
   queueWaiting();
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
