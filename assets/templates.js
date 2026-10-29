@@ -157,7 +157,7 @@ function make(o){
     const d=ui.head.getBoundingClientRect().bottom-(sc?sc.getBoundingClientRect().top:0)-stick;   // negative once the chips are stuck
     if(d<-1) (sc||window).scrollBy({top:d,behavior:'instant'});
   }
-  function mark(){
+  function markCat(){
     const c0=curCat();
     ui.chips.querySelectorAll('.tp-chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===c0)));
     const b=ui.chips.querySelector('.tp-chip[aria-pressed="true"]'); if(b&&b.scrollIntoView) b.scrollIntoView({block:'nearest',inline:'center',behavior:reduce()?'auto':'smooth'});
@@ -170,7 +170,7 @@ function make(o){
   function pick(id){
     if(!valid(id)) return;
     if(id===curCat()){ toTop(); return; }
-    cat=id; wr(id); mark(); announce();
+    cat=id; wr(id); markCat(); announce();
     const b=ui.body, swap=()=>{ drawBody(false); toTop(); };
     b.getAnimations&&b.getAnimations().forEach(a=>a.cancel());
     if(reduce()||!b.animate){ swap(); return; }
