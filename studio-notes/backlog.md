@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 24–30 were 1.13.0–1.19.0 (29 Oct 2026, parallel round, see `sessions.md`); the last of them (1.19.0) was a **Mazoon** session. 1.20.0 (Simplify) is running; the next after it, 1.21.0, is a **team** session.
-**Simplify session:** every 5th minor version. 1.15.0 and 1.20.0 are the current round's; the next one after that is 1.25.0.
+**Last session:** sessions 24–30 were 1.13.0–1.19.0 (29 Oct 2026, parallel round, see `sessions.md`); the last of them (1.19.0) was a **Mazoon** session. Session 31 was 1.20.0 (Simplify: brand-kit plumbing #11 done, full sweep green). The next session, 1.21.0, is a **team** session.
+**Simplify session:** every 5th minor version. The next one is 1.25.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |

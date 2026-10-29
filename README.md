@@ -133,6 +133,8 @@ lab/                       experimental area (passcode): lab home + Board editor
                            board-panel.js (Design/Effects/Export panel), board-dialogs.js (export and other dialogs), board-lib.js (sizes, shapes, icons)
 ```
 
+A brand kit can also set which approved line each tool starts with: `defaults:{offer:{head,pill},restock:{small}}` (otherwise the first line of each list); the pictures on the Style buttons take the kit's colours automatically (1.20.0). `tests/brandkit.mjs` runs Studio with a made-up brand (`tests/fixtures/brands/testbrand/`) and fails if a 1st Choice name, colour or font shows up.
+
 ### Add a brand
 1. Copy `brands/1stchoice` to `brands/<new-id>` and change `brand.js` (logo file, fonts, colours, `dir`, phrases, samples).
 2. Add `'<new-id>'` to `brands/brands.js`.

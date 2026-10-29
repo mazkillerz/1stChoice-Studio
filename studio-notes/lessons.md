@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 31 | 1.20.0 | 4 (full sweep 49/49 green; new suite brandkit; Offer/Restock start lines now chosen by the kit, not by matching 1st Choice text) | 4 (lean: one sweep at the end; two proposals dropped after checking their cost) | 0 | 35/35 pass | Test plumbing with a second brand at every major version, not only when the backlog says so |
 | 30 | 1.19.0 | 4 (new suite textstyles; release run green) | 5 (both items in one pass) | 0 | pass | Shoot the More tab at 360px too before release |
 | 29 | 1.18.0 | 5 (new suite batch-saved 36/0, byte-identical PNGs vs open + Save for three tools) | 5 (reused the tool page in a hidden frame instead of a second renderer) | 0 | pass | Reuse the existing renderer; prove identical output |
 | 28 | 1.17.0 | 4 (new suite board-flex; behind a toggle, old boards unchanged) | 5 (one session; the engine hooks into `changed()` once) | 0 | pass | Write the "old boards unchanged" check first |
@@ -26,6 +27,16 @@ What worked, what failed, and process tweaks. Newest session first.
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
+
+## Session 31 · 1.20.0 · 29 Oct 2026 (Simplify, wave 2)
+
+**Worked**
+- A made-up brand loaded by routing `brands/brands.js` in the test (no repo change), plus recording `fillText`/`font`/`fillStyle` on the canvas, proves brand-agnostic drawing without reading any picture.
+
+**Didn't work / watch out**
+- "Pick the approved line by its text" (`phrases.x.find(x=>x==='…')`) is a hidden brand dependency: it passed every 1st Choice test for months and silently ignored another brand's choice. Engine defaults that choose brand wording go through a brand-kit key.
+- A Simplify wave the same day as seven feature versions found every budget kept; the cuts left are in features the owner hasn't seen yet, so they wait for his first look.
+- `whatsnew.mjs` assumed the newest card has a screenshot; a text-only card (1.20.0) broke it at release. Tests should not assume optional content.
 ## Sessions 24–30 · 1.13.0–1.19.0 · 29 Oct 2026 (parallel round)
 
 Seven version sessions (1.13.0 team, 1.14.0 Mazoon, 1.15.0 Simplify, 1.16.0 team, 1.17.0 Mazoon, 1.18.0 team, 1.19.0 Mazoon) plus 1.20.0 (Simplify) and a lead, eight sessions at once.
