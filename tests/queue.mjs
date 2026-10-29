@@ -41,9 +41,13 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   /* one photo: exactly as before */
   await quick(['pair.jpg']);
   ok(N+'one photo: "Your photo is in", nothing waiting',await ready()==='Your photo is in'&&await pg.$eval('#queueNext',e=>e.hidden));
+  const oneDraft=await pg.evaluate(()=>Studio.debug.draftId());   // left at once below (well within the 800 ms draft wait)
 
   /* three photos */
   await quick(['pair.jpg','shelf.jpg','hands.jpg']);
+  /* 1.13.0: a story left before its draft was written used to be kept or lost by timing (kept under load, which made the
+     leftover check below flaky); leaving now writes it at once, so the one-photo story is always in Continue editing */
+  ok(N+'the one-photo story, left at once, is kept in Continue editing',!!oneDraft&&await pg.evaluate(id=>!!localStorage.getItem('studio:draft:1stchoice:restock:'+id),oneDraft),oneDraft);
   ok(N+'three photos: the note says "Photo 1 of 3 is in"',await ready()==='Photo 1 of 3 is in',await ready());
   ok(N+'the note tells you the next one comes after Save',/Save (it )?for the next one/.test(await pg.textContent('#readySub')));
   ok(N+'the note\'s hint is one line (next to Skip)',await pg.$eval('#readySub',s=>Math.round(s.getBoundingClientRect().height/(parseFloat(getComputedStyle(s).lineHeight)||20))===1));
@@ -70,9 +74,9 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   ok(N+'story 3 saved; the done note says it was the last; nothing left waiting',r.got===1&&/last of your 3/.test(await pg.textContent('#doneTxt'))&&await pg.$eval('#queueNext',e=>e.hidden)&&(await designs())===before+3,await pg.textContent('#doneTxt'));
   ok(N+'after the last one Save is a normal button again',!(await pg.$eval('#save',e=>e.classList.contains('ghost'))));
   /* the last draft is dropped after the team save settles; under parallel load that can take a moment, so wait for it (up to 5 s) */
-  const countDrafts=()=>pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)).length);
+  const countDrafts=()=>pg.evaluate(one=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)&&!k.endsWith(':'+one)).length,oneDraft);
   let drafts=await countDrafts(); for(let t=0;drafts&&t<25;t++){ await pg.waitForTimeout(200); drafts=await countDrafts(); }
-  ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts '+(drafts?await pg.evaluate(()=>JSON.stringify(Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)).map(k=>{ let d={}; try{ d=JSON.parse(localStorage[k]); }catch(_){} return [k,d.at,d.json&&JSON.parse(d.json).photos&&JSON.parse(d.json).photos.map(p=>p&&p.key)]; }))+' url='+location.search):''));
+  ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts '+(drafts?await pg.evaluate(one=>JSON.stringify(Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!k.endsWith(':'+one)).map(k=>{ let d={}; try{ d=JSON.parse(localStorage[k]); }catch(_){} return [k,d.at,d.json&&JSON.parse(d.json).photos&&JSON.parse(d.json).photos.map(p=>p&&p.key)]; }))+' url='+location.search,oneDraft):''));
 
   /* a computer shows "Skip to the next photo" before saving */
   if(!vp.touch){ await quick(['pair.jpg','shelf.jpg']); const k=await photoKey();
