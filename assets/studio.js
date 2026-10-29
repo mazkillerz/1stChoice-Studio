@@ -1125,7 +1125,7 @@ async function tool(cfg){
 
   /* ---- drafts: every unfinished story is kept on this phone (photos included), as a list per tool ----
      This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
-  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, dirty=false, capWarned=false;
+  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
   const DKEY=()=>DBASE+':'+draftId;
   function saveDraft(s){
     if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing
@@ -1133,19 +1133,27 @@ async function tool(cfg){
     if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
       $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
       if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this phone. Remove old ones in Continue editing.',6000); } }
-    clearTimeout(draftTimer); draftTimer=setTimeout(async()=>{
-      if(design||!draftId) return;   // saved to the team meanwhile
-      const key=DKEY(), pfx=draftPfx||key, keys=[];
-      for(let i=0;i<S.photos.length;i++){ const p=S.photos[i]; if(p.img&&!p.sample&&p.key){ keys[i]=p.key; if(p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } } else keys[i]=null; }
-      if(design||!draftId||key!==DKEY()) return;
-      const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
-      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
-      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); });
-    },800);
+    draftNext=s; clearTimeout(draftTimer); draftTimer=setTimeout(()=>writeDraft(false),800);
   }
+  /* the write itself: the photos first, then the record that points at them. now=true (the page is being left, 1.13.0): the
+     record goes first, at once, so a story left within the 800 ms is still in Continue editing; its photos follow. */
+  async function writeDraft(now){
+    const s=draftNext, seq=++draftSeq; draftNext=null; clearTimeout(draftTimer); draftTimer=0;
+    if(!s||design||!draftId) return;   // saved to the team meanwhile
+    const key=DKEY(), pfx=draftPfx||key, ph=S.photos.slice(), keys=ph.map(p=>p.img&&!p.sample&&p.key?p.key:null);
+    const record=()=>{ const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
+      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+      if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); }); };
+    if(now) record();
+    for(const p of ph){ if(p.img&&!p.sample&&p.key&&p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } }
+    if(!now&&seq===draftSeq&&!design&&draftId&&key===DKEY()) record();   // a newer write started meanwhile: it has the newer story
+  }
+  /* leaving the page (or the phone hiding it) with an edit not written yet: write it now, not lost to the 800 ms wait */
+  function draftNow(){ flush(); if(draftNext) writeDraft(true); }
+  addEventListener('pagehide',draftNow); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') draftNow(); });
   function draftThumb(){ try{ const c=document.createElement('canvas'), k=400/H; c.width=Math.round(W*k); c.height=400; const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return c.toDataURL('image/jpeg',.7); }catch(_){ return null; } }
   /* the draft this page was writing is done (saved to the team): only that one goes */
-  function clearDraft(){ clearTimeout(draftTimer); if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
+  function clearDraft(){ clearTimeout(draftTimer); draftNext=null; if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
   async function loadDraft(x){
     const d=x.d, pfx=d.pfx||x.key, slots=[];
     for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(pfx+':'+k); if(blob){ slots[i]=await photoFromBlob(blob,k,true); slots[i].draftSaved=pfx; } }
@@ -1730,7 +1738,7 @@ async function tool(cfg){
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
     qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
-    clearTimeout(draftTimer); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was
+    if(draftNext) writeDraft(true); draftId=null; draftPfx=null; dirty=false;   // a new unfinished story of its own; the one before stays as it was (its last edit written now)
     history.replaceState(null,'',location.pathname); delete $('teamName').dataset.touched;
     if(isPhone()) closeSheet('save');
     await setPhoto(photoOffset(),f);
