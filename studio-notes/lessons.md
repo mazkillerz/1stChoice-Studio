@@ -5,6 +5,13 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 30 | 1.19.0 | 4 (new suite textstyles; release run green) | 5 (both items in one pass) | 0 | pass | Shoot the More tab at 360px too before release |
+| 29 | 1.18.0 | 5 (new suite batch-saved 36/0, byte-identical PNGs vs open + Save for three tools) | 5 (reused the tool page in a hidden frame instead of a second renderer) | 0 | pass | Reuse the existing renderer; prove identical output |
+| 28 | 1.17.0 | 4 (new suite board-flex; behind a toggle, old boards unchanged) | 5 (one session; the engine hooks into `changed()` once) | 0 | pass | Write the "old boards unchanged" check first |
+| 27 | 1.16.0 | 4 (new suite tplfav 63/0; templates 80/0; taste 33/0; it caught a shadowed helper that stopped hub favourites saving) | 5 (one session; shots before code) | 0 | pass | Check a new control's place against every preview shape (story/post/square/circle) before writing the test |
+| 26 | 1.15.0 | 4 (baseline sweep of every suite green on main; new suite simplify15 39/0; taste 35/35 with two new checks; found a copied-id bug of my own before any test) | 5 (phase 1 in one pass while the sweep ran from a worktree) | 0 | pass | Give every "rejected" rule in taste.md a check, not just the recurring rows |
+| 25 | 1.14.0 | 4 (new suites flip 44/0 and highlight-emoji 40/0) | 4 (Flip + Emoji covers in one session) | 0 | pass | Check brand-asset implications (mirrored can labels) before building, ask early |
+| 24 | 1.13.0 | 4 (queue 46/0; `--changed` 29 suites green) | 4 (root cause found in one loaded run) | 0 | pass | Read the printed leftover first, then instrument create/write/clear |
 | 23 | 1.12.0 | 4 (new suite stickers 72/0; release run green; one CSS merge conflict, both sides kept) | 5 (riding on the asset layer gave move/colour/undo/recipe for free) | 0 | 33/33 pass | New layer types: reuse an existing layer kind with a new `ref` prefix instead of a new recipe type |
 | 22 | 1.11.0 | 4 (new suite postpresets 88/0; release run green) | 5 (first of the five to finish; a 5-minute probe showed #20 was already half done) | 0 | 33/33 pass | Probe the real behaviour before building a backlog item |
 | 21 | 1.10.0 | 4 (38/38 suites one at a time, contrast + tapscan clean; found two suites red on main since 1.5.0 and a taste check pointing at a missing file) | 4 (both phases done; the one-at-a-time sweep hit the 30-min background limit once) | 0 reported after 1.7.0 | 33/33 pass | Start the full sweep with a 2-hour background limit; run every suite once at the start of a Simplify session, not only at the end |
@@ -18,6 +25,27 @@ What worked, what failed, and process tweaks. Newest session first.
 | 13 | 1.2.0 | 4 (new suite 25/25, gates green; shots checked in both themes) | 5 (logo + one backlog feature in one pass) | 0 reported after 1.1.0 | see release | Ask for a larger source picture when the owner sends a logo |
 | 12 | 1.1.0 | 4 (every gate green, new suite 13/13; no visual surprises in the shots) | 5 (both items shipped in one pass, no rework) | 0 reported after 1.0.0 | 32/32 pass | Plan multi-image cards: What's New keeps only one before and one after per card |
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
+
+## Sessions 24–30 · 1.13.0–1.19.0 · 29 Oct 2026 (parallel round)
+
+Seven version sessions (1.13.0 team, 1.14.0 Mazoon, 1.15.0 Simplify, 1.16.0 team, 1.17.0 Mazoon, 1.18.0 team, 1.19.0 Mazoon) plus 1.20.0 (Simplify) and a lead, eight sessions at once.
+
+**Worked**
+- A flaky check that "never fails alone" can be a timing-dependent outcome, not a slow one (1.13.0: load made a pending draft write succeed). Log create/write/clear with a stack before touching timeouts; prove a race fix with a check that fails deterministically on the old code (leave at once, expect the draft), not only with N green loaded runs.
+- Riding on data the engine already keeps: Flip is `S.layers[id].flip` (absent = not flipped), so undo, drafts, the recipe and Duplicate got it free, and old designs draw exactly as before (1.14.0).
+- Running a long sweep from a `git worktree` of origin/main on :8081 (`BASE=http://127.0.0.1:8081/`, `contrast.mjs <base>`) let 1.15.0 keep editing while the 35-minute sweep ran: no waiting, no mixed results.
+- Reusing the tool page in a hidden same-origin frame (`?design=…&render=1`) for Save pictures, and moving the canvas part of `save()` into one `renderPage()` that both paths call: "same pixels" is true by construction (byte-identical PNGs in the test) (1.18.0).
+- Hooking Board's flex engine into `changed()` once so every edit path re-flows for free (1.17.0).
+- For a "many layers at once" action, `flush()` first and render once at the end: one undo step for free (1.19.0).
+
+**Didn't work / watch out**
+- A copied button (`el.innerHTML=other.innerHTML`) copies the ids inside it; `getElementById` then finds the copy first. Strip ids when mirroring markup (1.15.0).
+- A rule in taste.md without a check drifts: "underlined links" was rejected in 0.7.1 but `.link` stayed underlined for 8 versions; "≤ 2 filled buttons in every state of a sheet" had no check and the phone Save sheet showed three. Both have checks in `taste.mjs` now (`links:underline`, `clutter:states`).
+- A function declaration inside a closure hoists and silently shadows a module-level one of the same name (`mark()` for chips vs the new `mark(store,…)` helper): the page looked right (redraw + "Added to favourites") but nothing was saved. Give module-level helpers distinct names and assert what was written to storage, not only what the UI shows (1.16.0).
+- Cans were flippable as built, so a flipped can showed its label mirrored; check brand-asset implications before building and ask early (1.14.0). Cans got `noFlip:true` at release.
+- (Lead) **Eight sessions at once used up the shared 5-hour usage limit in about 30 minutes; four sessions stopped mid-turn.** Next time run at most 3–4 at once or stagger them, and tell each session to push early.
+- (Lead) A test-merge of all finished branches in a scratch worktree, with one combined `run.mjs --changed` on a second port (`BASE=http://127.0.0.1:8081/`), let the lead release five versions (1.15.0–1.19.0) in one go safely. Keep doing it.
+- (Lead) `share.mjs` still fails under parallel load and passes alone (known; service-worker wait).
 
 ## Session 20 · 1.9.0 · 28 Oct 2026 (Mazoon, parallel)
 

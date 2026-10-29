@@ -33,3 +33,11 @@ One **lead** session coordinates eight version sessions. Each version session bu
 - Lead: `session_01Y65H7Wuh2MRbSPB87xQhDz`
 - 1.13.0: `session_01Y65H7YirTuwUdsknVbPpiw` · 1.14.0: `session_01Y65H7aJ2XiFQnKcaS1Nv8Q` · 1.15.0: `session_01Y65H7Y3YamwVUuAfYhtBmx` · 1.16.0: `session_01Y65H7Z1Rs4mq7DVFdXM2gt`
 - 1.17.0: `session_01Y65H7ZXbKivBgV4PeZk2Ap` · 1.18.0: `session_01Y65H7XE6Jk4StQgFKHxr4g` · 1.19.0: `session_01Y65H7XBdERgM26pQvEu9Wu` · 1.20.0: `session_01Y65H7aFromajhvCh8BmNkb` (read-only until the lead's "go")
+
+
+## Result
+
+- 1.13.0–1.19.0 were released in order on 29 Oct 2026: 1.13.0 and 1.14.0 one at a time; 1.15.0–1.19.0 after one combined 42-suite green run (a test-merge in a scratch worktree, `run.mjs --changed` on a second port). No merge conflicts.
+- Four of the sessions were paused for about 4 hours by the shared usage limit (eight sessions at once used it up in about 30 minutes). Next round: at most 3–4 at once, each pushing early (see `lessons.md`).
+- The 1st Choice cans got `noFlip:true` in the brand kit at release (lead decision, so a can's label never reads backwards; the owner can reverse it in `brands/1stchoice/brand.js`).
+- 1.20.0 (Simplify) is running; the next after it, 1.21.0, is a team session.

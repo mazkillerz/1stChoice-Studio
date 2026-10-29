@@ -2,36 +2,45 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 23 (1.12.0, 28 Oct 2026) was a **Mazoon** session, the last of five parallel version sessions (see `sessions.md`): Stickers pack (#9). The next session, 1.13.0, is a **team** session.
-**Simplify session:** every 5th minor version. The next one is 1.15.0.
+**Last session:** sessions 24–30 were 1.13.0–1.19.0 (29 Oct 2026, parallel round, see `sessions.md`); the last of them (1.19.0) was a **Mazoon** session. 1.20.0 (Simplify) is running; the next after it, 1.21.0, is a **team** session.
+**Simplify session:** every 5th minor version. 1.15.0 and 1.20.0 are the current round's; the next one after that is 1.25.0.
 
 ## Next up
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
-| 5 | Batch export: save several drafts / saved designs in one go from Saved select mode | 3 | 4 | 3 | 3 | 7 | Paged tools done in 1.9.0 (Save all + ZIP on a computer); this half needs offscreen rendering of other designs. |
-| 6 | Template collections in Create (favourites, recently used) | 2 | 3 | 2 | 3 | 4 | Search box shipped in 1.4.0. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
-| 8 | Text styles (saved headline/small-line presets) | 2 | 3 | 2 | 2 | 5 | 1.7.0 Copy/Paste style covers one kept style; a named list of several is the next step if Mazoon asks. |
-| 22 | Paste style on several layers at once (select mode / "Paste on every text"), and in Create/Board | 1 | 3 | 2 | 2 | 4 | Follow-up to 1.7.0 Copy style. |
-| 10 | Highlight covers: emoji covers; Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0. |
+| 10 | Highlight covers: Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0; emoji covers shipped in 1.14.0. Product can already be sized and moved as a layer. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
-| 15 | Board: Penpot-style **flex layout** (a frame or group that stacks its items in a row/column with gap and padding, and grows with text) | 2 | 4 | 4 | 4 | 6 | Biggest remaining Penpot idea; great for price lists and menus. Ship behind a toggle. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
-| 25 | Flip (mirror) for stickers and shapes in the Move tab, so an arrow can point the other way | 1 | 2 | 2 | 1 | 4 | From 1.12.0. |
 | 26 | Stickers in Create and Board (own editors) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
+| 29 | Save pictures for unfinished drafts in Continue editing (same hidden frame as Saved, `?draft=<id>&render=1`) | 3 | 2 | 2 | 2 | 5 | From 1.18.0. |
+| 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
+| 31 | Search box (or a magnifier that opens hub search on saved designs) on the Saved page | 2 | 2 | 1 | 1 | 4 | From 1.15.0: finding a design from Saved is back + search + row. |
+| 32 | Flip for the tool's own photo boxes (a mirrored selfie in Photo story); needs a control in the Photo sheet | 1 | 2 | 1 | 2 | 2 | From 1.14.0. |
+| 33 | Emoji in Create's highlight layout and as stickers (the same 24 could feed the Sticker sheet) | 1 | 2 | 2 | 1 | 4 | From 1.14.0. |
+| 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
+| 35 | Text styles in Create and Board (own editors) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
+| 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
+| 37 | New place and Cinematic bars get `quick` (camera in All tools, like Offer in 1.15.0) if the team uses them | 2 | 1 | 1 | 1 | 3 | From 1.15.0; the share sheet keeps its five tools. |
+| 38 | Tapping a row with an "N waiting" tag continues the queue directly (`?queue=1`) | 2 | 1 | 1 | 1 | 3 | From 1.13.0: today it opens the tool, whose banner offers Continue (one extra tap). |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 ## UX audit findings (open)
-- **Open, check first next session:** `queue.mjs` "no leftover unfinished stories" fails about 1 run in 4 under 3-way parallel load (seen in the 1.8.0, 1.10.0 and 1.12.0 release runs), even after a 5 s wait, and never alone or in 3 targeted loaded runs. One draft stays after the third queued story goes to the team: possibly a real race between the 800 ms draft timer (async photo blobs) and the team save / `nextInQueue()`. The check now prints the leftover key, its time and photo keys when it fails: read that output before changing code.
-- 1.11.0: the "New" badge on a Templates card sits on top of the headline in the preview (all New post cards); move the badge below the frame or start previews lower.
-- 1.11.0 idea: let `tplEntries()` show a brand-kit `sub` for Create templates (today all say "Post · Create"), e.g. "Post · ready in one tap".
+- 1.14.0 (older than that release): **Undo / Redo clear the selection** (`applyRecipe` sets `S.sel=null`) while the phone's layer bar stays open on the old layer, so its buttons do nothing until you tap the layer again. Fix idea: after `restore()` keep `S.sel` if that layer still exists, or close the layer bar.
+- 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
+- 1.14.0: the Cover type row (Highlight covers) is 4 + 1 (Emoji alone on a second row); a Simplify session could make `segCols()` give 5 options a 3 + 2 layout engine-wide.
+- 1.13.0: some wording still says "phone" on a computer: "This phone is out of room for drafts", "You have N unfinished … stories on this phone", the queue Clear status "still in your phone's photos". (The low-memory save message and "Your device could not make the image" say device on a computer since 1.13.0.)
+- 1.19.0: the More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
+- 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.
+- 1.15.0: the toast's Undo is now a pill: check it still reads on the dark toast on a real phone.
+- 1.17.0: Board's panel headings still use weight 800 (see #18).
+- Tests: `share.mjs` fails 1–2 checks under parallel load and passes alone (seen again in the 1.13.0–1.19.0 combined run); known timing issue (service-worker wait).
 - 1.11.0: owner to confirm the Did you know post's numbered lines (١ كولد برو · ٢ منعش · ٣ يصحصحك) or send real facts to approve.
 - 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
-- 1.9.0: on a computer the low-memory fallback message still says "This phone was low on memory".
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
-- 1.8.0 ideas: a small "2 waiting" tag on the Restock / Photo story rows in Your tools; one wording for the note's Skip and the Save sheet's "Skip to the next photo".
+- 1.8.0 idea: one wording for the note's Skip and the Save sheet's "Skip to the next photo" (the "2 waiting" tag shipped in 1.13.0).
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
 - 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
 - 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
@@ -44,8 +53,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - 1.1.0: Carousel from photos makes slide 1 a Cover and the rest Photo + words; consider adding an End slide automatically when there are 3+ photos (ask Mazoon).
 - 1.0.0: the welcome tour only opens on devices that never used Studio (owner's words: "for new devices"). Ask whether the current team should see it once too.
 - 1.4.0: `tests/taste.mjs` now covers Carousel, Highlight covers and Create (first view); the note/toast monitor still only watches Restock, and the lab is not covered yet.
-- 1.0.0: on a computer the tool page shows the Save card right after Photo (above Style and Words); check whether that order is what Mazoon wants.
-- 1.0.0: Templates library ideas: favourites (star a template), "recently used", and team templates with real previews in the Team row (they use the saved thumbnail today).
+- 1.0.0: Templates library idea: team templates with real previews in the Team row (they use the saved thumbnail today). Favourites and Recently used shipped in 1.16.0.
 - Share target (0.9.0): check on a real Android phone with Studio installed (Share → Studio appears, the sheet opens, HEIC from Samsung galleries opens in the tool). Chrome only picks up the new manifest after the installed app updates (can take a day); reinstalling forces it.
 - Saved cards align their caption with the name's direction (Arabic names on the right). A grid that mixes both has captions on both sides; watch whether the team prefers one side for all.
 - The Quick start note fades after 3.2 s: check on a real phone that it is long enough to read, and that Save's pulse is noticed.
@@ -53,8 +61,6 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - A saved design opened on a phone shows no "Saved design" label (`#designBar` is hidden on phones by `.panel>.banner{display:none}`); the Save sheet's switch says "Update “name” in the team" instead. Check whether the team misses the label.
 - Picture-only save when signed in is now 3 taps (Save, switch off, Save); picture + team is 2 (was 3–5). Watch whether the team wants a direct picture-only button; if so add it under the Save button.
 - Select mode (0.8.0): on a phone, check whether the team finds **Select** at the top right or only through press and hold → Select more. Swipe-to-tick across several cards (like Photos) would be faster for long lists.
-- Select mode: Save the pictures of several designs in one go would fit the same bar (needs each tool to render offscreen: see #5 Batch export).
-- Team-only save (no picture) on a phone now means: Save, cancel the share sheet, then "Only save to the team". Watch whether the team misses a direct way; if so, add it under a "More" in the sheet.
 - Inspector (layer editor) Done is still 40px tall visually; since 0.2.0 every Done has an invisible 48px hit area. Only enlarge it visibly if full.mjs stays green.
 - Create: Templates already show a shimmer while loading (checked 0.2.0); only pre-rendered thumbnails would improve it further.
 - Create top bar: the "Untitled design" title gets little room on a phone; check long names.
@@ -62,6 +68,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.13.0–1.19.0 (parallel round, 29 Oct 2026): 1.13.0 (team) unfinished stories kept when you leave at once (the `queue.mjs` flake root cause), "N waiting" tag on tool rows, "device" not "phone" on a computer; 1.14.0 (Mazoon) Flip (#25) and Emoji highlight covers (#10 emoji part); 1.15.0 (Simplify) computer Save dock, quiet Done in sheets, `.link` text buttons, Offer camera, shorter labels, two new taste checks; 1.16.0 (team) Favourites + Recently used templates (#6), New badge off the headline, Create template `sub` lines; 1.17.0 (Mazoon) Board flex layout as a preview (#15); 1.18.0 (team) Save pictures from Saved (#5 second half); 1.19.0 (Mazoon) Text styles (#8) and Paste on all text (#22).
 - 1.12.0 (Mazoon): Stickers pack (14 drawn stickers as asset layers `sticker:<id>`, Layers → Sticker, recolour/opacity/copy style/undo for free, old designs pixel-identical); fixed the empty Add an element card on a computer.
 - 1.11.0 (team): Ice cold / Did you know / Your choice as finished 1080×1350 posts in Templates → Posts and search (#3); search finds Create templates by their Arabic words, and `?tpl=` behaviour locked in tests (#20).
 - 1.10.0 (Simplify): 79 lines of old hub CSS removed (computed-style diff: 0 changes over 72 states); one Arabic normaliser (`Studio.normText`) for hub search and Create, Arabic digits ٠–٩ now searchable; `home7` / `polish71` split into parts; All tools camera (Carousel / Highlight from photos 4 → 3 taps); the several-photos note back to one line; tapscan counts a wrapping label as the hit area; Save all on a computer says ZIP.
