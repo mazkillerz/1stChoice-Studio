@@ -33,6 +33,7 @@ Studio.tool({
     {id:'dotsPos',type:'seg',in:'style',label:'Counter place',options:[{v:'bottom',l:'Bottom'},{v:'top',l:'Top'}],global:true,when:{field:'dots',is:['dots','num']}},
     {id:'grid',type:'toggle',in:'style',label:'Show the feed-grid guide (preview only)',default:false,global:true},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',global:true},
+    {...Studio.groundField(),global:true},
     {id:'gThis',type:'note',in:'style',label:'This slide'},
     {id:'kind',type:'seg',in:'style',label:'Slide type',options:[{v:'cover',l:'Cover'},{v:'photo',l:'Photo + words'},{v:'full',l:'Full photo'},{v:'two',l:'Two photos'},{v:'words',l:'Words only'},{v:'number',l:'Big number'},{v:'pano',l:'Panorama'},{v:'end',l:'End slide'}],pageDefault:pg=>pg===0?'cover':'photo'},
     {id:'two',type:'seg',in:'style',label:'Two photos',options:[{v:'stack',l:'Stacked'},{v:'side',l:'Side by side'}],when:{field:'kind',is:'two'}},
@@ -77,7 +78,7 @@ Studio.tool({
       if(info.part===0) photoWords(110,false); else { h.text('head','Headline','',0,0); h.text('small','Small line','',0,0); h.shade(H,H-220,.35,0); if(everyLogo) h.logo((W-170)/2,80,170,'light'); }
       drawCounter(true); gridGuide(); return;
     }
-    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
+    h.ground(ground,o.value('gfx'));
     const topLogo=(force)=>{ if(force||everyLogo){ const lw=180; h.logo((W-lw)/2,cTop&&counter!=='none'?104:72,lw,dark?'light':'dark'); return 72+h.logoH(lw)+40; } return 0; };
     if(kind==='words'){
       topLogo(!o.page);

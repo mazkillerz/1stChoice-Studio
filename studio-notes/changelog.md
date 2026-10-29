@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.22.0 · 29 Oct 2026
+
+### Backgrounds for Carousel
+type: feature
+The Background finishes from Restock and Photo story are now in Carousel too: open Style and pick Plain, Fade, Glow, Dots, Lines or Grain under Background colour. It is a setting for all slides, so every slide of the post gets the same finish and the set looks like one piece. It shows on slides with a coloured ground (Words only, Big number, Photo + words, the End slide…) and is made from the colour you chose, so it works on White, Cream, Black or your own colour. Plain is the look you had before and stays the default: every carousel you already made opens exactly the same.
+![before](assets/whatsnew/1.22.0-carousel-bg-before.jpg)
+![after](assets/whatsnew/1.22.0-carousel-bg-after.jpg)
+
+### Waiting photos: one tap to go on
+type: fix
+When photos are still waiting for Restock or Photo story, their row says "2 waiting". Tapping that row used to open the tool with a Continue banner, one more tap. Now the row goes straight on with the next photo, the same as the "photos still waiting" row on Home: one tap instead of two. And when it opens the story you were on, the "You have an unfinished story here" banner no longer sits on top of it.
+
 ## 1.21.0 · 29 Oct 2026
 
 ### Backgrounds for Restock and Photo story

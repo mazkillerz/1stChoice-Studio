@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.21.0';
+const VERSION='1.22.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1858,7 +1858,7 @@ async function tool(cfg){
   function offerQueue(k){ const n=k.left.length; $('queueTxt').textContent=n===1?'1 photo still waiting':n+' photos still waiting';
     $('draftBar').hidden=true; $('queueBar').hidden=false; }
   function takeQueue(k){ queue=k.left.slice(); qTotal=k.total; qPos=Math.max(1,k.m.pos||1); }
-  async function continueQueue(k){ $('queueBar').hidden=true; takeQueue(k);
+  async function continueQueue(k){ $('queueBar').hidden=true; $('draftBar').hidden=true; takeQueue(k);   // the story it opens is the unfinished one: no second banner (1.22.0)
     const x=!k.m.saved&&k.m.draft&&listDrafts(B.id,cfg.id).find(d=>d.id===k.m.draft);
     if(x&&!design&&draftId!==x.id){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); }   // the story you were on, not saved yet: back to it first
     if(x){ qSaved=false; quickReady=true; showReady(false,...queueNote()); syncQueue(); return; }   // as when it first came in: Save in one tap
@@ -2109,9 +2109,11 @@ async function home(){
   const quickInput=(id,t)=>`<input type="file" class="sr-only" accept="image/*,.heic,.heif" data-quick="${id}"${t.multi||t.queue?' multiple':''}>`;
   /* "2 waiting" (1.13.0): photos waiting in that tool's row (queue tools), counted by queueWaiting() below; calm, not a button */
   const waitN={}, waitTag=id=>waitN[id]?`<em class="wait-tag" title="${waitN[id]===1?'1 photo':waitN[id]+' photos'} still waiting">${waitN[id]} waiting</em>`:'';
+  const rowHref=id=>toolPage(id)+(waitN[id]?'?queue=1':'');   // 1.22.0: a row with photos waiting continues them in one tap
   function paintWaitTags(){ document.querySelectorAll('.tool-item[data-id],.lib-row[data-id]').forEach(row=>{ const b=row.querySelector('.ttxt b'); if(!b) return; const old=b.querySelector('.wait-tag'), h=waitTag(row.dataset.id);
-    if(old) old.remove(); if(h) b.insertAdjacentHTML('beforeend',h); }); }
-  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" data-id="${id}" style="--i:${i}"><a class="tool-row" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
+    if(old) old.remove(); if(h) b.insertAdjacentHTML('beforeend',h);
+    const go=row.querySelector('a.tool-row,a.lib-open'); if(go) go.setAttribute('href',rowHref(row.dataset.id)); }); }
+  const toolRow=(id,t,i)=>`<div class="tool-item${t.quick?' has-cam':''}" data-id="${id}" style="--i:${i}"><a class="tool-row" href="${rowHref(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${t.tag?` <em class="tag">${esc(t.tag)}</em>`:''}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span><span class="chev" aria-hidden="true">${ICON.next}</span></a>${t.quick?`<label class="row-cam" title="${esc(t.title)} from a photo"><span class="sr-only">${esc(t.title)} from a photo</span>${ICON.camera}${quickInput(id,t)}</label>`:''}</div>`;
   function paintTools(){
     const pins=getPins(), n=Object.keys(TOOLS).length;
     $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
@@ -2139,7 +2141,7 @@ async function home(){
      in its group. Press and drag the handle to change the order on the home screen; on a keyboard the arrow keys move it. */
   /* a tool that starts from photos gets the Home row's camera here too (pinned ones have it on Home): one tap to pick, like Home */
   const libCam=(id,t)=>`<label class="row-cam lib-cam" title="${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}"><span class="sr-only">${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}</span>${ICON.camera}${quickInput(id,t)}</label>`;
-  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${toolPage(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
+  const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${rowHref(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
   function libHtml(){ const pins=getPins(); let last=null, h='';
     if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots on the right to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
     Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
