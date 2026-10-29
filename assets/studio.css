@@ -667,6 +667,25 @@ label.opt-row{cursor:pointer}
 .sheet[data-sheet="stickers"].active{display:flex}
 @media (max-width:820px){.sheet[data-sheet="stickers"]{display:flex;max-width:none}}
 
+/* text styles (1.19.0): saved looks in a layer's More tab. Each is a pill: tap the name to use it, ⋯ for its menu */
+.tstyles{display:flex;flex-direction:column;gap:var(--sp-2)}
+.ts-wrap{display:flex;flex-direction:column;gap:var(--sp-2)}
+.ts-list{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.ts-chip{display:inline-flex;align-items:stretch;max-width:100%;min-height:var(--tap);border:1px solid var(--line);border-radius:var(--r-pill);background:var(--surface);color:var(--fg);overflow:hidden}
+.ts-chip.on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);background:var(--chip)}
+.ts-chip button{border:0;background:none;color:inherit;font:500 var(--fs-m) var(--sans);cursor:pointer;display:inline-flex;align-items:center;min-height:var(--tap)}
+.ts-chip button:focus:not(:focus-visible){outline:none}
+.ts-chip button:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:var(--r-pill)}
+.ts-use{gap:var(--sp-2);padding:0 var(--sp-2) 0 var(--sp-4);min-width:0}
+.ts-use:dir(rtl){padding:0 var(--sp-4) 0 var(--sp-2)}
+.ts-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.ts-dot{flex:none;width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 25%,transparent)}
+.ts-more{width:44px;justify-content:center;color:var(--muted)!important;border-inline-start:1px solid var(--line)!important}
+.ts-more svg{width:18px;height:18px}
+@media (hover:hover){.ts-chip button:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}}
+#inspPasteAll{flex-basis:100%}
+.ts-dlg input{width:100%}
+
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */
 :root{

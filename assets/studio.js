@@ -704,7 +704,8 @@ async function tool(cfg){
             <div class="insp-row" id="inspRRow"><label class="lbl" for="inspR">Corners</label><input type="range" id="inspR" min="0" max="300" step="2" value="0"></div></div>
           <div class="insp-row"><label class="lbl" for="inspOp">Opacity</label><input type="range" id="inspOp" min="0.05" max="1" step="0.05" value="1"></div></div>
         <div class="insp-part insp-col" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
-          <div class="insp-row btns" id="inspStyleRow"><button type="button" class="mini" id="inspCopyStyle">${ICON.copy}<span>Copy style</span></button><button type="button" class="mini" id="inspPasteStyle" hidden>${ICON.paint}<span>Paste style</span></button></div>
+          <div class="insp-row btns" id="inspStyleRow"><button type="button" class="mini" id="inspCopyStyle">${ICON.copy}<span>Copy style</span></button><button type="button" class="mini" id="inspPasteStyle" hidden>${ICON.paint}<span>Paste style</span></button><button type="button" class="mini" id="inspPasteAll" hidden>${ICON.paint}<span>Paste on all text</span></button></div>
+          <div class="tstyles" id="inspTStyles"><div class="ts-wrap" id="tsWrap" hidden><span class="lbl" id="tsLbl">Text styles</span><div class="ts-list" id="tsList" role="group" aria-labelledby="tsLbl"></div></div><div class="insp-row btns"><button type="button" class="mini" id="inspSaveStyle">${ICON.bookmark}<span>Save this style</span></button></div></div>
           <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
@@ -1330,7 +1331,8 @@ async function tool(cfg){
       $('inspShadow').checked=l.shadow!=null?!!l.shadow:!!b.shadow; const pill=!!(l.bg&&l.bg!=='none'); $('inspPill').checked=pill;
       if($('inspPillPal').dataset.for!==id||!$('inspPillPal').firstChild){ $('inspPillPal').innerHTML=palettePicker('pill',l.bg||C.ink); $('inspPillPal').dataset.for=id; } else syncPalette($('inspPillPal').firstChild,l.bg||C.ink);
       $('inspPillPal').hidden=!pill; }
-    $('inspPasteStyle').hidden=!copiedStyle();
+    $('inspPasteStyle').hidden=!copiedStyle(); $('inspPasteAll').hidden=!copiedStyle()||allText().length<2;
+    $('inspTStyles').hidden=!textish; if(textish) paintStyles(id);
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
     const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
@@ -1412,6 +1414,45 @@ async function tool(cfg){
   }
   $('inspCopyStyle').addEventListener('click',()=>{ const id=S.sel; if(!id) return; store(STYLE_KEY,styleOf(id)); haptic('tick'); syncInspector(); status('Style copied. Tap another layer, then More → Paste style.',2600); });
   $('inspPasteStyle').addEventListener('click',async()=>{ const id=S.sel, st=copiedStyle(); if(!id||!st) return; await pasteStyle(id,st); haptic('tick'); syncInspector(); render(); status('Style pasted. Tap undo to bring the old one back.',2600); });
+  /* Paste on all text: the copied look on every line of words at once (one undo step) */
+  const allText=()=>reg.filter(r=>r.kind==='text'&&r.typ&&!r.empty&&!r.hidden).map(r=>r.id);
+  async function pasteAll(st){ const ids=allText(); if(!ids.length) return 0; flush();
+    if(st.font){ status('Loading font…'); await ensureFont(st.font); status(''); }
+    for(const id of ids) await pasteStyle(id,st);
+    haptic('tick'); syncInspector(); render(); return ids.length; }
+  $('inspPasteAll').addEventListener('click',async()=>{ const st=copiedStyle(); if(!st) return; const n=await pasteAll(st); if(n) status(`Style pasted on ${n} texts. Tap undo to bring the old ones back.`,2600); });
+  /* ---- text styles (1.19.0): a short list of named looks kept on this device. Save this style adds one (auto-named, renamable),
+     tap one to put it on the chosen layer, its ⋯ menu renames it, puts it on all text or removes it. ---- */
+  const TS_KEY='studio:textstyles', TS_MAX=8;
+  const tStyles=()=>{ const v=store(TS_KEY); return Array.isArray(v)?v.filter(x=>x&&x.id&&x.st&&typeof x.st==='object').slice(0,TS_MAX):[]; };
+  const setTStyles=v=>{ store(TS_KEY,v.length?v:null); };
+  const styleKey=st=>JSON.stringify(Object.keys(st||{}).sort().map(k=>[k,st[k]]));
+  function paintStyles(id){
+    const list=tStyles(), cur=id?styleKey(styleOf(id)):'';
+    $('tsWrap').hidden=!list.length;
+    $('tsList').innerHTML=list.map(t=>{ const f=t.st.font&&fontInfo(t.st.font), on=styleKey(t.st)===cur;
+      return `<span class="ts-chip${on?' on':''}"><button type="button" class="ts-use" data-ts="${esc(t.id)}" aria-pressed="${on}" dir="auto"><i class="ts-dot" style="background:${esc(t.st.color||'currentColor')}" aria-hidden="true"></i><span class="ts-name"${f?` style="font-family:'${esc(f.family)}'"`:''}>${esc(t.name)}</span></button><button type="button" class="ts-more" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}">${ICON.more}</button></span>`; }).join('');
+  }
+  const nextName=list=>{ let n=1; const used=new Set(list.map(t=>t.name)); while(used.has('Style '+n)) n++; return 'Style '+n; };
+  $('inspSaveStyle').addEventListener('click',()=>{ const id=S.sel; if(!id) return; const st=styleOf(id), list=tStyles(), k=styleKey(st);
+    const dup=list.find(t=>styleKey(t.st)===k); if(dup){ status(`Already saved as “${dup.name}”.`,2200); return; }
+    if(list.length>=TS_MAX){ status(`You have ${TS_MAX} styles. Remove one to save a new one.`,2600); return; }
+    const t={id:'ts'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:nextName(list),st,at:Date.now()};
+    setTStyles([...list,t]); haptic('tick'); paintStyles(id); status(`Saved as “${t.name}”. Tap ⋯ to rename it.`,2600); });
+  $('tsList').addEventListener('click',async e=>{
+    const m=e.target.closest('[data-tsmore]'); if(m){ styleMenu(m.dataset.tsmore); return; }
+    const u=e.target.closest('[data-ts]'); if(!u) return; const id=S.sel, t=tStyles().find(x=>x.id===u.dataset.ts); if(!id||!t) return;
+    flush(); await pasteStyle(id,t.st); haptic('tick'); syncInspector(); render(); status(`“${t.name}” is on. Tap undo to bring the old look back.`,2600); });
+  function styleMenu(tid){ const t=tStyles().find(x=>x.id===tid); if(!t) return;
+    const d=dialog(`<form method="dialog" class="dlg-body ts-dlg"><h3>Text style</h3><label class="lbl" for="tsName">Name</label><input type="text" id="tsName" dir="auto" maxlength="24" autocomplete="off">
+      <div class="act-list">${allText().length?`<button type="button" class="act-row" data-tsact="all">${ICON.paint}<span>Use on all text</span></button>`:''}<button type="button" class="act-row danger" data-tsact="del">${ICON.trash}<span>Remove</span></button></div>
+      <div class="dlg-actions"><button type="button" class="mini" id="tsX">Cancel</button><button type="submit" class="btn">Done</button></div></form>`,'ts-menu');
+    const inp=d.querySelector('#tsName'); inp.value=t.name; d.tabIndex=-1; d.focus();
+    d.querySelector('#tsX').onclick=()=>d.close();
+    d.querySelector('form').onsubmit=e=>{ e.preventDefault(); const name=inp.value.trim().slice(0,24); if(name&&name!==t.name){ setTStyles(tStyles().map(x=>x.id===tid?{...x,name}:x)); } d.close(); paintStyles(S.sel); };
+    d.querySelector('.act-list').addEventListener('click',async e=>{ const b=e.target.closest('[data-tsact]'); if(!b) return; d.close();
+      if(b.dataset.tsact==='del'){ setTStyles(tStyles().filter(x=>x.id!==tid)); paintStyles(S.sel); status(`“${t.name}” removed.`,2000); }
+      else { const n=await pasteAll(t.st); if(n) status(`“${t.name}” is on ${n} texts. Tap undo to bring the old ones back.`,2600); } }); }
   $('inspReset').addEventListener('click',()=>{ const id=S.sel, x=textExtra(id); if(x){ x.size=60; } S.layers[id]={dx:0,dy:0,k:1,color:null,hidden:false}; syncInspector(); render(); });
   $('inspHide').addEventListener('click',()=>{ const id=S.sel; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.hidden=!l.hidden; syncInspector(); render(); });
   $('inspDelete').addEventListener('click',()=>{ S.extras=S.extras.filter(x=>x.id!==S.sel); delete S.layers[S.sel]; select(null); });
