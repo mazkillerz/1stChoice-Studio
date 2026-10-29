@@ -13,6 +13,14 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.18.0 · 29 Oct 2026
+
+### Save the pictures of several designs at once
+type: feature
+In **Saved**, tap **Select**, tick the designs you want and tap **Save pictures** in the bar at the bottom. Studio makes every picture at full quality, exactly as if you opened each design and tapped Save (2160×3840 for stories, 2160×2700 for posts, every slide of a carousel), and shows **Saving 2 of 5…** with **Cancel**. On a phone they all open in one share sheet; on a computer they come as one ZIP. Each file is named after its design (**Shelf-day.png**, **Four-slides-01.png**…). Templates are skipped, since they have no picture of their own. Up to 20 designs at a time.
+![before](assets/whatsnew/1.18.0-savepics-before.jpg)
+![after](assets/whatsnew/1.18.0-savepics-after.jpg)
+
 ## 1.17.0 · 29 Oct 2026
 
 ### Board: stacks that tidy themselves (preview)

@@ -29,13 +29,14 @@ const MAP=[
   [/assets\/welcome\./,['welcome']],
   [/tools\/restock/,['restock-styles']],[/tools\/photo-story/,['photostory-styles']],[/tools\/collage/,['collage-grids']],
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
-  [/assets\/batch\.js/,['batch']],
+  [/assets\/batch\.js/,['batch','batch-saved']],
+  [/assets\/render\.js/,['batch-saved']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15'],
-      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav'];
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved'],
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
@@ -77,7 +78,7 @@ const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+const SLOW={'batch-saved':75,'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
   'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));
