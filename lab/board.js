@@ -403,6 +403,7 @@ tr.anchorDragBoundFunc((oldPos,newPos)=>{
 function bakeScale(n){
   const k=kind(n), sx=n.scaleX(), sy=n.scaleY(), ax=Math.abs(sx), ay=Math.abs(sy), anchor=tr.getActiveAnchor()||'';
   if(k==='frame'){ const b=bleedOf(n), s=fsize(n); setFrameSize(n,(s.w+2*b)*ax-2*b,(s.h+2*b)*ay-2*b); n.scale({x:1,y:1}); return; }
+  if(k==='group'&&BD.flex&&BD.flex.of(n)){ BD.flex.resize(n,ax,ay); n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); return; }
   if(k==='text'){ if(/middle-(left|right)/.test(anchor)){ n.width(Math.max(24,n.width()*ax)); n.setAttr('autoW',false); }
       else { n.fontSize(Math.max(4,n.fontSize()*ay)); if(!n.getAttr('autoW')) n.width(Math.max(24,n.width()*ax)); n.padding(n.padding()*ay); }
       n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); if(n.getAttr('autoW')) n.width(undefined); return; }
@@ -511,7 +512,7 @@ function endPtr(e){
   if(drag.type==='pinch'){ if(ptrs.size<2){ drag=null; } return; }
   const d=drag; drag=null;
   if(d.type==='pan'){ wrap.classList.remove('panning'); return; }
-  if(d.type==='move'){ endMove(); return; }
+  if(d.type==='move'){ endMove(d.list); return; }
   if(d.type==='marquee'){ marquee.visible(false); ui.batchDraw(); emit('select',S.sel); return; }
   if(d.type==='draw'){ endDraw(d); return; }
   if(d.type==='erase'){ if(d.hit){ changed(); emit('doc'); } return; }
@@ -595,7 +596,7 @@ function eraseAt(w){ const sp=toScreen(w), R=Math.max(4,S.pen.size)*sc();
     const par=n.getParent(), z=n.zIndex(); runs.forEach(pts=>{ const c=n.clone({id:uid(),points:pts}); par.add(c); c.zIndex(Math.min(z,par.children.length-1)); }); n.destroy(); drag.hit=true; });
   main.batchDraw(); }
 function frameOrigin(n){ const f=n&&!isFrame(n)&&frameOf(n); return f?{x:f.x(),y:f.y()}:{x:0,y:0}; }
-function endMove(){ clearGuides(); badge(true); if(drag) drag=null; changed(); emit('geom'); emit('doc'); }
+function endMove(list){ clearGuides(); badge(true); if(!list&&drag) list=drag.list; if(drag) drag=null; if(BD.flex&&list) BD.flex.dropped(list); changed(); emit('geom'); emit('doc'); }
 
 /* drawing new shapes, frames, text and freehand lines */
 function startDraw(w,p,e){
@@ -654,7 +655,7 @@ function startEdit(n,fresh){
   const ta=document.createElement('textarea'); ta.className='ed-text'; ta.value=n.text(); ta.setAttribute('dir','auto'); ta.spellcheck=false;
   wrap.appendChild(ta); edit={n,ta,fresh,before:n.text()}; tr.nodes([]); n.opacity(n.opacity()); n.hide(); main.batchDraw();
   placeEditor(); ta.focus(); if(fresh) ta.select(); else ta.select();
-  ta.addEventListener('input',()=>{ n.text(ta.value||' '); prepText(n); placeEditor(); });
+  ta.addEventListener('input',()=>{ n.text(ta.value||' '); prepText(n); if(BD.flex) BD.flex.reflow(); placeEditor(); });
   ta.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Escape'||(e.key==='Enter'&&(e.metaKey||e.ctrlKey))){ e.preventDefault(); commitEdit(); } });
   ta.addEventListener('blur',()=>setTimeout(()=>{ if(edit&&edit.ta===ta) commitEdit(); },0));
 }
@@ -668,7 +669,7 @@ function placeEditor(){ if(!edit) return; const {n,ta}=edit, k=n.getAbsoluteScal
 function commitEdit(){ if(!edit) return; const {n,ta}=edit; edit=null; ta.remove();
   const v=ta.value; if(!v.trim()){ n.destroy(); select([]); } else { n.text(v); prepText(n); if(n.getAttr('autoW')) n.width(undefined); n.show(); if(BD.comps) BD.comps.markText(n); select([n]); }
   main.batchDraw(); changed(); emit('doc'); }
-BD.startEdit=startEdit; BD.commitEdit=commitEdit; BD.editing=()=>!!edit;
+BD.startEdit=startEdit; BD.commitEdit=commitEdit; BD.editing=()=>!!edit; BD.editNode=()=>edit&&edit.n;
 
 /* ---------- actions on the selection ---------- */
 function del(){ const list=S.sel.filter(n=>!isLocked(n)); if(!list.length) return; list.forEach(n=>n.destroy()); select([]); changed(); emit('doc'); paintUI(); }
@@ -681,7 +682,7 @@ function order(how){ S.sel.forEach(n=>{ if(how==='front') n.moveToTop(); if(how=
 function group(){ const list=S.sel.filter(n=>!isFrame(n)); if(list.length<2) return; const parent=list[0].getParent(); if(!list.every(n=>n.getParent()===parent)){ toast('Pick things inside the same frame to group them.'); return; }
   const top=Math.max(...list.map(n=>n.zIndex())); const g=new Konva.Group({id:uid(),name:'obj',kind:'group'}); parent.add(g); g.zIndex(Math.min(top,parent.children.length-1));
   list.sort((a,b)=>a.zIndex()-b.zIndex()).forEach(n=>reparent(n,g)); select([g]); changed(); emit('doc'); }
-function ungroup(){ const out=[]; S.sel.filter(n=>kind(n)==='group').forEach(g=>{ const p=g.getParent(); let z=g.zIndex(); [...g.getChildren()].forEach(c=>{ reparent(c,p); c.zIndex(++z>p.children.length-1?p.children.length-1:z); out.push(c); }); g.destroy(); });
+function ungroup(){ const out=[]; S.sel.filter(n=>kind(n)==='group').forEach(g=>{ g.getChildren(c=>c.hasName('flex-bg')).forEach(c=>c.destroy()); const p=g.getParent(); let z=g.zIndex(); [...g.getChildren()].forEach(c=>{ reparent(c,p); c.zIndex(++z>p.children.length-1?p.children.length-1:z); out.push(c); }); g.destroy(); });
   if(out.length){ S.entered=null; select(out); changed(); emit('doc'); } }
 function flip(axis){ S.sel.filter(n=>!isFrame(n)&&!isLocked(n)).forEach(n=>{ const r=wrect(n), c={x:r.x+r.width/2,y:r.y+r.height/2};
     if(axis==='x') n.scaleX(-n.scaleX()); else n.scaleY(-n.scaleY()); const r2=wrect(n); moveByWorld(n,c.x-(r2.x+r2.width/2),c.y-(r2.y+r2.height/2)); }); tr.forceUpdate(); main.batchDraw(); changed(); }
@@ -779,8 +780,8 @@ BD.docJson=docJson;
 /* ---------- undo / redo ---------- */
 const H={stack:[],i:-1,t:0};
 function snap(){ return docJson(); }
-function changed(){ S.clean=false; clearTimeout(H.rc); H.rc=setTimeout(refreshCaches,120); clearTimeout(H.t); H.t=setTimeout(commit,250); scheduleSave(); emit('changed'); }
-function commit(){ H.t=0; if(edit){ H.t=setTimeout(commit,250); return; } if(BD.comps) BD.comps.sync(); const s=snap(); if(H.stack[H.i]===s) return; H.stack=H.stack.slice(0,H.i+1); H.stack.push(s); if(H.stack.length>120) H.stack.shift(); H.i=H.stack.length-1; emit('history'); }
+function changed(){ if(BD.flex) BD.flex.reflow(); S.clean=false; clearTimeout(H.rc); H.rc=setTimeout(refreshCaches,120); clearTimeout(H.t); H.t=setTimeout(commit,250); scheduleSave(); emit('changed'); }
+function commit(){ H.t=0; if(edit){ H.t=setTimeout(commit,250); return; } if(BD.comps) BD.comps.sync(); if(BD.flex) BD.flex.reflow(); const s=snap(); if(H.stack[H.i]===s) return; H.stack=H.stack.slice(0,H.i+1); H.stack.push(s); if(H.stack.length>120) H.stack.shift(); H.i=H.stack.length-1; emit('history'); }
 function flushHist(){ if(H.t){ clearTimeout(H.t); commit(); } }
 async function restore(s){ const ids=S.sel.map(n=>n.id()); await loadDoc(JSON.parse(s)); select(ids.map(id=>main.findOne('#'+id)).filter(Boolean)); scheduleSave(); emit('doc'); emit('history'); }
 async function undo(){ if(edit) commitEdit(); flushHist(); if(H.i>0){ H.i--; await restore(H.stack[H.i]); } }
@@ -880,7 +881,7 @@ BD.start=async function(){
   B=await Studio.useBrand(); BD.B=B;
   await Promise.all([BD.ensureFont(displayFont(),''),BD.ensureFont(bodyFont(),'800'),BD.ensureFont(bodyFont(),'600')]);
   /* when a font finishes loading later, measure and draw the words again */
-  if(document.fonts) document.fonts.addEventListener('loadingdone',()=>{ main.find('Text').forEach(t=>{ if(t._setTextData) t._setTextData(); }); main.batchDraw(); if(tr.nodes().length) tr.forceUpdate(); });
+  if(document.fonts) document.fonts.addEventListener('loadingdone',()=>{ main.find('Text').forEach(t=>{ if(t._setTextData) t._setTextData(); }); if(BD.flex) BD.flex.reflow(); main.batchDraw(); if(tr.nodes().length) tr.forceUpdate(); });
   const q=new URLSearchParams(location.search);
   const id=q.get('id');
   if(id&&await openBoard(id)) return;
