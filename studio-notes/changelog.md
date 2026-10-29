@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.20.0 · 29 Oct 2026
+
+### Ready for a second brand
+type: fix
+Studio is built so another brand can use it with its own logo, fonts, colours and words. A check with a made-up brand found a few places that still picked 1st Choice's: Offer and Restock chose their first headline and button by looking for 1st Choice's Arabic words (another brand could not choose its own), and the little pictures on the Style buttons had 1st Choice's cream and gold built in. They now come from the brand kit. Nothing changes for 1st Choice: same words, same colours, same designs. A new test runs Studio with the made-up brand and fails if any 1st Choice name, colour or font shows up.
+
 ## 1.19.0 · 29 Oct 2026
 
 ### Text styles

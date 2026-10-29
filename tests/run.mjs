@@ -15,9 +15,10 @@ import fs from 'fs';
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
-  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles']],
+  [/^brands\/|^tests\/fixtures\/brands\//,['brandkit']],
+  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles','brandkit']],
   [/^assets\/stickers\.js$/,['stickers','copystyle']],
-  [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15']],
+  [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit']],
   [/assets\/search\./,['search','polish71-search','create-search']],
   [/tools\/create/,['create','create-search','tplfav']],
   [/changelog\.md|whatsnew/,['whatsnew']],
@@ -35,8 +36,8 @@ const MAP=[
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved','textstyles'],
-      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved'];
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved','textstyles','brandkit'],
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */

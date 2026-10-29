@@ -83,13 +83,13 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   ok(vp.name+': screenshots load',await pg.$$eval('.wn-card img',l=>l.length>0&&l.every(i=>i.complete&&i.naturalWidth>0)));
   ok(vp.name+': still no sideways scroll with everything open',await pg.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await pg.evaluate(()=>scrollTo(0,0)); await pg.waitForTimeout(200);
-  /* the big screenshot */
-  await pg.locator('.wn-latest .wn-shot').first().click(); await pg.waitForTimeout(300);
+  /* the big screenshot (the newest card may have none, e.g. 1.20.0: use the first card that has one) */
+  await pg.locator('.wn-card .wn-shot').first().click(); await pg.waitForTimeout(300);
   ok(vp.name+': a screenshot opens large',await pg.evaluate(()=>document.getElementById('wnDlg').open));
   ok(vp.name+': the page behind cannot scroll while it is open',await pg.evaluate(()=>getComputedStyle(document.documentElement).overflow==='hidden'));
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
   ok(vp.name+': Escape closes it and the page scrolls again',await pg.evaluate(()=>!document.getElementById('wnDlg').open&&getComputedStyle(document.documentElement).overflow!=='hidden'));
-  await pg.locator('.wn-latest .wn-shot').first().click(); await pg.waitForTimeout(200); await pg.click('#wnClose'); await pg.waitForTimeout(200);
+  await pg.locator('.wn-card .wn-shot').first().click(); await pg.waitForTimeout(200); await pg.click('#wnClose'); await pg.waitForTimeout(200);
   ok(vp.name+': the Close button closes it',await pg.evaluate(()=>!document.getElementById('wnDlg').open));
   ok(vp.name+': seen version is saved (the dot on the hub goes away)',await pg.evaluate(()=>localStorage.getItem('studio:seenVersion'))===JSON.stringify(vers[0].version));
   pg.off('console',onCon); ok(vp.name+': What\'s New has no console errors',!cerr.length,cerr.join(' | '));
