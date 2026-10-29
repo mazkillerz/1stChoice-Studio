@@ -44,6 +44,18 @@ function hlDims(b,a){
   const i=new Image(); i.onload=()=>HL_DIMS.set(a.id,i.width/i.height); i.src=b.base+(a.prev||a.file);
   return null;
 }
+/* Emoji cover (1.14.0): one big emoji from tools/highlight-emoji.js, drawn as vector paths (36-unit box).
+   No list loaded = no Emoji type. A colour from the layer bar draws it as a one-colour silhouette. */
+const HL_EMO=Array.isArray(window.HL_EMOJI)?window.HL_EMOJI:[];
+const hlEmo=id=>HL_EMO.find(e=>e[0]===id)||HL_EMO[0];
+const HL_P2D=new Map();
+function hlEmoji(c,id,x,y,s,color){
+  const e=hlEmo(id); if(!e) return;
+  c.save(); c.translate(x,y); c.scale(s/36,s/36);
+  e[3].forEach(([fill,d,op],i)=>{ const k=e[0]+i; if(!HL_P2D.has(k)) HL_P2D.set(k,new Path2D(d)); c.globalAlpha=color?1:(op==null?1:op); c.fillStyle=color||fill; c.fill(HL_P2D.get(k)); });
+  c.restore();
+}
+const hlEmoSvg=e=>`<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">${e[3].map(([f,d,op])=>`<path fill="${f}" d="${d}"${op!=null?` opacity="${op}"`:''}/>`).join('')}</svg>`;
 /* draw an icon (24-unit path) centred at cx,cy, s px wide */
 function hlIcon(c,id,cx,cy,s,color,weight){
   c.save();
@@ -69,9 +81,10 @@ Studio.tool({
     {id:'ink',type:'color',in:'style',label:'Icon and word colour',default:null,auto:'Style colour',global:true},
     {id:'guide',type:'toggle',in:'style',label:'Show the circle Instagram crops to (preview only)',default:true,global:true},
     {id:'gThis',type:'note',in:'style',label:'This cover'},
-    {id:'kind',type:'seg',in:'style',label:'Cover type',options:b=>[{v:'icon',l:'Icon'},{v:'word',l:'Word'},{v:'photo',l:'Photo'},...(hlProducts(b).length?[{v:'product',l:'Product'}]:[])],default:'icon'},
+    {id:'kind',type:'seg',in:'style',label:'Cover type',options:b=>[{v:'icon',l:'Icon'},{v:'word',l:'Word'},{v:'photo',l:'Photo'},...(hlProducts(b).length?[{v:'product',l:'Product'}]:[]),...(HL_EMO.length?[{v:'emoji',l:'Emoji'}]:[])],default:'icon'},
     {id:'product',type:'seg',in:'style',label:'Product',cols:3,options:b=>{ const l=hlProducts(b); return l.length?l.map(a=>({v:a.id,l:a.label,ic:`<img alt="" src="${b.base+(a.prev||a.file)}" style="width:44px;height:44px;object-fit:contain">`})):[{v:'',l:''}]; },default:b=>(hlProducts(b)[0]||{}).id||'',when:{field:'kind',is:'product'}},
     {id:'icon',type:'seg',in:'style',label:'Icon',cols:4,options:HL_ICONS.map(([v,l])=>({v,l,ic:hlIc(v)})),pageDefault:pg=>HL_ICONS[pg%HL_ICONS.length][0],when:{field:'kind',is:'icon'}},
+    {id:'emoji',type:'seg',in:'style',label:'Emoji',cols:4,options:HL_EMO.length?HL_EMO.map(e=>({v:e[0],l:e[2],ic:hlEmoSvg(e)})):[{v:'',l:''}],pageDefault:pg=>(HL_EMO[pg%Math.max(1,HL_EMO.length)]||[''])[0],when:{field:'kind',is:'emoji'}},
     {id:'word',type:'text',label:'Word on the cover',placeholder:b=>(b.phrases&&b.phrases.write)||'',when:{field:'kind',is:'word'}},
     {id:'sub',type:'text',label:'Small word under the icon',toggle:true,on:false,placeholder:b=>(b.phrases&&b.phrases.write)||'',when:{field:'kind',is:'icon'}}
   ],
@@ -92,6 +105,10 @@ Studio.tool({
         h.text('word','Word',word,cx,cy-m.h/2,{font:'display',size:230,color:ink,maxW:700});
         if(!word&&o.preview){ ctx.save(); ctx.fillStyle=dark?'rgba(255,255,255,.35)':'rgba(0,0,0,.25)'; ctx.font='800 54px "'+h.brand.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Type a word in Words',cx,cy); ctx.restore(); }
         h.text('sub','Small word','',0,0);
+      } else if(kind==='emoji'){
+        const s=560, id=o.value('emoji');
+        h.block('emoji','Emoji',cx-s/2,cy-s/2,s,s,(c,color)=>hlEmoji(c,id,0,0,s,color),'shape');
+        h.text('word','Word','',0,0); h.text('sub','Small word','',0,0);
       } else if(kind==='product'){
         const a=hlProducts(h.brand).find(x=>x.id===o.value('product'));
         if(a){

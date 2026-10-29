@@ -194,6 +194,7 @@ const ICON={
   grip:svg('<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',22),
   sort:svg('<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',18),
   up:svg('<path d="m18 15-6-6-6 6"/>',22), down:svg('<path d="m6 9 6 6 6-6"/>',22),
+  flip:svg('<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',20),
   centerX:svg('<path d="M12 2v20"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/>',20),
   centerY:svg('<path d="M2 12h20"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/>',20),
   /* one icon per photo tool, so the + menu and the welcome tell them apart */
@@ -396,6 +397,9 @@ const hasFx=fx=>!!fx&&(!!fx.look||!!+fx.light);
    Every text, button, place line and logo is a LAYER with an id. The tool says where it goes by default;
    the person can then drag it, resize it, recolour it or hide it, and the change is kept as an offset. */
 let onAssetLoad=null;
+/* Flip (mirror left to right): only for pictures, stickers and shapes. Words are never mirrored: text, buttons, the logo
+   (a tinted asset) and any brand asset marked noFlip:true keep their way round even if a recipe says flip. */
+const canFlip=b=>!!b&&(b.kind==='asset'||b.kind==='sticker'||b.kind==='shape')&&!b.noFlip;
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
@@ -409,7 +413,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     const l=L(id); const cx=bx.x+bx.w/2+l.dx, cy=bx.y+bx.h/2+l.dy, k=l.k;
     if(l.hidden){ reg.push({id,label,hidden:true,...opt}); return; }
     const rot=(l.rot||0)*Math.PI/180;   // rotation in degrees, around the layer's centre
-    ctx.save(); if(l.op!=null&&l.op<1) ctx.globalAlpha*=Math.max(0,l.op); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
+    const fl=l.flip&&canFlip(opt)?-1:1;   // flip: mirrored in the layer's own frame, so it turns the same way after
+    ctx.save(); if(l.op!=null&&l.op<1) ctx.globalAlpha*=Math.max(0,l.op); ctx.translate(cx,cy); if(rot) ctx.rotate(rot); ctx.scale(k*fl,k); ctx.translate(-bx.w/2,-bx.h/2); draw(l.color); ctx.restore();
     const rw=bx.w*k, rh=bx.h*k, c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot)), ew=rw*c+rh*s, eh=rw*s+rh*c;   // box around the turned layer
     reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
@@ -528,7 +533,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
           let src=a.tint&&c?tinted(base,c):base;
           ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
           ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
-        },{kind:'asset'});
+        },{kind:'asset',noFlip:!!(a.tint||a.noFlip)});
       } else {
         const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
         layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
@@ -691,7 +696,7 @@ async function tool(cfg){
         <div class="insp-part insp-col" data-part="move"><div class="insp-row move-row"><div class="nudge" role="group" aria-label="Nudge"><button type="button" class="nb" data-nudge="-1,0" aria-label="Nudge left">${ICON.back}</button><button type="button" class="nb" data-nudge="0,-1" aria-label="Nudge up">${ICON.up}</button><button type="button" class="nb" data-nudge="0,1" aria-label="Nudge down">${ICON.down}</button><button type="button" class="nb" data-nudge="1,0" aria-label="Nudge right">${ICON.next}</button></div>
           <div class="nudge" role="group" aria-label="Line up"><button type="button" class="nb wide" id="inspCenter" title="Centre across">${ICON.centerX}<span>Centre</span></button><button type="button" class="nb wide" id="inspMiddle" title="Middle, top to bottom">${ICON.centerY}<span>Middle</span></button></div></div>
           <div class="insp-row"><label class="lbl" for="inspRot">Rotate</label><input type="range" id="inspRot" min="-180" max="180" step="1" value="0"><output id="inspRotOut" for="inspRot">0°</output>
-          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button></div></div></div>
+          <div class="insp-row btns rot-btns"><button type="button" class="mini" data-rot="-15" aria-label="Turn left 15 degrees">↺ 15°</button><button type="button" class="mini" data-rot="0">Straight</button><button type="button" class="mini" data-rot="15" aria-label="Turn right 15 degrees">↻ 15°</button><button type="button" class="mini" id="inspFlip" aria-pressed="false" title="Mirror left to right" hidden>${ICON.flip}<span>Flip</span></button></div></div></div>
         <div class="insp-part insp-col" data-part="font"><div class="insp-row" id="inspFontRow"><label class="lbl" for="inspFont">Font</label><select id="inspFont" class="sel"></select></div>
           <div id="inspType">
           <div class="insp-row"><span class="lbl">Align</span><div class="row tight" role="group" aria-label="Align lines" id="inspAlign">${(B.dir==='rtl'?['right','center','left']:['left','center','right']).map(a=>`<button type="button" class="seg" data-align="${a}" aria-pressed="false">${a==='center'?'Centre':a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div></div>
@@ -1333,6 +1338,7 @@ async function tool(cfg){
     $('inspPasteStyle').hidden=!copiedStyle();
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
     const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
+    const fb=$('inspFlip'); fb.hidden=!canFlip(b); fb.setAttribute('aria-pressed',String(!!l.flip&&canFlip(b)));
     const rot=l.rot||0; if(document.activeElement!==$('inspRot')) $('inspRot').value=rot; $('inspRotOut').textContent=Math.round(rot)+'°';
     if(inspPart&&!has[inspPart]) inspPart=null;
     document.querySelectorAll('#sh-insp .itab').forEach(tb=>{ tb.hidden=!has[tb.dataset.part]; tb.setAttribute('aria-pressed',String(tb.dataset.part===inspPart)); });
@@ -1343,6 +1349,7 @@ async function tool(cfg){
   document.querySelector('#sh-insp .insp-tabs').addEventListener('click',e=>{ const tb=e.target.closest('.itab'); if(!tb) return; inspPart=inspPart===tb.dataset.part?null:tb.dataset.part; syncInspector();
     if(inspPart==='text') setTimeout(()=>{ $('inspText').focus(); },30); });
   $('inspRot').addEventListener('input',e=>{ if(S.sel) setRot(S.sel,snapRot(+e.target.value)); });
+  $('inspFlip').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id&&!r.hidden&&!r.empty); if(!id||!canFlip(b)) return; const l=LL(id); if(l.flip) delete l.flip; else l.flip=true; haptic('tick'); syncInspector(); render(); });
   document.querySelector('#sh-insp .rot-btns').addEventListener('click',e=>{ const b=e.target.closest('[data-rot]'); if(!b||!S.sel) return; const d=+b.dataset.rot, cur=(S.layers[S.sel]||{}).rot||0; setRot(S.sel,d?Math.round((cur+d)/15)*15:0); });
   /* the text box grows with its lines; Enter makes a new line (one-line layers: Enter = done) */
   function autoGrow(){ const t=$('inspText'); t.style.height='auto'; t.style.height=Math.min(160,t.scrollHeight+2)+'px'; }
