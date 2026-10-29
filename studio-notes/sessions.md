@@ -31,4 +31,5 @@ One **lead** session coordinates eight version sessions. Each version session bu
 
 ## Session ids
 - Lead: `session_01Y65H7Wuh2MRbSPB87xQhDz`
-- (filled in when the sessions start)
+- 1.13.0: `session_01Y65H7YirTuwUdsknVbPpiw` · 1.14.0: `session_01Y65H7aJ2XiFQnKcaS1Nv8Q` · 1.15.0: `session_01Y65H7Y3YamwVUuAfYhtBmx` · 1.16.0: `session_01Y65H7Z1Rs4mq7DVFdXM2gt`
+- 1.17.0: `session_01Y65H7ZXbKivBgV4PeZk2Ap` · 1.18.0: `session_01Y65H7XE6Jk4StQgFKHxr4g` · 1.19.0: `session_01Y65H7XBdERgM26pQvEu9Wu` · 1.20.0: `session_01Y65H7aFromajhvCh8BmNkb` (read-only until the lead's "go")
