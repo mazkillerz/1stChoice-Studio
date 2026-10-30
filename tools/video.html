@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Video editor · Studio</title>
+<style>@view-transition{navigation:auto}</style>
+<link rel="icon" href="../assets/icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="Studio">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../assets/studio.css">
+<link rel="stylesheet" href="video.css">
+</head>
+<body class="vd">
+<header class="vd-top">
+  <a class="icon-btn vd-back" href="../index.html" id="vdBack" aria-label="All tools" title="All tools"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span class="back-txt">All tools</span></a>
+  <div class="vd-name"><input id="vdName" type="text" maxlength="60" dir="auto" spellcheck="false" autocomplete="off" enterkeyhint="done" placeholder="Video" aria-label="Video name"></div>
+  <span class="vd-status" id="vdStatus" role="status"></span>
+  <button type="button" class="btn vd-save" id="vdSave" disabled>Save</button>
+</header>
+<main class="vd-main" id="vdMain">
+  <section class="vd-stage" aria-label="Preview">
+    <div class="vd-wrap" id="vdWrap">
+      <div class="vd-pv" id="vdPv">
+        <canvas id="vdCv" width="540" height="960" aria-label="Preview of the video"></canvas>
+        <div class="vd-safe" id="vdSafe" hidden aria-hidden="true">
+          <i class="sz sz-t"><b>Instagram bar</b></i><i class="sz sz-b"><b>Caption and name</b></i><i class="sz sz-l"></i><i class="sz sz-r"><b>Buttons</b></i><i class="sz-box"></i>
+        </div>
+        <button type="button" class="vd-safebtn" id="vdSafeBtn" aria-pressed="false" aria-label="Safe zones" title="Safe zones" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg></button>
+        <div class="vd-load" id="vdLoad" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><span id="vdLoadTxt">Loading the reel…</span></div>
+        <div class="vd-err" id="vdErr" hidden><p id="vdErrTxt"></p><button type="button" class="mini" id="vdRetry">Retry</button></div>
+      </div>
+    </div>
+    <div class="vd-trans" id="vdTrans">
+      <div class="vd-trow">
+        <button type="button" class="vd-play" id="vdPlay" aria-label="Play" disabled><svg class="i-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg><svg class="i-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+        <div class="vd-time" id="vdTime" aria-hidden="true"><bdi id="vdNow">0:00.0</bdi> / <bdi id="vdDur">0:00.0</bdi></div>
+      </div>
+      <div class="vd-track" id="vdTrack" role="slider" tabindex="0" aria-label="Timeline" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0" aria-valuetext="0 seconds">
+        <div class="vd-segs" id="vdSegs"></div><div class="vd-marks" id="vdMarks"></div><div class="vd-head" id="vdHead"></div>
+      </div>
+    </div>
+  </section>
+  <section class="vd-side">
+    <nav class="vd-tabs" id="vdTabs" role="tablist" aria-label="Edit">
+      <button type="button" class="vd-tab" role="tab" id="tabText" data-tab="text" aria-selected="true" aria-controls="paneText"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/></svg><span>Text</span></button>
+      <button type="button" class="vd-tab" role="tab" id="tabSound" data-tab="sound" aria-selected="false" aria-controls="paneSound" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg><span>Sound</span></button>
+    </nav>
+    <div class="vd-panes">
+      <div class="vd-pane" id="paneText" role="tabpanel" aria-labelledby="tabText"></div>
+      <div class="vd-pane" id="paneSound" role="tabpanel" aria-labelledby="tabSound" hidden></div>
+    </div>
+  </section>
+</main>
+<script src="../assets/studio.js"></script>
+<script src="../brands/brands.js"></script>
+<script src="../assets/reel.js"></script>
+<script src="../assets/reel-audio.js"></script>
+<script src="../assets/reel-export.js"></script>
+<script src="video.js"></script>
+</body>
+</html>

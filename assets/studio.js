@@ -94,7 +94,8 @@ const TOOLS={
   'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent'},
   'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
   'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
-  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'}
+  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'},
+  'video':{title:'Video editor',blurb:'Coded reels: change the words and the sound, save an MP4.',group:'free',type:'video',keys:'reel reels video mp4 movie animation motion sound music audio mixer edit'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 

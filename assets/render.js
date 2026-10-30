@@ -60,7 +60,8 @@
     try{
       for(let i=0;i<todo.length;i++){
         const d=todo[i], tag='Saving '+(i+1)+' of '+todo.length+'…';
-        if(d.skip){ skipped.push('“'+(d.label||d.name)+'” '+d.skip); continue; }
+        const why=d.skip||(d.tool==='video'?'is a video: open it to save the MP4':'');   // a video has no picture to draw: never open a frame for it
+        if(why){ skipped.push('“'+(d.label||d.name)+'” '+why); continue; }
         bar(i/todo.length,tag);
         const res=await design(d,stop,used||0,(pg,n)=>bar((i+pg/n)/todo.length,n>1?tag+' ('+(pg+1)+' of '+n+')':tag));
         if(res.error==='memory'){ busy=false; bar(0,''); $('bsProg').hidden=true; $('bsH').textContent='Not saved';

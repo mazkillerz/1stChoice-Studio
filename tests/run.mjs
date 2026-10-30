@@ -32,6 +32,10 @@ const MAP=[
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
   [/assets\/batch\.js/,['batch','batch-saved']],
   [/assets\/render\.js/,['batch-saved','draft-pictures']],
+  [/tools\/video\./,['video']],
+  [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene']],
+  [/assets\/reel-audio\.js/,['video','reel-audio']],
+  [/assets\/reel-export\.js/,['video','reel-export']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
