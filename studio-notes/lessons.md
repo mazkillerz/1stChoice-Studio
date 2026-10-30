@@ -48,6 +48,7 @@ What worked, what failed, and process tweaks. Newest session first.
 - Test-merging the finished branches on top of `main` while 1.30.0 ran meant the final release was mechanical: one predicted one-line conflict (TOOLS rows: 1.30 blurbs + 1.32 `quick`), resolved by a script prepared in advance.
 - Passing one session's contract to another (1.31's `CR.stickersReady()` globals → 1.33's lazy loader) before either finished avoided the only real cross-session risk.
 - Never `pkill -f http-server` from a shell whose command line contains the same words: it killed the release shell once (skill tip, still easy to forget).
+- The combined run caught the one thing no single branch could: 1.32's camera button on New place / Cinematic rows cut 1.30's new one-line descriptions at 360px (simplify30). Fixed by shortening the two lines. Always run the combined `--changed` after the last merge, not only per branch.
 - A session that sends "done" before reading the lead's answer to its own question: fold the answer in at merge, don't wait.
 
 ## 1.28.0 (session 39, Mazoon: emoji stickers + 3 + 2 rows)
