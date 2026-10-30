@@ -976,7 +976,7 @@ body.selecting .saved-page{padding-bottom:110px}
 .act-list{display:flex;flex-direction:column;background:var(--bg);border-radius:20px;overflow:hidden}
 .act-row{display:flex;align-items:center;gap:14px;min-height:54px;width:100%;padding:0 18px;border:0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);background:none;color:var(--fg);font:500 var(--fs-m) var(--sans);text-decoration:none;cursor:pointer;text-align:start;transition:background-color .15s}
 .act-row:first-child{border-top:0}
-.act-row svg{color:var(--muted);flex:none}
+.act-row svg{color:var(--muted);flex:none;width:20px;height:20px}   /* one size for every row, so the labels line up */
 .act-row.danger,.act-row.danger svg{color:var(--danger)}
 .act-row:active,.act-row.on{background:var(--chip)}
 .act-row:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}

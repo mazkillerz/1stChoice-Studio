@@ -2388,7 +2388,7 @@ async function home(){
   function openSettings(){
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
     const acc=me?row('account',ICON.user,'Account',esc((C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out')):row('account',ICON.user,'Sign in','See and save your team’s designs');
-    const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini solid" data-x>Done</button></div>
+    const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini" data-x>Done</button></div>
       <div class="act-list set-list">${acc}
       ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}

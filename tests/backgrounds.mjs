@@ -120,7 +120,9 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   await pg.evaluate(()=>Studio.debug.render()); await pg.waitForTimeout(300); const g2=await settle(pg);
   ok('Grain draws the same pixels every time (twice in a row)',g1===g2&&g1===hs.grain,{g1,g2,first:hs.grain});
   await pg.reload(); await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S,null,{timeout:15000});
-  await set(pg,'cans',{bg:null,gfx:'grain'}); const g3=await settle(pg);
+  await pg.waitForTimeout(1200);   // the can pictures finish loading after a reload (it failed once in 4 runs in 1.29.0)
+  await set(pg,'cans',{bg:null,gfx:'grain'}); let g3=await settle(pg);
+  if(g3!==g1){ await pg.waitForTimeout(2000); g3=await settle(pg); }
   ok('Grain draws the same pixels after reloading the page',g3===g1,{before:g1,after:g3});
   await ctx.close();
 }
