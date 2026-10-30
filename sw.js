@@ -16,7 +16,7 @@ const SHELL=[
   'tools/restock.html','tools/restock.js','tools/offer.html','tools/offer.js',
   'tools/carousel.html','tools/carousel.js','tools/highlight.html','tools/highlight.js',
   'tools/create.html','tools/create.js','tools/create.css','tools/create-core.js','tools/create-lib.js','tools/create-templates.js','brands/1stchoice/brand.js',
-  'tools/video.html','tools/video.js','tools/video.css','assets/reel.js','assets/reel-audio.js','assets/reel-export.js','assets/vendor/mp4-muxer.js',
+  'tools/video.html','tools/video.js','tools/video.css','assets/reel.js','assets/reel-audio.js','assets/reel-export.js','assets/reel-project.js','assets/vendor/mp4-muxer.js',
   'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-comp.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','lab/board-flex.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
 ];
 self.addEventListener('install',e=>{
