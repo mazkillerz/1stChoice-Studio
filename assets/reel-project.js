@@ -113,9 +113,12 @@ function anim(tx,t){   // opacity, scale, y offset and how many letters at time 
   if(to==='fade') a*=po; else if(to==='pop'){ a*=po; s*=0.6+0.4*po; } else if(to==='slide'){ a*=po; dy+=60*(1-po); }
   return {a,s,dy,frac};
 }
+const wCache=new Map(), fCache=new Map();   // text widths and font strings, kept until a font finishes loading (then widths are measured again)
+if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>{ wCache.clear(); fCache.clear(); });
+function fontKey(tx){ const k=(tx.font||'')+'|'+Math.round(tx.size||96); let f=fCache.get(k); if(f===undefined){ f=fontOf(tx); fCache.set(k,f); } return f; }
 function layoutText(tx,c){   // lines, widths and the box (relative to the centre) of a text layer
-  const size=tx.size||96, lines=String(tx.value==null?'':tx.value).split('\n'), lh=size*1.15;
-  c.save(); c.font=fontOf(tx); c.direction=dirOf(tx.value); const ws=lines.map(l=>c.measureText(l).width); c.restore();
+  const size=tx.size||96, lines=String(tx.value==null?'':tx.value).split('\n'), lh=size*1.15, font=fontKey(tx), dir=dirOf(tx.value);
+  const ws=lines.map(l=>{ const k=font+'|'+dir+'|'+l; let w=wCache.get(k); if(w===undefined){ c.save(); c.font=font; c.direction=dir; w=c.measureText(l).width; c.restore(); if(wCache.size>600) wCache.clear(); wCache.set(k,w); } return w; });
   const w=Math.max(0,...ws), h=lines.length*lh, pad=tx.box?0.3*size:0;
   return {lines,ws,w,h,lh,size,pad,bw:w+2*pad,bh:h+2*pad};
 }
@@ -129,7 +132,7 @@ function drawText(ctx,tx,t){
   ctx.save(); ctx.globalAlpha*=A.a; ctx.translate(tx.x,tx.y+A.dy); ctx.scale(A.s,A.s);
   if(tx.box){ ctx.fillStyle=tx.box; ctx.beginPath(); const x=-L.bw/2, y=-L.bh/2, r=Math.min(L.pad,L.bh/2);
     if(ctx.roundRect) ctx.roundRect(x,y,L.bw,L.bh,r); else ctx.rect(x,y,L.bw,L.bh); ctx.fill(); }
-  ctx.font=fontOf(tx); ctx.direction=dir; ctx.textBaseline='middle'; ctx.fillStyle=tx.color||'#111';
+  ctx.font=fontKey(tx); ctx.direction=dir; ctx.textBaseline='middle'; ctx.fillStyle=tx.color||'#111';
   L.lines.forEach((ln,i)=>{ const y=-L.h/2+L.lh*(i+0.5);
     if(left){ ctx.textAlign=dir==='rtl'?'right':'left'; ctx.fillText(left[i],dir==='rtl'?L.ws[i]/2:-L.ws[i]/2,y); }
     else { ctx.textAlign='center'; ctx.fillText(ln,0,y); } });

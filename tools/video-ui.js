@@ -49,12 +49,11 @@ bar.addEventListener('change',e=>{ const f=e.target.closest('[data-again]'); if(
 /* ---------- editing actions ---------- */
 /* the words a new text layer starts with: the brand kit's own "write here" phrase (approved wording), else a neutral default */
 const newWords=()=>(st.B&&st.B.phrases&&st.B.phrases.write)||'Your text';
-function snapshot(){ return JSON.parse(JSON.stringify(st.R)); }
-function restore(s){ const R=st.R; ['clips','texts','audio'].forEach(k=>R[k].splice(0,R[k].length,...s[k])); Object.keys(R.media).forEach(k=>delete R.media[k]); Object.assign(R.media,s.media); }
 let toastT=0;
 V.toast=(msg,undo)=>{ let el=document.getElementById('vdToast'); if(!el){ el=document.createElement('div'); el.id='vdToast'; el.className='vd-toast'; el.setAttribute('role','status'); main.appendChild(el); }
   el.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="link" data-undo>Undo</button>':''}`; el.hidden=false;
-  el.onclick=e=>{ if(e.target.closest('[data-undo]')){ el.hidden=true; clearTimeout(toastT); undo(); } };
+  if(undo) V.hist.toastAt=V.hist.i;
+  el.onclick=e=>{ if(e.target.closest('[data-undo]')){ el.hidden=true; clearTimeout(toastT); if(V.hist.toastAt===V.hist.i) undo(); } };
   clearTimeout(toastT); toastT=setTimeout(()=>{ el.hidden=true; },5000); };
 function act(a){
   const s=st.sel, R=st.R; if(a==='done'){ V.closeSheet(true); V.select(null); return; }
@@ -66,14 +65,14 @@ function act(a){
       R.clips.splice(i+1,0,c2); V.touch({bar:true}); }
     else if(a==='earlier'&&i>0){ R.clips.splice(i-1,0,R.clips.splice(i,1)[0]); V.touch({bar:true}); V.setT(V.lay()[i-1].start); }
     else if(a==='later'&&i<R.clips.length-1){ R.clips.splice(i+1,0,R.clips.splice(i,1)[0]); V.touch({bar:true}); V.setT(V.lay()[i+1].start); }
-    else if(a==='del'){ const snap=snapshot(); R.clips.splice(i,1); st.sel=null; V.closeSheet(true); V.touch({fit:true,bar:true}); V.renderBar(); V.toast('Clip deleted',()=>{ restore(snap); V.touch({bar:true}); }); }
+    else if(a==='del'){ R.clips.splice(i,1); st.sel=null; V.closeSheet(true); V.touch({fit:true,bar:true}); V.renderBar(); V.hist.commit(); V.toast('Clip deleted',()=>V.undo()); }
   } else if(s.kind==='text'){
     if(a==='dup'){ const t2=JSON.parse(JSON.stringify(it)); t2.id=V.uid('t'); t2.y=Math.min(1800,it.y+140); t2.start=Math.min(it.start+0.3,Math.max(0,V.dur()-0.5)); t2.end=Math.min(V.dur(),t2.start+(it.end-it.start)); R.texts.push(t2); V.select({kind:'text',id:t2.id}); V.touch({bar:true}); }
-    else if(a==='del'){ const snap=snapshot(); R.texts.splice(R.texts.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.toast('Text deleted',()=>{ restore(snap); V.touch({bar:true}); }); }
+    else if(a==='del'){ R.texts.splice(R.texts.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.hist.commit(); V.toast('Text deleted',()=>V.undo()); }
   } else {
     if(a==='split'){ const len=it.out-it.in, local=st.t-it.start; if(local<0.2||len-local<0.2) return; const a2=JSON.parse(JSON.stringify(it)); a2.id=V.uid('a');
       a2.start=+st.t.toFixed(3); a2.in=+(it.in+local).toFixed(3); a2.fadeIn=0; it.out=a2.in; it.fadeOut=0; R.audio.splice(R.audio.indexOf(it)+1,0,a2); V.touch({bar:true}); }
-    else if(a==='del'){ const snap=snapshot(); R.audio.splice(R.audio.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.toast('Sound deleted',()=>{ restore(snap); V.touch({bar:true}); }); }
+    else if(a==='del'){ R.audio.splice(R.audio.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.hist.commit(); V.toast('Sound deleted',()=>V.undo()); }
   }
 }
 
@@ -93,7 +92,7 @@ async function addFiles(files,say){
   }
   if(!added){ say(bad[0]||'Nothing was added.'); return; }
   if(wasEmpty) st.pps=V.defaultPps();
-  await V.touch({bar:true}); if(firstStart!==null) V.setT(firstStart);
+  await V.touch({bar:true}); V.hist.commit(); if(firstStart!==null) V.setT(firstStart);
   say(bad.length?bad[0]:''); V.closeSheet(true);
 }
 function addAudioFrom(m){
@@ -105,7 +104,7 @@ async function addReel(id,say){
   try{ say&&say('Adding…'); const r=await V.ensureReel(id), wasEmpty=V.empty(), at=insertIndex(), start=V.lay().slice(0,at).reduce((a,b)=>b.end,0);
     st.R.clips.splice(at,0,{id:V.uid('c'),kind:'reel',reel:id,in:0,out:r.M.duration,texts:{},mix:{},duck:true});
     if(wasEmpty){ st.pps=V.defaultPps(); st.defName=r.M.title; $('vdName').placeholder=st.defName; }
-    await V.touch({bar:true}); V.setT(start); V.closeSheet(true); }
+    await V.touch({bar:true}); V.hist.commit(); V.setT(start); V.closeSheet(true); }
   catch(err){ say&&say('Could not add the reel. ('+(err&&err.message||err)+')'); V.fail(err,'reel'); }
 }
 async function replaceMedia(oldId,file){
@@ -114,7 +113,7 @@ async function replaceMedia(oldId,file){
     R.clips.forEach(c=>{ if(c.media===oldId){ c.media=m.id; if(c.kind==='video'){ c.out=Math.min(c.out,m.dur||c.out); if(c.in>=c.out) c.in=0; } } });
     R.audio.forEach(a=>{ if(a.media===oldId){ a.media=m.id; a.out=Math.min(a.out,m.dur||a.out); } });
     R.media[m.id]=Object.assign(metaOf(m),{name:old.name||m.name}); delete R.media[oldId];
-    await V.touch({bar:true}); V.toast('Added again'); }
+    await V.touch({bar:true}); V.hist.commit(); V.toast('Added again'); }
   catch(err){ V.toast('Could not add the file: '+(err&&err.message||err)); V.fail(err,'media'); }
 }
 $('vdEmptyFile').addEventListener('change',e=>{ const f=e.target.files; if(f&&f.length) addFiles(f,m=>{ $('vdEmptySt').textContent=m; }).finally(()=>{ e.target.value=''; }); });

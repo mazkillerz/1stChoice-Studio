@@ -9,7 +9,7 @@ const TOOL='video', SAFE_KEY='studio:video:safe';
 const q=new URLSearchParams(location.search);
 const V=window.VD={L,esc,$,q,TOOL};
 const st=V.st={B:null,P:null,R:null,reels:{},reelP:{},mixP:{},sel:null,t:0,playing:false,h:null,p0:0,t0:0,raf:0,pps:100,pad:195,
-  design:null,base:'',clean:'',ready:false,busy:false,leaving:false,sup:null,safe:false,last:0,sheet:null,drawMs:0,drawErr:'',loadErr:'',audioErr:'',log:[],solo:null};
+  design:null,base:'',clean:'',ready:false,busy:false,leaving:false,sup:null,safe:false,last:0,sheet:null,drawMs:0,skip:0,cssW:0,draftId:null,drawErr:'',loadErr:'',audioErr:'',log:[],solo:null};
 const clone=V.clone=o=>JSON.parse(JSON.stringify(o));
 const svg=(d,s,x)=>`<svg width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${x||''}>${d}</svg>`;
 const I=V.I={
@@ -43,6 +43,7 @@ const prog01=p=>{ if(typeof p==='number') return Math.max(0,Math.min(1,p>1?p/100
 const slug=s=>String(s||'').trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
 const clamp=V.clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const RENDER=q.get('render')==='1';   // Saved's hidden renderer: it never writes a draft
 V.devWord=()=>L.devWord();
 
 /* ---------- the project's numbers (from the recipe, so they are right before the engine has caught up) ---------- */
@@ -83,9 +84,15 @@ function stageLayout(){
   if(aw<=0||ah<=0) return;
   const w=Math.max(60,Math.floor(Math.min(aw,ah*asp))), h=Math.round(w/asp), pv=$('vdPv');
   pv.style.width=w+'px'; pv.style.height=h+'px';
-  const cv=$('vdCv'), dpr=Math.min(3,window.devicePixelRatio||1), cw=Math.min(W,Math.round(w*dpr)), ch=Math.round(cw/asp);
-  if(cv.width!==cw||cv.height!==ch){ cv.width=cw; cv.height=ch; }
-  drawNow(); placeSel();
+  st.cssW=w; sizeCv(); drawNow(); placeSel();
+}
+/* the preview's pixel size: full device sharpness when paused or scrubbing, at most 540 px wide while playing (phones can't keep up at 1080).
+   Returns true when the size changed (the canvas is cleared then, so the caller draws again). */
+const PLAY_W=540;
+function sizeCv(){
+  const W=(st.P&&st.P.W)||1080, H=(st.P&&st.P.H)||1920, asp=W/H, w=st.cssW||$('vdPv').clientWidth||216;
+  const cv=$('vdCv'), dpr=Math.min(3,window.devicePixelRatio||1); let cw=Math.min(W,Math.round(w*dpr)); if(st.playing) cw=Math.min(cw,PLAY_W);
+  const ch=Math.round(cw/asp); if(cv.width===cw&&cv.height===ch) return false; cv.width=cw; cv.height=ch; return true;
 }
 V.stageLayout=stageLayout;
 function showErr(msg){ $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErrTxt').textContent=msg; $('vdErr').dataset.kind=''; }
@@ -159,28 +166,31 @@ function tickFrame(){
   if(!st.playing) return;
   const t=curT();
   if(t>=dur()){ st.t=dur(); pause(); if(V.scrollTo) V.scrollTo(st.t); paint(); return; }
-  st.t=t; try{ st.P.syncPreview(t,true); }catch(_){}
+  st.t=t;
+  if(st.skip){ st.skip=0; st.raf=requestAnimationFrame(tickFrame); return; }   // the last picture took too long: let this tick go, the sound clock keeps the time
+  try{ st.P.syncPreview(t,true); }catch(_){}
   if(V.scrollTo) V.scrollTo(t);
-  paint(); st.raf=requestAnimationFrame(tickFrame);
+  paint(); if(st.drawMs>40) st.skip=1; st.raf=requestAnimationFrame(tickFrame);
 }
 function play(){
   if(!st.ready||st.busy||V.empty()) return;
   stopSolo();
   if(st.t>=dur()-0.5/fps()) st.t=0;
-  st.playing=true; startClock(st.t); setPlayUI(); cancelAnimationFrame(st.raf);
+  st.playing=true; st.skip=0; if(sizeCv()) drawNow(); startClock(st.t); setPlayUI(); cancelAnimationFrame(st.raf);
   Promise.resolve().then(()=>st.P.prepare(st.t)).catch(()=>{}).then(()=>{ if(st.playing){ st.raf=requestAnimationFrame(tickFrame); } });
 }
 function pause(){
   if(!st.playing) return;
   st.playing=false; cancelAnimationFrame(st.raf); stopAudio(); setPlayUI();
   try{ st.P.syncPreview(st.t,false); }catch(_){}
+  if(sizeCv()) drawNow();
   if(V.afterPause) V.afterPause();
 }
 const toggle=()=>{ st.playing?pause():play(); };
 V.play=play; V.pause=pause; V.toggle=toggle; V.stopAudio=stopAudio;
 let restartT=0;
 V.restartPlay=()=>{ clearTimeout(restartT); restartT=setTimeout(()=>{ if(st.playing){ const t=curT(); stopAudio(); startClock(t); } },120); };
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ pause(); stopSolo(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ pause(); stopSolo(); draftNow(); } });
 $('vdPlay').addEventListener('click',()=>{ L.haptic&&L.haptic('tick'); toggle(); });
 document.addEventListener('keydown',e=>{ if((e.key===' '||e.code==='Space')&&!e.target.closest('input,textarea,button,select,a,label,[role=tab],#vtScroll')&&!document.querySelector('dialog[open]')&&st.ready){ e.preventDefault(); toggle(); } });
 
@@ -191,15 +201,93 @@ function setSafe(on,keep){
 }
 $('vdSafeBtn').addEventListener('click',()=>setSafe(!st.safe));
 
+/* ---------- history: Undo / Redo ----------
+   The whole recipe as JSON after each finished edit. A drag, trim or slider is ONE step (committed on pointer-up / change); typing in a
+   text box merges into one step per ~600 ms pause; anything else is committed 700 ms after the last change. 60 steps at most. */
+const H=V.hist={stack:[],i:-1,pending:false,mute:0,down:false,toastAt:null,fb:0,ty:0,dirty:false,unsaved:false,MAX:60};
+const NEEDSEL=new Set(['edit','vol','fades','len','zoom','words','mix']);
+function syncHist(){ $('vdUndo').disabled=H.i<=0; $('vdRedo').disabled=H.i>=H.stack.length-1; }
+H.reset=()=>{ clearTimeout(H.fb); clearTimeout(H.ty); H.stack=[cur()]; H.i=0; H.pending=false; H.toastAt=null; syncHist(); };
+H.mark=()=>{
+  if(H.mute||!st.ready) return; H.pending=true; H.dirty=true; clearTimeout(H.fb);
+  H.fb=setTimeout(function fb(){ if(H.down){ H.fb=setTimeout(fb,300); return; } H.commit(); },700);
+  const r=$('vdResume'); if(r) r.hidden=true; saveSoon();
+};
+H.commit=()=>{
+  clearTimeout(H.fb); clearTimeout(H.ty); if(!H.pending) return; H.pending=false; const s=cur(); if(s===H.stack[H.i]) return;
+  H.stack.length=H.i+1; H.stack.push(s); if(H.stack.length>H.MAX) H.stack.shift(); H.i=H.stack.length-1; syncHist();
+  const t=document.getElementById('vdToast'); if(t&&H.toastAt!==H.i) t.hidden=true;
+};
+function applyRecipe(s){
+  const o=JSON.parse(s), R=st.R;
+  Object.keys(R).forEach(k=>{ if(!(k in o)) delete R[k]; });
+  Object.keys(o).forEach(k=>{
+    if(k==='clips'||k==='texts'||k==='audio') R[k].splice(0,R[k].length,...o[k]);
+    else if(k==='media'){ Object.keys(R.media).forEach(x=>delete R.media[x]); Object.assign(R.media,o.media); }
+    else R[k]=o[k]; });
+  if(st.sel&&!V.selItem()) st.sel=null;
+  if(st.sheet&&NEEDSEL.has(st.sheet.name)&&!st.sel&&V.closeSheet) V.closeSheet(true);   // a sheet about something that is gone
+  H.mute++; try{ V.touch({bar:true}); } finally{ H.mute--; }
+  if(st.sheet&&V.refreshSheet){ V.refreshSheet(); const a=document.activeElement; if(isTouch()&&a&&a.matches&&a.matches('textarea,input[type=text]')) a.blur(); }
+  H.dirty=true; saveSoon();
+}
+H.go=dir=>{ H.commit(); const j=H.i+dir; if(j<0||j>=H.stack.length) return false; H.i=j; applyRecipe(H.stack[j]); syncHist(); const t=document.getElementById('vdToast'); if(t) t.hidden=true; return true; };
+V.undo=()=>H.go(-1); V.redo=()=>H.go(1);
+$('vdUndo').addEventListener('click',()=>{ L.haptic&&L.haptic('tick'); V.undo(); });
+$('vdRedo').addEventListener('click',()=>{ L.haptic&&L.haptic('tick'); V.redo(); });
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey||!st.ready||document.querySelector('dialog[open]')) return; const k=e.key.toLowerCase();
+  if(e.target&&e.target.id==='vdName') return;   // the name field keeps the browser's own undo
+  if(k==='z'&&!e.shiftKey){ e.preventDefault(); V.undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); V.redo(); } });
+/* when a step is finished */
+['pointerup','pointercancel','change','click'].forEach(ev=>document.addEventListener(ev,()=>{ if(H.pending) setTimeout(H.commit,0); },true));
+document.addEventListener('pointerdown',()=>{ H.down=true; },true);
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{ H.down=false; },true));
+document.addEventListener('input',e=>{ if(e.target.matches&&e.target.matches('input[type=text],textarea')){ clearTimeout(H.ty); H.ty=setTimeout(H.commit,600); } },true);
+
+/* ---------- the draft kept on this device (like the other tools): localStorage 'studio:draft:<brand>:video:<id>' ----------
+   {video: recipe, name, at, design: saved design id or null, pfx: its own key}; a small picture in IndexedDB at '<key>:thumb'.
+   Your own clips are already in IndexedDB (StudioMedia), so nothing is copied. */
+const draftKey=id=>L.draftBase(st.B.id,TOOL)+':'+id;
+let saveT=0, thC=null;
+function saveSoon(){ if(RENDER||!st.ready) return; H.unsaved=true; clearTimeout(saveT); saveT=setTimeout(()=>writeDraft(false),800); }
+function draftThumb(){   // the frame at the playhead (the reel's poster at 0), 180×320
+  if(V.empty()) return null;
+  try{ if(!thC){ thC=document.createElement('canvas'); thC.width=180; thC.height=320; }
+    const t=st.t>0.05?st.t:posterT(); st.P.draw(thC.getContext('2d'),Math.min(t,Math.max(0,dur()-0.5/fps())),{preview:true}); return thC.toDataURL('image/jpeg',.7); }catch(_){ return null; }
+}
+function writeDraft(force){
+  clearTimeout(saveT); saveT=0; if(RENDER||!st.ready||!(force||H.unsaved)) return; H.unsaved=false;
+  if(!st.draftId){ if(st.design) return;   // a saved design opened from the team is not a draft
+    st.draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); try{ history.replaceState(null,'',location.pathname+'?draft='+st.draftId); }catch(_){} }
+  const key=draftKey(st.draftId), rec={video:st.R,name:$('vdName').value.trim(),at:Date.now(),design:st.design?st.design.id:null,pfx:key};
+  if(st.design) rec.base=st.base;
+  const th=draftThumb(); if(th) L.idb.put(key+':thumb',th);
+  if(L.store(key,rec)===null) V.log('draft','no room'); syncStatus();
+}
+function draftNow(){ if(RENDER||!st.ready) return; H.commit(); if(H.unsaved) writeDraft(false); }
+$('vdName').addEventListener('input',()=>{ H.dirty=true; saveSoon(); });
+function latestDraft(){
+  const pre=L.draftBase(st.B.id,TOOL)+':'; let best=null;
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue;
+    const d=L.store(k); if(d&&d.video&&d.video.clips&&d.video.clips.length&&(!best||(d.at||0)>(best.d.at||0))) best={id,d}; } }catch(_){}
+  return best;
+}
+function offerResume(){
+  const dr=latestDraft(); if(!dr) return; const box=$('vdResume'); box.hidden=false;
+  $('vdResumeGo').onclick=()=>{ st.leaving=true; location.href=location.pathname+'?draft='+encodeURIComponent(dr.id); };
+  $('vdResumeX').onclick=()=>{ box.hidden=true; };
+}
+
 /* ---------- changes: every edit goes through touch() ---------- */
-function syncStatus(){ $('vdStatus').textContent=st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):''; }
+function syncStatus(){ $('vdStatus').textContent=st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):(st.draftId?'Kept on this '+L.devWord():''); }
 V.syncStatus=syncStatus;
 /* keep text and sound layers inside the video after the clips change */
 V.fitLayers=()=>{ const d=dur(); if(d<=0) return;
   st.R.texts.forEach(t=>{ if(t.start>d-0.2) t.start=Math.max(0,d-1); t.end=Math.min(Math.max(t.end,t.start+0.2),Math.max(d,t.start+0.2)); if(t.end>d) t.end=d; if(t.end-t.start<0.2) t.start=Math.max(0,t.end-0.2); });
   st.R.audio.forEach(a=>{ if(a.start>d-0.2){ a.start=Math.max(0,d-Math.min(1,a.out-a.in)); } }); };
 V.touch=function(o){
-  o=o||{}; const P=st.P;
+  o=o||{}; const P=st.P; H.mark();
   if(o.fit) V.fitLayers();
   if(o.tl!==false&&V.renderTl) V.renderTl();
   syncEmpty(); $('vdDur').textContent=fmt(dur()); $('vtScroll').setAttribute('aria-valuemax',String(dur()));
@@ -279,7 +367,7 @@ V.placeSel=placeSel;
 })();
 function newVideo(){
   const go=()=>{ st.leaving=true; location.href=location.pathname+'?new=1'; };
-  if(!st.ready||cur()===st.clean||V.empty()) return go();
+  if(!st.ready||cur()===st.clean||V.empty()||st.draftId) return go();   // an unfinished video is kept on this device
   const d=L.dialog(`<div class="dlg-body"><h3>Start a new video?</h3><p class="small">Your edits are not saved. ${st.design?'Update the saved video first to keep them.':'Save to the team first to keep them.'}</p>
     <div class="dlg-actions col"><button type="button" class="btn" id="nvGo">Start a new video</button><button type="button" class="link" id="nvKeep">Keep editing</button></div></div>`);
   d.tabIndex=-1; d.querySelector('#nvKeep').onclick=()=>d.close(); d.querySelector('#nvGo').onclick=go;
@@ -299,8 +387,8 @@ function leavePrompt(href){
     try{ await teamSave(); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
 }
 $('vdBack').addEventListener('click',e=>{ if(st.ready&&st.design&&cur()!==st.base){ e.preventDefault(); leavePrompt(e.currentTarget.href); } });
-addEventListener('beforeunload',e=>{ if(!st.leaving&&(st.busy||(st.ready&&cur()!==st.clean))){ e.preventDefault(); e.returnValue=''; } });
-addEventListener('pagehide',()=>{ stopAudio(); stopSolo(); });
+addEventListener('beforeunload',e=>{ if(!st.leaving&&(st.busy||(st.ready&&!st.draftId&&!RENDER&&cur()!==st.clean))){ e.preventDefault(); e.returnValue=''; } });
+addEventListener('pagehide',()=>{ stopAudio(); stopSolo(); draftNow(); });
 
 /* ---------- team save ---------- */
 function posterT(){
@@ -318,19 +406,29 @@ async function teamSave(){
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
   const name=nameNow(), recipe=clone(st.R); recipe.v=2; recipe.kind='video'; recipe.brand=st.B.id;
   const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob()});
-  st.design={id,name}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus();
+  st.design={id,name}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus(); if(st.draftId) writeDraft(true);
   return id;
 }
 V.teamSave=teamSave;
 
 /* ---------- Save sheet ---------- */
 function fileName(){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return (slug($('vdName').value)||slug(st.defName)||'video')+' '+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+'.mp4'; }
+/* how long saving takes: draw 3 frames at full size (and seek the clips), times frames and sub-frames; rounded to 10 s / 1 min */
+const estText=s=>s<90?'About '+Math.max(10,Math.round(s/10)*10)+' s':'About '+Math.max(2,Math.round(s/60))+' min';
+const leftText=s=>s<60?'About '+Math.max(5,Math.round(s/5)*5)+' s left':'About '+Math.ceil(s/60)+' min left';
+async function benchmark(){
+  const P=st.P, total=dur(), cv=document.createElement('canvas'); cv.width=P.W||1080; cv.height=P.H||1920; const cx=cv.getContext('2d'), D=[], Pr=[];
+  for(const f of [.2,.5,.8]){ const t=Math.max(0,Math.min(total-0.05,total*f)), a=performance.now();
+    try{ await P.prepare(t); }catch(_){} const b=performance.now(); P.draw(cx,t,{}); const c=performance.now(); Pr.push(b-a); D.push(c-b); }
+  cv.width=cv.height=0; try{ await P.prepare(st.t); }catch(_){}
+  const med=a=>a.slice().sort((x,y)=>x-y)[1]; return {draw:med(D),prep:med(Pr)};
+}
 const mb=n=>n>=1e6?(n/1e6).toFixed(1)+' MB':Math.max(1,Math.round(n/1e3))+' kB';
 async function openSave(){
   if(!st.ready||st.busy||V.empty()) return;
   pause(); stopSolo();
   const d=L.dialog('<div class="dlg-body vd-save-d" id="vsBody"></div>','vd-dlg'); d.tabIndex=-1; d.focus();
-  const body=d.querySelector('#vsBody'), ctl={ac:null,url:null,lock:null};
+  const body=d.querySelector('#vsBody'), ctl={ac:null,url:null,lock:null,est:null,sub:undefined};
   let sup={mode:'none'}; try{ sup=await (st.sup||(st.sup=StudioReelExport.support())); }catch(_){}
   d.addEventListener('cancel',e=>{ if(st.busy){ e.preventDefault(); if(ctl.ac) ctl.ac.abort(); } });
   d.addEventListener('close',()=>{ if(ctl.url) setTimeout(()=>URL.revokeObjectURL(ctl.url),60000); });
@@ -341,7 +439,8 @@ async function openSave(){
     const noGo=sup.mode==='none'||miss.length>0||total<=0;
     body.innerHTML=`<h3>Save</h3>
       <button type="button" class="btn" id="vsGo"${noGo?' disabled':''}><span>Save video</span><small><bdi>${size}</bdi></small></button>
-      ${heavy?'<p class="vd-note">A reel in this video is heavy (3D): saving takes longer.</p>':''}
+      <p class="vd-note" id="vsEst" role="status"></p>
+      <p class="vd-note warn" id="vsHeavy"${heavy?'':' hidden'}>This video takes longer to save (3D). Keep Studio open.</p>
       ${sup.mode==='recorder'?`<p class="vd-note">This browser makes the video in real time (<bdi>${Math.round(total)}</bdi> s)${hasVid?' and it may stutter where your clips play':''}. Keep Studio open.</p>`:''}
       ${sup.mode==='none'?'<p class="vd-note" role="status">This browser can’t make videos. Open Studio in Chrome, or in Safari on iOS 17 or newer.</p>':''}
       ${miss.length?`<p class="vd-note" role="status">${miss.length===1?'A file is':'Some files are'} missing on this ${L.devWord()}. Add ${miss.length===1?'it':'them'} again on the timeline first.</p>`:''}
@@ -354,6 +453,19 @@ async function openSave(){
       try{ await teamSave(); s.textContent='Saved to the team'; L.celebrate&&L.celebrate(); }catch(err){ s.textContent=err.message||'Could not save. Try again.'; }
       b.disabled=false; });
     body.querySelector('#vsGo:not(:disabled)')&&body.querySelector('#vsGo').focus({preventScroll:true});
+    if(!noGo) estimate(sup,total);
+  }
+  async function estimate(sup,total){
+    const put=()=>{ const e=body.querySelector('#vsEst'), hv=body.querySelector('#vsHeavy'); if(!e) return; const r=ctl.est; if(!r) return;
+      e.innerHTML=`<bdi>${estText(r.secs)}</bdi> on this ${L.devWord()}`; if(r.secs>120&&hv) hv.hidden=false; };
+    if(ctl.est) return put();
+    await wait(60);   // let the sheet paint first
+    if(!d.open) return;
+    let b={draw:0,prep:0}; try{ b=await benchmark(); } catch(err){ V.fail(err,'bench'); }
+    if(!d.open) return;
+    const frames=Math.max(1,Math.round(total*fps())), per=b.draw+b.prep; ctl.sub=per>250?2:4;   // a slow device makes 2 sub-frames (still smooth)
+    const secs=sup.mode==='recorder'?total:frames*(ctl.sub*per+10)/1000;
+    ctl.est={secs,per}; window.__videoBench={draw:b.draw,prep:b.prep,sub:ctl.sub,secs}; put();
   }
   async function exportIt(){
     st.busy=true; ctl.ac=new AbortController(); const sig=ctl.ac.signal;
@@ -366,10 +478,12 @@ async function openSave(){
     try{
       const audio=await st.P.audio();
       if(sig.aborted) throw Object.assign(new Error('Cancelled'),{name:'AbortError'});
-      const r=await StudioReelExport.run({reel:st.P,texts:{},audio,signal:sig,onProgress:(f,i,n)=>{
+      const t0=performance.now();
+      const r=await StudioReelExport.run({reel:st.P,texts:{},audio,signal:sig,sub:ctl.sub,onProgress:(f,i,n)=>{
         const p=Math.round(Math.max(0,Math.min(1,f))*100), bar=body.querySelector('#vsBar'); if(!bar) return;
         bar.style.width=p+'%'; body.querySelector('#vsRole').setAttribute('aria-valuenow',String(p));
-        body.querySelector('#vsTxt').innerHTML=`<bdi>Frame ${Math.min(n,(i||0)+1)} of ${n}</bdi>`; }});
+        const el=(performance.now()-t0)/1000, left=f>0.03&&el>2?leftText(el*(1-f)/f):'';
+        body.querySelector('#vsTxt').innerHTML=`<bdi>Frame ${Math.min(n,(i||0)+1)} of ${n}</bdi>${left?` · <bdi>${left}</bdi>`:''}`; }});
       window.__videoLast={size:r.blob.size,type:r.blob.type,mode:r.mode,frames:r.frames,duration:dur()};
       st.clean=cur(); done(r.blob);
     }catch(err){
@@ -427,7 +541,7 @@ function debugPanel(){
 
 /* ---------- start ---------- */
 function setLoad(p){ $('vdLoadTxt').textContent='Loading the reel… '+p+'%'; }
-async function openProject(recipe,design){
+async function openProject(recipe,design,draft){
   const r0=StudioProject.fromRecipe(recipe), pr={a:0}, upd=()=>setLoad(Math.round(pr.a*100));
   const P=await StudioProject.create(r0,{brandBase:st.B.base,onProgress:p=>{ pr.a=prog01(p); upd(); }});
   st.P=P; st.R=P.recipe; st.R.clips=st.R.clips||[]; st.R.texts=st.R.texts||[]; st.R.audio=st.R.audio||[]; st.R.media=st.R.media||{};
@@ -436,13 +550,15 @@ async function openProject(recipe,design){
   try{ const u=P.update(); if(u&&u.then) await u; }catch(err){ V.fail(err,'update'); }
   const first=st.R.clips.find(c=>c.kind==='reel'); st.defName=first&&st.reels[first.reel]?st.reels[first.reel].M.title:'Video';
   if(design){ st.design={id:design.id,name:design.name}; $('vdName').value=design.name; }
+  if(draft&&draft.name) $('vdName').value=draft.name;
   $('vdName').placeholder=st.defName;
   $('vdLoad').hidden=true; $('vdErr').hidden=true;
   st.t=0; st.pps=V.defaultPps?V.defaultPps():100; st.sel=null;
   $('vdDur').textContent=fmt(dur());
   stageLayout(); if(V.renderTl) V.renderTl(); if(V.renderBar) V.renderBar();
   paint(); $('vdSafeBtn').hidden=false; setSafe(L.store(SAFE_KEY)===true,true);
-  st.base=st.clean=cur(); st.ready=true; syncEmpty(); setPlayUI(); syncStatus();
+  st.base=st.clean=cur(); if(draft&&design&&typeof draft.base==='string') st.base=draft.base;
+  H.reset(); H.dirty=false; H.unsaved=false; st.ready=true; syncEmpty(); setPlayUI(); syncStatus();
   st.sup=StudioReelExport.support().catch(()=>({mode:'none'}));
   if(V.afterOpen) V.afterOpen();
   if(q.get('debug')==='1') debugPanel();
@@ -452,12 +568,15 @@ async function start(){
   $('vdErr').hidden=true; $('vdLoad').hidden=false; setLoad(0);
   try{
     st.B=await Studio.useBrand();
-    const did=q.get('design'); let recipe=null, design=null;
+    const did=q.get('design'), dr=q.get('draft'); let recipe=null, design=null, rec=null;
+    if(dr&&!did){ rec=L.store(draftKey(dr)); if(rec&&rec.video){ st.draftId=dr; } else { rec=null; try{ history.replaceState(null,'',location.pathname); }catch(_){} } }
     if(did){
       if(!(await L.ensureMember('This design is saved with the team. Sign in to open it.'))) return showErr('Sign in with the team password to open this saved video.');
       const C=await L.cloud(); const d=await C.getDesign(did);
       if(d.tool!==TOOL){ st.leaving=true; location.replace(L.toolPage(d.tool)+'?design='+encodeURIComponent(did)); return; }
       design=d; recipe=d.recipe||{};
+    } else if(rec){
+      recipe=rec.video; if(rec.design) design={id:rec.design,name:rec.name||'Video'};
     } else if(q.get('new')==='1'){
       recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}};
     } else {
@@ -465,15 +584,16 @@ async function start(){
       if(!id){ recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}}; }
       else recipe={v:1,kind:'reel',brand:st.B.id,reel:id,texts:{},mix:{},duck:true};
     }
-    await openProject(recipe,design);
+    await openProject(recipe,design,rec);
+    if(!did&&!dr&&!q.get('new')&&!q.get('reel')&&!RENDER) offerResume();
   }catch(err){ st.loadErr=String(err&&err.message||err); V.log('load',st.loadErr); console.error(err); showErr('The video could not be opened. Check your connection and try again. ('+st.loadErr+')'); if(q.get('debug')==='1'&&$('vdDbg').hidden) debugPanel(); }
 }
 V.start=start;
 $('vdRetry').addEventListener('click',start);
 $('vdName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
 new ResizeObserver(stageLayout).observe($('vdWrap'));
-window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,duration:dur(),clips:st.R?st.R.clips.length:0,recipe:st.R?clone(st.R):null,sel:st.sel,pps:st.pps,h:!!st.h,sheet:st.sheet&&st.sheet.name,drawErr:st.drawErr});
-if(q.get('render')==='1'){ $('vdLoad').hidden=true; }   // Saved's hidden renderer never opens videos; nothing heavy here
+window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,duration:dur(),clips:st.R?st.R.clips.length:0,recipe:st.R?clone(st.R):null,sel:st.sel,pps:st.pps,h:!!st.h,sheet:st.sheet&&st.sheet.name,drawErr:st.drawErr,hist:{i:H.i,n:H.stack.length},draftId:st.draftId,cvw:$('vdCv').width});
+if(RENDER){ $('vdLoad').hidden=true; }   // Saved's hidden renderer never opens videos; nothing heavy here
 else document.addEventListener('DOMContentLoaded',()=>start());
 stageLayout();
 })();

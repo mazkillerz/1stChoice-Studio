@@ -31,7 +31,7 @@ sc.addEventListener('keydown',e=>{ if(!st.ready) return; let d=0;
 new ResizeObserver(()=>{ if(st.ready) { renderTl(); setScroll(st.t*st.pps); } }).observe(sc);
 
 /* ---------- thumbnails and waves (made on the side, kept per clip, stretched until the sharp one is ready) ---------- */
-const strips=new Map(), waves=new Map(), mediaThumbs=new Map(); let genT=0; const genQ=new Set();
+const strips=new Map(), waves=new Map(), mediaThumbs=new Map(); let genT=0; const genQ=new Set(), genBusy=new Set();
 const sig=c=>[c.kind,c.media||c.reel,c.in,c.out,c.dur].join('|');
 function cover(cx,src,x,y,w,h){ const sw=src.width, sh=src.height; if(!sw||!sh) return; const k=Math.max(w/sw,h/sh), dw=sw*k, dh=sh*k; cx.save(); cx.beginPath(); cx.rect(x,y,w,h); cx.clip(); cx.drawImage(src,x+(w-dw)/2,y+(h-dh)/2,dw,dh); cx.restore(); }
 async function mThumbs(id){ if(!mediaThumbs.has(id)) mediaThumbs.set(id,StudioMedia.thumbs(id,12,Math.round(CH*dpr())).catch(()=>[])); return mediaThumbs.get(id); }
@@ -49,15 +49,20 @@ async function makeStrip(c,start,wpx){
   }
   return cv;
 }
-function wantStrip(c,start,wpx){ const key=c.id, e=strips.get(key); if(e&&e.sig===sig(c)&&Math.abs(e.w-wpx)<3) return; genQ.add(c.id); clearTimeout(genT); genT=setTimeout(runGen,st.playing?600:120); }
+/* a picture strip is made once per zoom bucket (a step of about 1.4×) and stretched in between; only blocks in view (plus half a screen each side) are made */
+const bucket=()=>Math.round(Math.log2(st.pps)*2);
+const bucketPps=b=>Math.pow(2,b/2);
+function inView(left,w){ const x0=sc.scrollLeft-sc.clientWidth*.5, x1=sc.scrollLeft+sc.clientWidth*1.5; return left+w>=x0&&left<=x1; }
+function wantStrip(c,start,wpx){ const e=strips.get(c.id), b=bucket(); if(e&&e.sig===sig(c)&&e.b===b) return; genQ.add(c.id); clearTimeout(genT); genT=setTimeout(runGen,st.playing?600:120); }
 async function runGen(){
   if(st.playing){ genT=setTimeout(runGen,600); return; }
   const ids=[...genQ]; genQ.clear();
   for(const id of ids){
-    const l=V.lay().find(x=>x.c.id===id); if(!l) continue; const c=l.c, wpx=Math.max(8,V.clipLen(c)*st.pps-2);
-    if(V.missing().has(c.media)) continue;
-    try{ const cv=await makeStrip(c,l.start,wpx); if(!cv) continue; strips.set(id,{sig:sig(c),w:wpx,cv}); const old=inn.querySelector(`.vt-blk[data-id="${CSS.escape(id)}"] .vt-th`);
-      if(old){ cv.className='vt-th'; old.replaceWith(cv); } }catch(err){ V.log('thumb',String(err&&err.message||err)); }
+    if(genBusy.has(id)){ genQ.add(id); continue; }
+    const l=V.lay().find(x=>x.c.id===id); if(!l||V.missing().has(l.c.media)) continue;
+    const c=l.c, b=bucket(), wpx=Math.max(8,V.clipLen(c)*bucketPps(b)-2); genBusy.add(id);
+    try{ const cv=await makeStrip(c,l.start,wpx); if(!cv) continue; strips.set(id,{sig:sig(c),w:wpx,b,cv}); const old=inn.querySelector(`.vt-blk[data-id="${CSS.escape(id)}"] .vt-th`);
+      if(old){ cv.className='vt-th'; old.replaceWith(cv); } }catch(err){ V.log('thumb',String(err&&err.message||err)); } finally{ genBusy.delete(id); }
   }
 }
 V.afterPause=()=>{ if(genQ.size) runGen(); };
@@ -70,8 +75,9 @@ async function makeWave(a,wpx){
   for(let x=0;x<cv.width;x+=step){ const t=a.in+(x/cv.width)*(a.out-a.in), i=clamp(Math.floor(t/D*N),0,N-1), h=Math.max(2,w[i]/mx*(cv.height-6)); cx.fillRect(x,mid-h/2,Math.max(1,step-1.5),h); }
   return cv;
 }
-async function wantWave(a,wpx){ const e=waves.get(a.id), s=[a.media,a.in,a.out].join('|'); if(e&&e.sig===s&&Math.abs(e.w-wpx)<3) return;
-  try{ const cv=await makeWave(a,wpx); waves.set(a.id,{sig:s,w:wpx,cv}); const old=inn.querySelector(`.vt-blk[data-id="${CSS.escape(a.id)}"] .vt-th`); if(old){ cv.className='vt-th'; old.replaceWith(cv); } }catch(err){ V.log('wave',String(err&&err.message||err)); } }
+const waveBusy=new Set();
+async function wantWave(a){ const e=waves.get(a.id), s=[a.media,a.in,a.out].join('|'), b=bucket(); if((e&&e.sig===s&&e.b===b)||waveBusy.has(a.id)) return; waveBusy.add(a.id);
+  try{ const cv=await makeWave(a,Math.max(8,(a.out-a.in)*bucketPps(b))); waves.set(a.id,{sig:s,b,cv}); const old=inn.querySelector(`.vt-blk[data-id="${CSS.escape(a.id)}"] .vt-th`); if(old){ cv.className='vt-th'; old.replaceWith(cv); } }catch(err){ V.log('wave',String(err&&err.message||err)); } finally{ waveBusy.delete(a.id); } }
 
 /* ---------- drawing the lanes ---------- */
 const lenLab=n=>`<bdi>${(Math.round(n*10)/10).toFixed(1)} s</bdi>`;
@@ -98,11 +104,16 @@ function renderTl(){
     return `<div class="vt-blk vt-audio${s?' sel':''}${m?' missing':''}${a.mute?' off':''}" data-k="audio" data-id="${esc(a.id)}" role="button" tabindex="-1" aria-label="Sound: ${esc(nm)}" style="left:${pad+a.start*pps}px;width:${Math.max(6,w)}px"><span class="vt-th"></span><span class="vt-t" dir="auto">${m?'Missing on this '+L.devWord():esc(nm)}</span>${s?handles:''}</div>`; }).join('');
   /* pictures: kept ones now, new ones soon */
   lay.forEach(x=>{ const c=x.c, w=Math.max(8,(x.end-x.start)*pps-2), e=strips.get(c.id), slot=inn.querySelector(`.vt-clip[data-id="${CSS.escape(c.id)}"] .vt-th`);
-    if(e&&slot){ const cv=e.cv; cv.className='vt-th'; slot.replaceWith(cv); } if(!miss.has(c.media)) wantStrip(c,x.start,w); });
-  R.audio.forEach(a=>{ const e=waves.get(a.id), slot=inn.querySelector(`.vt-audio[data-id="${CSS.escape(a.id)}"] .vt-th`); if(e&&slot){ e.cv.className='vt-th'; slot.replaceWith(e.cv); } if(!miss.has(a.media)) wantWave(a,Math.max(8,(a.out-a.in)*pps)); });
+    if(e&&slot){ const cv=e.cv; cv.className='vt-th'; slot.replaceWith(cv); } if(!miss.has(c.media)&&inView(pad+x.start*pps,w)) wantStrip(c,x.start,w); });
+  R.audio.forEach(a=>{ const e=waves.get(a.id), slot=inn.querySelector(`.vt-audio[data-id="${CSS.escape(a.id)}"] .vt-th`); if(e&&slot){ e.cv.className='vt-th'; slot.replaceWith(e.cv); } if(!miss.has(a.media)&&inView(pad+a.start*pps,(a.out-a.in)*pps)) wantWave(a); });
   $('vtTexts').classList.toggle('blank',!R.texts.length); $('vtAudios').classList.toggle('blank',!R.audio.length);
 }
 V.renderTl=renderTl;
+/* scrolling brings new blocks into view: make their pictures then (at most once per frame) */
+let lazyRaf=0;
+sc.addEventListener('scroll',()=>{ if(lazyRaf||!st.ready) return; lazyRaf=requestAnimationFrame(()=>{ lazyRaf=0; const pps=st.pps, pad=st.pad;
+  V.lay().forEach(x=>{ const c=x.c, w=Math.max(8,(x.end-x.start)*pps-2); if(!V.missing().has(c.media)&&inView(pad+x.start*pps,w)) wantStrip(c,x.start,w); });
+  st.R.audio.forEach(a=>{ if(!V.missing().has(a.media)&&inView(pad+a.start*pps,(a.out-a.in)*pps)) wantWave(a); }); }); },{passive:true});
 
 /* ---------- tapping blocks ---------- */
 let swallow=0;

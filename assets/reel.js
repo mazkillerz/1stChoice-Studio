@@ -39,9 +39,11 @@ function wobble(src,dst,o,px,on){
   let px32; try{ px32=src.getImageData(0,0,w,h); }catch(_){ px32=null; }   // a canvas the browser won't read back (pictures from another site): draw it plain, never blank
   if(!px32){ dst.drawImage(src.canvas,0,0); dst.restore(); return; }
   const F=field(o.seed|0,o.freq,o.amount,w,h,px), T=tmp(w,h), s32=new Uint32Array(px32.data.buffer), out=T.o32, gw=F.gw, DX=F.dx, DY=F.dy;
-  for(let y=0;y<h;y++){ const row=(y>>2)*gw, yo=y*w;
-    for(let x=0;x<w;x++){ const i=row+(x>>2), sx=x+DX[i], sy=y+DY[i];
-      out[yo+x]=(sx<0||sy<0||sx>=w||sy>=h)?0:s32[sy*w+sx]; } }
+  for(let y=0;y<h;y++){ const row=(y>>2)*gw, yo=y*w;   // the field is constant over 4×4 pixels: one lookup per 4 pixels
+    for(let xb=0,x0=0;x0<w;xb++,x0+=4){ const i=row+xb, dx=DX[i], sy=y+DY[i], xe=Math.min(w,x0+4);
+      if(sy<0||sy>=h){ for(let x=x0;x<xe;x++) out[yo+x]=0; continue; }
+      const sb=sy*w+dx;
+      for(let x=x0;x<xe;x++){ const sx=x+dx; out[yo+x]=(sx<0||sx>=w)?0:s32[sb+x]; } } }
   T.x.putImageData(T.img,0,0); dst.drawImage(T.c,0,0); dst.restore();
 }
 
@@ -89,12 +91,14 @@ function make(M,base,imgs,def){
       wobble(s,d,o){ wobble(s,d,o,px,on); } };
     return R;
   }
+  const Rs=new Map();                           // one R per size, reused while the words are the same (no object or closures per frame)
+  const getR=(px,w,h,on,text)=>{ const k=w+'x'+h+(on?'w':''); let R=Rs.get(k); if(R&&R.text===text&&R.px===px) return R; if(Rs.size>8) Rs.clear(); R=makeR(px,w,h,on,text); Rs.set(k,R); return R; };
   const reel={M,base,W,H,fps:M.fps,duration:M.duration,cuts:M.cuts||[],scene:def,textInfo,
     draw(ctx,t,opt){
       opt=opt||{}; const cw=ctx.canvas.width, ch=ctx.canvas.height, px=cw/W;
       ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
       ctx.fillStyle=M.background||'#fff'; ctx.fillRect(0,0,cw,ch); ctx.setTransform(px,0,0,px,0,0);
-      try{ def.draw(ctx,t,makeR(px,cw,ch,opt.wobble!==false,textInfo(opt.texts))); } finally{ ctx.restore(); }
+      try{ def.draw(ctx,t,getR(px,cw,ch,opt.wobble!==false,textInfo(opt.texts))); } finally{ ctx.restore(); }
     }};
   if(def.setup) def.setup(makeR(1,W,H,false,textInfo({})));
   return reel;

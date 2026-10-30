@@ -13,6 +13,14 @@ body.vd input,body.vd textarea{user-select:text;-webkit-user-select:text}
 .vd-name input{flex:1;min-width:0;height:44px;border:1px solid transparent;border-radius:var(--r-s);background:none;color:var(--fg);font:600 16px var(--sans);padding:0 var(--sp-2);text-overflow:ellipsis}
 .vd-name input:focus{border-color:var(--line);background:var(--surface);outline:none}
 .icon-btn.sm{width:var(--tap);height:var(--tap);flex:none}
+.vd-acts{display:flex;flex:none;align-items:center}
+.vd-acts .icon-btn{color:var(--fg)}
+.vd-acts .icon-btn:disabled{color:var(--muted);opacity:.45}
+.vd-resume{position:absolute;left:0;right:0;bottom:0;height:min(15%,56px);z-index:3;display:flex;align-items:center;gap:var(--sp-1);padding:0 0 0 var(--sp-3);background:color-mix(in srgb,var(--raised) 94%,transparent);border-top:1px solid var(--line);font:400 var(--fs-s) var(--sans);color:var(--muted);overflow:hidden}
+.vd-resume[hidden]{display:none}
+.vd-resume span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vd-resume .link{flex:none;min-height:0;height:100%;padding:0 var(--sp-2)}
+.vd-resume .icon-btn{flex:none;width:44px;height:100%;border-radius:0;color:var(--muted)}
 .vd-status{font:500 var(--fs-xs) var(--sans);color:var(--muted);white-space:nowrap;padding:0 var(--sp-2)}
 .vd-status:empty{display:none}
 .btn.vd-save{width:auto;min-height:var(--tap);padding:0 var(--sp-5);font-size:var(--fs-m);flex:none}
@@ -94,6 +102,9 @@ body.vd .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--li
 .vt-texts{top:90px;height:28px}
 .vt-audios{top:126px;height:28px}
 .vt-texts.blank::before,.vt-audios.blank::before{content:"";position:absolute;inset:0 var(--sp-3);border-radius:6px;background:var(--vd-tint)}
+.vt-texts.blank::after,.vt-audios.blank::after{position:sticky;left:calc(var(--sp-3) + 8px);display:block;width:max-content;line-height:28px;font:400 11px/28px var(--sans);color:var(--muted);pointer-events:none}
+.vt-texts.blank::after{content:"Text"}
+.vt-audios.blank::after{content:"Sound"}
 .vt-blk{position:absolute;top:0;height:100%;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--vt-clip);box-shadow:0 0 0 1px var(--line);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .vt-blk:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
 .vt-blk.sel{overflow:visible;z-index:5;box-shadow:0 0 0 2px var(--accent)}
@@ -106,7 +117,7 @@ span.vt-th{background:transparent}
 .vt-text{background:var(--vt-text)}
 .vt-audio{background:var(--vt-audio)}
 .vt-audio.off{opacity:.55}
-.vt-t{direction:ltr;position:absolute;left:8px;right:8px;top:0;bottom:0;display:flex;align-items:center;font:500 11px var(--sans);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.vt-t{unicode-bidi:plaintext;position:absolute;left:8px;right:8px;top:0;bottom:0;display:flex;align-items:center;font:500 11px var(--sans);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .vt-audio .vt-t{align-items:flex-start;padding-top:1px;font-size:9.5px;color:var(--muted)}
 .vt-blk.missing{background:repeating-linear-gradient(135deg,var(--vt-clip) 0 8px,color-mix(in srgb,var(--fg) 14%,var(--vt-clip)) 8px 16px)}
 .vt-miss{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 6px;font:500 10px/1.2 var(--sans);color:var(--fg)}
@@ -231,6 +242,8 @@ span.vt-th{background:transparent}
 .vd-save-d .progress span{font-variant-numeric:tabular-nums}
 .vd-save-d .dlg-actions{justify-content:center}
 .vd-save-d .vd-note{color:var(--muted);font-size:var(--fs-s)}
+.vd-save-d .vd-note.warn{padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--vd-warn-bg);color:var(--vd-warn-fg);border:1px solid var(--vd-warn-line);font-weight:500}
+.vd-save-d .vd-note[hidden]{display:none}
 .vd-phr{display:flex;flex-direction:column;gap:var(--sp-1);max-height:50dvh;overflow-y:auto;overscroll-behavior:contain}
 .vd-phr button{min-height:var(--tap);padding:var(--sp-2) var(--sp-3);border:0;border-radius:var(--r-s);background:none;text-align:start;font:500 var(--fs-l) var(--sans);color:var(--fg);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3)}
 .vd-phr button:active{background:var(--chip)}
