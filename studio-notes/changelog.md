@@ -13,6 +13,82 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.33.0 · 30 Oct 2026
+
+### Flip a photo
+type: feature
+A selfie or a photo taken the other way round? Photo → Flip mirrors the photo in its box, left to right. Tap again to put it back. It works with every photo look, stays with the photo when you Swap two or Shuffle, and the saved picture is flipped too. Designs saved before are unchanged. Two taps (Photo, Flip).
+![before](assets/whatsnew/1.33.0-flip-before.jpg)
+![after](assets/whatsnew/1.33.0-flip-after.jpg)
+
+### Tool pages open a little lighter
+type: fix
+The 24 emoji stickers are now fetched only when you need them: when you open Layers or Sticker, or open a design that has one. Every tool page loads less at the start, and a saved picture always waits for its emoji, so none goes missing.
+
+## 1.32.0 · 30 Oct 2026
+
+### Clear Continue editing after saving
+type: feature
+After Save pictures in Continue editing, the Saved! message now offers "Remove these 3 from Continue editing". Tap it, then Remove, and the stories you just saved leave the list (their photos too); Keep them leaves everything as it was. It never happens by itself, and a story that was skipped (like a Create design) is never removed. Before: tap ✕ and Remove on every story; now: 2 taps for all of them.
+![before](assets/whatsnew/1.32.0-continue-before.jpg)
+![after](assets/whatsnew/1.32.0-continue-after.jpg)
+
+### Find what you made today
+type: feature
+Search in Saved now understands days: type "today", "yesterday" or "this week" (the last 7 days) and only the designs from then stay on the page. Mix it with a word, like "restock today". Names still count: "Today's offer" is found by its name too.
+![before](assets/whatsnew/1.32.0-find-before.jpg)
+![after](assets/whatsnew/1.32.0-find-after.jpg)
+
+### New place and Cinematic bars from a photo
+type: design
+In All tools, New place and Cinematic bars now have the camera button, like Offer: tap it, pick a photo and the tool opens with your photo in. 3 taps to a saved story instead of 4.
+![before](assets/whatsnew/1.32.0-alltools-before.jpg)
+![after](assets/whatsnew/1.32.0-alltools-after.jpg)
+
+## 1.31.0 · 30 Oct 2026
+
+### Stickers and emoji in Create
+type: feature
+Create → Add has two new groups after Icons: Stickers (the same arrows, sparkles, starburst, heart, seal, scribbles, speech bubble and tick as the tool pages) and Emoji (the 24 colourful emoji of the Highlight covers). Tap one and it lands in the middle of your page, sharp at any size. Recolour a sticker under Colour; an emoji takes one colour too, and Original brings its own colours back. Your phone's emoji are still there under Phone emoji, now one button each (they used to be squeezed into one big button).
+![before](assets/whatsnew/1.31.0-add-emoji-before.jpg)
+![after](assets/whatsnew/1.31.0-add-emoji-after.jpg)
+
+### Swap: an emoji on your highlight cover
+type: feature
+Tap the icon on a highlight cover (or any sticker or emoji) and the edit bar has Swap. Pick an emoji or a sticker and it takes the old one's place, size and turn. The sheet stays open so you can try a few, then Done. A highlight cover with an emoji: Templates → Highlight → tap the icon → Swap → one tap.
+![before](assets/whatsnew/1.31.0-highlight-before.jpg)
+![after](assets/whatsnew/1.31.0-highlight-after.jpg)
+
+### Text styles in Create
+type: feature
+The Font sheet now ends with Text styles: the same saved looks as the tool pages' text panel (on this phone, up to 8). Tap one to put its colour, font, pill and spacing on the selected words; Save this style adds the look you made; ⋯ uses a style on every text on the page or removes it. A style saved in Create shows up in Restock, Offer and the other tools, and the other way round.
+![before](assets/whatsnew/1.31.0-font-before.jpg)
+![after](assets/whatsnew/1.31.0-font-after.jpg)
+
+### One tap adds one thing
+type: fix
+In Create, opening Add (or another sheet) several times and then tapping an element could add it several times on top of each other. Now one tap always adds one.
+
+## 1.30.0 · 30 Oct 2026
+
+### New place: the frame is really see-through
+type: fix
+Save the frame only (New place → Save) now gives just the frame: the place where your photo goes is see-through, ready to lay over a video or another photo. Before, it saved the photo in it too, the same as the story. The window is exactly where it is in your story. The normal Save is unchanged.
+![before](assets/whatsnew/1.30.0-frame-before.jpg)
+![after](assets/whatsnew/1.30.0-frame-after.jpg)
+
+### Every tool says what it does in one line
+type: design
+On a phone, every tool's description in All tools was cut off with "…" (11 of 11). They are shorter now and fit on one line, even on a small phone; search still finds a tool by the old words (try "flavours" or "mosaic"). All tools also has one short line on top instead of two, and its Done is the quiet grey button like everywhere else.
+![before](assets/whatsnew/1.30.0-tools-before.jpg)
+![after](assets/whatsnew/1.30.0-tools-after.jpg)
+
+### Neater menus, and / to search on a computer
+type: design
+A saved design's menu (⋯) had icons of four sizes, so the words did not start in one line. Now every icon is the same size and every label lines up. Settings → Done is grey like the other sheets. On a computer, press / to search: on Home it goes to the search box, on Saved it opens the Saved search (finding a design: 2 clicks → 1).
+![before](assets/whatsnew/1.30.0-menu-before.jpg)
+![after](assets/whatsnew/1.30.0-menu-after.jpg)
+
 ## 1.29.0 · 30 Oct 2026
 
 ### Backgrounds in Cinematic, New place, Offer and Collage

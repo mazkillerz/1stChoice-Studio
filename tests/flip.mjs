@@ -2,6 +2,7 @@
    Checks: the button (size, label, row layout, no sideways scroll); a tap mirrors the layer left to right in the preview with the same box;
    the recipe keeps it; Undo/Redo; a second tap removes it; text never mirrors even if a recipe says so; the full-size PNG (2160×3840) is mirrored too;
    a layer without the key draws exactly as before; brand cans (noFlip in the brand kit) and the logo do not show Flip.
+   1.33.0: Flip for the tool's own photo boxes (Photo sheet, p.flip in the recipe): see the block at the end.
    Phone 390×844 touch (light + dark) and desktop 1280×800. Run like tests/stickers.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -138,6 +139,117 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     await ctx.close();
   }
 }
+/* ---------- 1.33.0: Flip for the tool's own photo boxes ----------
+   The Photo sheet has a Flip button (shown for a real photo); a tap mirrors the photo in its box (preview and the 2160×3840 PNG),
+   the recipe keeps photos[i].flip:true only while it is on (no key = old designs, pixel-identical), Undo/Redo, it works with a
+   photo look, a draft reopens flipped, and Swap two / Shuffle carry the flip with the photo. */
+const LUM=`(cv,bx,k)=>{ const g=[],x0=Math.round(bx.x*k),y0=Math.round(bx.y*k),w=Math.round(bx.w*k),h=Math.round(bx.h*k);
+  const d=cv.getContext('2d').getImageData(x0,y0,w,h).data;
+  for(let gy=0;gy<16;gy++) for(let gx=0;gx<24;gx++){ let s=0,n=0; for(let y=Math.floor(gy*h/16);y<Math.floor((gy+1)*h/16);y+=2) for(let x=Math.floor(gx*w/24);x<Math.floor((gx+1)*w/24);x+=2){ const i=(y*w+x)*4; s+=d[i]*.3+d[i+1]*.59+d[i+2]*.11; n++; } g.push(n?s/n:0); }
+  return g; }`;
+for(const theme of ['light','dark']){
+  const N='photo flip, phone'+(theme==='dark'?' dark':'')+': ', main=theme==='light';
+  const ctx=await newCtx({width:390,height:844,touch:true},theme); await fakeRoutes(ctx);
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(N+e.message));
+  const dls=[]; pg.on('download',d=>dls.push(d));
+  const P0=()=>pg.evaluate(()=>{ const p=Studio.debug.S.photos[0]; return {flip:p.flip,has:'flip' in p}; });
+  const recP=()=>pg.evaluate(()=>Studio.debug.recipe().photos);
+  const hash=()=>pg.evaluate(()=>document.getElementById('view').toDataURL());
+  /* the top 40% of the photo box: photo only (the words sit lower) */
+  const top=async()=>{ const r=await pg.evaluate(()=>{ const r=Studio.debug.reg().find(x=>x.photo===0); return {x:r.x,y:r.y,w:r.w,h:r.h*.4}; }); return r; };
+  const lum=async()=>{ const bx=await top(); return pg.evaluate(`(()=>{ const cv=document.getElementById('view'); return (${LUM})(cv,${JSON.stringify(bx)},cv.width/1080); })()`); };
+  const btn=()=>pg.evaluate(()=>{ const f=document.getElementById('photoFlip'), r=f.getBoundingClientRect(); return {vis:f.checkVisibility()&&r.width>0,h:r.height,w:r.width,pr:f.getAttribute('aria-pressed'),txt:f.textContent.trim()}; });
+  const openPhoto=async()=>{ if(!(await pg.evaluate(()=>document.getElementById('sh-photo').classList.contains('open')))){ await pg.tap('#bar [data-open="photo"]'); await pg.waitForTimeout(500); } };
+  const tapFlip=async()=>{ await openPhoto(); await pg.locator('#photoFlip').scrollIntoViewIfNeeded(); await pg.tap('#photoFlip'); await pg.waitForTimeout(400); };
+
+  await pg.goto(BASE+'tools/photo-story.html'); await pg.waitForTimeout(1500);
+  await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(3400);
+  await openPhoto();
+  ok(N+'no Flip button before a real photo is in',!(await btn()).vis);
+  await pg.setInputFiles('#slots input[type=file]',SAMPLE); await pg.waitForTimeout(1400);
+  await openPhoto(); await pg.locator('#photoFlip').scrollIntoViewIfNeeded();
+  const b0=await btn();
+  ok(N+'Photo sheet shows Flip: ≥48px tall, ≥44px wide, says Flip, not pressed',b0.vis&&b0.h>=48&&b0.w>=44&&b0.txt==='Flip'&&b0.pr==='false',b0);
+  ok(N+'no sideways page scroll with the Photo sheet open',await pg.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  const h0=await hash(), g0=await lum(), r0=await recP();
+  ok(N+'a photo never flipped has no flip key (photo and recipe)',!(await P0()).has&&!('flip' in r0[0]),r0[0]);
+
+  await tapFlip();
+  const g1=await lum(), b1=await btn(), r1=await recP(), dm=diff(g1,mirror(g0)), dn=diff(g1,g0);
+  ok(N+'tap Flip: photo flip is true, the button is pressed',(await P0()).flip===true&&b1.pr==='true',{p:await P0(),pr:b1.pr});
+  ok(N+'the photo in the preview is the mirror image of before',dn>4&&dm<dn*0.25,{mirrored:+dm.toFixed(2),plain:+dn.toFixed(2)});
+  ok(N+'the recipe keeps photos[0].flip:true',r1[0].flip===true,r1[0]);
+  const thumbs=await pg.evaluate(()=>({slot:!!document.querySelector('#slots .slot img.flip'),looks:!!document.querySelector('#looks.flip')}));
+  ok(N+'the slot thumbnail and the photo look previews are mirrored too',thumbs.slot&&thumbs.looks,thumbs);
+
+  if(main){
+    /* undo / redo */
+    await pg.waitForTimeout(800); await pg.locator('#undo').scrollIntoViewIfNeeded(); await pg.tap('#undo'); await pg.waitForTimeout(600);
+    ok(N+'Undo un-flips (no key) and the pixels come back exactly',!(await P0()).has&&await hash()===h0);
+    await pg.tap('#redo'); await pg.waitForTimeout(600);
+    ok(N+'Redo flips it again',(await P0()).flip===true&&diff(await lum(),g1)<0.5);
+    /* a photo look on a flipped photo: the same look, mirrored */
+    await tapFlip(); const hOff=await hash();
+    ok(N+'a second tap removes the key and the preview is exactly as before the first flip',!(await P0()).has&&!('flip' in (await recP())[0])&&hOff===h0&&(await btn()).pr==='false');
+    await pg.locator('#looks [data-look="mono"]').scrollIntoViewIfNeeded(); await pg.tap('#looks [data-look="mono"]'); await pg.waitForTimeout(400);
+    const gm=await lum(); await tapFlip(); const gmf=await lum(), dmm=diff(gmf,mirror(gm)), dmn=diff(gmf,gm);
+    ok(N+'with the B&W look: flipped = the B&W photo mirrored, and the look is kept',dmn>4&&dmm<dmn*0.25&&(await recP())[0].fx&&(await recP())[0].fx.look==='mono',{mirrored:+dmm.toFixed(2),plain:+dmn.toFixed(2)});
+    await pg.tap('#looks [data-look=""]'); await pg.waitForTimeout(400);
+    /* old designs: no key, undefined or false all draw the same as before; true does not */
+    await tapFlip(); const hNone=await hash();
+    const hv=async v=>{ await pg.evaluate(v=>{ const p=Studio.debug.S.photos[0]; if(v==='del') delete p.flip; else p.flip=v; Studio.debug.render(); },v); await pg.waitForTimeout(250); return hash(); };
+    const hU=await hv(undefined), hF=await hv(false), hT=await hv(true); await hv('del');
+    ok(N+'old designs pixel-identical: no flip key = flip undefined = flip false = the never-flipped preview; flip:true differs',hNone===h0&&hU===h0&&hF===h0&&hT!==h0,{none:hNone===h0,u:hU===h0,f:hF===h0,t:hT!==h0});
+    /* full save, flipped */
+    await tapFlip(); const gS=await lum(), bx=await top();
+    if(await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
+    await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
+    if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await pg.tap('#save');
+    for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
+    const d=dls[0]; let size='', gp=null;
+    if(d){ const buf=fs.readFileSync(await d.path()); size=buf.readUInt32BE(16)+'x'+buf.readUInt32BE(20);
+      gp=await pg.evaluate(async([b64,bx,G])=>{ const im=new Image(); im.src='data:image/png;base64,'+b64; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; c.getContext('2d').drawImage(im,0,0); return eval(G)(c,bx,im.width/1080); },[buf.toString('base64'),bx,LUM]); }
+    ok(N+'Save makes the full-size PNG (2160×3840)',size==='2160x3840',size);
+    ok(N+'the photo in the PNG is mirrored like the preview',!!gp&&diff(gp,gS)<diff(gp,mirror(gS))*0.35,gp&&{flipped:+diff(gp,gS).toFixed(2),unflipped:+diff(gp,mirror(gS)).toFixed(2)});
+    /* the saved design reopens flipped */
+    await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
+    const did=new URL(pg.url()).searchParams.get('design');
+    if(did){ await pg.goto(BASE+'tools/photo-story.html?design='+did); await pg.waitForTimeout(3000);
+      ok(N+'the saved design reopens with its photo flipped',(await P0()).flip===true&&diff(await lum(),gS)<3,{p:await P0()}); }
+    else ok(N+'the saved design reopens with its photo flipped',false,'no design id');
+  } else {
+    /* dark: a draft reopens flipped */
+    await pg.waitForTimeout(1500); await pg.goto(BASE+'tools/photo-story.html?draft=1'); await pg.waitForTimeout(3000);
+    ok(N+'the draft reopens with its photo flipped (photo, slot thumbnail, preview)',(await P0()).flip===true&&await pg.evaluate(()=>!!document.querySelector('#slots .slot img.flip'))&&diff(await lum(),g1)<3,{p:await P0()});
+  }
+  await ctx.close();
+}
+/* Swap two and Shuffle carry the flip with its photo (Collage, 2 photos) */
+{ const N='photo flip, Collage: ';
+  const ctx=await newCtx({width:390,height:844,touch:true},'light'); await fakeRoutes(ctx);
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(N+e.message));
+  await pg.goto(BASE+'tools/collage.html'); await pg.waitForTimeout(1500);
+  await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(3400);
+  if(!(await pg.evaluate(()=>document.getElementById('sh-photo').classList.contains('open')))){ await pg.tap('#bar [data-open="photo"]'); await pg.waitForTimeout(500); }
+  if(await pg.locator('[data-count="2"]').count()){ await pg.tap('[data-count="2"]'); await pg.waitForTimeout(400); }
+  const SAMPLE2=new URL('../brands/1stchoice/samples/closeup.jpg',import.meta.url).pathname;
+  await pg.setInputFiles('#slots input[data-file="0"]',SAMPLE); await pg.waitForTimeout(1200);
+  await pg.setInputFiles('#slots input[data-file="1"]',SAMPLE2); await pg.waitForTimeout(1200);
+  if(!(await pg.evaluate(()=>document.getElementById('sh-photo').classList.contains('open')))){ await pg.tap('#bar [data-open="photo"]'); await pg.waitForTimeout(500); }
+  await pg.evaluate(()=>{ Studio.debug.S.active=0; });
+  await pg.evaluate(()=>document.getElementById('photoFlip').click()); await pg.waitForTimeout(400);
+  const keyA=await pg.evaluate(()=>Studio.debug.S.photos[0].key);
+  const st=()=>pg.evaluate(()=>Studio.debug.S.photos.slice(0,2).map(p=>({key:p.key,flip:!!p.flip})));
+  ok(N+'photo 1 flipped, photo 2 not',JSON.stringify((await st()).map(x=>x.flip))==='[true,false]',await st());
+  await pg.locator('#swapBtn').scrollIntoViewIfNeeded(); await pg.tap('#swapBtn'); await pg.waitForTimeout(300);
+  await pg.locator('#slots .slot[data-slot="0"]').tap({force:true}); await pg.waitForTimeout(250); await pg.locator('#slots .slot[data-slot="1"]').tap({force:true}); await pg.waitForTimeout(500);   // the boxes wiggle in swap mode
+  const sw=await st(), rs=await pg.evaluate(()=>Studio.debug.recipe().photos.slice(0,2).map(p=>!!p.flip));
+  ok(N+'Swap two: the flip moves with the photo (box 2 flipped, box 1 not; recipe too)',sw[1].key===keyA&&sw[1].flip&&!sw[0].flip&&rs[1]&&!rs[0],{sw,rs});
+  await pg.tap('#shuffleBtn'); await pg.waitForTimeout(500);
+  const sh=await st();
+  ok(N+'Shuffle: the flip stays with its photo',sh.find(x=>x.key===keyA).flip&&!sh.find(x=>x.key!==keyA).flip&&sh[0].key===keyA,sh);
+  await ctx.close(); }
+
 await b.close();
 const real=errs.filter(e=>!/fonts\.g|ERR_|net::/.test(e));
 ok('no page errors',!real.length,real.slice(0,3));

@@ -379,11 +379,13 @@ LAYOUTS['stock-alert']=async function(t,w,def){
   return [f];
 };
 
-/* "Highlight cover": a round cover with one big icon (the frame is round). */
+/* "Highlight cover": a round cover with one big icon or emoji (the frame is round). Tap the icon, then Swap, for an emoji. */
 LAYOUTS['highlight']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1080,{label:def.label,fill:w.bg||C.paper}); f.setAttr('round',1);
   f.add(t.circle({r:500,x:540,y:540,fill:w.panel||C.panel,label:'Circle'}));
-  const id=def.icon||'pin', n=id==='pin'?t.icon('pin-fill',520,C.ink):t.icon(id,500,C.ink,{strokeWidth:1.5});
+  /* emoji: an emoji id from tools/highlight-emoji.js (1.31.0); otherwise one icon */
+  let n=null; if(def.emoji&&CR.makeSticker){ await CR.stickersReady(); n=CR.makeSticker('sticker:emoji-'+def.emoji,560); }
+  if(!n){ const id=def.icon||'pin'; n=id==='pin'?t.icon('pin-fill',520,C.ink):t.icon(id,500,C.ink,{strokeWidth:1.5}); }
   t.add(f,n,{cx:540,cy:540});
   return [f];
 };

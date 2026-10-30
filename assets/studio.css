@@ -688,6 +688,12 @@ label.opt-row{cursor:pointer}
 #inspFlip svg{flex:none}
 #inspFlip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 #inspFlip:focus:not(:focus-visible){outline:none}
+/* Flip for the tool's own photos (1.33.0): a button under Zoom in the Photo sheet; the slot thumbnail and the look previews mirror with it */
+.photo-flip{display:flex;margin-top:var(--sp-3)}
+#photoFlip svg{flex:none}
+#photoFlip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+#photoFlip:focus:not(:focus-visible){outline:none}
+.slot img.flip,.looks.flip canvas{transform:scaleX(-1)}
 
 /* "2 waiting" on the Restock / Photo story rows in Your tools and All tools (1.13.0): photos waiting in that tool's row.
    Small and calm: a tinted pill like the row's camera, never a filled button; it wraps under the title in a narrow grid card. */
@@ -722,6 +728,8 @@ label.opt-row{cursor:pointer}
 .render-frame{position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;opacity:0;pointer-events:none}
 .bs-dlg .progress{text-align:start}
 .bs-dlg .progress[hidden]{display:none}
+.bs-dlg .bs-offer{min-height:48px;align-self:flex-start;margin-inline-start:calc(-1*var(--sp-3));text-align:start}   /* "Remove these N from Continue editing" (1.32.0): a quiet text button under the note */
+.bs-dlg .bs-offer[hidden]{display:none}
 
 /* text styles (1.19.0): saved looks in a layer's More tab. Each is a pill: tap the name to use it, ⋯ for its menu */
 .tstyles{display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -976,7 +984,7 @@ body.selecting .saved-page{padding-bottom:110px}
 .act-list{display:flex;flex-direction:column;background:var(--bg);border-radius:20px;overflow:hidden}
 .act-row{display:flex;align-items:center;gap:14px;min-height:54px;width:100%;padding:0 18px;border:0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);background:none;color:var(--fg);font:500 var(--fs-m) var(--sans);text-decoration:none;cursor:pointer;text-align:start;transition:background-color .15s}
 .act-row:first-child{border-top:0}
-.act-row svg{color:var(--muted);flex:none}
+.act-row svg{color:var(--muted);flex:none;width:20px;height:20px}   /* one size for every row, so the labels line up */
 .act-row.danger,.act-row.danger svg{color:var(--danger)}
 .act-row:active,.act-row.on{background:var(--chip)}
 .act-row:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}

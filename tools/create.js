@@ -45,7 +45,9 @@ function openMenu(anchor,entries){ const m=$('crMenuBox'); m.innerHTML=entries.m
 /* ---------- sheets: tool sheets (the page stays usable) and big ones (Templates, Save, Add) ---------- */
 let sheet=null;   // {name,tool,onClose,sel}
 function openSheet(name,title,html,opt){ opt=opt||{}; closeSheet(true); sheet={name,tool:!!opt.tool,onClose:opt.onClose||null,sel:!!opt.sel};
-  const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.dataset.name=name; $('crSheetT').textContent=title; $('crSheetB').innerHTML=html; el.hidden=false; $('crScrim').hidden=!!opt.tool; $('crSheetB').scrollTop=0;
+  const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.dataset.name=name; $('crSheetT').textContent=title;
+  /* a fresh body each time, so a sheet's click handlers never stay behind for the next sheet (1.31.0: they piled up, one Add tap added several) */
+  const ob=$('crSheetB'), nb=ob.cloneNode(false); ob.replaceWith(nb); nb.innerHTML=html; el.hidden=false; $('crScrim').hidden=!!opt.tool; $('crSheetB').scrollTop=0;
   syncBar(); requestAnimationFrame(padForSheet); return $('crSheetB'); }
 function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
 /* the page moves up (phone) or left (computer) so a tool sheet never covers it */
@@ -84,6 +86,7 @@ function paintCtx(){ const el=$('crCtx'), list=sel(); let h='';
     else { if(isSlot(n)) h+=cx('slot',I.photo,'Add photo');
       if(textsIn(n).length) h+=cx('words',I.words,'Words');
       if(colorTargets(n).length) h+=cx('color',I.color,'Colour');
+      if(CR.canSwap(n)) h+=cx('swap',I.swap,'Swap');
       if(textsIn(n).length) h+=cx('font',I.font,'Font');
       if(isPhoto(n)) h+=cx('crop',I.crop,'Crop')+cx('replace',I.swap,'Replace');
       h+=cx('size',I.size,'Size')+cx('arrange',I.arrange,'Arrange')+cx('dup',I.dup,'Duplicate')+cx('del',I.trash,'Delete',{cls:'danger'})+cx('more',I.more,'More'); } }
@@ -95,7 +98,7 @@ function paintCtx(){ const el=$('crCtx'), list=sel(); let h='';
 $('crCtx').addEventListener('click',e=>{ const b=e.target.closest('[data-x]'); if(!b) return; const a=b.dataset.x, n=sel()[0];
   const run={done:()=>{ BD.setMulti(false); BD.select([]); },multi:()=>{ BD.setMulti(!S.multi); paintCtx(); if(S.multi) toast('Tap things to add or remove them.'); },all:()=>BD.selectAll(),
     page:()=>openPage(),bg:()=>openPageBg(),unlock:()=>BD.act.lock(false),slot:()=>pickInto(n),words:()=>openWords(),color:()=>openColor(),font:()=>openFont(),
-    crop:()=>startCrop(n),replace:()=>{ st.replaceTarget=n; $('crReplace').click(); },size:()=>openSize(),arrange:()=>openArrange(),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),
+    crop:()=>startCrop(n),swap:()=>openSwap(),replace:()=>{ st.replaceTarget=n; $('crReplace').click(); },size:()=>openSize(),arrange:()=>openArrange(),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),
     group:()=>BD.act.group(),more:()=>moreMenu(b)};
   if(run[a]) run[a](); });
 function moreMenu(anchor){ const list=sel(), n=list[0]; const e=[];
@@ -125,6 +128,7 @@ function openWords(){ const list=sel(); if(!list.length) return; const texts=lis
 /* Colour: the parts of the selected thing that can take a colour */
 function colorTargets(n){ const k=kind(n), out=[];
   const add=(label,get,set,o)=>out.push(Object.assign({label,get,set},o||{}));
+  if(CR.isEmoji(n)){ add('Emoji',()=>CR.emojiTint(n),v=>CR.setEmojiTint(n,v),{orig:true}); return out; }
   if(k==='text') add('Words',()=>n.fill(),v=>n.fill(v));
   else if(k==='rect'||k==='ellipse'||k==='path'){ add('Fill',()=>n.fill(),v=>n.fill(v||''),{none:true}); add('Outline',()=>n.stroke(),v=>{ n.stroke(v||''); if(v&&!n.strokeWidth()) n.strokeWidth(8); },{none:true,width:true,node:n}); }
   else if(k==='icon'||k==='line') add('Line',()=>n.stroke(),v=>{ n.stroke(v); if(n.getClassName()==='Arrow') n.fill(v); });
@@ -139,7 +143,7 @@ function colorTargets(n){ const k=kind(n), out=[];
 function swatches(key,cur,o){ o=o||{}; const c=String(cur||'').toLowerCase(); let hit=false;
   const sw=pal().map(p=>{ const on=!!c&&p.hex.toLowerCase()===c.slice(0,7); if(on) hit=true; return `<button type="button" class="cr-sw" style="--c:${p.hex}" data-k="${key}" data-c="${p.hex}" aria-label="${esc(p.name)}" title="${esc(p.name)}" aria-pressed="${on}"></button>`; }).join('');
   const rec=(L.recentColours?L.recentColours():[]).map(h=>{ const on=!hit&&!!c&&h.toLowerCase()===c.slice(0,7); if(on) hit=true; return `<button type="button" class="cr-sw recent" style="--c:${h}" data-k="${key}" data-c="${h}" aria-label="Recent colour ${h}" title="Recent ${h}" aria-pressed="${on}"></button>`; }).join('');
-  return `<div class="cr-sws">${sw}${rec?'<span class="cr-sw-sep" aria-hidden="true"></span>'+rec:''}${o.none?`<button type="button" class="cr-sw none" data-k="${key}" data-c="" aria-label="None" title="None" aria-pressed="${!c}"></button>`:''}<label class="cr-sw custom" title="Custom colour"><input type="color" data-k="${key}" value="${hex6(cur||'#000000')}" aria-label="Custom colour"></label></div>`; }
+  return `<div class="cr-sws">${sw}${rec?'<span class="cr-sw-sep" aria-hidden="true"></span>'+rec:''}${o.none?`<button type="button" class="cr-sw none" data-k="${key}" data-c="" aria-label="None" title="None" aria-pressed="${!c}"></button>`:''}${o.orig?`<button type="button" class="cr-sw orig" data-k="${key}" data-c="" aria-label="Original colours" title="Original colours" aria-pressed="${!c}"></button>`:''}<label class="cr-sw custom" title="Custom colour"><input type="color" data-k="${key}" value="${hex6(cur||'#000000')}" aria-label="Custom colour"></label></div>`; }
 function openColor(){ const list=sel(); if(!list.length) return; const first=list.find(n=>colorTargets(n).length); if(!first) return; const tg=colorTargets(first);
   const body=selSheet('color','Colour',tg.map((t,i)=>`<span class="lbl">${esc(t.label)}</span>${swatches(i,typeof t.get()==='string'?t.get():'',t)}${t.width?`<div class="cr-row"><span class="lbl">Outline width</span><input type="range" min="0" max="60" step="1" value="${Math.round(t.node.strokeWidth()||0)}" data-sw="${i}"></div>`:''}`).join('')+(list.length>1?'<p class="small">Changes every selected thing that has this part.</p>':''),openColor);
   const apply=(i,v)=>{ const label=tg[i].label; list.forEach(n=>{ const t=colorTargets(n).find(x=>x.label===label)||(colorTargets(n).length===1?colorTargets(n)[0]:null); if(t) t.set(v); }); after(); };
@@ -162,7 +166,9 @@ function openFont(){ const list=sel(); const texts=list.flatMap(textsIn); if(!te
     ${one?`<div class="cr-row"><span class="lbl">Align</span><div class="cr-seg" id="fAl">${al.map(a=>`<button type="button" data-a="${a}" aria-pressed="${t.align()===a}">${a==='center'?'Centre':a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div></div>
     <div class="cr-row"><span class="lbl">Line height</span><input type="range" id="fLH" min="0.8" max="2.2" step="0.05" value="${t.lineHeight()}"></div>
     <div class="cr-row"><span class="lbl">Spacing</span><input type="range" id="fLS" min="-10" max="60" step="1" value="${t.letterSpacing()||0}"></div>
-    <span class="lbl">Background pill</span>${swatches('tbg',t.getAttr('tbg')||'',{none:true})}`:''}`,openFont);
+    <span class="lbl">Background pill</span>${swatches('tbg',t.getAttr('tbg')||'',{none:true})}`:''}
+    <span class="lbl">Text styles</span><div class="cr-ts" id="fTS"></div>`,openFont);
+  paintTS(body,texts);
   const base=texts.map(x=>x.fontSize()), k0=t.fontSize();
   const each=fn=>{ texts.forEach(fn); texts.forEach(x=>{ BD.prepText(x); if(x.getAttr('autoW')) x.width(undefined); CR.relayoutAround(x); }); after(); };
   body.querySelector('#fFam').onchange=async e=>{ const fam=e.target.value; await Promise.all(texts.map(x=>BD.ensureFont(fam,x.fontStyle()))); each(x=>x.fontFamily(fam)); BD.changed(); };
@@ -175,6 +181,46 @@ function openFont(){ const list=sel(); const texts=list.flatMap(textsIn); if(!te
     const pill=v=>each(x=>{ x.setAttr('tbg',v||undefined); x.setAttr('tbgR',v?Math.round(x.fontSize()*.5):undefined); x.padding(v?Math.round(x.fontSize()*.28):0); });
     body.addEventListener('click',e=>{ const b=e.target.closest('.cr-sw[data-c]'); if(!b) return; pill(b.dataset.c); BD.changed(); body.querySelectorAll('.cr-sw[data-k="tbg"]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     body.addEventListener('input',e=>{ if(e.target.type==='color'&&e.target.dataset.k==='tbg') pill(e.target.value); }); } }
+
+/* Text styles (1.31.0): the same short list as the tool pages' text panel (localStorage studio:textstyles, per device, up to 8,
+   each {id,name,st,at}; st uses the tool pages' keys color, font, align, lh, ls, bg, op, plus wt when the weight is not the font's usual one).
+   Tap one to put it on the selected text; Save this style adds one; ⋯ uses it on every text on the page or removes it. */
+const TS_KEY='studio:textstyles', TS_MAX=8;
+const tStyles=()=>{ const v=L.store(TS_KEY); return Array.isArray(v)?v.filter(x=>x&&x.id&&x.st&&typeof x.st==='object').slice(0,TS_MAX):[]; };
+const setTStyles=v=>L.store(TS_KEY,v.length?v:null);
+const styleKey=st=>JSON.stringify(Object.keys(st||{}).sort().map(k=>[k,st[k]]));
+const fontOf=fam=>L.brandFonts().find(f=>f.family===fam)||(L.MORE_FONTS||[]).find(f=>f.family===fam)||null;
+const usualWt=fam=>{ const f=fontOf(fam); return (f&&f.wt)||'400'; };
+const wtOf=t=>(String(t.fontStyle()).match(/\d{3}/)||['400'])[0];
+const topText=x=>U.isFrame(x.getParent());
+function textStyleOf(t){ const st={}, fam=t.fontFamily(); if(typeof t.fill()==='string'&&t.fill()) st.color=t.fill(); if(fam) st.font=fam;
+  if(t.align()&&t.align()!=='center') st.align=t.align(); if(Math.abs(t.lineHeight()-1.2)>.001) st.lh=Math.round(t.lineHeight()*100)/100;
+  if(t.letterSpacing()) st.ls=t.letterSpacing(); if(t.getAttr('tbg')) st.bg=t.getAttr('tbg'); if(t.opacity()<1) st.op=Math.round(t.opacity()*100)/100;
+  if(wtOf(t)!==usualWt(fam)) st.wt=wtOf(t); return st; }
+async function useTextStyle(texts,st){ const fam=st.font||null, wt=st.wt||(fam?usualWt(fam):null), fs=wt?(wt==='400'?'normal':wt):null;
+  if(fam) await Promise.all(texts.map(x=>BD.ensureFont(fam,fs||x.fontStyle())));
+  texts.forEach(x=>{ if(st.color) x.fill(st.color); if(fam) x.fontFamily(fam); if(fs) x.fontStyle(fs); x.opacity(st.op!=null?st.op:1);
+    if(topText(x)){ x.align(st.align||'center'); x.lineHeight(st.lh||1.2); x.letterSpacing(st.ls||0);
+      const v=st.bg&&st.bg!=='none'?st.bg:null; x.setAttr('tbg',v||undefined); x.setAttr('tbgR',v?Math.round(x.fontSize()*.5):undefined); x.padding(v?Math.round(x.fontSize()*.28):0); }
+    BD.prepText(x); if(x.getAttr('autoW')) x.width(undefined); CR.relayoutAround(x); });
+  after(); BD.changed(); }
+function paintTS(body,texts){ const el=body.querySelector('#fTS'); if(!el) return; const t=texts[0], cur=t?textStyleOf(t):{}, list=tStyles();
+  el.innerHTML=list.map(x=>{ const on=Object.keys(x.st).length>0&&styleKey(x.st)===styleKey(cur);
+    return `<span class="cr-tsc${on?' on':''}"><button type="button" class="cr-tsu" data-ts="${esc(x.id)}" aria-pressed="${on}" dir="auto"><i style="background:${esc(x.st.color||'currentColor')}" aria-hidden="true"></i><span${x.st.font?` style="font-family:'${esc(x.st.font)}'"`:''}>${esc(x.name)}</span></button><button type="button" class="cr-tsm" data-tsm="${esc(x.id)}" aria-label="Options for ${esc(x.name)}" title="Options">${I.more}</button></span>`; }).join('')
+    +`<button type="button" class="link" id="fTSave">Save this style</button>`;
+  if(el.dataset.wired) return; el.dataset.wired='1';
+  el.addEventListener('click',async e=>{ const all=sel().flatMap(textsIn); if(!all.length) return;
+    if(e.target.closest('#fTSave')){ const st=textStyleOf(all[0]), l=tStyles(), dup=l.find(x=>styleKey(x.st)===styleKey(st));
+      if(dup){ toast('Already saved as “'+dup.name+'”.'); return; }
+      if(l.length>=TS_MAX){ toast('You have '+TS_MAX+' styles. Remove one (⋯) to save a new one.'); return; }
+      let k=1; const used=new Set(l.map(x=>x.name)); while(used.has('Style '+k)) k++;
+      const x={id:'ts'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:'Style '+k,st,at:Date.now()};
+      setTStyles([...l,x]); paintTS(body,all); toast('Saved as “'+x.name+'”. Tool pages have it too.'); return; }
+    const m=e.target.closest('[data-tsm]'); if(m){ const x=tStyles().find(y=>y.id===m.dataset.tsm); if(!x) return;
+      openMenu(m,[{head:x.name},{label:'Use on all text on this page',run:async()=>{ const f=BD.activeFrame(); const ts=f?f.find(n=>kind(n)==='text'):[]; await useTextStyle(ts,x.st); paintTS(body,sel().flatMap(textsIn)); toast('“'+x.name+'” is on '+ts.length+' texts. Tap undo to bring the old ones back.'); }},
+        {label:'Remove',run:()=>{ setTStyles(tStyles().filter(y=>y.id!==x.id)); paintTS(body,sel().flatMap(textsIn)); toast('“'+x.name+'” removed.'); }}]); return; }
+    const u=e.target.closest('[data-ts]'); if(!u) return; const x=tStyles().find(y=>y.id===u.dataset.ts); if(!x) return;
+    await useTextStyle(all,x.st); paintTS(body,all); toast('“'+x.name+'” is on. Tap undo to bring the old look back.'); }); }
 
 /* Size: bigger / smaller, turn, see-through, corners */
 function openSize(){ const list=sel().filter(n=>!U.isLocked(n)); if(!list.length) return; const n=list[0], f=BD.activeFrame();
@@ -273,33 +319,46 @@ function openAdd(){ reopen=null; const as=L.brandAssets();
   const els=CR.ELEMENTS.filter(e=>!e.when||e.when());
   const shapeSvg=(d,stroke)=>`<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`;
   const native={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};
-  const body=openSheet('add','Add',`<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
+  const body=openSheet('add','Add',`<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
     <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span>${esc(e.label)}</button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
     <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
     <span class="lbl" id="j-shapes">Shapes</span><div class="cr-icons">${BD.SHAPES.map(s=>`<button type="button" data-shape="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id]||native.rect)}</button>`).join('')}</div>
     <span class="lbl" id="j-lines">Lines</span><div class="cr-icons">${BD.STROKES.map(s=>`<button type="button" data-stroke="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id],true)}</button>`).join('')}</div>
     <span class="lbl" id="j-icons">Icons</span><div class="cr-icons">${CR.allIcons().map(i=>`<button type="button" data-icon="${i.id}" aria-label="${esc(i.id.replace(/-/g,' '))}" title="${esc(i.id.replace(/-/g,' '))}">${svg(`<path d="${i.d}"/>`,24)}</button>`).join('')}</div>
-    <span class="lbl" id="j-emoji">Emoji</span><div class="cr-icons">${String(BD.EMOJI||'').split(/\s+/).filter(Boolean).map(e=>`<button type="button" data-emoji="${e}" style="font-size:24px">${e}</button>`).join('')}</div>`);
+    <span class="lbl" id="j-stickers">Stickers</span><div class="cr-icons cr-stk" id="crStk">${CR.stickerTiles()}</div>
+    <span class="lbl" id="j-emoji">Emoji</span><div class="cr-icons cr-emo" id="crEmo">${CR.emojiTiles()}</div>
+    <span class="lbl">Phone emoji</span><div class="cr-icons cr-kbd">${(Array.isArray(BD.EMOJI)?BD.EMOJI:String(BD.EMOJI||'').split(/\s+/)).filter(Boolean).map(e=>`<button type="button" data-emoji="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
+    <p class="small">Phone emoji look like your phone's own; the emoji above look the same everywhere.</p>`);
+  CR.stickersReady().then(()=>{ const a=body.querySelector('#crStk'), b=body.querySelector('#crEmo'); if(a&&!a.children.length) a.innerHTML=CR.stickerTiles(); if(b&&!b.children.length) b.innerHTML=CR.emojiTiles(); });
   body.querySelectorAll('[data-prev]').forEach(sp=>{ const e=CR.element(sp.dataset.prev); if(e&&e.asset){ const a=as.find(x=>x.id===e.asset); if(a) sp.innerHTML=`<img alt="" src="${L.assetPrevUrl(a)}">`; return; } const u=CR.preview(sp.dataset.prev); if(u) sp.innerHTML=`<img alt="" src="${u}">`; });
   body.addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; const d=b.dataset, f=BD.activeFrame(), w=f?fsize(f).w:1080, c=CR.colors();
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
-    if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji)) return;
+    if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji||d.sticker)) return;
     closeSheet(true);
     if(d.el) await CR.addElement(d.el);
     if(d.asset){ const a=as.find(x=>x.id===d.asset); if(a) await BD.addAsset(a); }
     if(d.shape){ const s=BD.SHAPES.find(x=>x.id===d.shape); BD.place(BD.make.shape(s,Math.round(w*.4),c.blob)); }
     if(d.stroke){ const s=BD.STROKES.find(x=>x.id===d.stroke); BD.place(BD.make.shape(Object.assign({stroke:!s.make},s),Math.round(w*.4),c.ink)); }
     if(d.icon){ const s=CR.iconDef(d.icon); BD.place(BD.make.icon(s,Math.round(w*.16),c.ink)); }
+    if(d.sticker) await CR.addSticker(d.sticker);
     if(d.emoji){ BD.place(BD.make.text(d.emoji,{fontSize:Math.round(w*.16),fontFamily:'system-ui'})); } }); }
+
+/* Swap: another sticker or emoji in the same place, size and turn (stays open to try a few; Done closes it) */
+function openSwap(){ const n=sel()[0]; if(!CR.canSwap(n)) return; const cur=n.getAttr('stickerId')||'';
+  const body=selSheet('swap','Swap',`<span class="lbl">Emoji</span><div class="cr-icons cr-emo" id="crSwE">${CR.emojiTiles()}</div><span class="lbl">Stickers</span><div class="cr-icons cr-stk" id="crSwS">${CR.stickerTiles()}</div>`,openSwap);
+  const mark=()=>body.querySelectorAll('[data-sticker]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sticker===cur)));
+  CR.stickersReady().then(()=>{ const a=body.querySelector('#crSwE'), b=body.querySelector('#crSwS'); if(a&&!a.children.length) a.innerHTML=CR.emojiTiles(); if(b&&!b.children.length) b.innerHTML=CR.stickerTiles(); mark(); });
+  mark();
+  body.addEventListener('click',async e=>{ const b=e.target.closest('[data-sticker]'); if(!b||b.dataset.sticker===cur) return; const m=sel()[0]; if(m) await CR.swapSticker(m,b.dataset.sticker); }); }
 
 /* Layers: what's on this page, top first */
 const kindIcon=n=>{ const k=kind(n); return k==='text'?I.text:k==='image'||k==='asset'?I.img:k==='group'?I.grp:k==='line'||k==='icon'?I.line:I.shape; };
 function openLayers(){ reopen=null; openSheet('layers','Layers',`<div class="cr-layers" id="crLy"></div><p class="small">Tap to select. The eye hides a thing; the lock stops it moving or being picked by a tap.</p>`,{tool:true}); paintLayerList(); }
 function paintLayerList(){ const el=$('crLy'); if(!el) return; const f=BD.activeFrame(); if(!f) return; const list=items(f).filter(n=>!n.hasName('frame-bg')).reverse();
   el.innerHTML=list.length?list.map(n=>{ const on=S.sel.includes(n), lk=U.isLocked(n), vis=n.visible(); return `<div class="cr-ly${vis?'':' hid'}" role="option" aria-selected="${on}" data-id="${n.id()}"><span class="kd">${kindIcon(n)}</span><span class="nm" dir="auto">${esc(U.nameOf(n))}</span><button type="button" class="ib" data-eye="${n.id()}" aria-pressed="${!vis}" aria-label="${vis?'Hide':'Show'}">${vis?I.eye:I.eyeOff}</button><button type="button" class="ib" data-lk="${n.id()}" aria-pressed="${lk}" aria-label="${lk?'Unlock':'Lock'}">${lk?I.lock:I.unlock}</button></div>`; }).join(''):'<div class="cr-empty">Nothing on this page yet. Add something with Add, Text or Photo.</div>'; }
-$('crSheetB').addEventListener('click',e=>{ const ly=$('crLy'); if(!ly||!ly.contains(e.target)) return; const nOf=id=>BD.main.findOne('#'+id);
+$('crSheet').addEventListener('click',e=>{ const ly=$('crLy'); if(!ly||!ly.contains(e.target)) return; const nOf=id=>BD.main.findOne('#'+id);
   const eye=e.target.closest('[data-eye]'), lk=e.target.closest('[data-lk]'), row=e.target.closest('[data-id]');
   if(eye){ const n=nOf(eye.dataset.eye); if(n){ BD.act.hide(n); paintLayerList(); } return; }
   if(lk){ const n=nOf(lk.dataset.lk); if(n){ n.setAttr('locked',U.isLocked(n)?undefined:true); if(U.isLocked(n)) BD.select(S.sel.filter(x=>x!==n)); BD.changed(); paintLayerList(); paintCtx(); } return; }

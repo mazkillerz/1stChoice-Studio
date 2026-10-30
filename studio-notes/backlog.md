@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 40 was 1.29.0 (30 Oct 2026), a **team** session in the parallel round 1.29–1.33 (`sessions.md`): backgrounds in Cinematic, New place, Offer and Collage (#39) and two Templates that start with a finish (#40). Next in the round: 1.30.0 (Simplify).
-**Simplify session:** every 5th minor version. The next one is 1.30.0 (1.25.0 went to the owner-directed Video editor).
+**Last session:** sessions 40–44 were the parallel round 1.29.0–1.33.0 (30 Oct 2026, `sessions.md`): 1.29.0 team (backgrounds in four more tools, Templates with a finish), 1.30.0 Simplify (see-through New place frame, one-line tool descriptions, quiet hub Done, `/` to search), 1.31.0 Mazoon (stickers, emoji, Swap and text styles in Create), 1.32.0 team (clear Continue editing after Save pictures, day words in Saved search, camera for New place / Cinematic), 1.33.0 Mazoon (Flip for photos, emoji loaded when needed). The next session, 1.34.0, is a **team** session.
+**Simplify session:** every 5th minor version. The next one is 1.35.0.
 
 ## Next up
 _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
@@ -16,28 +16,28 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 10 | Highlight covers: Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0; emoji covers shipped in 1.14.0. Product can already be sized and moved as a layer. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
-| 26 | Stickers in Create and Board (own editors) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
-| 41 | After Save pictures in Continue editing, offer "Remove these N from Continue editing" (one confirm) for stories that are done | 2 | 1 | 1 | 1 | 3 | From 1.23.0: drafts stay on purpose today (never lose work); ask the team whether they clear them by hand. |
+| 26 | Stickers in Board (own editor; Create got them in 1.31.0) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
 | 42 | Save pictures for Create drafts too (Create has its own editor and no `render=1` renderer; they are listed as skipped) | 1 | 2 | 1 | 2 | 2 | From 1.23.0. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
-| 32 | Flip for the tool's own photo boxes (a mirrored selfie in Photo story); needs a control in the Photo sheet | 1 | 2 | 1 | 2 | 2 | From 1.14.0. |
-| 33 | Emoji in Create's highlight layout (the Sticker sheet got them in 1.28.0) | 1 | 2 | 1 | 1 | 3 | From 1.14.0. Create has its own editor; reuse the `STUDIO_STICKERS` entries with `emoji:true`. |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
-| 35 | Text styles in Create and Board (own editors) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
+| 35 | Text styles in Board (Create got them in 1.31.0) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
 | 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
-| 37 | New place and Cinematic bars get `quick` (camera in All tools, like Offer in 1.15.0) if the team uses them | 2 | 1 | 1 | 1 | 3 | From 1.15.0; the share sheet keeps its five tools. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
+| 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
+| 44 | Brand template entries for emoji highlight covers in Create (`{layout:'highlight', emoji:'places'}` in `create.templates`) | 1 | 2 | 1 | 1 | 3 | From 1.31.0. |
+| 45 | On a computer, show the `/` key once in the search placeholder ("Search all of Studio  /") | 1 | 2 | 1 | 1 | 3 | From 1.30.0, if the owner likes the key. |
+
 ## UX audit findings (open)
-- 1.29.0: New place "Save the frame only (see-through PNG)" is not see-through when a photo is in: `renderPage(pg,K,withPhotos)` still calls `draw()`, which draws the photo; `withPhotos=false` only skips the black backing. Skip `h.photo` for the frame save, or rename the button (handed to 1.30.0).
-- 1.29.0: `backgrounds.mjs` "Grain same after reload" failed once in 4 runs (no Grain change); give that reload a longer settle if it shows again.
-- 1.27.0: Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
+- 1.29.0: done in 1.30.0: New place's frame save is see-through (`framePass` in `renderPage()`; any new photo-drawing helper must also no-op under it).
+- 1.29.0: done in 1.30.0: the Grain-reload and restock-styles "compatible" flakes are fixed test-side (warm-up + re-settle; colour-grid compare within 4).
+- 1.27.0: partly done in 1.32.0 (day words). Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
 - 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
 - 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
 - 1.14.0: done in 1.28.0: five-option rows are 3 + 2 engine-wide (`segOdd()` adds `.seg-32`, a 6-column grid). Seven options are still 4 + 3 (fine).
 - 1.28.0: an emoji sticker in one colour (a picked colour) loses inner details such as the chat bubble's dots (same as Emoji covers). If the owner wants, draw the lighter parts as cut-outs instead.
-- 1.28.0: every tool page now also loads `tools/highlight-emoji.js` (20 KB, cached by the service worker) before stickers.js. If load time matters, load it only when the Sticker sheet opens or a design has an emoji sticker.
+- 1.28.0: done in 1.33.0: `tools/highlight-emoji.js` loads only when Layers / Sticker opens or a design has an emoji sticker.
 - 1.13.0: done in 1.23.0: "phone" wording now comes from `devWord()` (phone on a touch screen ≤820px, device otherwise), incl. Create's draft messages and the Home footer (`#footDev`). Comments in code still say phone; harmless.
 - 1.19.0: the More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
 - 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.

@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.29.0';
+const VERSION='1.33.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -87,17 +87,17 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
 /* what a tool makes, for the Saved page's quick filters (an Offer is a story-sized picture) */
 const TOOLS={
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photos of the cans: a story each',queue:true,icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock'},
-  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'Tall photos: a story each',queue:true,icon:'story',qi:2,group:'story',type:'story',keys:'picture single'},
-  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',icon:'collage',multi:true,qi:3,group:'story',type:'story',keys:'grid mosaic several pictures'},
-  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story',type:'story',keys:'shop store location map opening'},
-  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',type:'story',keys:'two pictures half'},
-  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',type:'story',keys:'film movie wide letterbox'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
-  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
-  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'},
-  'video':{title:'Video editor',blurb:'Coded reels: change the words and the sound, save an MP4.',group:'free',type:'video',keys:'reel reels video mp4 movie animation motion sound music audio mixer edit'}
+  'restock':{title:'Restock',blurb:'The cans, back in stock',quick:'Photos of the cans: a story each',queue:true,icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock flavours button'},
+  'photo-story':{title:'Photo story',blurb:'One tall photo, full screen',quick:'Tall photos: a story each',queue:true,icon:'story',qi:2,group:'story',type:'story',keys:'picture single headline logo'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in a grid',quick:'2 to 9 photos',icon:'collage',multi:true,qi:3,group:'story',type:'story',keys:'grid mosaic several pictures scattered prints'},
+  'new-place':{title:'New place',blurb:'A new sale point',quick:'A photo of the new place',group:'story',type:'story',keys:'shop store location map opening place name pin'},
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below',group:'story',type:'story',keys:'two pictures half words cut'},
+  'cinematic':{title:'Cinematic bars',blurb:'Wide photo, black bars',quick:'A wide photo, shown whole',group:'story',type:'story',keys:'film movie wide letterbox whole text'},
+  'offer':{title:'Offer',blurb:'Discount tiles and dates',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent product photo button'},
+  'carousel':{title:'Carousel',blurb:'Slides with page dots',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post 1080×1350 several'},
+  'highlight':{title:'Highlight covers',blurb:'Round highlight covers',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile story icon word photo'},
+  'create':{title:'Create',blurb:'Make anything, from a template',group:'free',type:'free',keys:'design blank free templates canvas element pages'},
+  'video':{title:'Video editor',blurb:'Reels: words, sound, MP4',group:'free',type:'video',keys:'reel reels video coded change save mp4 movie animation motion sound music audio mixer edit'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -241,6 +241,18 @@ function drawShape(c,a,w,h,fill,o){
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
 const stickerList=()=>window.STUDIO_STICKERS||[];   // assets/stickers.js, loaded by tool()
+/* Emoji stickers' shapes (tools/highlight-emoji.js, ~20 KB) load only when needed (1.33.0): the Sticker sheet opens (or the
+   Layers sheet, so it is ready by the tap), or a design, draft or undo step has an emoji sticker. Highlight covers load the file
+   themselves. Save and the hidden render frame wait for it through assetsHD(), so a picture never misses an emoji. */
+let EMOJI_P=null;
+const hasEmojiStickers=()=>stickerList().some(s=>s.emoji);
+const usesEmoji=pages=>(pages||[]).some(pp=>(pp&&pp.extras||[]).some(x=>/^sticker:emoji-/.test(x&&x.ref||'')));
+function emojiStickers(){
+  if(hasEmojiStickers()) return Promise.resolve(true);
+  if(!EMOJI_P) EMOJI_P=(window.HL_EMOJI?Promise.resolve():loadScript(ROOT+'tools/highlight-emoji.js'))
+    .then(()=>{ if(window.addEmojiStickers) window.addEmojiStickers(); return hasEmojiStickers(); },()=>{ EMOJI_P=null; return false; });
+  return EMOJI_P;
+}
 function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
 function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
@@ -254,7 +266,7 @@ function loadAsset(ref){
   ASSET_IMG.set(ref,p); return p;
 }
 const ASSET_HD=new Map();   // ref -> promise of the HD file (only for assets that have a light copy)
-const assetsHD=()=>Promise.all([...ASSET_HD.values()]);
+const assetsHD=()=>Promise.all([...ASSET_HD.values(),EMOJI_P]);   // + the emoji shapes, while they load
 const TINTS=new Map();
 function tinted(img,color){ const key=color; let m=TINTS.get(img); if(!m){ m={}; TINTS.set(img,m); } if(m[key]) return m[key];
   const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d'); x.drawImage(img,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height); return m[key]=c; }
@@ -450,6 +462,7 @@ function groundFx(ctx,kind,color,W,H){
 /* the Background picker a tool puts in its Style sheet: Studio.groundField({style:[...]}) (when = the styles that have a ground) */
 const groundField=(when,label)=>({id:'gfx',type:'seg',in:'style',label:label||'Background',default:'plain',cols:3,...(when?{when}:{}),options:GROUNDS.map(({v,l,ic})=>({v,l,ic}))});
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
+let framePass=false;   // set by renderPage() while it draws a frame-only PNG (see the end of makeHelpers)
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
   const ix=(i,opt)=>opt&&opt.page!=null?opt.page*(perPage||1)+i:off+i;   // opt.page: a photo from another slide (panoramas)
@@ -482,6 +495,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         const mx=Math.max(0,(dw-w)/2), my=Math.max(0,(dh-hh)/2);
         p.ox=Math.max(-mx,Math.min(mx,p.ox)); p.oy=Math.max(-my,Math.min(my,p.oy));
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        if(p.flip){ ctx.translate(2*(x+w/2+p.ox),0); ctx.scale(-1,1); }   // Flip (1.33.0): mirrored around the photo's own centre, so dragging still moves it the same way
         ctx.drawImage(preview?prev(im):sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
         if(hasFx(p.fx)) photoFx(ctx,p.fx,x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
@@ -504,6 +518,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         mid.width=sw*4; mid.height=sh*4; const mx=mid.getContext('2d'); mx.imageSmoothingQuality='high'; mx.drawImage(im,(mid.width-im.width*k*4)/2,(mid.height-im.height*k*4)/2,im.width*k*4,im.height*k*4);
         c.width=sw; c.height=sh; const cx=c.getContext('2d'); cx.imageSmoothingQuality='high'; cx.drawImage(mid,0,0,sw,sh); mid.width=mid.height=0; m[key]=c; }
       ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      if(p.flip){ ctx.translate(2*x+w,0); ctx.scale(-1,1); }   // a flipped photo's backdrop is flipped too
       const pad=Math.max(w,hh)*.06; ctx.drawImage(m[key],x-pad,y-pad,w+pad*2,hh+pad*2);   // a little bigger: no soft edge at the border
       if(hasFx(p.fx)) photoFx(ctx,p.fx,x,y,w,hh);
       if(opt.dim) { ctx.fillStyle='rgba(0,0,0,'+opt.dim+')'; ctx.fillRect(x,y,w,hh); }
@@ -624,6 +639,9 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
+  /* "Save the frame only": no photo pixels, so the photo window stays see-through. photoAspect still reads the photo, so the
+     window is the same size as in the story */
+  if(framePass){ h.photo=()=>{}; h.backdrop=()=>{}; }
   return h;
 }
 /* small icons drawn on the canvas in a size×size box: 'pin' (map pin), 'insta' (Instagram) */
@@ -672,8 +690,8 @@ async function tool(cfg){
   const app=document.getElementById('app');
   app.innerHTML='<p class="hint" style="width:100%">Loading…</p>';
   if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
-  /* stickers load alongside the brand; the emoji list (shared with Highlight covers) first, so stickers.js can add the emoji stickers */
-  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):(window.HL_EMOJI?Promise.resolve():loadScript(ROOT+'tools/highlight-emoji.js').catch(()=>{})).then(()=>loadScript(ROOT+'assets/stickers.js')).then(()=>true,()=>false);
+  /* stickers load alongside the brand; the emoji stickers' shapes only when needed (emojiStickers()) */
+  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):loadScript(ROOT+'assets/stickers.js').then(()=>true,()=>false);
   const B=await useBrand();
   const hasStickers=await stickersReady;
   const opts=v=>typeof v==='function'?v(B):v;
@@ -780,6 +798,7 @@ async function tool(cfg){
   }
   html+=`<div class="slots" id="slots"></div><div class="swap-row" id="swapRow" hidden><button type="button" class="mini" id="swapBtn" aria-pressed="false">${ICON.swap}<span>Swap two</span></button><button type="button" class="mini" id="shuffleBtn">${ICON.shuffle}<span>Shuffle</span></button></div><div class="small">Drag a photo in the preview to move it; pinch or use Zoom to resize.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div>
+  <div class="photo-flip" id="flipRow" hidden><button type="button" class="mini" id="photoFlip" aria-pressed="false">${ICON.flip}<span>Flip</span></button></div>
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
     <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
     <button type="button" class="link" id="lookAll" hidden>Use this look on every photo</button></div>`}</div></section>`;
@@ -813,8 +832,8 @@ async function tool(cfg){
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
-    <div class="status" id="status" role="status" aria-live="polite"></div>
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
+    <div class="status" id="status" role="status" aria-live="polite"></div>
   </div></section>
   </form>
   <nav class="bar" id="bar" aria-label="Editor">
@@ -844,7 +863,7 @@ async function tool(cfg){
     }
     if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
     openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
-    if(n==='layers') paintLayers();
+    if(n==='layers'){ paintLayers(); if(hasStickers) emojiStickers(); }   // the emoji stickers start loading before the Sticker tap
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
     fit();
   }
@@ -992,7 +1011,7 @@ async function tool(cfg){
   function slotsUI(){
     let s=''; const off=photoOffset(), n=slotCount();
     for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
-      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
+      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt=""${p.flip?' class="flip"':''} src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
     let realN=0; for(let j=0;j<n;j++){ const p=S.photos[off+j]; if(p&&p.img&&!p.sample) realN++; }
     $('swapRow').hidden=realN<2;
     $('slots').innerHTML=n?s:PG?'<p class="small">This '+PN.one+' has no photo. Change it in Style → This '+PN.one+'.</p>'
@@ -1084,7 +1103,10 @@ async function tool(cfg){
     slotsUI(); syncZoom(); syncCta();
   }
   /* whole photos (contain) can't zoom, so the slider hides for them */
-  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncLook(); }
+  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncFlip(); syncLook(); }
+  /* Flip (1.33.0): mirrors the chosen photo left to right in its box; p.flip is kept in the recipe only when on */
+  function syncFlip(){ const p=S.photos[S.active], real=!!(p&&p.img&&!p.sample&&photoUsed(S.active)); $('flipRow').hidden=!real; $('photoFlip').setAttribute('aria-pressed',String(real&&!!p.flip)); $('looks')?.classList.toggle('flip',real&&!!p.flip); }
+  $('photoFlip').addEventListener('click',()=>{ const p=S.photos[S.active]; if(!p||!p.img||p.sample) return; if(p.flip) delete p.flip; else p.flip=true; haptic('tick'); slotsUI(); syncFlip(); render(); });
   /* the photo look row: shown for a real photo; its mood buttons are drawn from that photo with the same blend layers */
   const lightTxt=v=>{ v=Math.round((+v||0)*100); return v>0?'+'+v:String(v); };
   let lookFor=null;
@@ -1145,7 +1167,7 @@ async function tool(cfg){
     const p0=S.P[0];
     return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,pp:perPage,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
       ...(PG?{pages:clone(S.P)}:{}),
-      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample),...(hasFx(p.fx)?{fx:{look:p.fx.look||'',light:+p.fx.light||0}}:{})}))};
+      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample),...(hasFx(p.fx)?{fx:{look:p.fx.look||'',light:+p.fx.light||0}}:{}),...(p.flip?{flip:true}:{})}))};
   }
   /* slots: optional photo objects to put in each slot (null = keep what's there) */
   function applyRecipe(r,slots){
@@ -1154,10 +1176,11 @@ async function tool(cfg){
     const pages=(PG&&r.pages&&r.pages.length?r.pages:[{values:r.values,layers:r.layers,extras:r.extras}]).slice(0,PG?PG.max:1);
     S.P=pages.map((pp,i)=>{ const np=newPage(i); Object.keys(pp.values||{}).forEach(k=>{ if(k in np.values) np.values[k]=clone(pp.values[k]); }); np.layers=clone(pp.layers||{}); np.extras=clone(pp.extras||[]); return np; });
     S.page=Math.min(S.P.length-1,Math.max(0,r.page||0));
+    if(usesEmoji(S.P)&&!hasEmojiStickers()) emojiStickers().then(ok=>{ if(ok) render(); });   // an emoji sticker in it: load its shapes, then draw again
     S.P.forEach(pp=>{ extraN=pp.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); }); assetN=Math.max(assetN,extraN);
     /* older carousels kept 1 photo per slide; map them onto today's layout */
     const oldPP=PG?(r.pp||1):perPage; if(oldPP!==perPage){ const map=i=>Math.floor(i/oldPP)*perPage+i%oldPP, rp2=[], sl2=[]; (r.photos||[]).forEach((x,i)=>{ rp2[map(i)]=x; }); if(slots) slots.forEach((x,i)=>{ if(x) sl2[map(i)]=x; }); r={...r,photos:rp2}; slots=slots?sl2:slots; }
-    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; });
+    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; if(rp.flip) S.photos[i].flip=true; else delete S.photos[i].flip; });
     S.sel=null;
   }
   async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
@@ -1609,13 +1632,17 @@ async function tool(cfg){
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
-    $('addSticker').addEventListener('click',()=>{ paintStickers($('stickerList')); openSheet('stickers'); });
+    /* the emoji shapes: started on press (and by the Layers sheet on a phone); the sheet opens with them, or after 1.5 s without */
+    $('addSticker').addEventListener('pointerdown',()=>emojiStickers());
+    $('addSticker').addEventListener('click',async()=>{ const late=emojiStickers().then(ok=>{ if(ok) paintStickers($('stickerList')); });
+      if(!hasEmojiStickers()) await Promise.race([late,new Promise(r=>setTimeout(r,1500))]);
+      paintStickers($('stickerList')); openSheet('stickers'); });
     $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
   onAssetLoad=()=>render();
 
-  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); toast('Layout reset. Tap undo to bring it back.'); });
+  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;delete p.flip;}); slotsUI(); syncZoom(); syncInspector(); render(); toast('Layout reset. Tap undo to bring it back.'); });
 
   /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
   const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -1769,7 +1796,7 @@ async function tool(cfg){
     const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
     const ctx=c.getContext('2d'); if(!ctx) return null;
     try{
-      withPage(pg,()=>draw(ctx,false,K));
+      framePass=!withPhotos; try{ withPage(pg,()=>draw(ctx,false,K)); } finally{ framePass=false; }
       if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
       if(mid) mid();
       const b=await new Promise(r=>c.toBlob(r,'image/png'));
@@ -2150,7 +2177,7 @@ async function home(){
   const libCam=(id,t)=>`<label class="row-cam lib-cam" title="${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}"><span class="sr-only">${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}</span>${ICON.camera}${quickInput(id,t)}</label>`;
   const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${rowHref(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
   function libHtml(){ const pins=getPins(); let last=null, h='';
-    if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots on the right to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
+    if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4>${pins.length>1?'<p class="lib-hint" id="libPinHint">Press and drag the dots on the right to change the order.</p>':''}<div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
     Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
     return h; }
   /* redraw the open sheet; the star you tapped (or the handle you moved) keeps focus, the star does its little pop */
@@ -2161,7 +2188,7 @@ async function home(){
     if(focusSel) box.querySelector(focusSel)?.focus({preventScroll:true}); }
   function pinsChanged(){ haptic('tick'); paintTools(); paintToolsView(); if(window.StudioSearch) StudioSearch.refresh(); }
   function openLibrary(){
-    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
+    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini" id="libDone">Done</button></div><p class="small">Tap a star to pin a tool to your home on this ${devWord()}.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
     const list=d.querySelector('.lib-list');
     d.querySelector('#libDone').onclick=()=>d.close();
     list.addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
@@ -2209,7 +2236,7 @@ async function home(){
     history.replaceState(null,'',location.pathname+location.hash);
     const got=n>0?await idb.get('studio:shared'):null, fs=got&&got.files||[];
     if(!fs.length){ hubToast('That photo did not come through. Share it again, or tap + to pick it.'); return; }
-    const q=quickTools().filter(([,t])=>t.qi), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });   // the five photo tools; Offer's camera is in All tools
+    const q=quickTools().filter(([,t])=>t.qi), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });   // the five photo tools; Offer's, New place's and Cinematic's cameras are in All tools
     const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses '+(fs.length>(t.max||9)?'the first ':'all ')+Math.min(fs.length,t.max||9)+' photos':t.queue?'A story from each, '+Math.min(fs.length,QUEUE_MAX)+' in a row':'Uses the first photo';
     const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
     d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice
@@ -2359,14 +2386,24 @@ async function home(){
   if(cont.length) paintCont();
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
      ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
-     own editor and no renderer, so they are listed as skipped. */
+     own editor and no renderer, so they are listed as skipped. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
+     whose pictures were saved (#41): one confirm, never by itself, never the skipped ones, and not one edited since it was drawn. */
   $('contSave').onclick=async()=>{ haptic('tick');
-    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
+    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
       skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
-    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true}); };
+    const one=n=>n===1, dev=devWord();
+    const offer={label:n=>one(n)?'Remove it from Continue editing':'Remove these '+n+' from Continue editing',
+      title:n=>one(n)?'Remove this story from Continue editing?':'Remove these '+n+' stories from Continue editing?',
+      note:n=>(one(n)?'Its picture is saved. The unfinished story and its photos are':'Their pictures are saved. The unfinished stories and their photos are')+' deleted from this '+dev+'. This can’t be undone.',
+      yes:'Remove', no:n=>one(n)?'Keep it':'Keep them', run:items=>{ let n=0;
+        items.forEach(it=>{ const x=cont.find(c=>c.key===it.key), now=store(it.key);
+          if(!x||x.gone||!now||now.at!==it.at) return;   // edited in another tab since: keep it
+          x.gone=true; removeDraft(x.key); n++; });
+        paintCont(); haptic('tick'); hubToast(n?(one(n)?'1 story':n+' stories')+' removed from Continue editing.':'Nothing removed: those stories changed since.'); }};
+    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true,offer}); };
 
   /* ---------- first-run welcome (assets/welcome.js): three short swipes (the main tools, pins and search, saving). Once per device,
      only on a device that never used Studio; Settings → Welcome tour (or ?welcome=1) shows it again. ---------- */
@@ -2384,7 +2421,7 @@ async function home(){
   function openSettings(){
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
     const acc=me?row('account',ICON.user,'Account',esc((C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out')):row('account',ICON.user,'Sign in','See and save your team’s designs');
-    const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini solid" data-x>Done</button></div>
+    const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini" data-x>Done</button></div>
       <div class="act-list set-list">${acc}
       ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
@@ -2515,7 +2552,7 @@ async function home(){
     if(!has){ endSelect(true); $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
     const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=findQ
-      ?note(ICON.search,'No saved design matches “'+esc(findQ.trim())+'”','Try part of the name, a tool such as Restock, or a collection.','<button type="button" class="btn slim ghost" data-clearfind>Clear search</button>')
+      ?note(ICON.search,'No saved design matches “'+esc(findQ.trim())+'”','Try part of the name, a tool such as Restock, a collection, or a day: today, yesterday, this week.','<button type="button" class="btn slim ghost" data-clearfind>Clear search</button>')
       :colOn&&!colOn.count
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
       :note(ICON.search,'No saved design matches that','Try another collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
@@ -2534,11 +2571,23 @@ async function home(){
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: All
   $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } else if(e.target.closest('[data-clearfind]')) setFind('',true); });
   /* Search on the Saved page (1.27.0): the magnifier opens a box under the title; every word typed must match the design's name,
-     its tool or one of its collections (Arabic folded like the hub search). It works inside the chosen collection and sort;
+     its tool or one of its collections (Arabic folded like the hub search), or a day word (1.32.0, below). It works inside the chosen collection and sort;
      Cancel, Escape or leaving the page clears it. */
+  /* Day words (1.32.0): "today", "yesterday" and "this week" (today and the 6 days before) match a design by the day it was
+     last used, the date the sort uses. The brand kit can add words in its own language (B.findDates={today:[…],yesterday:[…],
+     week:[…]}), folded like the rest. A design whose name has the word still matches by name ("Today's offer"). */
+  const DAY_WORDS={today:['today'],yesterday:['yesterday'],week:['this week']};
+  let dayWords=null;
+  const getDayWords=()=>dayWords||(dayWords=Object.entries(DAY_WORDS).flatMap(([k,l])=>[...l,...(((B.findDates||{})[k])||[])].map(w=>[k,normText(w)]))
+    .filter(([,w])=>w).sort((a,b)=>b[1].length-a[1].length));
+  function onDay(d,k){ const t=lastUse(d), day=new Date(); day.setHours(0,0,0,0);
+    const back=n=>{ const x=new Date(day); x.setDate(x.getDate()-n); return +x; };
+    return k==='today'?t>=+day:k==='yesterday'?t>=back(1)&&t<+day:t>=back(6); }
   function findHit(d){ if(!findQ.trim()) return true;
     const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName)].join(' '));
-    return normText(findQ).split(/\s+/).filter(Boolean).every(w=>hay.includes(w)); }
+    let q=' '+normText(findQ)+' ';
+    for(const [k,w] of getDayWords()) while(q.includes(' '+w+' ')){ if(!hay.includes(w)&&!onDay(d,k)) return false; q=q.replace(' '+w+' ',' '); }
+    return q.split(' ').filter(Boolean).every(w=>hay.includes(w)); }
   function setFind(v,focus){ findQ=v; const i=$('findIn'); if(i.value!==v) i.value=v; $('findClr').hidden=!v; paintPage(); if(focus) i.focus({preventScroll:true}); }
   function openFind(){ haptic('tick'); $('findRow').hidden=false; $('findBtn').hidden=true; $('findBtn').setAttribute('aria-expanded','true'); $('findIn').focus({preventScroll:true}); }
   function closeFind(quiet){ const was=!$('findRow').hidden||findQ; $('findRow').hidden=true; $('findBtn').setAttribute('aria-expanded','false'); $('findIn').value=''; $('findClr').hidden=true; findQ='';
@@ -2621,6 +2670,11 @@ async function home(){
     if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
   addEventListener('popstate',()=>{ if(sel&&!(history.state&&history.state.sel)) endSelect(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sel&&!document.querySelector('dialog[open],.pop-menu')){ e.preventDefault(); history.state&&history.state.sel?history.back():endSelect(); } });
+  /* "/" on a computer jumps into search, like many web apps: Saved → its own search, Home → the Studio search. Never while typing or with a pop-up open */
+  document.addEventListener('keydown',e=>{ if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey) return; const t=e.target;
+    if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))||document.querySelector('dialog[open],.pop-menu')) return;
+    if(!$('saved').hidden){ if($('findBtn').hidden&&$('findRow').hidden) return; e.preventDefault(); if($('findRow').hidden) openFind(); else $('findIn').focus(); }
+    else if(!$('homeView').hidden){ e.preventDefault(); $('uq').focus(); } });
   const picked=()=>all.filter(d=>sel&&sel.has(d.id));
   /* run one call per design, with a running count; stops at the first error and says how far it got */
   async function eachDesign(list,st,verb,fn){ for(let i=0;i<list.length;i++){ st(verb+' '+(i+1)+' of '+list.length+'…'); await fn(list[i]); } }
