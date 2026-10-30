@@ -18,6 +18,7 @@ Studio.tool({
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true,default:'__none'},
     {id:'place',type:'place',in:'style',cols:false,label:'Words place',default:'bottom-center',when:{style:'photo'}},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour',when:{style:['white','cream','black']}},
+    Studio.groundField({style:['white','cream','black']}),
     {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>((b.defaults||{}).offer||{}).pill||b.phrases.buttons[0]}
   ],
   draw(h,o){
@@ -52,7 +53,7 @@ Studio.tool({
       h.pill('pill','Button',pill,W/2,y,{bg:C.paper,fg:C.ink});
       return;
     }
-    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
+    h.ground(ground,o.value('gfx'));
     const ar=h.photoAspect(0), pw=880; let ph=Math.round(pw/ar); ph=Math.max(480,Math.min(640,ph));
     const lw=220, lh=h.logoH(lw);
     const total=lh+50+hm.h+40+ph+44+(n?th+40:0)+(dates?56:0)+(small?56:0)+(pill?76+30:0);

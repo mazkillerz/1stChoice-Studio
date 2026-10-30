@@ -12,11 +12,12 @@ Studio.tool({
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.headlines},
     {id:'small',type:'chips',label:'Small line',options:b=>b.phrases.small,none:true},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour'},
+    Studio.groundField(),
     {id:'pill',type:'text',label:'Show a button',toggle:true,default:b=>b.phrases.buttons[0],on:false}
   ],
   draw(h,o){
     const {ctx,W,H,C}=h, bgc=o.value('bg'), ground=bgc||(o.style==='cream'?(C.cream||C.paper):o.style==='white'?C.paper:C.night), light=bgc?h.isLight(ground):o.style==='cream'||o.style==='white';
-    ctx.fillStyle=ground; ctx.fillRect(0,0,W,H);
+    h.ground(ground,o.value('gfx'));
     const ink=light?C.ink:C.paper, soft=light?(C.brown||C.muted):'rgba(255,255,255,.8)';
     const ar=h.photoAspect(0); let ph=Math.round(W/ar); const maxH=1000, mode=ph>maxH?'cover':'contain'; ph=Math.min(ph,maxH);
     const py=Math.round(870-ph/2);

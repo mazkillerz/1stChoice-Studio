@@ -104,6 +104,7 @@ Studio.registerBrand({
      Words come only from the approved phrases above. A tap opens the tool with these settings, as a new story. */
   presets:[
     {id:'rs-cans',tool:'restock',cat:'restock',label:'Cans, no photo',sub:'Restock · ready in one tap',style:'cans',badge:'New',values:{head:'رجع متوفر'}},
+    {id:'rs-glow',tool:'restock',cat:'restock',label:'Cans with a glow',sub:'Restock · cans, no photo',style:'cans',badge:'New',values:{head:'رجع متوفر',gfx:'glow'}},
     {id:'rs-white',tool:'restock',cat:'restock',label:'White card',sub:'Restock · your photo',style:'white',values:{head:'رجع متوفر'}},
     {id:'rs-classic',tool:'restock',cat:'restock',label:'Classic is back',sub:'Restock · cans, no photo',style:'cans',badge:'New',values:{head:'رجع متوفر',flav:['classic']}},
     {id:'rs-passion',tool:'restock',cat:'restock',label:'Passion fruit is back',sub:'Restock · cans, no photo',style:'cans',badge:'New',values:{head:'رجع متوفر',flav:['passion'],bg:'#F3EADC'}},
@@ -127,6 +128,7 @@ Studio.registerBrand({
     {id:'sp-two',tool:'split',cat:'story',label:'Two-photo split',sub:'Close-up and wide',style:'white'},
     {id:'ci-bars',tool:'cinematic',cat:'story',label:'Cinematic bars',sub:'A wide photo, shown whole',style:'black'},
     {id:'of-offer',tool:'offer',cat:'story',label:'Offer',sub:'Tiles, dates and a button',style:'white'},
+    {id:'of-dots',tool:'offer',cat:'story',label:'Offer with dots',sub:'Offer · white with a dot finish',style:'white',badge:'New',values:{gfx:'dots'}},
     {id:'ca-white',tool:'carousel',cat:'post',label:'Feed carousel',sub:'Carousel · several slides',style:'white'},
     {id:'hl-white',tool:'highlight',cat:'highlight',label:'White covers',sub:'Highlight covers · a set',style:'white',values:{shape:'disc'}},
     {id:'hl-cream',tool:'highlight',cat:'highlight',label:'Cream covers',sub:'Highlight covers · a set',style:'cream',values:{shape:'ring'}},
