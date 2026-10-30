@@ -241,6 +241,18 @@ function drawShape(c,a,w,h,fill,o){
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
 const stickerList=()=>window.STUDIO_STICKERS||[];   // assets/stickers.js, loaded by tool()
+/* Emoji stickers' shapes (tools/highlight-emoji.js, ~20 KB) load only when needed (1.33.0): the Sticker sheet opens (or the
+   Layers sheet, so it is ready by the tap), or a design, draft or undo step has an emoji sticker. Highlight covers load the file
+   themselves. Save and the hidden render frame wait for it through assetsHD(), so a picture never misses an emoji. */
+let EMOJI_P=null;
+const hasEmojiStickers=()=>stickerList().some(s=>s.emoji);
+const usesEmoji=pages=>(pages||[]).some(pp=>(pp&&pp.extras||[]).some(x=>/^sticker:emoji-/.test(x&&x.ref||'')));
+function emojiStickers(){
+  if(hasEmojiStickers()) return Promise.resolve(true);
+  if(!EMOJI_P) EMOJI_P=(window.HL_EMOJI?Promise.resolve():loadScript(ROOT+'tools/highlight-emoji.js'))
+    .then(()=>{ if(window.addEmojiStickers) window.addEmojiStickers(); return hasEmojiStickers(); },()=>{ EMOJI_P=null; return false; });
+  return EMOJI_P;
+}
 function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
 function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
@@ -254,7 +266,7 @@ function loadAsset(ref){
   ASSET_IMG.set(ref,p); return p;
 }
 const ASSET_HD=new Map();   // ref -> promise of the HD file (only for assets that have a light copy)
-const assetsHD=()=>Promise.all([...ASSET_HD.values()]);
+const assetsHD=()=>Promise.all([...ASSET_HD.values(),EMOJI_P]);   // + the emoji shapes, while they load
 const TINTS=new Map();
 function tinted(img,color){ const key=color; let m=TINTS.get(img); if(!m){ m={}; TINTS.set(img,m); } if(m[key]) return m[key];
   const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d'); x.drawImage(img,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height); return m[key]=c; }
@@ -482,6 +494,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         const mx=Math.max(0,(dw-w)/2), my=Math.max(0,(dh-hh)/2);
         p.ox=Math.max(-mx,Math.min(mx,p.ox)); p.oy=Math.max(-my,Math.min(my,p.oy));
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        if(p.flip){ ctx.translate(2*(x+w/2+p.ox),0); ctx.scale(-1,1); }   // Flip (1.33.0): mirrored around the photo's own centre, so dragging still moves it the same way
         ctx.drawImage(preview?prev(im):sharp(im,dw*scale,dh*scale),x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
         if(hasFx(p.fx)) photoFx(ctx,p.fx,x+w/2+p.ox-dw/2,y+hh/2+p.oy-dh/2,dw,dh);
       } else if(preview){
@@ -504,6 +517,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         mid.width=sw*4; mid.height=sh*4; const mx=mid.getContext('2d'); mx.imageSmoothingQuality='high'; mx.drawImage(im,(mid.width-im.width*k*4)/2,(mid.height-im.height*k*4)/2,im.width*k*4,im.height*k*4);
         c.width=sw; c.height=sh; const cx=c.getContext('2d'); cx.imageSmoothingQuality='high'; cx.drawImage(mid,0,0,sw,sh); mid.width=mid.height=0; m[key]=c; }
       ctx.save(); ctx.beginPath(); rr(ctx,x,y,w,hh,opt.r||0); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      if(p.flip){ ctx.translate(2*x+w,0); ctx.scale(-1,1); }   // a flipped photo's backdrop is flipped too
       const pad=Math.max(w,hh)*.06; ctx.drawImage(m[key],x-pad,y-pad,w+pad*2,hh+pad*2);   // a little bigger: no soft edge at the border
       if(hasFx(p.fx)) photoFx(ctx,p.fx,x,y,w,hh);
       if(opt.dim) { ctx.fillStyle='rgba(0,0,0,'+opt.dim+')'; ctx.fillRect(x,y,w,hh); }
@@ -672,8 +686,8 @@ async function tool(cfg){
   const app=document.getElementById('app');
   app.innerHTML='<p class="hint" style="width:100%">Loading…</p>';
   if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
-  /* stickers load alongside the brand; the emoji list (shared with Highlight covers) first, so stickers.js can add the emoji stickers */
-  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):(window.HL_EMOJI?Promise.resolve():loadScript(ROOT+'tools/highlight-emoji.js').catch(()=>{})).then(()=>loadScript(ROOT+'assets/stickers.js')).then(()=>true,()=>false);
+  /* stickers load alongside the brand; the emoji stickers' shapes only when needed (emojiStickers()) */
+  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):loadScript(ROOT+'assets/stickers.js').then(()=>true,()=>false);
   const B=await useBrand();
   const hasStickers=await stickersReady;
   const opts=v=>typeof v==='function'?v(B):v;
@@ -780,6 +794,7 @@ async function tool(cfg){
   }
   html+=`<div class="slots" id="slots"></div><div class="swap-row" id="swapRow" hidden><button type="button" class="mini" id="swapBtn" aria-pressed="false">${ICON.swap}<span>Swap two</span></button><button type="button" class="mini" id="shuffleBtn">${ICON.shuffle}<span>Shuffle</span></button></div><div class="small">Drag a photo in the preview to move it; pinch or use Zoom to resize.</div>
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div>
+  <div class="photo-flip" id="flipRow" hidden><button type="button" class="mini" id="photoFlip" aria-pressed="false">${ICON.flip}<span>Flip</span></button></div>
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
     <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
     <button type="button" class="link" id="lookAll" hidden>Use this look on every photo</button></div>`}</div></section>`;
@@ -844,7 +859,7 @@ async function tool(cfg){
     }
     if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
     openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
-    if(n==='layers') paintLayers();
+    if(n==='layers'){ paintLayers(); if(hasStickers) emojiStickers(); }   // the emoji stickers start loading before the Sticker tap
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
     fit();
   }
@@ -992,7 +1007,7 @@ async function tool(cfg){
   function slotsUI(){
     let s=''; const off=photoOffset(), n=slotCount();
     for(let j=0;j<n;j++){ const i=off+j, p=S.photos[i], real=p.img&&!p.sample;
-      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt="" src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
+      s+=`<label class="slot${real?' has':''}${i===S.active&&n>1?' active':''}" data-slot="${i}">${real?`<img alt=""${p.flip?' class="flip"':''} src="${p.thumb}">`:'<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}<span>${real?'Change':(n>1?'Photo '+(j+1):'Add photo')}</span><input type="file" accept="image/*,.heic,.heif" data-file="${i}" aria-label="${real?'Change photo':'Add photo'}${n>1?' '+(j+1):''}"></label>`; }
     let realN=0; for(let j=0;j<n;j++){ const p=S.photos[off+j]; if(p&&p.img&&!p.sample) realN++; }
     $('swapRow').hidden=realN<2;
     $('slots').innerHTML=n?s:PG?'<p class="small">This '+PN.one+' has no photo. Change it in Style → This '+PN.one+'.</p>'
@@ -1084,7 +1099,10 @@ async function tool(cfg){
     slotsUI(); syncZoom(); syncCta();
   }
   /* whole photos (contain) can't zoom, so the slider hides for them */
-  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncLook(); }
+  function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncFlip(); syncLook(); }
+  /* Flip (1.33.0): mirrors the chosen photo left to right in its box; p.flip is kept in the recipe only when on */
+  function syncFlip(){ const p=S.photos[S.active], real=!!(p&&p.img&&!p.sample&&photoUsed(S.active)); $('flipRow').hidden=!real; $('photoFlip').setAttribute('aria-pressed',String(real&&!!p.flip)); $('looks')?.classList.toggle('flip',real&&!!p.flip); }
+  $('photoFlip').addEventListener('click',()=>{ const p=S.photos[S.active]; if(!p||!p.img||p.sample) return; if(p.flip) delete p.flip; else p.flip=true; haptic('tick'); slotsUI(); syncFlip(); render(); });
   /* the photo look row: shown for a real photo; its mood buttons are drawn from that photo with the same blend layers */
   const lightTxt=v=>{ v=Math.round((+v||0)*100); return v>0?'+'+v:String(v); };
   let lookFor=null;
@@ -1145,7 +1163,7 @@ async function tool(cfg){
     const p0=S.P[0];
     return {v:2,tool:cfg.id,brand:B.id,style:S.style,count:S.count,pp:perPage,page:S.page,values:clone(p0.values),layers:clone(p0.layers),extras:clone(p0.extras),
       ...(PG?{pages:clone(S.P)}:{}),
-      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample),...(hasFx(p.fx)?{fx:{look:p.fx.look||'',light:+p.fx.light||0}}:{})}))};
+      photos:S.photos.map(p=>({zoom:+p.zoom.toFixed(4),ox:Math.round(p.ox*10)/10,oy:Math.round(p.oy*10)/10,has:!!(p.img&&!p.sample),...(hasFx(p.fx)?{fx:{look:p.fx.look||'',light:+p.fx.light||0}}:{}),...(p.flip?{flip:true}:{})}))};
   }
   /* slots: optional photo objects to put in each slot (null = keep what's there) */
   function applyRecipe(r,slots){
@@ -1154,10 +1172,11 @@ async function tool(cfg){
     const pages=(PG&&r.pages&&r.pages.length?r.pages:[{values:r.values,layers:r.layers,extras:r.extras}]).slice(0,PG?PG.max:1);
     S.P=pages.map((pp,i)=>{ const np=newPage(i); Object.keys(pp.values||{}).forEach(k=>{ if(k in np.values) np.values[k]=clone(pp.values[k]); }); np.layers=clone(pp.layers||{}); np.extras=clone(pp.extras||[]); return np; });
     S.page=Math.min(S.P.length-1,Math.max(0,r.page||0));
+    if(usesEmoji(S.P)&&!hasEmojiStickers()) emojiStickers().then(ok=>{ if(ok) render(); });   // an emoji sticker in it: load its shapes, then draw again
     S.P.forEach(pp=>{ extraN=pp.extras.reduce((m,x)=>Math.max(m,+(String(x.id).replace(/\D/g,''))||0),extraN); }); assetN=Math.max(assetN,extraN);
     /* older carousels kept 1 photo per slide; map them onto today's layout */
     const oldPP=PG?(r.pp||1):perPage; if(oldPP!==perPage){ const map=i=>Math.floor(i/oldPP)*perPage+i%oldPP, rp2=[], sl2=[]; (r.photos||[]).forEach((x,i)=>{ rp2[map(i)]=x; }); if(slots) slots.forEach((x,i)=>{ if(x) sl2[map(i)]=x; }); r={...r,photos:rp2}; slots=slots?sl2:slots; }
-    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; });
+    (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; if(rp.flip) S.photos[i].flip=true; else delete S.photos[i].flip; });
     S.sel=null;
   }
   async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
@@ -1609,13 +1628,13 @@ async function tool(cfg){
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
-    $('addSticker').addEventListener('click',()=>{ paintStickers($('stickerList')); openSheet('stickers'); });
+    $('addSticker').addEventListener('click',()=>{ paintStickers($('stickerList')); openSheet('stickers'); emojiStickers().then(ok=>{ if(ok) paintStickers($('stickerList')); }); });
     $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
   onAssetLoad=()=>render();
 
-  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;}); syncZoom(); syncInspector(); render(); toast('Layout reset. Tap undo to bring it back.'); });
+  $('resetLayout').addEventListener('click',()=>{ S.layers={}; S.photos.forEach(p=>{p.ox=0;p.oy=0;p.zoom=1;delete p.flip;}); slotsUI(); syncZoom(); syncInspector(); render(); toast('Layout reset. Tap undo to bring it back.'); });
 
   /* ---- layers panel: every text, button and logo, top first; tap to select, eye to hide/show ---- */
   const EYE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';

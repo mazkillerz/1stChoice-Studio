@@ -55,21 +55,27 @@
   ];
   LIST.forEach(s=>{ s.sticker=true; });
 
-  /* Emoji stickers (1.28.0): the 24 emoji of Highlight covers (tools/highlight-emoji.js, Twemoji CC-BY 4.0, credit in that file),
-     loaded first by tool(). They keep their own colours (layer colour 'Original'); a picked colour draws a one-colour emoji
+  /* Emoji stickers (1.28.0): the 24 emoji of Highlight covers (tools/highlight-emoji.js, Twemoji CC-BY 4.0, credit in that file).
+     Since 1.33.0 that file loads only when needed (studio.js emojiStickers(): the Sticker sheet opens, or a design has an emoji
+     sticker), then calls addEmojiStickers(); Highlight covers load it first, so they are added straight away.
+     They keep their own colours (layer colour 'Original'); a picked colour draws a one-colour emoji
      as ONE fill, so a see-through one has no darker overlaps. Saved as ref 'sticker:emoji-<id>'; never rename an id. */
   const P2D=new Map(), path=(k,d)=>{ if(!P2D.has(k)) P2D.set(k,new Path2D(d)); return P2D.get(k); };
-  (Array.isArray(window.HL_EMOJI)?window.HL_EMOJI:[]).forEach(([id,ch,label,parts])=>{
-    LIST.push({id:'sticker:emoji-'+id,label,char:ch,w:36,h:36,w0:280,emoji:true,sticker:true,draw(c,col){
-      if(col){ const all=new Path2D(); parts.forEach(([,d])=>all.addPath(new Path2D(d))); c.fillStyle=col; c.fill(all); return; }
-      const a0=c.globalAlpha; parts.forEach(([fill,d,op],i)=>{ c.globalAlpha=a0*(op==null?1:op); c.fillStyle=fill; c.fill(path(id+i,d)); }); c.globalAlpha=a0; }});
-  });
+  window.addEmojiStickers=function(){
+    if(LIST.some(s=>s.emoji)||!Array.isArray(window.HL_EMOJI)) return;
+    window.HL_EMOJI.forEach(([id,ch,label,parts])=>{
+      LIST.push({id:'sticker:emoji-'+id,label,char:ch,w:36,h:36,w0:280,emoji:true,sticker:true,draw(c,col){
+        if(col){ const all=new Path2D(); parts.forEach(([,d])=>all.addPath(new Path2D(d))); c.fillStyle=col; c.fill(all); return; }
+        const a0=c.globalAlpha; parts.forEach(([fill,d,op],i)=>{ c.globalAlpha=a0*(op==null?1:op); c.fillStyle=fill; c.fill(path(id+i,d)); }); c.globalAlpha=a0; }});
+    });
+  };
+  window.addEmojiStickers();
   window.STUDIO_STICKERS=LIST;
 
   /* the picker: one tile per sticker, drawn for real in the text colour (so it reads in light and dark) */
   const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch]);
   window.paintStickers=function(el){
-    if(!el) return; const col=getComputedStyle(el).color||'#111'; if(el.dataset.painted===col) return;   // once per text colour (theme)
+    if(!el) return; const col=(getComputedStyle(el).color||'#111')+'|'+LIST.length; if(el.dataset.painted===col) return;   // once per text colour (theme) and sticker count (emoji added later)
     const drawn=LIST.filter(s=>!s.emoji), emo=LIST.filter(s=>s.emoji);
     const tile=s=>s.emoji?`<button type="button" class="asset-tile sticker-tile emoji-tile" data-sticker="${esc(s.id)}" title="${esc(s.label)}" aria-label="${esc(s.label)} emoji"><canvas aria-hidden="true"></canvas></button>`
       :`<button type="button" class="asset-tile sticker-tile" data-sticker="${esc(s.id)}" title="${esc(s.label)}"><canvas aria-hidden="true"></canvas><span>${esc(s.label)}</span></button>`;
@@ -77,7 +83,7 @@
     const dpr=Math.min(3,window.devicePixelRatio||1), box=56;
     LIST.forEach(s=>{ const cv=el.querySelector(`[data-sticker="${s.id}"] canvas`), k=box/Math.max(s.w,s.h)*(s.emoji?.82:1);
       cv.width=Math.ceil(box*dpr); cv.height=Math.ceil(box*dpr); cv.style.width=cv.style.height=box+'px';
-      const c=cv.getContext('2d'); c.scale(dpr,dpr); c.translate((box-s.w*k)/2,(box-s.h*k)/2); c.scale(k,k); s.draw(c,s.emoji?null:col); });
+      const c=cv.getContext('2d'); c.scale(dpr,dpr); c.translate((box-s.w*k)/2,(box-s.h*k)/2); c.scale(k,k); s.draw(c,s.emoji?null:col.split('|')[0]); });
     el.dataset.painted=col;
   };
 })();
