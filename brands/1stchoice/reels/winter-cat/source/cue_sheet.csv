@@ -1,0 +1,22 @@
+time_s,file,level_dbfs_peak50ms,ss_s,dur_s,fade_s,duck_music,beat
+0.00,campfire_crackle.wav,-30,4.6,6.75,0.5,no,campfire bed (quiet) until the whip zoom
+0.25,wind_body.wav,-21,0,,,no,gust body
+0.56,wind_swoosh.wav,-15,0,,,yes,gust swoosh peaks on the hood slap (1.0 s)
+0.82,fire_flare.wav,-22,0,,,no,fire flares in the gust
+0.90,hood_slap.wav,-13,0,,,yes,hood slaps down (1.0 s)
+0.93,cloth.wav,-21,1.3,,,no,cloth rustle
+2.61,swish.wav,-21,0,,,no,reach toward the fire (2.95 s)
+3.50,alert_ding.wav,-15,0,,,yes,"the ""!"" pops (3.5 s)"
+4.32,cricket.wav,-19,0,,,no,deadpan stare: music cut to silence 4.10-4.93
+4.61,swish.wav,-17,0,,,no,grab whoosh (4.95 s)
+4.62,cricket.wav,-19,0,,,no,second chirp
+4.83,can_touch.wav,-15,0,,,yes,paw lands on the can (5.07 s)
+5.20,sparkle.wav,-23,0,,,no,cold sparkles
+5.66,sparkle_wink.wav,-21,0,,,no,wink (6.2 s)
+6.12,whip_whoosh.wav,-15,0,,,yes,whip zoom peaks on the cut (7.2 s)
+7.39,low_thump.wav,-18,0,,,no,low thump under the landing
+7.40,can_land.wav,-11,0,,,yes,real can lands (7.48 s)
+7.58,pop.wav,-19,0,,,no,headline word 1
+7.70,pop.wav,-19,0,,,no,headline word 2
+7.82,pop.wav,-19,0,,,no,headline word 3
+8.00,logo_pop.wav,-21,0,,,no,logo appears

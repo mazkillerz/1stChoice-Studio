@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Winter cat reel</title>
+<style>
+@font-face{font-family:Lalezar;src:url(fonts/lalezar-arabic-400-normal.woff)}
+@font-face{font-family:Dots;font-weight:800;src:url(fonts/cairo-latin-800-normal.woff)}
+html,body{margin:0;background:#ddd}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#fff;direction:ltr}
+.abs{position:absolute;left:0;top:0;will-change:transform,opacity;transform-origin:50% 100%}
+#cam{position:absolute;inset:0;transform-origin:0 0}
+#world{position:absolute;inset:0;filter:url(#boil)}
+#bg{position:absolute;left:0;top:0;width:1080px;height:1920px;transform:scale(1.2);transform-origin:540px 1920px}
+.cat{width:752px;height:752px;left:102px;top:1014px;transform-origin:49% 91%}
+.head{font-family:Lalezar,Dots,sans-serif;font-size:178px;line-height:1.05;white-space:nowrap;color:#161210;direction:rtl}
+.mask{display:inline-block;padding:0 8px 18px}
+.word{display:inline-block}
+#white{position:absolute;inset:0;background:#fff;opacity:0}
+#blob{position:absolute;left:150px;top:880px;width:780px;height:760px;background:#C1B9AE;border-radius:52% 48% 44% 56% / 55% 50% 50% 45%;transform-origin:50% 50%}
+#canReal{position:absolute;height:820px;left:50%;top:860px;transform-origin:50% 60%}
+#logo{width:380px;left:350px;top:215px;transform-origin:50% 50%}
+#headWrap{top:430px;width:1080px;text-align:center;transform-origin:50% 50%}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="1" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="boil2" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence id="turb2" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+<div id="stage">
+  <div id="cam"><div id="punch" style="position:absolute;inset:0;transform-origin:470px 1168px">
+    <div id="world">
+      <img id="bg" src="assets/bg_noblob.jpg" alt="">
+      <div id="catblob" style="position:absolute;left:175px;top:1095px;width:470px;height:520px;background:#C1B9AE;border-radius:52% 48% 44% 56% / 55% 50% 50% 45%"></div>
+      <img class="abs" id="moon" src="assets/moon.png" style="width:200px;left:740px;top:470px;transform-origin:50% 50%">
+      <img class="abs" id="cloud1" src="assets/cloud1.png" style="width:300px;left:590px;top:640px;transform-origin:50% 50%">
+      <img class="abs" id="cloud2" src="assets/cloud2.png" style="width:330px;left:120px;top:520px;transform-origin:50% 50%">
+      <img class="abs" id="star1" src="assets/star1.png" style="width:62px;left:330px;top:450px;transform-origin:50% 50%">
+      <img class="abs" id="star2" src="assets/star2.png" style="width:54px;left:560px;top:500px;transform-origin:50% 50%">
+      <img class="abs" id="star3" src="assets/star3.png" style="width:46px;left:430px;top:700px;transform-origin:50% 50%">
+      <svg id="wind" class="abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="transform-origin:0 0"></svg>
+      <img class="abs" id="canG" src="assets/candrawn.png" style="width:118px;left:770px;top:1555px">
+      <img class="abs cat" id="L1" src="assets/L1.png">
+      <img class="abs cat" id="H1" src="assets/H1.png">
+      <img class="abs cat" id="H2" src="assets/H2.png">
+      <img class="abs cat" id="L2" src="assets/L2.png">
+      <img class="abs cat" id="L2b" src="assets/L2b.png">
+      <img class="abs cat" id="S1" src="assets/S1.png">
+      <img class="abs cat" id="R1" src="assets/R1.png">
+      <img class="abs cat" id="L3" src="assets/L3.png">
+      <img class="abs cat" id="S3" src="assets/S3.png">
+      <img class="abs cat" id="G1" src="assets/G1.png">
+      <img class="abs cat" id="L4" src="assets/L4.png">
+      <img class="abs cat" id="L4b" src="assets/L4b.png">
+      <img class="abs" id="flames" src="assets/flames.png" style="width:320px;left:30px;top:1450px;transform-origin:50% 100%">
+      <img class="abs" id="logs" src="assets/logs.png" style="width:320px;left:30px;top:1633px">
+      <svg id="fx" class="abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="transform-origin:0 0"></svg>
+    </div>
+  </div></div>
+  <div id="white"></div>
+  <div id="end" style="position:absolute;inset:0;opacity:0">
+    <div id="blob" style="filter:url(#boil2)"></div>
+    <img id="canReal" src="assets/can_real.png" alt="">
+    <svg id="land" width="1080" height="1920" viewBox="0 0 1080 1920" style="position:absolute;left:0;top:0;filter:url(#boil2)" stroke="#161210" stroke-width="9" stroke-linecap="round" fill="none"><path d="M 300 1640 L 220 1610"/><path d="M 320 1580 L 250 1520"/><path d="M 780 1640 L 860 1610"/><path d="M 760 1580 L 830 1520"/></svg>
+  </div>
+  <img class="abs" id="logo" src="assets/logo.png" alt="1st Choice">
+  <div class="abs head" id="headWrap">
+    <span class="mask"><span class="word" id="w1">حتى</span></span>
+    <span class="mask"><span class="word" id="w2">في</span></span>
+    <span class="mask"><span class="word" id="w3">البرد...</span></span>
+  </div>
+</div>
+<script>
+window.REEL={duration:10.0,fps:30,cuts:[7.2]};
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const prog=(t,a,b)=>clamp((t-a)/(b-a));
+const out3=x=>1-Math.pow(1-x,3), io=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function spring(t,k=170,d=26){ if(t<=0) return 0; const w=Math.sqrt(k), z=d/(2*w);
+  if(z<1){ const wd=w*Math.sqrt(1-z*z); return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+z*w/wd*Math.sin(wd*t)); }
+  return 1-Math.exp(-w*t)*(1+w*t); }
+const $=id=>document.getElementById(id);
+const set=(el,{x=0,y=0,s=1,sx=1,sy=1,r=0,k=0,o=1,base=''}={})=>{ el.style.transform=`${base} translate(${x}px,${y}px) rotate(${r}deg) skewX(${k}deg) scale(${s*sx},${s*sy})`; el.style.opacity=o; };
+function rng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+const NS='http://www.w3.org/2000/svg';
+const T={gust:0.8, h1:0.92, h2:1.0, hood:1.08, look:2.3, reach:2.95, side:3.45, bang:3.5, deadpan:4.15, grab:4.95, hold:5.07, wink:6.2, zoom:6.75, end:7.2};
+
+/* wind lines: hand-drawn wavy strokes with a curl, blowing right -> left */
+const winds=[]; { const r=rng(7);
+  for(let i=0;i<10;i++){ const y=1000+i*85+r()*50, amp=10+r()*14, len=700+r()*400, x0=1200;
+    let d=`M ${x0} ${y}`; for(let x=x0;x>x0-len;x-=40) d+=` Q ${x-20} ${y+(Math.sin(x*0.013+i)*amp)} ${x-40} ${y+Math.sin((x-40)*0.013+i)*amp}`;
+    const xe=x0-len, ye=y+Math.sin((xe)*0.013+i)*amp; d+=` C ${xe-70} ${ye} ${xe-70} ${ye-60} ${xe-25} ${ye-55} C ${xe+10} ${ye-50} ${xe+5} ${ye-15} ${xe-25} ${ye-20}`;
+    const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','#161210');
+    p.setAttribute('stroke-width',6+r()*3); p.setAttribute('stroke-linecap','round'); $('wind').appendChild(p);
+    winds.push({p,len:p.getTotalLength(),t0:T.gust+i*0.06+r()*0.12,dur:0.75+r()*0.3,soft:i%2}); } }
+/* sand specks */
+const specks=[]; { const r=rng(11); for(let i=0;i<34;i++){ const c=document.createElementNS(NS,'circle'); c.setAttribute('r',3+r()*4); c.setAttribute('fill','#161210'); $('wind').appendChild(c);
+  specks.push({c,y:1300+r()*560,t0:T.gust+r()*0.9,v:1500+r()*900,wob:r()*6}); } }
+/* gentle breeze lines later (thin, 2) */
+const breeze=[]; { const r=rng(23); for(let i=0;i<3;i++){ const y=1010+i*150+r()*40; let d=`M 1150 ${y}`; for(let x=1150;x>-60;x-=60) d+=` Q ${x-30} ${y+Math.sin(x*0.01+i)*12} ${x-60} ${y+Math.sin((x-60)*0.01+i)*12}`;
+  const p=document.createElementNS(NS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none'); p.setAttribute('stroke','#161210'); p.setAttribute('stroke-width',4); p.setAttribute('stroke-linecap','round'); $('wind').appendChild(p);
+  breeze.push({p,len:p.getTotalLength(),ph:i*0.9}); } }
+/* fx: "!" mark, grab puff, sparkles */
+$('fx').innerHTML=`
+ <g id="bang" transform="translate(610 1035)"><g id="bangS"><path d="M -14 -120 L 16 -124 L 8 -22 L -6 -20 Z" fill="#161210" stroke="#161210" stroke-width="8" stroke-linejoin="round"/><circle cx="1" cy="10" r="15" fill="#161210"/></g></g>
+ <g id="puff" transform="translate(830 1735)" stroke="#161210" stroke-width="7" stroke-linecap="round" fill="none">
+   <path d="M -60 -10 L -100 -30"/><path d="M -40 -60 L -64 -100"/><path d="M 0 -75 L 0 -120"/><path d="M 40 -60 L 64 -100"/><path d="M 60 -10 L 100 -30"/></g>
+ <g id="sparks" fill="#161210"></g>`;
+const sparks=[]; [[349,1388,26],[533,1356,20],[325,1500,16],[566,1475,22]].forEach(([x,y,s],i)=>{ const g=document.createElementNS(NS,'path');
+  g.setAttribute('d',`M ${x} ${y-s} Q ${x} ${y} ${x+s} ${y} Q ${x} ${y} ${x} ${y+s} Q ${x} ${y} ${x-s} ${y} Q ${x} ${y} ${x} ${y-s} Z`); $('sparks').appendChild(g); sparks.push({g,x,y,ph:i*0.37}); });
+
+window.seek=async(t)=>{
+  const f=Math.floor(t*12), tq=f/12;                           // drawings change on twos (12 per second)
+  $('turb').setAttribute('seed',1+(f%5)); $('turb2').setAttribute('seed',3+(f%4));
+
+  /* camera */
+  let cs=1.24+0.04*prog(t,0,T.zoom), cx=0, cy=0;
+  if(t>=T.h2 && t<T.h2+0.3){ const k=(T.h2+0.3-tq)/0.3; cx=Math.sin(f*2.1)*10*k; cy=Math.cos(f*1.7)*7*k; }
+  const za=prog(t,T.zoom,T.end); const zp=za*za*za; const Z=Math.exp(Math.log(cs)+(Math.log(7)-Math.log(cs))*zp);   // accelerating whip
+  const fx=t<T.zoom?500:433, fy=t<T.zoom?1530:1465;
+  $('cam').style.transform=`translate(${fx-fx*Z+cx}px,${fy-fy*Z+cy}px) scale(${Z})`;
+  // comedy punch-in on the face for the deadpan look (snap in, ease out)
+  const pin=t>=T.deadpan&&t<T.grab?0.13*spring(t-T.deadpan,600,40):0.13*(1-out3(prog(t,T.grab,T.grab+0.25)))*(t>=T.grab?1:0);
+  $('punch').style.transform=`scale(${1+pin})`;
+
+  /* which drawing */
+  let pose='L1';
+  if(t>=T.h1) pose='H1'; if(t>=T.h2) pose='H2'; if(t>=T.hood) pose=(t<T.look-0.15 && Math.floor(t*8)%2)?'L2b':'L2';
+  if(t>=T.look) pose='S1'; if(t>=T.reach) pose='R1'; if(t>=T.side) pose='L3'; if(t>=T.deadpan) pose='S3';
+  if(t>=T.grab) pose='G1'; if(t>=T.hold) pose='L4'; if(t>=T.wink) pose='L4b';
+  ['L1','H1','H2','L2','L2b','S1','R1','L3','S3','G1','L4','L4b'].forEach(id=>$(id).style.opacity=id===pose?1:0);
+  const breathe=Math.sin(tq*2.4)*0.008; let sx=1,sy=1+breathe,x=0,r=0;
+  if(pose==='L1'){ r=-2*prog(t,T.gust,T.h1); }
+  if(pose==='H2'){ sy=0.94; sx=1.04; }
+  if(pose==='L2'||pose==='L2b'){ const p=spring(t-T.hood,420,18); sy=1-0.05*(1-p)+breathe; sx=1+0.03*(1-p); x=(f%2?1:-1)*3*(t<T.look-0.15?1:0); }
+  if(pose==='S1'){ r=-1.5*out3(prog(t,T.look,T.look+0.2)); }
+  if(pose==='R1'){ const p=spring(t-T.reach,380,26); x=-10*(1-p); }
+  if(pose==='L3'){ const p=spring(t-T.side,600,30); x=3*(1-p); }
+  if(pose==='L4'||pose==='L4b'){ const p=spring(t-T.hold,380,15); sy=1+0.07*(1-p)+breathe; sx=1-0.04*(1-p); if(pose==='L4b'){ const q=spring(t-T.wink,500,20); r=2*(1-q)*0+1.5*q; } }
+  set($(pose),{x,r,sx,sy});
+
+  /* wind gust */
+  winds.forEach(w=>{ const a=(t-w.t0)/w.dur; const on=clamp(a*1.6), off=clamp((a-0.45)*1.8);
+    w.p.style.opacity=(on>0&&off<1)?1:0; w.p.setAttribute('stroke-dasharray',`${w.len*(on-off)} ${w.len*2}`); w.p.setAttribute('stroke-dashoffset',-w.len*off); });
+  specks.forEach(s=>{ const a=tq-s.t0; const on=a>0&&a<1.2; s.c.style.opacity=on?1:0; if(on){ s.c.setAttribute('cx',1120-a*s.v); s.c.setAttribute('cy',s.y+Math.sin(a*9+s.wob)*14-a*30); } });
+  breeze.forEach(b=>{ const cyc=((tq-T.hold-0.4-b.ph)%2.6+2.6)%2.6, a=cyc/1.6, on=clamp(a*1.5), off=clamp((a-0.4)*1.6);
+    b.p.style.opacity=(tq>T.hold+0.4 && a<1)?0.85:0; b.p.setAttribute('stroke-dasharray',`${b.len*(on-off)} ${b.len*2}`); b.p.setAttribute('stroke-dashoffset',-b.len*off); });
+
+  /* fire + mug */
+  const g=prog(t,T.gust,T.gust+0.25)*(1-prog(t,2.0,2.7));
+  set($('flames'),{sy:1+Math.sin(f*1.9)*0.06+Math.sin(f*0.7)*0.04, sx:1-Math.sin(f*1.3)*0.03, k:Math.sin(f*1.1)*3+g*22, s:1+(t>=T.look&&t<T.side?0.08:0)});
+  set($('canG'),{o:t<T.grab+0.04?1:0, r:t>T.bang&&t<T.grab?Math.sin(f*2)*2:0, y:t>T.bang&&t<T.grab?-Math.abs(Math.sin(f*1.3))*6:0});
+  { const p=spring(t-T.bang,500,18); $('bang').style.opacity=(t>T.bang&&t<T.deadpan)?1:0; $('bangS').setAttribute('transform',`scale(${Math.max(0,p)}) rotate(${(1-p)*-20})`); }
+  { const a=prog(t,T.grab,T.grab+0.35); const pf=$('puff'); pf.style.opacity=(a>0&&a<1)?1:0; pf.setAttribute('transform',`translate(830 1735) scale(${0.6+a*0.7})`); }
+  sparks.forEach(s=>{ const a=tq-T.hold-0.2-s.ph; const v=a>0?Math.max(0,Math.sin(a*4)):0; s.g.setAttribute('transform',`translate(${s.x} ${s.y}) scale(${v}) translate(${-s.x} ${-s.y})`); });
+
+  /* sky: moon bobs, stars twinkle on twos, clouds drift and get shoved by the gust */
+  set($('moon'),{y:Math.sin(tq*1.1)*6,r:Math.sin(tq*0.8)*2});
+  ['star1','star2','star3'].forEach((id,i)=>{ const v=0.75+0.25*Math.sin(f*0.9+i*2.1); set($(id),{s:v,r:f%4<2?0:8}); });
+  { const shove=out3(prog(t,T.gust,T.gust+0.9));
+    set($('cloud1'),{x:-tq*12-260*shove, y:Math.sin(tq*0.9)*5});
+    set($('cloud2'),{x:-tq*8-160*shove, y:Math.sin(tq*0.7+1)*5}); }
+  /* end card: white out of the whip zoom, the real can drops and lands, the line slams in */
+  $('white').style.opacity=0;
+  $('cam').style.visibility=t>=T.end?'hidden':'visible';
+  $('end').style.opacity=t>=T.end?1:0;
+  const land=T.end+0.28;
+  { const a=prog(t,T.end,land); const fall=a*a;                              // gravity fall
+    let y=-1250*(1-fall), sy2=1, sx2=1;
+    if(t>=land){ const q=spring(t-land,500,14); y=0; sy2=1-0.12*(1-q); sx2=1+0.08*(1-q); }
+    set($('canReal'),{base:'translateX(-50%)',y:y+(t>land+0.6?Math.sin((t-land)*1.4)*4:0),sx:sx2,sy:sy2,o:t>=T.end?1:0}); }
+  { const pb=spring(t-land,320,18); set($('blob'),{s:Math.max(0,0.3+0.7*pb),o:t>=land?1:0}); }
+  { const a=prog(t,land,land+0.18); $('land').style.opacity=(a>0&&a<1)?1:0; $('land').style.transform=`scale(${1+a*0.15})`; $('land').style.transformOrigin='540px 1600px'; }
+  ['w1','w2','w3'].forEach((id,i)=>{ const t0=land+0.15+i*0.12; const p=spring(t-t0,420,20); set($(id),{s:t>=t0?1.3-0.3*p:1, y:t>=t0?-50*(1-p):0, o:t>=t0?clamp((t-t0)*20):0}); });
+  { const p=out3(prog(t,land+0.55,land+0.95)); set($('logo'),{y:(1-p)*40,o:p}); }
+  set($('headWrap'),{});
+};
+Promise.all([document.fonts.ready,...[...document.images].map(i=>i.decode().catch(()=>{}))]).then(()=>{window.seek(0);window.ready=true;});
+</script>
+</body>
+</html>
