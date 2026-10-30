@@ -213,7 +213,7 @@ await setRange(pg,'gap',14); await setRange(pg,'edge',40); await settle(pg);
 
 /* ================= 5. the Style sheet's order; a real set saves ================= */
 { await openSheet(pg,'style'); const order=await pg.$$eval('#sh-style [data-fields="style"] > .field',l=>l.filter(x=>!x.hidden).map(x=>x.dataset.fw));
-  ok('style sheet: Layout, Gap, Border, Border colour, Corner radius, background, Outer margin, Edge space, logo (in that order)',order.join()==='lay4,gap,border,bcol,radius,bg,margin,edge,logo',order.join());
+  ok('style sheet: Layout, Gap, Border, Border colour, Corner radius, background, Background, Outer margin, Edge space, logo (in that order)',order.join()==='lay4,gap,border,bcol,radius,bg,gfx,margin,edge,logo',order.join());
   const labels=await pg.$$eval('#sh-style [data-fields="style"] > .field:not([hidden]) .lbl, #sh-style [data-fields="style"] > .field:not([hidden]) .check',l=>l.map(x=>x.textContent.replace(/\s+/g,' ').trim().replace(/\d+px$/,'').trim()));
   ok('style sheet: short labels',labels.every(t=>t.length<=26),labels.join(' | ')); }
 { const dls=[]; pg.on('download',d=>dls.push(d));

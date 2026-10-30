@@ -14,6 +14,7 @@ Studio.tool({
     {id:'head',type:'chips',label:'Headline',options:b=>b.phrases.newPlace},
     {id:'place',type:'text',label:'Place name',placeholder:b=>b.phrases.placeName},
     {id:'bg',type:'color',in:'style',label:'Background colour',default:null,auto:'Style colour'},
+    Studio.groundField(),
     {id:'pill',type:'text',label:'Show the button under it',toggle:true,default:b=>b.phrases.buttons[0]}
   ],
   draw(h,o){
@@ -24,7 +25,10 @@ Studio.tool({
     const cream=o.style==='D', ground=bgc||(o.style==='B'?C.night:cream?(C.cream||C.paper):C.paper), dark=bgc?!h.isLight(ground):o.style==='B';
     h.photo(0,win.x,win.y,win.w,win.h,{r:win.r,mode:'cover'});
     // the ground with a see-through window (so "Save the frame only" keeps the photo area transparent)
-    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); h.rr(ctx,win.x,win.y,win.w,win.h,win.r); ctx.fillStyle=ground; ctx.fill('evenodd');
+    const fx=o.value('gfx');
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); h.rr(ctx,win.x,win.y,win.w,win.h,win.r);
+    if(fx&&fx!=='plain'){ ctx.clip('evenodd'); h.ground(ground,fx); }   // a Background finish stays outside the window too
+    else { ctx.fillStyle=ground; ctx.fill('evenodd'); }   // Plain: exactly as before
     if(cream&&!bgc&&C.blob&&o.style!=='C'){ ctx.beginPath(); h.rr(ctx,win.x-24,win.y-24,win.w+48,win.h+48,(+win.r||0)+22); h.rr(ctx,win.x,win.y,win.w,win.h,win.r); ctx.fillStyle=C.blob; ctx.fill('evenodd'); }
     ctx.restore();
     const ink=dark?C.paper:C.ink, muted=dark?C.mutedOnDark:cream?(C.brown||C.muted):C.muted; let y=textTop;
