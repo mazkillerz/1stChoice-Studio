@@ -2,11 +2,11 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 35 was 1.24.0 (30 Oct 2026), a **Mazoon** owner-directed session: Video editor phase 1 of 3 (reel template format, the Winter cat reel as the first template, Text + Sound tabs, frame-by-frame MP4 export, team save). On a preview branch until the owner approves; phases 2 (timeline, own clips/photos/text/audio) and 3 (polish, Reels in Templates, undo/autosave) follow in their own sessions. (Session 34: 1.23.0, team.)
+**Last session:** sessions 35–37 were 1.24.0–1.26.0 (30 Oct 2026), the owner-directed Video editor in three phases (1.24.0 reel template + Text/Sound + MP4; 1.25.0 CapCut-style timeline with own clips, text layers, sound tracks; 1.26.0 undo/redo, autosave drafts, performance, Reels in Templates). The owner asked to finish all three and test live. The next session, 1.27.0, is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.25.0.
 
 ## Next up
-_Video editor phases 2 and 3 come first once phase 1 is approved (owner's plan, 30 Oct 2026). Found in phase 1: the Sound rows are tall (two fit on a phone); a compact row would show four. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
+_Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Found in phase 1: the Sound rows are tall (two fit on a phone); a compact row would show four. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
 
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|

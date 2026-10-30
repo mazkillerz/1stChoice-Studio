@@ -13,6 +13,21 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.26.0 · 30 Oct 2026
+
+### Reels in Templates
+type: feature
+Home → Templates has a new **Reels** chip with our coded reels, starting with Winter cat. Tap one and it opens in the Video editor as a new video, ready for your words, your clips and your sound. Star it to keep it in your favourites. Every new coded reel we make can be added the same way (the steps are written down in the project), so this list will grow.
+![after](assets/whatsnew/1.26.0-reels-templates-after.jpg)
+
+### Undo, and your video is kept as you go
+type: feature
+The Video editor now has Undo and Redo at the top, for everything: trims, splits, words, the mix. A drag counts as one step, and typing counts as one step per pause. Your video is also kept on this phone while you work: leave and come back, and it is in Continue editing on Home, or tap Continue on the note at the top of the editor. Your clips, photos and sounds stay on the phone too.
+
+### Smoother on phones, and you know how long saving takes
+type: fix
+The preview plays more smoothly on phones: it draws a little lighter while playing and never falls behind the sound, then goes back to full sharpness when you pause. The Save sheet now tells you about how long the video takes on this phone, and while it saves you see the time left. Reels with heavy 3D get a clear note that they take longer, so you know to keep Studio open.
+
 ## 1.25.0 · 30 Oct 2026
 
 ### Video editor: your own clips, words and music
