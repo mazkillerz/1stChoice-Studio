@@ -120,3 +120,39 @@ Missing keys mean "as in reel.json", so a template can gain sounds or slots late
 3. Write `reel.json` from the cue sheet (`time_s` → `hits[].at`, `level_dbfs_peak50ms` → `level`, `duck_music` → `duck`).
 4. Add it to the brand kit's `reels` list (`brands/<brand>/brand.js`).
 5. Check it against the original: `node tests/reel-scene.mjs <id>` compares frames, `node tests/reel-audio.mjs` compares the mix.
+
+## Projects (Video editor 2: your own clips, text and sound)
+
+Since phase 2 a saved video is a **project**: a main track of clips played one after the other, text layers on top, and
+audio tracks under it. A reel template is one kind of clip, so a project can be "my clip + the cat reel's end card".
+Recipe (`tool: 'video'`, settings only; Supabase never gets video, photo or sound files):
+
+```json
+{ "v": 2, "kind": "video", "brand": "1stchoice", "size": [1080, 1920], "fps": 30,
+  "clips": [
+    { "id": "c1", "kind": "reel",  "reel": "winter-cat", "in": 0, "out": 10, "texts": {}, "mix": {}, "duck": true },
+    { "id": "c2", "kind": "video", "media": "m1", "in": 1.2, "out": 4.0, "db": 0, "mute": false },
+    { "id": "c3", "kind": "photo", "media": "m2", "dur": 3, "motion": "zoom" } ],
+  "texts": [
+    { "id": "t1", "value": "…", "start": 1.0, "end": 3.5, "x": 540, "y": 960, "size": 96, "font": "display",
+      "color": "#161210", "box": null, "in": "pop", "out": "fade" } ],
+  "audio": [
+    { "id": "a1", "media": "m3", "start": 0, "in": 0, "out": 12.5, "db": -6, "mute": false, "fadeIn": 0.5, "fadeOut": 1.5 } ],
+  "media": { "m1": { "name": "IMG_0042.MOV", "type": "video", "dur": 8.3, "w": 1080, "h": 1920 } } }
+```
+
+- **Clips** play in order; the video's length is the sum of the clips (`out - in`, or `dur` for a photo). A clip boundary is a
+  hard cut. `in`/`out` are times inside the source (a reel clip's own seconds, a video file's seconds). Video and photo clips
+  fill the 9:16 frame (cover, centred). `motion: "zoom"` slowly zooms a photo in (1.0 → 1.08 over the clip).
+- **Text layers** sit on top of everything from `start` to `end` (project seconds). `x`,`y` = the centre in reel pixels,
+  `size` = font size in reel pixels, `font` = `display` | `body` (the brand kit's fonts), `box` = a colour behind the words
+  or `null`. Animations, 0.35 s each: in = `none` | `fade` | `pop` | `slide` | `type`, out = `none` | `fade` | `pop` | `slide`.
+  One line or several (`\n`); Arabic or English, direction from the first strong letter.
+- **Audio tracks** start at `start` (project seconds) and play the file from `in` to `out`; `db` volume, `mute`, linear
+  `fadeIn`/`fadeOut` in seconds. A video clip's own sound plays with it (`db`, `mute`).
+- **Mix**: reel clips keep their own mix (template rules: levels, ducking) for the part of the reel that is used; everything
+  is summed and the whole video is levelled to the template's `master.lufs` (-14 LUFS, ceiling -1.5 dBFS; without any reel:
+  -14 LUFS, -1.5 dBFS).
+- **Media** files stay on the device that added them (IndexedDB key `studio:vmedia:<id>`). A project opened on another
+  device shows a clear "missing on this device: add it again" placeholder for each missing file; nothing is lost.
+- A `v: 1` recipe (phase 1) opens as a project with one reel clip.
