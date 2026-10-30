@@ -115,11 +115,46 @@ Missing keys mean "as in reel.json", so a template can gain sounds or slots late
 
 ## Adding a new coded reel
 
-1. Write the reel so every frame is a pure function of `t` (the `window.seek(t)` rule of the reel renderer).
-2. Make the folder above; draw it in `scene.js` on canvas (port DOM/SVG motion to canvas transforms).
-3. Write `reel.json` from the cue sheet (`time_s` → `hits[].at`, `level_dbfs_peak50ms` → `level`, `duck_music` → `duck`).
-4. Add it to the brand kit's `reels` list (`brands/<brand>/brand.js`).
-5. Check it against the original: `node tests/reel-scene.mjs <id>` compares frames, `node tests/reel-audio.mjs` compares the mix.
+You need the finished reel (every frame a pure function of the time `t`, the `window.seek(t)` rule of the old reel renderer),
+its sounds and its cue sheet. Work in a folder `brands/<brand>/reels/<id>/` (the id is lowercase with dashes, e.g. `winter-cat`).
+
+1. **Folder.** Make `reel.json`, `scene.js`, `img/`, `snd/`, `fonts/` and `source/` as in the layout above. Copy the original
+   files (the HTML reel, the render script, the cue sheet, the owner's mix script) into `source/` for reference. Nothing in
+   `source/` is ever loaded.
+2. **Pictures: PNG to lossless WebP** (JPEG stays JPEG). Keep the pixels exactly; only the file gets smaller:
+   `ffmpeg -i x.png -c:v libwebp -lossless 1 -compression_level 6 x.webp`
+3. **Sounds: WAV to FLAC at 48 kHz** (lossless; the mix is made in the browser at 48 kHz). Trim with `-ss` (start) and `-t` (length)
+   when a file needs it, for example the music bed that must start at the reel's 0 s:
+   `ffmpeg -i x.wav -c:a flac -compression_level 8 x.flac`   (the winter-cat sources were already 48 kHz; for another rate add `-ar 48000`)
+   `ffmpeg -ss 20.38 -t 10 -i music.wav -c:a flac -compression_level 8 music_bed.flac`
+   Only trim the file when the reel's cue sheet did (its `ss_s` / `dur_s` / `fade_s` columns go into reel.json instead, not into the file).
+4. **Fonts:** copy the woff/woff2 the words use into `fonts/`. Name the families uniquely (`Reel Lalezar`) so they never clash with
+   the editor's own fonts.
+5. **Port the drawing to canvas** in `scene.js` (`StudioReel.scene({id, setup, draw})`, described above). A DOM or SVG reel's
+   `seek(t)` becomes `draw(ctx, t, R)`: each element's CSS transform becomes `ctx.save(); ctx.translate/rotate/scale; ctx.drawImage(...); ctx.restore()`,
+   its easing curves stay the same functions of `t`, an SVG filter that wobbles lines becomes `R.wobble`, a blur or shadow becomes
+   `ctx.filter` or a `R.layer` that is blurred and drawn back. No timers, no `Date.now()`, no unseeded random numbers.
+   Take the words from `R.text[id]` (`value`, `dir`, `fit`, `font`) and never hard-code them, so people can change them.
+6. **Write `reel.json` from the cue sheet.** `time_s` becomes `hits[].at`, `level_dbfs_peak50ms` becomes `level`, `duck_music: yes`
+   becomes `"duck": true`, `ss_s`/`dur_s`/`fade_s` become `ss`/`dur`/`fade`. Hard cuts go in `cuts`, the beats in `scenes`, the
+   editable words in `texts` (one slot per line, with a `show` time where the words are fully visible), the music bed in `music`
+   (its cut-outs, fade and ducking from the owner's mix script) and the master loudness in `master`. Set `poster` to the time of
+   the best single frame (it is the picture in Saved and in the Templates card). Set **`"heavy": true`** for a three.js (WebGL) reel,
+   so the editor warns that exporting takes longer.
+7. **Add it to the brand kit:** in `brands/<brand>/brand.js`, `reels:[{id:'winter-cat'},{id:'<id>'}]`. The first one opens when the
+   Video editor starts fresh. The title, line and length in Templates come from `reel.json` (`title`, `sub`, `duration`).
+8. **Templates picture:** `node tests/reelthumbs.mjs <id>` draws the reel at its `poster` time with the engine itself and writes
+   `assets/thumbs/<brand>/tpl/reel-<id>.jpg` (320×569, under 45 KB). Look at it before you commit it.
+9. **Checks** (server on :8080, `npx http-server -p 8080 -c-1 .`):
+   - Picture: copy `tests/reel-scene.mjs` to compare the canvas port with the original reel (`source/<reel>.html`, run with `seek(t)`)
+     at about 17 times across the reel: strict (filters and wobble off in both) mean difference under 4 of 255, loose (wobble on in
+     both) under 8; the same frame twice, and out of order, must be identical; long words must still fit (`R.text[id].fit`).
+   - Sound: copy `tests/reel-audio.mjs` to mix the reel in the browser and compare it with the owner's finished mixes (the music
+     version and the SFX-only version, as WAV in `tests/fixtures/reels/`): loudness and peak, envelope correlation of at least 0.97,
+     sample correlation of at least 0.9, silence where the music is cut, ducking, mute and gain.
+   - Home: `node tests/reels-hub.mjs` (the Templates card, favourites, search) and `node tests/video.mjs` (the editor).
+   Both comparisons use the **owner's** originals, so ask for the finished mix before you start the port.
+10. **Wording:** the reel's default words are the owner's own; if you add new Arabic, list it for the owner to approve first.
 
 ## Projects (Video editor 2: your own clips, text and sound)
 

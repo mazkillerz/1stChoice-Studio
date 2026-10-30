@@ -132,3 +132,9 @@
 @media (prefers-reduced-motion:reduce){
   .tp,.tp *,.tp *::before,.tp *::after{animation:none!important;transition:none!important}
 }
+
+/* reels (video templates): a small play glyph on the preview, bottom corner, so a card reads as a video */
+.tp-vid{position:absolute;inset-inline-end:8px;bottom:8px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:rgba(20,16,14,.6);color:#fff;pointer-events:none}
+.tp-vid svg{width:14px;height:14px;display:block;margin-left:2px}
+.tp-mini .tp-vid{width:22px;height:22px;inset-inline-end:6px;bottom:6px}
+.tp-mini .tp-vid svg{width:11px;height:11px}

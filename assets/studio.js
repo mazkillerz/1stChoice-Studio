@@ -280,7 +280,7 @@ function migrateDraft(brand,tool){
 }
 function listDrafts(brand,tool){
   migrateDraft(brand,tool); const pre=draftBase(brand,tool)+':', out=[];
-  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue; const d=store(k); if(d&&(d.json||d.board)) out.push({key:k,id,tool,d}); } }catch(_){}
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(pre)) continue; const id=k.slice(pre.length); if(!id||id.includes(':')) continue; const d=store(k); if(d&&(d.json||d.board||d.video)) out.push({key:k,id,tool,d}); } }catch(_){}
   return out.sort((a,b)=>(b.d.at||0)-(a.d.at||0));
 }
 function removeDraft(key){ const d=store(key); if(d){ const pfx=d.pfx||key; (d.keys||[]).forEach(k=>{ if(k) idb.del(pfx+':'+k); });
@@ -2279,17 +2279,32 @@ async function home(){
   /* ---------- Templates (assets/templates.js): every ready-made start in one place, by kind, with real previews.
      Tool presets (brand kit `presets`: a tool with a style and words), Create templates (brand kit `create.templates`) and the
      team's own templates (Saved designs of kind "template"). A tap starts it at once. Previews: assets/thumbs/<brand>/tpl/<id>.jpg ---------- */
-  const TPL_CATS=[{id:'all',label:'All'},{id:'restock',label:'Restock'},{id:'story',label:'Stories'},{id:'post',label:'Posts'},{id:'highlight',label:'Highlights'},{id:'team',label:'Team'}];
+  const TPL_CATS=[{id:'all',label:'All'},{id:'restock',label:'Restock'},{id:'story',label:'Stories'},{id:'post',label:'Posts'},{id:'highlight',label:'Highlights'},{id:'reels',label:'Reels'},{id:'team',label:'Team'}];
   const tplThumb=id=>`${ROOT}assets/thumbs/${B.id}/tpl/${id}.jpg`;
   const toolShape=t=>t==='highlight'?'circle':t==='carousel'?'post':'story';
   const TPL_SIZE={story:'Story',post:'Post',square:'Square'};
+  /* Reels (brand kit `reels`): video templates the Video editor opens. Title, line and length come from each reel.json, fetched the
+     first time Templates opens and kept in memory; a reel whose file will not load is left out without a message. */
+  const reelIds=()=>((B.reels||[]).map(r=>r&&r.id).filter(Boolean));
+  const reelMeta={};
+  const reelBase=id=>`${ROOT}brands/${B.id}/reels/${encodeURIComponent(id)}/`;
+  const reelHuman=id=>{ const w=String(id).replace(/[-_]+/g,' ').trim(); return w.charAt(0).toUpperCase()+w.slice(1); };
+  function loadReels(){
+    return Promise.all(reelIds().filter(id=>!(id in reelMeta)).map(id=>fetch(reelBase(id)+'reel.json').then(r=>r.ok?r.json():null).catch(()=>null).then(m=>{ reelMeta[id]=m&&m.title?m:null; })));
+  }
+  const reelDur=m=>{ const n=Math.round(+(m&&m.duration)); return n>0?n:0; };
+  function reelEntries(){
+    return reelIds().filter(id=>reelMeta[id]).map(id=>{ const m=reelMeta[id];
+      return {id:'r:'+id,cat:'reels',title:m.title,sub:String(m.sub||'').replace(/\s*·\s*\d+(?:\.\d+)?\s*s\s*$/,''),dur:reelDur(m),video:true,thumb:tplThumb('reel-'+id),shape:'story',href:toolPage('video')+'?reel='+encodeURIComponent(id),keys:'reel reels video template'}; });
+  }
   function tplEntries(){
     const out=[];
     (B.presets||[]).forEach(p=>{ if(!TOOLS[p.tool]) return; out.push({id:'p:'+p.id,cat:p.cat||'story',title:p.label,sub:p.sub||TOOLS[p.tool].title,thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),badge:p.badge||'',keys:TOOLS[p.tool].title}); });
     if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>{ const hl=d.layout==='highlight';
       out.push({id:'t:'+d.id,cat:d.cat||(hl?'highlight':d.size==='post'?'post':'story'),title:d.label,sub:d.sub||(hl?'Cover':TPL_SIZE[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':'')+' · Create',thumb:tplThumb(d.id),shape:hl?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),badge:d.badge||''}); });
-    all.filter(d=>d.kind==='template').forEach(d=>out.push({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
-    return out; }
+    const team=()=>all.filter(d=>d.kind==='template').map(d=>({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
+    if(TOOLS.video&&reelIds().length) return loadReels().then(()=>out.concat(reelEntries(),team()));
+    return out.concat(team()); }
   let tplApi=null;
   function showTemplates(){
     if(!window.StudioTemplates||!$('templatesView')) return;
@@ -2319,6 +2334,8 @@ async function home(){
   /* continue editing: every unfinished story kept on this phone, newest first (several per tool) */
   const cont=Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
   const thumbs={};
+  /* a Video editor draft has its own name (default "Video"); the other tools show the tool's name */
+  const draftTitle=x=>x.tool==='video'&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
   function paintCont(){
     const list=cont.filter(x=>!x.gone);
     $('continueSec').hidden=!list.length;
@@ -2326,7 +2343,7 @@ async function home(){
     const many=Object.entries(per).filter(([,n])=>n>=DRAFT_CAP).map(([t,n])=>n+' '+TOOLS[t].title);
     const note=$('contNote')||(()=>{ const p=document.createElement('p'); p.id='contNote'; p.className='small cont-note'; $('continueList').before(p); return p; })();
     note.hidden=!many.length; note.textContent=many.length?'Lots of unfinished stories ('+many.join(', ')+'). The oldest are at the end: remove the ones you don’t need with ✕.':'';
-    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[x.key]?`<img alt="" src="${thumbs[x.key]}">`:''}</span><span class="rtxt"><b>${esc(TOOLS[x.tool].title)}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
+    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[x.key]?`<img alt="" src="${thumbs[x.key]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
     list.forEach(x=>{ if(thumbs[x.key]!==undefined) return; thumbs[x.key]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[x.key]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
   }
   /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
@@ -2340,8 +2357,8 @@ async function home(){
      ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
      own editor and no renderer, so they are listed as skipped. */
   $('contSave').onclick=async()=>{ haptic('tick');
-    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,draft:true,name:TOOLS[x.tool].title,label:TOOLS[x.tool].title+' ('+ago(x.d.at)+')',
-      skip:x.d.json?'':'is a Create design: open it to save its picture'}));
+    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
+      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
@@ -2391,8 +2408,10 @@ async function home(){
   function searchEntries(){
     const pins=getPins(), out=[];
     Object.entries(TOOLS).forEach(([id,t])=>out.push({kind:'tool',id:'tool:'+id,title:t.title,sub:t.blurb,keys:[TOOL_GROUPS[t.group],t.quick,t.keys].filter(Boolean).join(' '),thumb:toolThumb(id),href:toolPage(id),pinned:pins.includes(id),togglePin:()=>togglePin(id,true)}));
-    cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:TOOLS[x.tool].title,sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
+    cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:draftTitle(x),sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
     if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:['template create',d.size||'story',d.cat,d.keys].concat(Object.values(d.words||{})).filter(Boolean).join(' '),thumb:tplThumb(d.id),shape:d.layout==='highlight'?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id)}));
+    if(TOOLS.video) reelIds().forEach(id=>{ const m=reelMeta[id]; if(m===null) return; const d=reelDur(m);   // (m is undefined until Templates has been opened: the name then comes from the folder name)
+      out.push({kind:'template',id:'reel:'+id,title:m?m.title:reelHuman(id),sub:'Template · Video'+(d?' · '+d+' s':''),keys:'reel reels video template '+id.replace(/[-_]+/g,' '),thumb:tplThumb('reel-'+id),shape:'story',icon:ICON.template,href:toolPage('video')+'?reel='+encodeURIComponent(id)}); });
     (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
       out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
