@@ -85,12 +85,12 @@ for(const scheme of ['light','dark']){
   await pg.tap('#vdUndo'); await pg.waitForTimeout(250); await pg.tap('#vdShX'); await pg.waitForTimeout(150);
 
   /* add text + type: merged steps */
-  const n0=(await V(pg)).hist.n;
+  const n0=(await V(pg)).hist.i;
   await openBar(pg,true,'text'); await pg.tap('[data-addtxt]'); await pg.waitForSelector('#vdTx'); await pg.waitForTimeout(900);
   await pg.keyboard.type('Hello',{delay:50}); await pg.waitForTimeout(900);
   await pg.keyboard.type(' there',{delay:50}); await pg.waitForTimeout(900);
   const tv=await V(pg), tx=tv.recipe.texts[0];
-  ok(N+'add text, then type in two bursts: 3 steps (added, burst 1, burst 2), not one per key',tv.recipe.texts.length===1&&/Hello there$/.test(tx.value)&&tv.hist.n-n0===3,{n0,hist:tv.hist,value:tx.value});
+  ok(N+'add text, then type in two bursts: 3 steps (added, burst 1, burst 2), not one per key',tv.recipe.texts.length===1&&/Hello there$/.test(tx.value)&&tv.hist.i-n0===3,{n0,hist:tv.hist,value:tx.value});
   await pg.tap('#vdUndo'); await pg.waitForTimeout(300);
   const t1=(await recipe(pg)).texts[0];
   ok(N+'Undo once: the second burst is gone, the first stays',t1&&/Hello$/.test(t1.value)&&!/there/.test(t1.value),t1&&t1.value);
@@ -124,7 +124,7 @@ for(const scheme of ['light','dark']){
   await pg.tap('#bar [data-do="del"]'); await pg.waitForTimeout(300);
   const dl=await pg.evaluate(()=>({n:VD.st.R.clips.length,toast:(document.getElementById('vdToast')||{}).innerText,hid:(document.getElementById('vdToast')||{hidden:true}).hidden,empty:!document.getElementById('vdEmpty').hidden}));
   const hdel=(await V(pg)).hist;
-  ok(N+'delete clip: one history step, the toast says "Clip deleted" with an Undo link, the empty state shows',dl.n===0&&/Clip deleted/.test(dl.toast)&&/Undo/.test(dl.toast)&&!dl.hid&&dl.empty&&hdel.n===hbefore.n+1,{dl,hbefore,hdel});
+  ok(N+'delete clip: one history step, the toast says "Clip deleted" with an Undo link, the empty state shows',dl.n===0&&/Clip deleted/.test(dl.toast)&&/Undo/.test(dl.toast)&&!dl.hid&&dl.empty&&hdel.i===hbefore.i+1,{dl,hbefore,hdel});
   await pg.tap('#vdToast [data-undo]'); await pg.waitForTimeout(500);
   const du=await V(pg);
   ok(N+'the toast’s Undo brings the clip back (same history), the sheet and empty state are right',du.recipe.clips.length===1&&du.duration>9&&!(await pg.isVisible('#vdEmpty'))&&du.hist.i===hbefore.i,{n:du.recipe.clips.length,hist:du.hist});

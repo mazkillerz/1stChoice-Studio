@@ -366,8 +366,8 @@ V.placeSel=placeSel;
   box.addEventListener('keydown',e=>{ if(e.key==='Escape'){ box.hidden=true; $('vdMenu').focus(); } });
 })();
 function newVideo(){
-  const go=()=>{ st.leaving=true; location.href=location.pathname+'?new=1'; };
-  if(!st.ready||cur()===st.clean||V.empty()||st.draftId) return go();   // an unfinished video is kept on this device
+  const go=()=>{ draftNow(); st.leaving=true; location.href=location.pathname+'?new=1'; };
+  if(!st.ready||cur()===st.clean||V.empty()||st.draftId||!st.design) return go();   // an unfinished video is kept on this device; only edits to a saved design ask first
   const d=L.dialog(`<div class="dlg-body"><h3>Start a new video?</h3><p class="small">Your edits are not saved. ${st.design?'Update the saved video first to keep them.':'Save to the team first to keep them.'}</p>
     <div class="dlg-actions col"><button type="button" class="btn" id="nvGo">Start a new video</button><button type="button" class="link" id="nvKeep">Keep editing</button></div></div>`);
   d.tabIndex=-1; d.querySelector('#nvKeep').onclick=()=>d.close(); d.querySelector('#nvGo').onclick=go;

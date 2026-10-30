@@ -258,7 +258,8 @@ span.vt-th{background:transparent}
 .vd-dbg td{word-break:break-all}
 
 @media (max-width:899px){.vd-back .back-txt,.vd-status{display:none}}
-@media (max-width:380px){.vd-bb{font-size:10.5px}.btn.vd-save{padding:0 var(--sp-4)}}
+@media (max-width:400px){.btn.vd-save{padding:0 var(--sp-3)}}
+@media (max-width:380px){.vd-bb{font-size:10.5px}}
 
 /* computer: preview left, the timeline under it, the sheet/panel on the right */
 @media (min-width:900px){

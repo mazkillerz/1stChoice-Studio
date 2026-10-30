@@ -73,8 +73,11 @@ for(const scheme of ['light','dark']){
   const lens=await pg.evaluate(()=>VD.lay().map(x=>x.end-x.start)), pps=(await V(pg)).pps;
   ok(N+'the clips lane shows 3 blocks with widths ∝ length (width ≈ length × px/s − 2)',ws.length===3&&ws.every((w,i)=>Math.abs(w.w-(lens[i]*pps-2))<2),{ws:ws.map(w=>Math.round(w.w)),lens,pps});
   await pg.waitForTimeout(800);
-  const th=await pg.evaluate(()=>[...document.querySelectorAll('#vtClips .vt-clip')].map(b=>{ const c=b.querySelector('canvas.vt-th'); if(!c) return -1; const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for(let i=3;i<d.length;i+=40) if(d[i]>0) n++; return n; }));
-  ok(N+'each block is filled with thumbnails',th.every(n=>n>20),th);
+  /* thumbnails are made lazily: only for blocks in view, so scroll to each block in turn (the playhead at its middle) */
+  const th=[]; for(const l of await pg.evaluate(()=>VD.lay().map(x=>({id:x.c.id,mid:(x.start+x.end)/2})))){ await seek(pg,l.mid); await pg.waitForTimeout(1100);
+    th.push(await pg.evaluate(id=>{ const b=document.querySelector('#vtClips .vt-clip[data-id="'+id+'"]'), c=b&&b.querySelector('canvas.vt-th'); if(!c) return -1; const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for(let i=3;i<d.length;i+=40) if(d[i]>0) n++; return n; },l.id)); }
+  await seek(pg,0);
+  ok(N+'each block is filled with thumbnails once it is in view',th.every(n=>n>20),th);
 
   /* scrolling scrubs */
   await seek(pg,0); await pg.waitForTimeout(100);
@@ -304,10 +307,9 @@ for(const scheme of ['light','dark']){
     ok(N+'deleting the last clip brings the empty state back',await pg.isVisible('#vdEmpty')&&await pg.evaluate(()=>document.getElementById('vdSave').disabled));
     await pg.setInputFiles('#vdEmptyFile',[VID,PHOTO]); await waitClips(pg,2); await pg.waitForTimeout(500);
     ok(N+'Add clips or photos from the empty state adds both',!(await pg.isVisible('#vdEmpty'))&&(await recipe(pg)).clips.map(c=>c.kind).join()==='video,photo');
-    /* 2 taps: New video asks first when edited */
-    await pg.tap('#vdMenu'); await pg.tap('#vdMenuBox [data-i="0"]'); await pg.waitForSelector('dialog[open] #nvGo',{timeout:3000}).catch(()=>{});
-    ok(N+'New video asks before leaving unsaved edits (one filled button)',await pg.isVisible('dialog[open] #nvGo')&&await pg.evaluate(()=>{ const p=document.createElement('i'); p.style.background='var(--accent)'; document.body.appendChild(p); const a=getComputedStyle(p).backgroundColor; p.remove(); return [...document.querySelectorAll('dialog[open] button')].filter(b=>getComputedStyle(b).backgroundColor===a).length; })===1);
-    await pg.tap('#nvKeep');
+    /* New video: an unfinished video is kept on this device, so it just opens an empty project (a saved design asks first) */
+    await pg.tap('#vdMenu'); await pg.tap('#vdMenuBox [data-i="0"]'); await pg.waitForFunction(()=>/new=1/.test(location.search),null,{timeout:10000}).catch(()=>{});
+    ok(N+'New video keeps the unfinished video as a draft on this device and opens an empty project',/new=1/.test(await pg.evaluate(()=>location.search))&&(await pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:draft:[^:]+:video:[^:]+$/.test(k)).length))===1);
     ok(N+'empty state: no errors',errs.length===0,errs.slice(0,3));
     await ctx.close();
   }
