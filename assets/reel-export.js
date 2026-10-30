@@ -2,6 +2,7 @@
    StudioReelExport.support() -> { mode:'webcodecs'|'recorder'|'none', video, audio, mime }
    StudioReelExport.run({reel, texts, audio, onProgress, signal, force, sub, shutter}) -> { blob, mode, codec, ms, frames }
    WebCodecs path: frame-exact (motion blur from sub-frames, like the reel renderer), H.264 + AAC/Opus muxed to MP4.
+   reel.prepare(t), if present, is awaited before every sub-frame draw (a project seeks its video clips there).
    Recorder path: real-time MediaRecorder, for browsers without WebCodecs. */
 (function(){
 'use strict';
@@ -75,6 +76,7 @@ async function runWebcodecs(o,sup,t0){
       const ts=frameTimes(i,fps,T,R.cuts,sub,shutter);
       for(let j=0;j<ts.length;j++){
         cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.clearRect(0,0,W,H);
+        if(R.prepare) await R.prepare(ts[j]);   // projects: seek the video clip to this exact time first
         R.draw(cx,ts[j],{texts:o.texts});
         if(acc){ ax.globalAlpha=j===0?1:1/(j+1); ax.globalCompositeOperation=j===0?'copy':'source-over'; ax.drawImage(cv,0,0); }
       }
@@ -126,6 +128,7 @@ async function runRecorder(o,sup,t0){
 }
 
 async function run(o){
+  if(!o.reel&&o.draw) o=Object.assign({},o,{reel:o});   // a project can be passed as the whole option object
   const t0=Date.now(), sup=await support();
   if(o.force==='recorder'||sup.mode==='recorder'){
     const rs=(sup.mode==='recorder')?sup:Object.assign({},sup,{mime:null});

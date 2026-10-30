@@ -1,5 +1,5 @@
 /* Reel audio: loads the sounds of a reel template, mixes them like the owner's mix script and plays/renders the result.
-   StudioReelAudio.load(M, baseUrl) -> mix { rows, defaults(), isDefault(s), render(s), play(s, from), solo(id, s), stopAll() }
+   StudioReelAudio.load(M, baseUrl) -> mix { rows, defaults(), isDefault(s), render(s), renderRaw(s), play(s, from), solo(id, s), stopAll() }
    Settings: { mix: { <rowId>: { db, mute } }, duck: Boolean }. Everything is plain JS math, so a render is deterministic. */
 (function(){
 'use strict';
@@ -106,7 +106,7 @@ async function load(M,baseUrl,opt){
   const st=(s,id)=>{ const m=(s&&s.mix&&s.mix[id])||{}; return {db:+m.db||0,mute:!!m.mute}; };
   const norm=s=>{ const o={mix:{},duck:!s||s.duck!==false}; for(const r of rows){ const m=st(s,r.id); if(m.db||m.mute) o.mix[r.id]={db:m.db,mute:m.mute}; } return o; };
 
-  function renderSync(settings){
+  function mixRaw(settings){   // the summed sounds and music of a reel, not yet levelled by the master
     const sfx=[new Float64Array(N),new Float64Array(N)], hits=[], duckOn=!settings||settings.duck!==false;
     snds.forEach((s,k)=>{
       const m=st(settings,s.id); if(m.mute) return; const gdb=db(m.db);
@@ -129,8 +129,12 @@ async function load(M,baseUrl,opt){
       mL=new Float64Array(N); mR=new Float64Array(N);
       for(let i=0;i<N;i++){ const e=env[i]*dk[i]*g; mL[i]=bed.L[i]*e; mR[i]=bed.R[i]*e; }
     }
-    const L=new Float32Array(N), R=new Float32Array(N), f64=[new Float64Array(N),new Float64Array(N)];
+    const f64=[new Float64Array(N),new Float64Array(N)];
     for(let i=0;i<N;i++){ f64[0][i]=sfx[0][i]+(mL?mL[i]:0); f64[1][i]=sfx[1][i]+(mR?mR[i]:0); }
+    return {f64,hasMusic};
+  }
+  function renderSync(settings){
+    const {f64,hasMusic}=mixRaw(settings), L=new Float32Array(N), R=new Float32Array(N);
     // master: integrated loudness to target, then the soft-knee ceiling
     const cur=lufs(f64[0],f64[1],SR), tgt=hasMusic?MA.lufs:(MA.lufsNoMusic!=null?MA.lufsNoMusic:MA.lufs);
     const g=isFinite(cur)?db(tgt-cur):1, c=db(MA.ceiling==null?-1.5:MA.ceiling), k=0.8*c, w=0.2*c; let pk=0;
@@ -155,6 +159,7 @@ async function load(M,baseUrl,opt){
   const api={
     rows, defaults:()=>({mix:{},duck:true}),
     isDefault(s){ const n=norm(s); return n.duck&&!Object.keys(n.mix).length; },
+    renderRaw:s=>{ const m=mixRaw(s); return {L:Float32Array.from(m.f64[0]),R:Float32Array.from(m.f64[1]),sampleRate:SR,hasMusic:m.hasMusic}; },   // un-normalised (for the project mix)
     render:s=>new Promise(res=>setTimeout(()=>res(renderSync(s)),0)),
     play(s,from){ const m=mixFor(s); from=from||0; if(from>=D) from=0; return playBuf(m.L,m.R,from,D); },
     solo(id,s){
