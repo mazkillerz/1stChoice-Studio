@@ -47,13 +47,13 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     ok(N+'Layers has a Sticker button in the Add row, a plain (not filled) button, at least 44px tall',btn.row&&btn.cls==='mini'&&btn.h>=44,btn);
     ok(N+'the Add row buttons all have the same height',new Set(btn.row2).size===1,btn.row2);
     await tap('#addSticker'); await pg.waitForTimeout(500);
-    const sh=await pg.evaluate(()=>{ const s=document.getElementById('sh-stickers'), r=s.getBoundingClientRect(), tiles=[...s.querySelectorAll('[data-sticker]')];
+    const sh=await pg.evaluate(()=>{ const s=document.getElementById('sh-stickers'), r=s.getBoundingClientRect(), tiles=[...s.querySelectorAll('[data-sticker]:not(.emoji-tile)')];
       const blank=tiles.filter(t=>{ const c=t.querySelector('canvas'), d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; for(let i=3;i<d.length;i+=4) if(d[i]>0) return false; return true; }).map(t=>t.dataset.sticker);
       const small=tiles.filter(t=>{ const q=t.getBoundingClientRect(); return q.width<48||q.height<48; }).length;
       const filled=[...s.querySelectorAll('button')].filter(x=>x.checkVisibility()&&getComputedStyle(x).backgroundColor===getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||x.classList.contains('btn')).length;
       const lum=c=>{ const m=c.match(/\d+(\.\d+)?/g).map(Number).slice(0,3).map(v=>{ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*m[0]+.7152*m[1]+.0722*m[2]; };
       const t=tiles[0], lc=lum(getComputedStyle(t.querySelector('span')).color), bc=lum(getComputedStyle(t).backgroundColor);
-      return {visible:s.checkVisibility()&&r.height>0&&r.top<innerHeight&&r.bottom<=innerHeight+1,tiles:tiles.length,blank,small,filled,ratio:+((Math.max(lc,bc)+.05)/(Math.min(lc,bc)+.05)).toFixed(1),labels:tiles.every(t=>t.textContent.trim().length>0)}; });
+      return {visible:s.checkVisibility()&&r.height>0&&r.top>=-1&&r.top<innerHeight*.5&&(r.bottom<=innerHeight+1||r.height>innerHeight*.8),tiles:tiles.length,blank,small,filled,ratio:+((Math.max(lc,bc)+.05)/(Math.min(lc,bc)+.05)).toFixed(1),labels:tiles.every(t=>t.textContent.trim().length>0)}; });
     ok(N+'Sticker opens a sheet with 14 drawn previews, each labelled',sh.visible&&sh.tiles===14&&!sh.blank.length&&sh.labels,sh);
     ok(N+'every sticker tile is at least 48×48',sh.small===0,sh.small);
     ok(N+'tile labels are readable (≥4.5:1)',sh.ratio>=4.5,sh.ratio);
@@ -148,7 +148,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
 { const ctx=await newCtx({width:360,height:740,touch:true},'light'); await fakeRoutes(ctx); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('360: '+e.message));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1500); await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(3400);
   await pg.tap('#bar [data-open="layers"]'); await pg.waitForTimeout(500); await pg.tap('#addSticker'); await pg.waitForTimeout(500);
-  const fit=await pg.evaluate(()=>{ const s=document.getElementById('sh-stickers'), tiles=[...s.querySelectorAll('.sticker-tile')], clip=tiles.filter(t=>{ const sp=t.querySelector('span'); return sp.scrollWidth>sp.clientWidth+1; }).length;
+  const fit=await pg.evaluate(()=>{ const s=document.getElementById('sh-stickers'), tiles=[...s.querySelectorAll('.sticker-tile')], clip=tiles.filter(t=>{ const sp=t.querySelector('span'); return !!sp&&sp.scrollWidth>sp.clientWidth+1; }).length;
     return {page:document.documentElement.scrollWidth<=innerWidth,sheet:s.scrollWidth<=s.clientWidth+1,clip,cols:new Set(tiles.map(t=>Math.round(t.getBoundingClientRect().left))).size}; });
   ok('360px: no sideways scroll, no clipped labels, 3+ tiles a row',fit.page&&fit.sheet&&!fit.clip&&fit.cols>=3,fit);
   await ctx.close(); }

@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.27.1';
+const VERSION='1.28.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -25,6 +25,8 @@ let BRAND=null, LOGO=null, LOGO_LIGHT=null;
 /* ---------- small utilities ---------- */
 function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 /* option buttons sit in an even grid: no lone button stretched across a row (4 → 2×2, 8 → 4×2) */
+/* five options: 3 + 2, the second row filling the width (never one option alone on a row) */
+const segOdd=(opts,cols)=>!cols&&opts.length===5?' seg-32':'';
 function segCols(opts){ const n=opts.length, max=opts.some(o=>o.ic)?3:4; if(n<=max) return n; if(n>6&&n%4===0) return 4; /* 8 styles: two short rows, not four tall ones */ return n%max===0?max:(n%(max-1)===0?max-1:max); }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 /* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
@@ -228,7 +230,7 @@ const SHAPES=[
 /* draw a shape filling a w×h box: fill colour ('none' = no fill), optional outline colour + width, corner radius */
 function drawShape(c,a,w,h,fill,o){
   o=o||{}; const r=o.r!=null?o.r:(a.radius||0);
-  if(a.draw){ c.save(); c.scale(w/a.w,h/a.h); a.draw(c,fill&&fill!=='none'?fill:'#000'); c.restore(); return; }   // a sticker (assets/stickers.js)
+  if(a.draw){ c.save(); c.scale(w/a.w,h/a.h); a.draw(c,fill&&fill!=='none'?fill:(a.emoji?null:'#000')); c.restore(); return; }   // a sticker (assets/stickers.js); an emoji with no colour keeps its own
   c.save(); c.beginPath();
   if(a.free) a.path(c,w,h,r); else { c.scale(w/a.w,h/a.h); a.path(c,a.w,a.h,r); }
   c.restore();
@@ -585,7 +587,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         },{kind:'asset',noFlip:!!(a.tint||a.noFlip)});
       } else {
         const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
-        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||C.ink,{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
+        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||(a.emoji?null:C.ink),{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
       }
     },
     /* numbers in the brand's digits (Arabic brands write ٢٠٪, not 20%) */
@@ -670,7 +672,8 @@ async function tool(cfg){
   const app=document.getElementById('app');
   app.innerHTML='<p class="hint" style="width:100%">Loading…</p>';
   if(/access_token|refresh_token|error_description/.test(location.hash)) cloud().then(c=>c.client());   // finishing an email sign-in link
-  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):loadScript(ROOT+'assets/stickers.js').then(()=>true,()=>false);   // loads alongside the brand
+  /* stickers load alongside the brand; the emoji list (shared with Highlight covers) first, so stickers.js can add the emoji stickers */
+  const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):(window.HL_EMOJI?Promise.resolve():loadScript(ROOT+'tools/highlight-emoji.js').catch(()=>{})).then(()=>loadScript(ROOT+'assets/stickers.js')).then(()=>true,()=>false);
   const B=await useBrand();
   const hasStickers=await stickersReady;
   const opts=v=>typeof v==='function'?v(B):v;
@@ -765,7 +768,7 @@ async function tool(cfg){
     </section>
     <section class="sheet" id="sh-assets" data-sheet="assets" aria-labelledby="h-assets">${sheetHead('assets','Add an asset')}<div class="sheet-body" id="assetList"></div></section>
     <section class="sheet" id="sh-comps" data-sheet="comps" aria-labelledby="h-comps">${sheetHead('comps','Add an element')}<div class="sheet-body"><div class="comp-grid" id="compList"></div><p class="small">Each one is a normal layer: move, size, turn, recolour, change the font, hide or delete it.</p></div></section>
-    ${hasStickers?`<section class="sheet" id="sh-stickers" data-sheet="stickers" aria-labelledby="h-stickers">${sheetHead('stickers','Add a sticker')}<div class="sheet-body"><div class="sticker-grid" id="stickerList"></div><p class="small">Stickers stay sharp at any size. Move, size, turn or recolour them like any layer.</p></div></section>`:''}
+    ${hasStickers?`<section class="sheet" id="sh-stickers" data-sheet="stickers" aria-labelledby="h-stickers">${sheetHead('stickers','Add a sticker')}<div class="sheet-body"><div class="sticker-grid" id="stickerList"></div><p class="small">Stickers stay sharp at any size. Move, size, turn or recolour them like any layer; an emoji keeps its own colours until you pick one.</p></div></section>`:''}
   </div>
   <form class="panel" id="form" autocomplete="off">
   <div class="banner" id="designBar" hidden></div>
@@ -780,7 +783,7 @@ async function tool(cfg){
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
     <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
     <button type="button" class="link" id="lookAll" hidden>Use this look on every photo</button></div>`}</div></section>`;
-  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
+  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid${segOdd(cfg.styles)}" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
     <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button>${hasStickers?`<button type="button" class="mini" id="addSticker" aria-controls="sh-stickers">${ICON.sparkle} Sticker</button>`:''}</div>
@@ -836,7 +839,7 @@ async function tool(cfg){
     const el=sheetEl(n); if(!el) return;
     if(!isPhone()){   // desktop: cards are always there; bring this one into view
       if(n==='assets'||n==='comps'||n==='stickers'||n==='insp') el.classList.add('active');
-      if(!(opt&&opt.quiet)) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+      if(!(opt&&opt.quiet)) el.scrollIntoView({block:el.offsetHeight>innerHeight*.8?'start':'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       return;
     }
     if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
@@ -907,7 +910,7 @@ async function tool(cfg){
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
-      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid" style="--c:${f.cols||segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
+      else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid${segOdd(f.options,f.cols)}" style="--c:${f.cols||segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='tiles') inner=`<span class="lbl">${esc(f.label)}</span><div class="tiles-ed" data-tiles="${f.id}"></div><button type="button" class="mini" data-addtile="${f.id}">${ICON.plus} ${esc(f.addLabel||'Add one')}</button>${f.hint?`<span class="small">${esc(f.hint)}</span>`:''}`;
@@ -1380,7 +1383,7 @@ async function tool(cfg){
     /* colour: the brand palette (+ Custom) for everything that can take a colour; photos and cut-outs keep theirs */
     const canColor=!(isAsset&&ad&&ad.file&&!ad.tint);
     const cur=x&&!x.type?x.color:isShape?(l.color||x.color):l.color;
-    $('inspColors').innerHTML=canColor?`<span class="lbl">${isShape&&!ad.sticker?'Fill':kind==='pill'&&!comp?'Button colour':'Colour'}</span>`+palettePicker('col',cur,{auto:x&&!x.type?null:isShape?null:(isAsset?'Original':'Auto'),none:isShape&&!plain}):'';
+    $('inspColors').innerHTML=canColor?`<span class="lbl">${isShape&&!ad.sticker?'Fill':kind==='pill'&&!comp?'Button colour':'Colour'}</span>`+palettePicker('col',cur,{auto:x&&!x.type?null:isShape?(ad.emoji?'Original':null):(isAsset?'Original':'Auto'),none:isShape&&!plain}):'';
     $('inspShape').hidden=!isShape||plain;
     if(isShape&&!plain){ if(!$('inspStroke').firstChild||$('inspStroke').dataset.for!==id){ $('inspStroke').innerHTML=palettePicker('stroke',x.stroke||'none',{none:true}); $('inspStroke').dataset.for=id; } else syncPalette($('inspStroke').firstChild,x.stroke||'none');
       if(document.activeElement!==$('inspSW')) $('inspSW').value=x.sw||0; $('inspRRow').hidden=ad.radius==null; if(document.activeElement!==$('inspR')) $('inspR').value=x.r!=null?x.r:ad.radius||0; }
@@ -1600,7 +1603,7 @@ async function tool(cfg){
     /* starting size: logo 320 wide; photos/cut-outs about 700 tall (so a pair of cans starts big enough), never wider than 960 */
     let w=a.w0; if(!w){ if(a.file){ const im=ASSET_IMG.get(ref).img; w=a.tint||a.group==='Logo'?320:Math.min(960,Math.round(700*im.width/im.height)); } else w=a.free?a.w:a.w>a.h*2?420:260; }
     const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='asset'+n;
-    const ch=a.free?a.h:undefined; S.extras.push({id,type:'asset',ref,w,...(ch?{h:ch}:{}),x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file?null:((a.color&&B.colors[a.color])||B.colors.ink)});
+    const ch=a.free?a.h:undefined; S.extras.push({id,type:'asset',ref,w,...(ch?{h:ch}:{}),x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file||a.emoji?null:((a.color&&B.colors[a.color])||B.colors.ink)});
     closeSheet('assets'); select(id);
   }
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
