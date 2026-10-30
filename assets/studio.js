@@ -87,17 +87,17 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
 const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
 /* what a tool makes, for the Saved page's quick filters (an Offer is a story-sized picture) */
 const TOOLS={
-  'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photos of the cans: a story each',queue:true,icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock'},
-  'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'Tall photos: a story each',queue:true,icon:'story',qi:2,group:'story',type:'story',keys:'picture single'},
-  'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',icon:'collage',multi:true,qi:3,group:'story',type:'story',keys:'grid mosaic several pictures'},
-  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story',type:'story',keys:'shop store location map opening'},
-  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',type:'story',keys:'two pictures half'},
-  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',type:'story',keys:'film movie wide letterbox'},
-  'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent'},
-  'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
-  'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
-  'create':{title:'Create',blurb:'Make anything: templates, every element, pages.',group:'free',type:'free',keys:'design blank free templates canvas'},
-  'video':{title:'Video editor',blurb:'Coded reels: change the words and the sound, save an MP4.',group:'free',type:'video',keys:'reel reels video mp4 movie animation motion sound music audio mixer edit'}
+  'restock':{title:'Restock',blurb:'The cans, back in stock',quick:'Photos of the cans: a story each',queue:true,icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock flavours button'},
+  'photo-story':{title:'Photo story',blurb:'One tall photo, full screen',quick:'Tall photos: a story each',queue:true,icon:'story',qi:2,group:'story',type:'story',keys:'picture single headline logo'},
+  'collage':{title:'Collage',blurb:'2 to 9 photos in a grid',quick:'2 to 9 photos',icon:'collage',multi:true,qi:3,group:'story',type:'story',keys:'grid mosaic several pictures scattered prints'},
+  'new-place':{title:'New place',blurb:'A new sale point, with a pin',group:'story',type:'story',keys:'shop store location map opening place name'},
+  'split':{title:'Two-photo split',blurb:'Close-up on top, wide below',group:'story',type:'story',keys:'two pictures half words cut'},
+  'cinematic':{title:'Cinematic bars',blurb:'A wide photo on black bars',group:'story',type:'story',keys:'film movie wide letterbox whole text'},
+  'offer':{title:'Offer',blurb:'Discount tiles and dates',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent product photo button'},
+  'carousel':{title:'Carousel',blurb:'Slides with page dots',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post 1080×1350 several'},
+  'highlight':{title:'Highlight covers',blurb:'Round highlight covers',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile story icon word photo'},
+  'create':{title:'Create',blurb:'Make anything, from a template',group:'free',type:'free',keys:'design blank free templates canvas element pages'},
+  'video':{title:'Video editor',blurb:'Reels: words, sound, MP4',group:'free',type:'video',keys:'reel reels video coded change save mp4 movie animation motion sound music audio mixer edit'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
 
@@ -450,6 +450,7 @@ function groundFx(ctx,kind,color,W,H){
 /* the Background picker a tool puts in its Style sheet: Studio.groundField({style:[...]}) (when = the styles that have a ground) */
 const groundField=(when,label)=>({id:'gfx',type:'seg',in:'style',label:label||'Background',default:'plain',cols:3,...(when?{when}:{}),options:GROUNDS.map(({v,l,ic})=>({v,l,ic}))});
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
+let framePass=false;   // set by renderPage() while it draws a frame-only PNG (see the end of makeHelpers)
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
   off=off||0;   // first photo of the current page (carousels)
   const ix=(i,opt)=>opt&&opt.page!=null?opt.page*(perPage||1)+i:off+i;   // opt.page: a photo from another slide (panoramas)
@@ -624,6 +625,9 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     dots(n,i,cx,y,color,dim){ if(n<2) return; const r=9, g=26, tot=(n-1)*g; for(let k=0;k<n;k++){ const kk=k; ctx.beginPath(); ctx.arc(cx-tot/2+kk*g,y,k===i?r:r*.72,0,Math.PI*2); ctx.fillStyle=k===i?color:dim; ctx.fill(); } },
     shade(y0,y1,a0,a1){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');ctx.fillStyle=g;ctx.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0));}
   };
+  /* "Save the frame only": no photo pixels, so the photo window stays see-through. photoAspect still reads the photo, so the
+     window is the same size as in the story */
+  if(framePass){ h.photo=()=>{}; h.backdrop=()=>{}; }
   return h;
 }
 /* small icons drawn on the canvas in a size×size box: 'pin' (map pin), 'insta' (Instagram) */
@@ -813,8 +817,8 @@ async function tool(cfg){
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
-    <div class="status" id="status" role="status" aria-live="polite"></div>
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
+    <div class="status" id="status" role="status" aria-live="polite"></div>
   </div></section>
   </form>
   <nav class="bar" id="bar" aria-label="Editor">
@@ -1769,7 +1773,7 @@ async function tool(cfg){
     const c=document.createElement('canvas'); c.width=Math.round(W*K); c.height=Math.round(H*K);
     const ctx=c.getContext('2d'); if(!ctx) return null;
     try{
-      withPage(pg,()=>draw(ctx,false,K));
+      framePass=!withPhotos; try{ withPage(pg,()=>draw(ctx,false,K)); } finally{ framePass=false; }
       if(withPhotos){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); }
       if(mid) mid();
       const b=await new Promise(r=>c.toBlob(r,'image/png'));
@@ -2150,7 +2154,7 @@ async function home(){
   const libCam=(id,t)=>`<label class="row-cam lib-cam" title="${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}"><span class="sr-only">${esc(t.title)} from ${t.multi||t.queue?'photos':'a photo'}</span>${ICON.camera}${quickInput(id,t)}</label>`;
   const libRow=(id,t,pinned,i,n)=>`<div class="lib-row${pinned?' pinned':''}" data-id="${id}"><a class="lib-open" href="${rowHref(id)}"><span class="tthumb">${thumbImg0(id)}</span><span class="ttxt"><b>${esc(t.title)}${waitTag(id)}</b><span>${esc(t.blurb)}</span></span></a>${t.quick&&!pinned?libCam(id,t):''}${pinBtn(id)}${pinned?`<button type="button" class="drag-h" data-drag="${id}" aria-label="Move ${esc(t.title)}: place ${i+1} of ${n}. Drag, or use the arrow keys." aria-describedby="libPinHint">${ICON.grip}</button>`:''}</div>`;
   function libHtml(){ const pins=getPins(); let last=null, h='';
-    if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4><p class="lib-hint" id="libPinHint">${pins.length>1?'Press and drag the dots on the right to change the order.':'Pin more tools to put them in your order.'}</p><div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
+    if(pins.length) h+=`<h4 class="tgroup" id="libPinH">On your home</h4>${pins.length>1?'<p class="lib-hint" id="libPinHint">Press and drag the dots on the right to change the order.</p>':''}<div class="lib-pins" role="group" aria-labelledby="libPinH">${pins.map((id,i)=>libRow(id,TOOLS[id],true,i,pins.length)).join('')}</div>`;
     Object.entries(TOOLS).filter(([id])=>!pins.includes(id)).forEach(([id,t])=>{ if(t.group!==last&&TOOL_GROUPS[last=t.group]) h+=`<h4 class="tgroup">${esc(TOOL_GROUPS[t.group])}</h4>`; h+=libRow(id,t,false); });
     return h; }
   /* redraw the open sheet; the star you tapped (or the handle you moved) keeps focus, the star does its little pop */
@@ -2161,7 +2165,7 @@ async function home(){
     if(focusSel) box.querySelector(focusSel)?.focus({preventScroll:true}); }
   function pinsChanged(){ haptic('tick'); paintTools(); paintToolsView(); if(window.StudioSearch) StudioSearch.refresh(); }
   function openLibrary(){
-    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini solid" id="libDone">Done</button></div><p class="small">Tap the star to pin a tool to your home screen. Pins stay on this phone.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
+    const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini" id="libDone">Done</button></div><p class="small">Tap a star to pin a tool to your home on this ${devWord()}.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
     const list=d.querySelector('.lib-list');
     d.querySelector('#libDone').onclick=()=>d.close();
     list.addEventListener('click',e=>{ const b=e.target.closest('[data-pin]'); if(b) togglePin(b.dataset.pin); });
