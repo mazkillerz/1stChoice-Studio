@@ -5,6 +5,10 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 44 | 1.33.0 | 5 (flip 72/0 incl. old designs pixel-identical; emoji-stickers 32/0 with a held-back file proving Save waits) | 5 (parallel; fit 1.31's loader on the first try after one lead note) | 0 | pass | Name the globals another session reads before changing how a file loads |
+| 43 | 1.32.0 | 5 (continue-clear 32/0 new; saved-find 65/0, alltools-cam 89/0) | 5 (first of the round to finish, ~12 min) | 0 | pass | Propose Arabic words in the notes and leave brand.js alone until the owner approves |
+| 42 | 1.31.0 | 5 (create-stickers 56/0; found two Create bugs by tapping through for the before shots) | 5 (parallel) | 0 | pass | Check new tap areas in the Add sheet at 360px by eye too |
+| 41 | 1.30.0 | 5 (full sweep 65/65 green, 3252 checks; contrast + tapscan clean; simplify30 27/0 and fails 16 on main; two flaky suites fixed) | 5 (cuts shipped while the main baseline ran in the background) | 0 | pass | Grep every place that draws a control when a rule about it lands (hub dialogs missed the quiet Done for 15 versions) |
 | 40 | 1.29.0 | 5 (backgrounds 66/0, Plain proven pixel-identical against the base; `--changed` 22 suites green) | 5 (one parallel session, done in ~25 min) | 0 | 35/35 pass | Check that a save flow needs a real photo before writing the save test |
 | 39 | 1.28.0 | 4 (new suite emoji-stickers 23/0; stickers 72/0 after updating it for the new tiles; `--changed` 45 suites green except stickers, fixed and rerun with the tool-page suites) | 5 (both items in one pass; suite by a sonnet helper while shots and notes went on) | 0 | 35/35 pass | When a sheet grows, check it on a computer too: the taller sticker card opened below the fold there |
 | 38 | 1.27.0 | 4 (new suite saved-find; video-polish/timeline rerun on the new rows; taste) | 5 (both items in one pass; suite by a sonnet helper while notes went on) | 0 | see release | Check a global input rule before styling a new input: `input[type=search]` + the global focus ring gave a double ring at first |
@@ -37,6 +41,14 @@ What worked, what failed, and process tweaks. Newest session first.
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
 
+
+
+## Round 1.29.0–1.33.0 (30 Oct 2026, lead)
+- Four sessions at once + the Simplify one started after 1.29.0 shipped: no usage pause (the 5-hour limit showed a warning near the end). Wave 1 finished in 12–32 min; 1.30.0's full sweep took ~80 min and set the pace.
+- Test-merging the finished branches on top of `main` while 1.30.0 ran meant the final release was mechanical: one predicted one-line conflict (TOOLS rows: 1.30 blurbs + 1.32 `quick`), resolved by a script prepared in advance.
+- Passing one session's contract to another (1.31's `CR.stickersReady()` globals → 1.33's lazy loader) before either finished avoided the only real cross-session risk.
+- Never `pkill -f http-server` from a shell whose command line contains the same words: it killed the release shell once (skill tip, still easy to forget).
+- A session that sends "done" before reading the lead's answer to its own question: fold the answer in at merge, don't wait.
 
 ## 1.28.0 (session 39, Mazoon: emoji stickers + 3 + 2 rows)
 - Reusing the Highlight emoji list as stickers needed only an `emoji:true` flag: drawShape passes no colour (null) for 'Original', so every other sticker path stayed the same.

@@ -33,3 +33,9 @@ One **lead** session coordinates five version sessions. Each version session bui
 - Lead: `session_01Y65H7Wmzfj9M4oAbDh9sET`
 - 1.29.0: `session_01Y65H7WzL5YdoApJNDYTj9v` · 1.31.0: `session_01Y65H7ZP6r8rjjso4xhDTcp` · 1.32.0: `session_01Y65H7XiS8KZ2fMtsvNporN` · 1.33.0: `session_01Y65H7a1cJugwf4wixkBHS1`
 - 1.30.0: `session_01Y65H7Wk1rAt3UKJQ1nzKFM` (started 19:52 from main after 1.29.0 shipped)
+
+
+## Result
+- 1.29.0 released at 19:51 on its own (22 suites green). 1.30.0 started from that `main`; 1.31–1.33 finished during wave 1 and were test-merged on top of `main` (46 suites, green after one known flake rerun).
+- 1.30.0 (full sweep 65/65 on its branch) → 1.31.0 → 1.32.0 → 1.33.0 merged in order on the lead branch, each with its own version commit, then one combined `run.mjs --changed` before merging to `main`. One conflict, the TOOLS rows (1.30 blurbs + 1.32 `quick`), kept both.
+- Waiting for the owner: Arabic day words for Saved search (اليوم / أمس / هالأسبوع, backlog #43); English tool descriptions from 1.30.0 (in its pending note).
