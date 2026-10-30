@@ -16,7 +16,7 @@ import fs from 'fs';
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit']],
-  [/^tools\/(?!video\.)|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles','brandkit']],
+  [/^tools\/(?!video)|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles','brandkit']],
   [/^assets\/stickers\.js$/,['stickers','copystyle']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit']],
   [/assets\/search\./,['search','polish71-search','create-search']],
@@ -32,7 +32,8 @@ const MAP=[
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
   [/assets\/batch\.js/,['batch','batch-saved']],
   [/assets\/render\.js/,['batch-saved','draft-pictures']],
-  [/tools\/video\./,['video']],
+  [/tools\/video/,['video','video-timeline']],
+  [/assets\/reel-project\.js/,['video-project','video','video-timeline']],
   [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene']],
   [/assets\/reel-audio\.js/,['video','reel-audio']],
   [/assets\/reel-export\.js/,['video','reel-export']],

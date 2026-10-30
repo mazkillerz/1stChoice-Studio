@@ -1,73 +1,150 @@
-/* Video editor: opens a coded reel from the brand kit (brands/<brand>/reels/<id>/), lets you change the words and the sound mix,
-   plays it exactly as it will be saved, and makes the MP4 (assets/reel*.js do the drawing, the mixing and the encoding).
-   Brand-agnostic: reels, words and phrases come from the brand kit. A saved video is a normal Saved design (tool 'video')
-   that holds settings only (docs/reels.md). */
+/* Video editor, core: a project of clips (your videos and photos, or a reel template), text layers and sound tracks.
+   This file: state, opening/new/saved projects, the preview (draw, pick and drag text), playing, saving, the debug panel.
+   video-tl.js = the timeline; video-ui.js = the bottom bar, the context bar and every sheet. All share window.VD.
+   Brand-agnostic: reels, words and colours come from the brand kit. A saved video is a normal Saved design (tool 'video') that holds
+   settings only (docs/reels.md, "Projects"); the files you add stay on this device (assets/reel-project.js, IndexedDB). */
 (function(){
 const L=Studio.lab, esc=L.esc, $=id=>document.getElementById(id);
 const TOOL='video', SAFE_KEY='studio:video:safe';
 const q=new URLSearchParams(location.search);
-const st={B:null,reel:null,M:null,mix:null,audioErr:'',texts:{},orig:{},settings:{mix:{},duck:true},t:0,playing:false,h:null,off:0,p0:0,t0:0,raf:0,
-  solo:null,design:null,base:'',clean:'',ready:false,busy:false,leaving:false,tab:'text',dragging:false,sup:null,safe:false,last:0};
-const clone=o=>JSON.parse(JSON.stringify(o));
+const V=window.VD={L,esc,$,q,TOOL};
+const st=V.st={B:null,P:null,R:null,reels:{},reelP:{},mixP:{},sel:null,t:0,playing:false,h:null,p0:0,t0:0,raf:0,pps:100,pad:195,
+  design:null,base:'',clean:'',ready:false,busy:false,leaving:false,sup:null,safe:false,last:0,sheet:null,drawMs:0,drawErr:'',loadErr:'',audioErr:'',log:[],solo:null};
+const clone=V.clone=o=>JSON.parse(JSON.stringify(o));
 const svg=(d,s,x)=>`<svg width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${x||''}>${d}</svg>`;
-const I={
+const I=V.I={
   x:svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',18),
   warn:svg('<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',18),
   vol:svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/>',22),
   mute:svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>',22),
-  play:svg('<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/>',20,' fill="currentColor"')
+  play:svg('<path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/>',20,' fill="currentColor"'),
+  plus:svg('<path d="M5 12h14"/><path d="M12 5v14"/>',22),
+  video:svg('<path d="m16 13 5.2 3.1a.5.5 0 0 0 .8-.4V8.3a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>',14),
+  image:svg('<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',14),
+  reel:svg('<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',14),
+  music:svg('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',22),
+  type:svg('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',22),
+  scissors:svg('<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',22),
+  trash:svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',22),
+  left:svg('<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',22),
+  right:svg('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',22),
+  copy:svg('<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',22),
+  pencil:svg('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',22),
+  mix:svg('<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',22),
+  fade:svg('<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>',22),
+  zoom:svg('<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',22),
+  clock:svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',22),
+  upload:svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',22)
 };
-const fmt=s=>{ s=Math.max(0,s||0); const m=Math.floor(s/60), r=Math.floor((s-m*60)*10+1e-6)/10; return m+':'+(r<10?'0':'')+r.toFixed(1); };
+const fmt=V.fmt=s=>{ s=Math.max(0,s||0); const m=Math.floor(s/60), r=Math.floor((s-m*60)*10+1e-6)/10; return m+':'+(r<10?'0':'')+r.toFixed(1); };
+const sec=V.sec=s=>(Math.round((s||0)*10)/10).toFixed(1)+' s';
 const isTouch=()=>matchMedia('(pointer:coarse)').matches;
 const prog01=p=>{ if(typeof p==='number') return Math.max(0,Math.min(1,p>1?p/100:p)); if(p&&p.total) return Math.max(0,Math.min(1,p.loaded/p.total)); return 0; };
 const slug=s=>String(s||'').trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
-const nameNow=()=>$('vdName').value.trim()||(st.M?st.M.title:'')||'Video';
-const cur=()=>JSON.stringify([st.texts,st.settings]);
-const dur=()=>st.M?st.M.duration:10;
-const fps=()=>st.M?st.M.fps:30;
-const cfg=id=>st.settings.mix[id]||(st.settings.mix[id]={db:0,mute:false});
-const rowDb=id=>{ const c=st.settings.mix[id]; return c&&typeof c.db==='number'?c.db:0; };
-const rowMute=id=>!!(st.settings.mix[id]&&st.settings.mix[id].mute);
-const dbText=db=>db===0?'0 dB':(db>0?'+'+db:'−'+Math.abs(db))+' dB';
+const clamp=V.clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+V.devWord=()=>L.devWord();
+
+/* ---------- the project's numbers (from the recipe, so they are right before the engine has caught up) ---------- */
+const clipLen=V.clipLen=c=>c.kind==='photo'?(+c.dur||0):Math.max(0,(+c.out||0)-(+c.in||0));
+V.lay=()=>{ let t=0; return ((st.R&&st.R.clips)||[]).map((c,i)=>{ const s=t; t+=clipLen(c); return {c,i,start:s,end:t}; }); };
+const dur=V.dur=()=>V.lay().reduce((a,b)=>b.end,0);
+const fps=V.fps=()=>(st.P&&st.P.fps)||(st.R&&st.R.fps)||30;
+V.clipAt=t=>{ const l=V.lay(); if(!l.length) return null; return l.find(x=>t>=x.start&&t<x.end)||(t>=l[l.length-1].end?l[l.length-1]:l[0]); };
+V.byId=(list,id)=>(list||[]).find(x=>x.id===id);
+V.uid=(prefix)=>{ const R=st.R, all=[...R.clips,...R.texts,...R.audio].map(x=>x.id); let n=all.length+1; while(all.includes(prefix+n)) n++; return prefix+n; };
+V.empty=()=>!st.R||!st.R.clips.length;
+const cur=V.cur=()=>JSON.stringify(st.R);
+const nameNow=V.nameNow=()=>$('vdName').value.trim()||st.defName||'Video';
+V.hasOwnFiles=()=>!!(st.R&&(st.R.clips.some(c=>c.kind==='video'||c.kind==='photo')||st.R.audio.length));
+V.missing=()=>{ try{ return st.P?new Set(st.P.missing()||[]):new Set(); }catch(_){ return new Set(); } };
+
+/* ---------- reels of the brand kit: loaded on demand, kept by id ---------- */
+V.reelList=()=>(st.B&&st.B.reels)||[];
+V.ensureReel=id=>st.reelP[id]||(st.reelP[id]=(async()=>{
+  const base=st.B.base+'reels/'+id+'/', reel=await StudioReel.load(base); return st.reels[id]={id,base,reel,M:reel.M,mix:null};
+})().catch(err=>{ delete st.reelP[id]; throw err; }));
+V.ensureMix=async id=>{ const r=await V.ensureReel(id); if(r.mix||r.mixErr) return r;
+  if(!st.mixP[id]) st.mixP[id]=(window.StudioReelAudio?StudioReelAudio.load(r.M,r.base):Promise.reject(new Error('no audio engine')))
+    .then(m=>{ r.mix=m; return r; },err=>{ console.warn('sound failed',err); r.mixErr=String(err&&err.message||err).slice(0,80); return r; });
+  return st.mixP[id]; };
+V.reelInfo=async id=>{ try{ const j=await (await fetch(st.B.base+'reels/'+id+'/reel.json')).json(); return {id,title:j.title||id,sub:j.sub||'',dur:j.duration}; }catch(_){ return {id,title:id,sub:'',dur:0}; } };
+
+/* ---------- logging for the debug panel ---------- */
+V.log=(k,v)=>{ st.log.push(k+': '+v); if(st.log.length>40) st.log.shift(); };
+addEventListener('error',e=>V.log('error',e.message));
+addEventListener('unhandledrejection',e=>V.log('promise',String(e.reason&&e.reason.message||e.reason)));
 
 /* ---------- stage: preview size, drawing ---------- */
-function layout(){
+function stageLayout(){
   const wrap=$('vdWrap'), cs=getComputedStyle(wrap), px=v=>parseFloat(v)||0;
   const aw=wrap.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight), ah=wrap.clientHeight-px(cs.paddingTop)-px(cs.paddingBottom);
-  const W=st.M?st.M.size[0]:1080, H=st.M?st.M.size[1]:1920, asp=W/H;
+  const W=(st.P&&st.P.W)||1080, H=(st.P&&st.P.H)||1920, asp=W/H;
   if(aw<=0||ah<=0) return;
   const w=Math.max(60,Math.floor(Math.min(aw,ah*asp))), h=Math.round(w/asp), pv=$('vdPv');
   pv.style.width=w+'px'; pv.style.height=h+'px';
   const cv=$('vdCv'), dpr=Math.min(3,window.devicePixelRatio||1), cw=Math.min(W,Math.round(w*dpr)), ch=Math.round(cw/asp);
   if(cv.width!==cw||cv.height!==ch){ cv.width=cw; cv.height=ch; }
-  fitLabels(); drawNow();
+  drawNow(); placeSel();
 }
+V.stageLayout=stageLayout;
+function showErr(msg){ $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErrTxt').textContent=msg; $('vdErr').dataset.kind=''; }
+function showDrawErr(err){
+  const m=String(err&&err.message||err); st.drawErr=m; V.log('draw',m);
+  if(!st.warned){ st.warned=true; console.error('draw failed',err); }
+  $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErr').dataset.kind='draw';
+  $('vdErrTxt').textContent='The video could not be drawn on this '+L.devWord()+'. ('+m+')';
+}
+V.fail=(err,what)=>{ const m=String(err&&err.message||err); console.error(what||'error',err); V.log(what||'error',m); return m; };
 function drawNow(){
-  if(!st.reel) return;
-  try{ st.reel.draw($('vdCv').getContext('2d'),Math.min(st.t,dur()-0.5/fps()),{texts:st.texts}); }
-  catch(err){ if(!st.drawErr){ st.drawErr=true; console.error('draw failed',err); showError('The reel could not be drawn on this '+L.devWord()+'. ('+(err&&err.message||err)+')'); } }
+  const cv=$('vdCv'), cx=cv.getContext('2d');
+  if(!st.P||V.empty()){ cx.setTransform(1,0,0,1,0,0); cx.clearRect(0,0,cv.width,cv.height); return; }
+  const t0=performance.now();
+  try{ st.P.draw(cx,Math.min(st.t,Math.max(0,dur()-0.5/fps())),{preview:true}); st.drawMs=performance.now()-t0;
+    if(st.drawErr){ st.drawErr=''; const e=$('vdErr'); if(e.dataset.kind==='draw') e.hidden=true; } }
+  catch(err){ showDrawErr(err); }
+}
+V.drawNow=drawNow;
+let prepTok=0;
+function seekPaint(){
+  drawNow();
+  if(!st.P||V.empty()||st.playing) return;
+  const tok=++prepTok;
+  Promise.resolve().then(()=>st.P.prepare(st.t)).then(()=>{ if(tok===prepTok&&!st.playing) drawNow(); },err=>{ if(tok===prepTok) showDrawErr(err); });
 }
 function paint(){
-  drawNow();
   const t=st.t, d=dur();
-  $('vdNow').textContent=fmt(t); $('vdHead').style.left=(t/d*100)+'%';
-  const tr=$('vdTrack'), now=performance.now();
-  if(!st.playing||now-st.last>400){ st.last=now; tr.setAttribute('aria-valuenow',t.toFixed(2)); tr.setAttribute('aria-valuetext',t.toFixed(1)+' seconds of '+d.toFixed(0)); }
+  if(st.playing) drawNow(); else seekPaint();
+  $('vdNow').textContent=fmt(t); placeSel();
+  const sc=$('vtScroll'), now=performance.now();
+  if(!st.playing||now-st.last>400){ st.last=now; sc.setAttribute('aria-valuenow',t.toFixed(2)); sc.setAttribute('aria-valuetext',t.toFixed(1)+' seconds of '+d.toFixed(0)); }
 }
-function setT(t,keepPlaying){
-  t=Math.max(0,Math.min(dur(),t)); const was=st.playing;
-  if(was&&!keepPlaying) pause();
-  st.t=t; paint();
-  if(was&&keepPlaying){ stopAudio(); startClock(t); }
+V.paint=paint;
+function setT(t,o){
+  o=o||{}; t=clamp(t,0,dur()); const was=st.playing;
+  if(was&&!o.keep) pause();
+  st.t=t; if(!o.noScroll&&V.scrollTo) V.scrollTo(t);
+  paint();
+  if(was&&o.keep){ stopAudio(); startClock(t); }
 }
+V.setT=setT;
+V.scrub=t=>{ if(st.playing) pause(); stopSolo(); st.t=clamp(t,0,dur()); paint(); };
+
+/* ---------- empty state ---------- */
+function syncEmpty(){
+  const e=V.empty(); $('vdEmpty').hidden=!e||!st.ready;
+  $('vdSave').disabled=!st.ready||e; $('vdPlay').disabled=!st.ready||e;
+  $('vdMain').classList.toggle('is-empty',e);
+}
+V.syncEmpty=syncEmpty;
 
 /* ---------- playback: the audio clock is the master when there is audio ---------- */
-const allMuted=()=>!st.mix||st.mix.rows.every(r=>rowMute(r.id));
 function stopAudio(){ if(st.h){ try{ st.h.stop(); }catch(_){} st.h=null; } }
 function stopSolo(){ if(st.solo){ try{ st.solo.stop(); }catch(_){} st.solo=null; } document.querySelectorAll('.vd-solo.on').forEach(b=>b.classList.remove('on')); }
+V.stopSolo=stopSolo;
 function startClock(from){
-  st.t0=from; st.p0=performance.now(); st.off=0; st.h=null;
-  if(st.mix&&!allMuted()){ try{ st.h=st.mix.play(clone(st.settings),from); }catch(err){ console.warn('sound failed',err); st.h=null; } }
+  st.t0=from; st.p0=performance.now(); st.h=null;
+  try{ st.h=st.P.play(from)||null; }catch(err){ V.fail(err,'sound'); st.h=null; }
 }
 function curT(){
   if(st.h&&st.h.playing){ const p=st.h.position(); if(Number.isFinite(p)) return p; }
@@ -80,54 +157,32 @@ function setPlayUI(){
 }
 function tickFrame(){
   if(!st.playing) return;
-  let t=curT();
-  if(t>=dur()){ st.t=dur(); pause(); paint(); return; }
-  st.t=t; paint(); st.raf=requestAnimationFrame(tickFrame);
+  const t=curT();
+  if(t>=dur()){ st.t=dur(); pause(); if(V.scrollTo) V.scrollTo(st.t); paint(); return; }
+  st.t=t; try{ st.P.syncPreview(t,true); }catch(_){}
+  if(V.scrollTo) V.scrollTo(t);
+  paint(); st.raf=requestAnimationFrame(tickFrame);
 }
 function play(){
-  if(!st.ready||st.busy) return;
+  if(!st.ready||st.busy||V.empty()) return;
   stopSolo();
   if(st.t>=dur()-0.5/fps()) st.t=0;
-  st.playing=true; startClock(st.t); setPlayUI(); cancelAnimationFrame(st.raf); st.raf=requestAnimationFrame(tickFrame);
+  st.playing=true; startClock(st.t); setPlayUI(); cancelAnimationFrame(st.raf);
+  Promise.resolve().then(()=>st.P.prepare(st.t)).catch(()=>{}).then(()=>{ if(st.playing){ st.raf=requestAnimationFrame(tickFrame); } });
 }
 function pause(){
   if(!st.playing) return;
   st.playing=false; cancelAnimationFrame(st.raf); stopAudio(); setPlayUI();
+  try{ st.P.syncPreview(st.t,false); }catch(_){}
+  if(V.afterPause) V.afterPause();
 }
 const toggle=()=>{ st.playing?pause():play(); };
+V.play=play; V.pause=pause; V.toggle=toggle; V.stopAudio=stopAudio;
+let restartT=0;
+V.restartPlay=()=>{ clearTimeout(restartT); restartT=setTimeout(()=>{ if(st.playing){ const t=curT(); stopAudio(); startClock(t); } },120); };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ pause(); stopSolo(); } });
-
-/* ---------- timeline ---------- */
-function buildTrack(){
-  const d=dur();
-  $('vdSegs').innerHTML=(st.M.scenes||[]).map(s=>`<div class="vd-seg" title="${esc(s.label)}" style="left:${s.start/d*100}%;width:${(s.end-s.start)/d*100}%"><span>${esc(s.label)}</span></div>`).join('');
-  $('vdDur').textContent=fmt(d); $('vdTrack').setAttribute('aria-valuemax',String(d));
-  renderMarks(); fitLabels();
-}
-function fitLabels(){
-  const tr=$('vdTrack'), wide=tr.clientWidth>=480;
-  tr.querySelectorAll('.vd-seg').forEach(seg=>{ const sp=seg.firstElementChild; if(!sp) return; sp.hidden=false; sp.hidden=!wide||sp.scrollWidth>seg.clientWidth-8; });
-}
-function renderMarks(){
-  const m=$('vdMarks'); if(!st.mix){ m.hidden=true; return; }
-  m.hidden=st.tab!=='sound'; const d=dur();
-  m.innerHTML=st.mix.rows.filter(r=>r.kind!=='music').flatMap(r=>(r.hits||[]).map(h=>`<i class="${rowMute(r.id)?'off':''}" style="left:${h/d*100}%"></i>`)).join('');
-}
-(function(){
-  const tr=$('vdTrack'); let id=null, was=false;
-  const at=e=>{ const r=tr.getBoundingClientRect(); const f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); return Math.round(f*dur()*fps())/fps(); };
-  tr.addEventListener('pointerdown',e=>{ if(!st.ready||e.button>0) return; id=e.pointerId; tr.setPointerCapture(id); was=st.playing; if(was) pause(); stopSolo(); st.dragging=true; st.t=at(e); paint(); e.preventDefault(); tr.focus({preventScroll:true}); });
-  tr.addEventListener('pointermove',e=>{ if(id!==e.pointerId) return; st.t=at(e); paint(); });
-  const up=e=>{ if(id!==e.pointerId) return; id=null; st.dragging=false; if(was){ was=false; play(); } };
-  tr.addEventListener('pointerup',up); tr.addEventListener('pointercancel',up);
-  tr.addEventListener('keydown',e=>{ if(!st.ready) return; let d=0;
-    if(e.key==='ArrowRight'||e.key==='ArrowUp') d=1; else if(e.key==='ArrowLeft'||e.key==='ArrowDown') d=-1;
-    if(d){ e.preventDefault(); const step=e.shiftKey?1:1/fps(); setT(Math.round((st.t+d*step)*fps())/fps(),true); return; }
-    if(e.key==='Home'){ e.preventDefault(); setT(0,true); } else if(e.key==='End'){ e.preventDefault(); setT(dur()); }
-    else if(e.key===' '||e.code==='Space'||e.key==='Enter'){ e.preventDefault(); toggle(); } });
-})();
-document.addEventListener('keydown',e=>{ if((e.key===' '||e.code==='Space')&&!e.target.closest('input,textarea,button,select,a,[role=tab],#vdTrack')&&!document.querySelector('dialog[open]')&&st.ready){ e.preventDefault(); toggle(); } });
 $('vdPlay').addEventListener('click',()=>{ L.haptic&&L.haptic('tick'); toggle(); });
+document.addEventListener('keydown',e=>{ if((e.key===' '||e.code==='Space')&&!e.target.closest('input,textarea,button,select,a,label,[role=tab],#vtScroll')&&!document.querySelector('dialog[open]')&&st.ready){ e.preventDefault(); toggle(); } });
 
 /* ---------- Safe zones: Instagram's covered areas, only ever drawn on top in the editor ---------- */
 function setSafe(on,keep){
@@ -136,95 +191,102 @@ function setSafe(on,keep){
 }
 $('vdSafeBtn').addEventListener('click',()=>setSafe(!st.safe));
 
-/* ---------- tabs ---------- */
-function switchTab(name,focus){
-  st.tab=name;
-  document.querySelectorAll('.vd-tab').forEach(b=>{ const on=b.dataset.tab===name; b.setAttribute('aria-selected',String(on)); b.tabIndex=on?0:-1; if(on&&focus) b.focus(); });
-  $('paneText').hidden=name!=='text'; $('paneSound').hidden=name!=='sound';
-  if(name!=='sound') stopSolo();
-  renderMarks();
-}
-$('vdTabs').addEventListener('click',e=>{ const b=e.target.closest('.vd-tab'); if(b) switchTab(b.dataset.tab); });
-$('vdTabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return; e.preventDefault(); switchTab(st.tab==='text'?'sound':'text',true); });
-
-/* ---------- Text tab ---------- */
-const sid=id=>String(id).replace(/[^\w-]/g,'_');
-function buildText(){
-  $('paneText').innerHTML=st.M.texts.map(s=>`<div class="vd-slot" data-id="${esc(s.id)}">
-    <div class="vd-lblrow"><label for="vdT_${sid(s.id)}">${esc(s.label)}</label><span class="small">Appears at <bdi>${fmt(s.in!=null?s.in:s.show)}</bdi></span></div>
-    <div class="vd-field"><input id="vdT_${sid(s.id)}" type="text" dir="auto" maxlength="60" enterkeyhint="done" autocomplete="off" spellcheck="false" value="${esc(st.texts[s.id])}"><button type="button" class="vd-clear" data-clear aria-label="Clear ${esc(s.label)}">${I.x}</button></div>
-    <div class="vd-warn" data-warn role="status"></div>
-    <p class="small vd-hint" data-hint dir="auto"></p>
-    <div class="vd-links"><button type="button" class="link" data-orig>Use the original words</button><button type="button" class="link" data-phrase>Pick a phrase</button></div>
-  </div>`).join('');
-  st.M.texts.forEach(s=>updateSlot(s.id));
-}
-function updateSlot(id){
-  const el=document.querySelector(`.vd-slot[data-id="${CSS.escape(id)}"]`); if(!el) return;
-  const slot=st.M.texts.find(s=>s.id===id), v=st.texts[id]||'', info=(st.reel.textInfo(st.texts)||{})[id]||{};
-  el.querySelector('[data-warn]').innerHTML=info.warn?I.warn+'<span>Too long for its spot: the words get smaller to fit. Shorten them to keep them big.</span>':'';
-  const inp=el.querySelector('input'); inp.parentElement.dataset.d=inp.matches(':dir(rtl)')?'rtl':'ltr';
-  el.querySelector('[data-clear]').hidden=!v;
-  el.querySelector('[data-orig]').hidden=v===slot.value;
-  el.querySelector('[data-hint]').textContent=v?'':'Nothing shows here while this is empty.';
-}
-const paneText=$('paneText');
-paneText.addEventListener('input',e=>{ const inp=e.target.closest('input'); if(!inp) return; const id=inp.closest('.vd-slot').dataset.id; st.texts[id]=inp.value; updateSlot(id); changed(); });
-paneText.addEventListener('focusin',e=>{ const inp=e.target.closest('input'); if(!inp) return; const slot=st.M.texts.find(s=>s.id===inp.closest('.vd-slot').dataset.id); if(slot){ pause(); setT(slot.show!=null?slot.show:slot.in||0); } });
-paneText.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.matches('input')){ e.preventDefault(); e.target.blur(); } });
-function setWords(id,v){ st.texts[id]=v; const inp=document.getElementById('vdT_'+sid(id)); if(inp) inp.value=v; updateSlot(id); changed(); }
-paneText.addEventListener('click',e=>{
-  const slotEl=e.target.closest('.vd-slot'); if(!slotEl) return; const id=slotEl.dataset.id, slot=st.M.texts.find(s=>s.id===id);
-  if(e.target.closest('[data-clear]')){ setWords(id,''); slotEl.querySelector('input').focus(); }
-  else if(e.target.closest('[data-orig]')){ setWords(id,slot.value); pause(); setT(slot.show!=null?slot.show:0); }
-  else if(e.target.closest('[data-phrase]')) pickPhrase(id,slot); });
-function pickPhrase(id,slot){
-  pause();
-  const list=[{v:slot.value,tag:'Original'}], seen=new Set([slot.value]);
-  ((st.B.phrases&&st.B.phrases.headlines)||[]).forEach(p=>{ if(!seen.has(p)){ seen.add(p); list.push({v:p}); } });
-  const d=L.dialog(`<div class="dlg-body"><h3>Pick a phrase</h3><div class="vd-phr">${list.map((p,i)=>`<button type="button" data-i="${i}"><span dir="auto">${esc(p.v)}</span>${p.tag?`<small>${esc(p.tag)}</small>`:''}</button>`).join('')}</div>
-    <div class="dlg-actions"><button type="button" class="mini" id="phX">Close</button></div></div>`);
-  d.tabIndex=-1; d.querySelector('#phX').onclick=()=>d.close();
-  d.querySelector('.vd-phr').onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; d.close(); setWords(id,list[+b.dataset.i].v); setT(slot.show!=null?slot.show:0); };
-}
-
-/* ---------- Sound tab ---------- */
-function buildSound(){
-  const p=$('paneSound'), credits=st.M.credits?`<p class="vd-credits" dir="auto">${esc(st.M.credits)}</p>`:'';
-  if(!st.mix){ p.innerHTML=`<p class="small vd-nosound" role="status">The sounds could not be loaded${st.audioErr?' ('+esc(st.audioErr)+')':''}, so the preview is silent and a saved video would have no sound. Check your connection and reload this page.</p>${credits}`; return; }
-  const rows=[...st.mix.rows].sort((a,b)=>(a.kind==='music'?0:1)-(b.kind==='music'?0:1));
-  p.innerHTML=`<label class="vd-duck"><span class="txt"><b>Duck the music under big sounds</b><small>The music dips when the big sounds hit</small></span><input type="checkbox" class="switch" role="switch" id="vdDuck"${st.settings.duck?' checked':''}></label>
-    <div class="vd-rows">${rows.map(r=>{ const n=(r.hits||[]).length, db=rowDb(r.id), m=rowMute(r.id);
-      return `<div class="vd-row${m?' muted':''}" data-id="${esc(r.id)}">
-      <div class="vd-r1"><button type="button" class="vd-name-btn" data-jump title="Go to this sound"><span class="n">${esc(r.label)}</span>${n?`<span class="at"><bdi>${fmt(Math.min(...r.hits))}</bdi>${n>1?' ×'+n:''}</span>`:''}</button><span class="vd-val"><bdi data-val>${m?'Muted':dbText(db)}</bdi></span></div>
-      <div class="vd-r2"><button type="button" class="icon-btn vd-mute" data-mute aria-pressed="${m}" aria-label="Mute ${esc(r.label)}">${m?I.mute:I.vol}</button>
-        <input type="range" min="-24" max="6" step="1" value="${db}" data-db aria-label="${esc(r.label)} volume" aria-valuetext="${dbText(db)}"${m?' disabled':''}>
-        <button type="button" class="icon-btn vd-solo" data-solo aria-label="Play ${esc(r.label)} on its own">${I.play}</button></div></div>`; }).join('')}</div>
-    <div class="vd-foot"><button type="button" class="link" id="vdReset">Reset to original mix</button>${credits}</div>`;
-  refreshReset();
-}
-function refreshReset(){ const b=document.getElementById('vdReset'); if(b&&st.mix) b.disabled=st.mix.isDefault(st.settings); }
-let restartT=0;
-function soundChanged(){ changed(); clearTimeout(restartT); restartT=setTimeout(()=>{ if(st.playing){ const t=st.t; stopAudio(); startClock(t); } },120); }
-const paneSound=$('paneSound');
-paneSound.addEventListener('change',e=>{ if(e.target.id==='vdDuck'){ st.settings.duck=e.target.checked; soundChanged(); } });
-paneSound.addEventListener('input',e=>{ const r=e.target.closest('[data-db]'); if(!r) return; const row=r.closest('.vd-row'), id=row.dataset.id, v=+r.value;
-  cfg(id).db=v; r.setAttribute('aria-valuetext',dbText(v)); row.querySelector('[data-val]').textContent=dbText(v); soundChanged(); });
-paneSound.addEventListener('click',e=>{
-  const row=e.target.closest('.vd-row');
-  if(row){ const id=row.dataset.id, r=st.mix.rows.find(x=>x.id===id);
-    if(e.target.closest('[data-mute]')){ const c=cfg(id); c.mute=!c.mute; const m=c.mute; row.classList.toggle('muted',m);
-      const b=row.querySelector('[data-mute]'); b.setAttribute('aria-pressed',String(m)); b.innerHTML=m?I.mute:I.vol;
-      row.querySelector('[data-db]').disabled=m; row.querySelector('[data-val]').textContent=m?'Muted':dbText(c.db||0); soundChanged(); }
-    else if(e.target.closest('[data-jump]')){ if(r&&r.hits&&r.hits.length){ pause(); stopSolo(); setT(Math.max(0,Math.min(...r.hits)-0.3)); } }
-    else if(e.target.closest('[data-solo]')){ const b=e.target.closest('[data-solo]'), was=b.classList.contains('on'); pause(); stopSolo();
-      if(!was&&st.mix){ try{ st.solo=st.mix.solo(id,clone(st.settings)); b.classList.add('on'); }catch(err){ console.warn(err); } } }
-    return; }
-  if(e.target.id==='vdReset'&&st.mix){ stopSolo(); st.settings=st.mix.defaults(); buildSound(); soundChanged(); } });
-
-/* ---------- changes, status, leaving ---------- */
+/* ---------- changes: every edit goes through touch() ---------- */
 function syncStatus(){ $('vdStatus').textContent=st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):''; }
-function changed(){ syncStatus(); refreshReset(); renderMarks(); if(!st.playing) paint(); }
+V.syncStatus=syncStatus;
+/* keep text and sound layers inside the video after the clips change */
+V.fitLayers=()=>{ const d=dur(); if(d<=0) return;
+  st.R.texts.forEach(t=>{ if(t.start>d-0.2) t.start=Math.max(0,d-1); t.end=Math.min(Math.max(t.end,t.start+0.2),Math.max(d,t.start+0.2)); if(t.end>d) t.end=d; if(t.end-t.start<0.2) t.start=Math.max(0,t.end-0.2); });
+  st.R.audio.forEach(a=>{ if(a.start>d-0.2){ a.start=Math.max(0,d-Math.min(1,a.out-a.in)); } }); };
+V.touch=function(o){
+  o=o||{}; const P=st.P;
+  if(o.fit) V.fitLayers();
+  if(o.tl!==false&&V.renderTl) V.renderTl();
+  syncEmpty(); $('vdDur').textContent=fmt(dur()); $('vtScroll').setAttribute('aria-valuemax',String(dur()));
+  if(st.t>dur()) st.t=dur();
+  let r; try{ r=P.update(); }catch(err){ const m=V.fail(err,'update'); showDrawErr(new Error(m)); }
+  const fin=()=>{ if(o.tl!==false&&V.renderTl) V.renderTl(); syncStatus(); if(V.renderBar&&o.bar) V.renderBar(); paint(); if(o.restart!==false) V.restartPlay(); };
+  syncStatus(); paint();
+  if(r&&typeof r.then==='function') return r.then(fin,err=>{ const m=V.fail(err,'update'); showDrawErr(new Error(m)); });
+  fin(); return Promise.resolve();
+};
+
+/* ---------- selection: a block on the timeline or a text on the preview ---------- */
+V.select=function(sel,o){
+  o=o||{}; const same=st.sel&&sel&&st.sel.kind===sel.kind&&st.sel.id===sel.id;
+  st.sel=sel||null;
+  if(!same&&!o.keepSheet&&st.sheet) V.closeSheet&&V.closeSheet(true);
+  if(V.renderTl) V.renderTl(); if(V.renderBar) V.renderBar(); placeSel();
+};
+V.selItem=()=>{ const s=st.sel; if(!s) return null; const list=s.kind==='clip'?st.R.clips:s.kind==='text'?st.R.texts:st.R.audio; return V.byId(list,s.id)||null; };
+function placeSel(){
+  const bx=$('vdSelBox'), s=st.sel, tx=s&&s.kind==='text'?V.byId(st.R.texts,s.id):null;
+  if(!tx||st.t<tx.start||st.t>tx.end||V.empty()){ bx.hidden=true; return; }
+  let b=null; try{ b=st.P.textBox(tx.id); }catch(_){}
+  if(!b||!(b.w>0)){ bx.hidden=true; return; }
+  const W=st.P.W||1080, H=st.P.H||1920;
+  bx.hidden=false; bx.style.left=(b.x/W*100)+'%'; bx.style.top=(b.y/H*100)+'%'; bx.style.width=(b.w/W*100)+'%'; bx.style.height=(b.h/H*100)+'%';
+}
+V.placeSel=placeSel;
+
+/* tap a text on the preview to select it, drag to move it (it snaps to the middle), double-tap to edit */
+(function(){
+  const ov=$('vdOver'); let g=null, lastTap={t:0,id:null};
+  const pos=e=>{ const r=$('vdPv').getBoundingClientRect(), W=st.P?st.P.W||1080:1080, H=st.P?st.P.H||1920:1920; return {x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H,k:W/r.width}; };
+  ov.addEventListener('pointerdown',e=>{
+    if(!st.ready||V.empty()||(e.button&&e.button>0)) return;
+    const p=pos(e); let id=null; try{ id=st.P.textAt(p.x,p.y,st.t); }catch(_){}
+    if(!id){ g={none:true,x0:e.clientX,y0:e.clientY,id:e.pointerId}; return; }
+    const tx=V.byId(st.R.texts,id); if(!tx) return;
+    ov.setPointerCapture(e.pointerId); e.preventDefault();
+    if(st.playing) pause();
+    if(!(st.sel&&st.sel.kind==='text'&&st.sel.id===id)) V.select({kind:'text',id},{keepSheet:true});
+    g={id:e.pointerId,tid:id,x0:p.x,y0:p.y,ox:tx.x,oy:tx.y,k:p.k,moved:false};
+  });
+  ov.addEventListener('pointermove',e=>{
+    if(!g||g.none||g.id!==e.pointerId) return;
+    const p=pos(e), tx=V.byId(st.R.texts,g.tid); if(!tx) return;
+    if(!g.moved&&Math.hypot(p.x-g.x0,p.y-g.y0)/g.k<5) return;
+    g.moved=true; let nx=g.ox+(p.x-g.x0), ny=g.oy+(p.y-g.y0), gx=false, gy=false;
+    const W=st.P.W||1080, H=st.P.H||1920, near=8*g.k;
+    if(Math.abs(nx-W/2)<near){ nx=W/2; gx=true; } if(Math.abs(ny-H/2)<near){ ny=H/2; gy=true; }
+    tx.x=Math.round(nx); tx.y=Math.round(ny);
+    $('vdGx').hidden=!gx; $('vdGy').hidden=!gy;
+    V.touch({tl:false,restart:false});
+  });
+  const up=e=>{
+    if(!g||g.id!==e.pointerId) return; const was=g; g=null; $('vdGx').hidden=true; $('vdGy').hidden=true;
+    if(was.none){ if(Math.hypot(e.clientX-was.x0,e.clientY-was.y0)<8&&st.sel&&st.sel.kind==='text') V.select(null); return; }
+    if(was.moved){ V.touch({tl:false}); return; }
+    const now=Date.now(); if(lastTap.id===was.tid&&now-lastTap.t<400){ lastTap={t:0,id:null}; V.openSheet&&V.openSheet('edit'); } else lastTap={t:now,id:was.tid};
+  };
+  ov.addEventListener('pointerup',up); ov.addEventListener('pointercancel',up);
+})();
+
+/* ---------- the name menu ---------- */
+(function(){
+  const box=$('vdMenuBox');
+  const items=()=>[{label:'New video',run:()=>newVideo()},{label:'All saved designs',run:()=>{ if(st.ready&&cur()!==st.clean&&st.design){ leavePrompt(L.ROOT+'index.html#saved'); } else { st.leaving=true; location.href=L.ROOT+'index.html#saved'; } }}];
+  $('vdMenu').addEventListener('click',e=>{
+    const its=items(); box.innerHTML=its.map((m,i)=>`<button type="button" role="menuitem" data-i="${i}">${esc(m.label)}</button>`).join(''); box.hidden=false;
+    const r=e.currentTarget.getBoundingClientRect(), mr=box.getBoundingClientRect();
+    box.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; box.style.top=Math.min(r.bottom+6,innerHeight-mr.height-8)+'px';
+    box.onclick=ev=>{ const b=ev.target.closest('[data-i]'); if(!b) return; box.hidden=true; its[+b.dataset.i].run(); };
+    box.querySelector('button').focus({preventScroll:true});
+    setTimeout(()=>document.addEventListener('pointerdown',function off(ev){ if(!box.contains(ev.target)){ box.hidden=true; document.removeEventListener('pointerdown',off,true); } },true),0);
+  });
+  box.addEventListener('keydown',e=>{ if(e.key==='Escape'){ box.hidden=true; $('vdMenu').focus(); } });
+})();
+function newVideo(){
+  const go=()=>{ st.leaving=true; location.href=location.pathname+'?new=1'; };
+  if(!st.ready||cur()===st.clean||V.empty()) return go();
+  const d=L.dialog(`<div class="dlg-body"><h3>Start a new video?</h3><p class="small">Your edits are not saved. ${st.design?'Update the saved video first to keep them.':'Save to the team first to keep them.'}</p>
+    <div class="dlg-actions col"><button type="button" class="btn" id="nvGo">Start a new video</button><button type="button" class="link" id="nvKeep">Keep editing</button></div></div>`);
+  d.tabIndex=-1; d.querySelector('#nvKeep').onclick=()=>d.close(); d.querySelector('#nvGo').onclick=go;
+}
+V.newVideo=newVideo;
+
+/* ---------- leaving ---------- */
 function leavePrompt(href){
   const nm=st.design.name;
   const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(nm)}”?</h3><p class="small">You changed this saved video. Update it for the team, or leave it as it was.</p>
@@ -241,41 +303,50 @@ addEventListener('beforeunload',e=>{ if(!st.leaving&&(st.busy||(st.ready&&cur()!
 addEventListener('pagehide',()=>{ stopAudio(); stopSolo(); });
 
 /* ---------- team save ---------- */
-function thumbBlob(){
-  const c=document.createElement('canvas'); c.width=360; c.height=640;
-  try{ st.reel.draw(c.getContext('2d'),st.M.poster!=null?st.M.poster:dur()/2,{texts:st.texts}); }catch(err){ console.error(err); }
+function posterT(){
+  const l=V.lay(), f=l.find(x=>x.c.kind==='reel');
+  if(f){ const r=st.reels[f.c.reel]; const p=r&&r.M&&r.M.poster; if(p!=null&&p>=f.c.in&&p<=f.c.out) return f.start+(p-f.c.in); }
+  return Math.min(1,Math.max(0,dur()-0.1));
+}
+async function thumbBlob(){
+  const c=document.createElement('canvas'); c.width=360; c.height=640; const t=posterT();
+  try{ await st.P.prepare(t); st.P.draw(c.getContext('2d'),t,{preview:false}); }catch(err){ V.fail(err,'thumb'); }
   return L.canvasBlob(c,'image/jpeg',.85).finally(()=>{ c.width=c.height=0; });
 }
 async function teamSave(){
   const C=await L.cloud();
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
-  const name=nameNow(), recipe={v:1,kind:'reel',brand:st.B.id,reel:st.M.id,texts:{...st.texts},mix:clone(st.settings.mix),duck:!!st.settings.duck};
+  const name=nameNow(), recipe=clone(st.R); recipe.v=2; recipe.kind='video'; recipe.brand=st.B.id;
   const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob()});
   st.design={id,name}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus();
   return id;
 }
+V.teamSave=teamSave;
 
 /* ---------- Save sheet ---------- */
-function fileName(){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return (slug($('vdName').value)||slug(st.M.title)||'video')+' '+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+'.mp4'; }
+function fileName(){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return (slug($('vdName').value)||slug(st.defName)||'video')+' '+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+'.mp4'; }
 const mb=n=>n>=1e6?(n/1e6).toFixed(1)+' MB':Math.max(1,Math.round(n/1e3))+' kB';
 async function openSave(){
-  if(!st.ready||st.busy) return;
+  if(!st.ready||st.busy||V.empty()) return;
   pause(); stopSolo();
-  const M=st.M, d=L.dialog('<div class="dlg-body vd-save-d" id="vsBody"></div>','vd-dlg'); d.tabIndex=-1; d.focus();
+  const d=L.dialog('<div class="dlg-body vd-save-d" id="vsBody"></div>','vd-dlg'); d.tabIndex=-1; d.focus();
   const body=d.querySelector('#vsBody'), ctl={ac:null,url:null,lock:null};
   let sup={mode:'none'}; try{ sup=await (st.sup||(st.sup=StudioReelExport.support())); }catch(_){}
   d.addEventListener('cancel',e=>{ if(st.busy){ e.preventDefault(); if(ctl.ac) ctl.ac.abort(); } });
   d.addEventListener('close',()=>{ if(ctl.url) setTimeout(()=>URL.revokeObjectURL(ctl.url),60000); });
   const bind=(id,fn)=>{ const b=body.querySelector('#'+id); if(b) b.onclick=fn; };
-  const size=`MP4 · ${M.size[0]}×${M.size[1]} · ${Math.round(M.duration)} s`;
   function ready(msg){
+    const total=dur(), W=st.P.W||1080, H=st.P.H||1920, miss=[...V.missing()], size=`MP4 · ${W}×${H} · ${Math.round(total)} s`;
+    const heavy=V.lay().some(x=>x.c.kind==='reel'&&st.reels[x.c.reel]&&st.reels[x.c.reel].M.heavy), hasVid=st.R.clips.some(c=>c.kind==='video');
+    const noGo=sup.mode==='none'||miss.length>0||total<=0;
     body.innerHTML=`<h3>Save</h3>
-      <button type="button" class="btn" id="vsGo"${sup.mode==='none'?' disabled':''}><span>Save video</span><small><bdi>${size}</bdi></small></button>
-      ${M.heavy?'<p class="vd-note">This reel is heavy (3D): saving takes longer.</p>':''}
-      ${sup.mode==='recorder'?`<p class="vd-note">This browser makes the video in real time (<bdi>${Math.round(M.duration)}</bdi> s). Keep Studio open.</p>`:''}
+      <button type="button" class="btn" id="vsGo"${noGo?' disabled':''}><span>Save video</span><small><bdi>${size}</bdi></small></button>
+      ${heavy?'<p class="vd-note">A reel in this video is heavy (3D): saving takes longer.</p>':''}
+      ${sup.mode==='recorder'?`<p class="vd-note">This browser makes the video in real time (<bdi>${Math.round(total)}</bdi> s)${hasVid?' and it may stutter where your clips play':''}. Keep Studio open.</p>`:''}
       ${sup.mode==='none'?'<p class="vd-note" role="status">This browser can’t make videos. Open Studio in Chrome, or in Safari on iOS 17 or newer.</p>':''}
-      ${!st.mix?'<p class="vd-note">The sounds did not load, so this video would be silent.</p>':''}
-      <button type="button" class="btn ghost" id="vsTeam"><span>Save edits to the team</span><small>Keeps your words and your mix, not the video.</small></button>
+      ${miss.length?`<p class="vd-note" role="status">${miss.length===1?'A file is':'Some files are'} missing on this ${L.devWord()}. Add ${miss.length===1?'it':'them'} again on the timeline first.</p>`:''}
+      <button type="button" class="btn ghost" id="vsTeam"><span>Save edits to the team</span><small>Keeps your clips’ order, words and sound settings, not the video.</small></button>
+      ${V.hasOwnFiles()?`<p class="vd-note" id="vsOwn">Your clips, photos and sounds stay on this ${L.devWord()}; the team gets your edits.</p>`:''}
       <div class="status" id="vsSt" role="status">${esc(msg||(st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):''))}</div>
       <div class="dlg-actions"><button type="button" class="link" id="vsClose">Close</button></div>`;
     bind('vsClose',()=>d.close()); bind('vsGo',()=>exportIt()); bind('vsTeam',async()=>{
@@ -292,19 +363,18 @@ async function openSave(){
       <div class="dlg-actions"><button type="button" class="mini" id="vsCancel">Cancel</button></div>`;
     bind('vsCancel',()=>{ body.querySelector('#vsCancel').disabled=true; body.querySelector('#vsTxt').textContent='Stopping…'; ctl.ac.abort(); });
     try{ if(navigator.wakeLock) ctl.lock=await navigator.wakeLock.request('screen'); }catch(_){}
-    const settings=clone(st.settings), texts={...st.texts};
     try{
-      const audio=st.mix?await st.mix.render(settings):null;
+      const audio=await st.P.audio();
       if(sig.aborted) throw Object.assign(new Error('Cancelled'),{name:'AbortError'});
-      const r=await StudioReelExport.run({reel:st.reel,texts,audio,mix:st.mix,settings,signal:sig,onProgress:(f,i,n)=>{
+      const r=await StudioReelExport.run({reel:st.P,texts:{},audio,signal:sig,onProgress:(f,i,n)=>{
         const p=Math.round(Math.max(0,Math.min(1,f))*100), bar=body.querySelector('#vsBar'); if(!bar) return;
         bar.style.width=p+'%'; body.querySelector('#vsRole').setAttribute('aria-valuenow',String(p));
         body.querySelector('#vsTxt').innerHTML=`<bdi>Frame ${Math.min(n,(i||0)+1)} of ${n}</bdi>`; }});
-      window.__videoLast={size:r.blob.size,type:r.blob.type,mode:r.mode,frames:r.frames};
+      window.__videoLast={size:r.blob.size,type:r.blob.type,mode:r.mode,frames:r.frames,duration:dur()};
       st.clean=cur(); done(r.blob);
     }catch(err){
       if(sig.aborted||(err&&err.name==='AbortError')){ ready('Stopped. Nothing was saved.'); }
-      else { console.error('export failed',err); failed(); }
+      else { V.fail(err,'export'); failed(err); }
     }finally{ st.busy=false; if(ctl.lock){ try{ ctl.lock.release(); }catch(_){} ctl.lock=null; } }
   }
   function done(blob){
@@ -321,8 +391,9 @@ async function openSave(){
     body.querySelector('#vsOut').focus({preventScroll:true});
     L.celebrate&&L.celebrate();
   }
-  function failed(){
-    body.innerHTML=`<h3>The video did not finish</h3><p class="vd-note">Something went wrong while making it. Your words and your mix are still here. Close other tabs or apps and try again.</p>
+  function failed(err){
+    body.innerHTML=`<h3>The video did not finish</h3><p class="vd-note">Something went wrong while making it. Your edits are still here. Close other tabs or apps and try again.</p>
+      <p class="vd-note" dir="auto">${esc(String(err&&err.message||err).slice(0,120))}</p>
       <button type="button" class="btn" id="vsGo">Try again</button>
       <div class="dlg-actions"><button type="button" class="link" id="vsClose">Close</button></div>`;
     bind('vsClose',()=>d.close()); bind('vsGo',()=>exportIt());
@@ -331,55 +402,78 @@ async function openSave(){
 }
 $('vdSave').addEventListener('click',()=>{ L.haptic&&L.haptic('tick'); openSave(); });
 
+/* ---------- debug panel (?debug=1): everything the owner can screenshot when a preview stays blank ---------- */
+function debugPanel(){
+  const el=$('vdDbg'); el.hidden=false;
+  const rows=async()=>{
+    const out=[]; const add=(k,v)=>out.push(`<tr><th>${esc(k)}</th><td dir="ltr">${esc(String(v))}</td></tr>`);
+    add('brand',st.B?st.B.id+' · base '+st.B.base:'—'); add('page',location.pathname.split('/').slice(-2).join('/'));
+    const cv=$('vdCv'); add('canvas',cv.width+'×'+cv.height+' · dpr '+(window.devicePixelRatio||1));
+    add('last draw',st.drawMs.toFixed(1)+' ms'); add('draw error',st.drawErr||'none'); add('load error',st.loadErr||'none');
+    for(const id of Object.keys(st.reels)){ const r=st.reels[id]; add('reel '+id,r.base);
+      for(const [k,p] of Object.entries((r.M&&r.M.images)||{})){ let s=st.imgStat&&st.imgStat[r.base+p]; add('  image '+k,s||'…'); } }
+    for(const [id,m] of Object.entries((st.R&&st.R.media)||{})){ let s='…'; try{ const g=await StudioMedia.get(id); s=g?'ok '+(m.type||'')+' '+(m.dur?m.dur.toFixed(1)+' s':''):'MISSING'; }catch(e){ s='error '+e.message; } add('  media '+id+' '+(m.name||''),s); }
+    let ac='—'; try{ const C=window.AudioContext||window.webkitAudioContext; ac=window.__acState||(C?'available':'none'); }catch(_){}
+    add('audio',ac); try{ const sp=await StudioReelExport.support(); add('export',sp.mode+(sp.video?' '+sp.video:'')); }catch(e){ add('export','error '+e.message); }
+    add('clips',(st.R?st.R.clips.length:0)+' · '+dur().toFixed(1)+' s'); add('log',st.log.slice(-4).join(' | ')||'—');
+    el.querySelector('table').innerHTML=out.join('');
+  };
+  el.innerHTML='<div class="dbg-h"><b>Debug</b><button type="button" class="mini" id="dbgX">Close</button></div><table></table>';
+  el.querySelector('#dbgX').onclick=()=>{ el.hidden=true; clearInterval(tm); };
+  const tm=setInterval(rows,1500); rows();
+  if(window.AudioContext) try{ const a=new AudioContext(); window.__acState=a.state; a.close(); }catch(e){ window.__acState='error '+e.message; }
+  st.imgStat={}; Object.values(st.reels).forEach(r=>Object.values((r.M&&r.M.images)||{}).forEach(p=>fetch(r.base+p,{method:'GET'}).then(x=>{ st.imgStat[r.base+p]=x.status+' '+(x.headers.get('content-type')||''); }).catch(e=>{ st.imgStat[r.base+p]='failed: '+e.message; })));
+}
+
 /* ---------- start ---------- */
 function setLoad(p){ $('vdLoadTxt').textContent='Loading the reel… '+p+'%'; }
-function showError(msg){ $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErrTxt').textContent=msg; }
-async function openReel(id,design){
-  const base=st.B.base+'reels/'+id+'/';
-  const res=await fetch(base+'reel.json'); if(!res.ok) throw new Error('missing');
-  const M0=await res.json(), pr={a:0,b:0}, upd=()=>setLoad(Math.round((pr.a+pr.b)/2*100));
-  const ap=(window.StudioReelAudio?StudioReelAudio.load(M0,base,{onProgress:p=>{ pr.b=prog01(p); upd(); }}):Promise.reject(new Error('no audio engine')))
-    .catch(err=>{ console.warn('sound failed',err); st.audioErr=String(err&&err.message||err).slice(0,80); pr.b=1; upd(); return null; });
-  const rp=StudioReel.load(base,{onProgress:p=>{ pr.a=prog01(p); upd(); }});
-  const [reel,mix]=await Promise.all([rp,ap]);
-  st.reel=reel; st.M=reel.M; st.mix=mix;
-  st.orig={}; st.M.texts.forEach(s=>{ st.orig[s.id]=s.value; }); st.texts={...st.orig};
-  st.settings=mix?clone(mix.defaults()):{mix:{},duck:true};
-  if(design){ const r=design.recipe||{};
-    Object.keys(r.texts||{}).forEach(k=>{ if(k in st.texts&&typeof r.texts[k]==='string') st.texts[k]=r.texts[k]; });
-    if(mix){ mix.rows.forEach(row=>{ const sv=(r.mix||{})[row.id]; if(sv) st.settings.mix[row.id]=Object.assign({},st.settings.mix[row.id],sv); }); if(typeof r.duck==='boolean') st.settings.duck=r.duck; }
-    else st.settings={mix:r.mix||{},duck:r.duck!==false};
-    st.design={id:design.id,name:design.name}; $('vdName').value=design.name; }
-  $('vdName').placeholder=st.M.title;
+async function openProject(recipe,design){
+  const r0=StudioProject.fromRecipe(recipe), pr={a:0}, upd=()=>setLoad(Math.round(pr.a*100));
+  const P=await StudioProject.create(r0,{brandBase:st.B.base,onProgress:p=>{ pr.a=prog01(p); upd(); }});
+  st.P=P; st.R=P.recipe; st.R.clips=st.R.clips||[]; st.R.texts=st.R.texts||[]; st.R.audio=st.R.audio||[]; st.R.media=st.R.media||{};
+  await Promise.all([...new Set(st.R.clips.filter(c=>c.kind==='reel').map(c=>c.reel))].map(id=>V.ensureReel(id)));
+  st.R.clips.forEach(c=>{ if(c.kind==='reel'&&c.out==null) c.out=st.reels[c.reel].M.duration; });
+  try{ const u=P.update(); if(u&&u.then) await u; }catch(err){ V.fail(err,'update'); }
+  const first=st.R.clips.find(c=>c.kind==='reel'); st.defName=first&&st.reels[first.reel]?st.reels[first.reel].M.title:'Video';
+  if(design){ st.design={id:design.id,name:design.name}; $('vdName').value=design.name; }
+  $('vdName').placeholder=st.defName;
   $('vdLoad').hidden=true; $('vdErr').hidden=true;
-  buildText(); buildSound(); buildTrack(); layout();
-  st.t=0; paint(); $('vdSafeBtn').hidden=false; setSafe(L.store(SAFE_KEY)===true,true);
-  st.base=st.clean=cur(); st.ready=true; $('vdPlay').disabled=false; $('vdSave').disabled=false; setPlayUI(); syncStatus();
+  st.t=0; st.pps=V.defaultPps?V.defaultPps():100; st.sel=null;
+  $('vdDur').textContent=fmt(dur());
+  stageLayout(); if(V.renderTl) V.renderTl(); if(V.renderBar) V.renderBar();
+  paint(); $('vdSafeBtn').hidden=false; setSafe(L.store(SAFE_KEY)===true,true);
+  st.base=st.clean=cur(); st.ready=true; syncEmpty(); setPlayUI(); syncStatus();
   st.sup=StudioReelExport.support().catch(()=>({mode:'none'}));
+  if(V.afterOpen) V.afterOpen();
+  if(q.get('debug')==='1') debugPanel();
 }
+V.openProject=openProject;
 async function start(){
   $('vdErr').hidden=true; $('vdLoad').hidden=false; setLoad(0);
   try{
     st.B=await Studio.useBrand();
-    let id=q.get('reel'), design=null;
-    const did=q.get('design');
+    const did=q.get('design'); let recipe=null, design=null;
     if(did){
-      if(!(await L.ensureMember('This design is saved with the team. Sign in to open it.'))) return showError('Sign in with the team password to open this saved video.');
+      if(!(await L.ensureMember('This design is saved with the team. Sign in to open it.'))) return showErr('Sign in with the team password to open this saved video.');
       const C=await L.cloud(); const d=await C.getDesign(did);
       if(d.tool!==TOOL){ st.leaving=true; location.replace(L.toolPage(d.tool)+'?design='+encodeURIComponent(did)); return; }
-      design=d; id=(d.recipe||{}).reel;
+      design=d; recipe=d.recipe||{};
+    } else if(q.get('new')==='1'){
+      recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}};
+    } else {
+      const id=q.get('reel')||((st.B.reels||[])[0]||{}).id;
+      if(!id){ recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}}; }
+      else recipe={v:1,kind:'reel',brand:st.B.id,reel:id,texts:{},mix:{},duck:true};
     }
-    id=id||((st.B.reels||[])[0]||{}).id;
-    if(!id) return showError('There is no reel in this brand kit yet.');
-    await openReel(id,design);
-  }catch(err){ console.error(err); showError('The reel could not be opened. Check your connection and try again. ('+(err&&err.message||err)+')'); }
+    await openProject(recipe,design);
+  }catch(err){ st.loadErr=String(err&&err.message||err); V.log('load',st.loadErr); console.error(err); showErr('The video could not be opened. Check your connection and try again. ('+st.loadErr+')'); if(q.get('debug')==='1'&&$('vdDbg').hidden) debugPanel(); }
 }
+V.start=start;
 $('vdRetry').addEventListener('click',start);
 $('vdName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
-new ResizeObserver(layout).observe($('vdWrap'));
-new ResizeObserver(fitLabels).observe($('vdTrack'));
-window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,texts:{...st.texts},settings:clone(st.settings),audio:!!st.mix,h:!!st.h});
-layout();
+new ResizeObserver(stageLayout).observe($('vdWrap'));
+window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,duration:dur(),clips:st.R?st.R.clips.length:0,recipe:st.R?clone(st.R):null,sel:st.sel,pps:st.pps,h:!!st.h,sheet:st.sheet&&st.sheet.name,drawErr:st.drawErr});
 if(q.get('render')==='1'){ $('vdLoad').hidden=true; }   // Saved's hidden renderer never opens videos; nothing heavy here
-else start();
+else document.addEventListener('DOMContentLoaded',()=>start());
+stageLayout();
 })();
