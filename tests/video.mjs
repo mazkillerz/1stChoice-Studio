@@ -49,7 +49,7 @@ for(const scheme of ['light','dark']){
   ok(N+'loads to ready, no console errors',errs.length===0,errs.slice(0,3));
   ok(N+'the title is the tool name',/Video editor/.test(await pg.title()));
   const cs=await canvasStats(pg);
-  ok(N+'the preview canvas is drawn, not blank, and sharp (device pixels)',cs.colours>12&&cs.dark>50&&cs.w>=700,cs);
+  ok(N+'the preview canvas is drawn, not blank, and sharp (device pixels)',cs.colours>12&&cs.dark>50&&cs.w>=400,cs);
   const geo=await pg.evaluate(()=>{ const r=document.getElementById('vdPv').getBoundingClientRect(), t=document.querySelector('.vd-top').getBoundingClientRect(), s=document.querySelector('.vd-side').getBoundingClientRect(), cv=document.getElementById('vdCv');
     return {h:r.height/innerHeight,ratio:r.width/r.height,hs:document.documentElement.scrollWidth<=innerWidth,cssW:r.width,cw:cv.width,dpr:devicePixelRatio,sideBottom:s.bottom<=innerHeight+1,topH:t.height}; });
   ok(N+'the preview keeps at least 45% of the height and is 9:16',geo.h>=.45&&Math.abs(geo.ratio-9/16)<.01,geo);

@@ -32,8 +32,8 @@ body.vd .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--li
 @keyframes vdspin{to{transform:rotate(360deg)}}
 
 /* safe zones: Instagram's unsafe areas in reel px (top 250, bottom 560, right 140, left 40 of 1080×1920) */
-.vd-safe{position:absolute;inset:0;pointer-events:none;font:500 10px/1.2 var(--sans);color:#fff}
-.vd-safe .sz{position:absolute;background:rgba(20,16,12,.46);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vd-safe{position:absolute;inset:0;pointer-events:none;font-style:normal;font:500 10px/1.2 var(--sans);color:#fff}
+.vd-safe .sz{font-style:normal;position:absolute;background:rgba(20,16,12,.46);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .vd-safe .sz b{font-weight:500;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap}
 .sz-t{left:0;right:0;top:0;height:13.0208%}
 .sz-b{left:0;right:0;bottom:0;height:29.1667%}
@@ -87,7 +87,8 @@ body.vd .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--li
 .vd-lblrow .small{font-variant-numeric:tabular-nums}
 .vd-field{position:relative;display:flex}
 .vd-field input[type=text]{flex:1;min-width:0;min-height:52px;font-size:17px;padding-inline-end:52px;background:var(--bg)}
-.vd-clear{position:absolute;inset-block:0;inset-inline-end:0;width:var(--tap);border:0;background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:var(--r-pill);margin:2px}
+.vd-clear{position:absolute;inset-block:0;right:0;width:var(--tap);border:0;background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:var(--r-pill);margin:2px}
+.vd-field[data-d="rtl"] .vd-clear{right:auto;left:0}   /* the box runs right to left when the words do: the clear sits at the end of the line */
 .vd-clear[hidden]{display:none}
 .vd-clear:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
 .vd-warn{display:flex;gap:var(--sp-2);align-items:flex-start;padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--vd-warn-bg);color:var(--vd-warn-fg);border:1px solid var(--vd-warn-line);font:500 var(--fs-s)/1.4 var(--sans)}
@@ -108,7 +109,7 @@ body.vd .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--li
 .vd-row{display:flex;flex-direction:column;gap:0;padding-bottom:var(--sp-2);border-bottom:1px solid var(--line)}
 .vd-row:last-child{border-bottom:0}
 .vd-r1{display:flex;align-items:center;gap:var(--sp-2);min-height:44px}
-.vd-name-btn{flex:1;min-width:0;min-height:44px;border:0;background:none;padding:0;text-align:start;font:600 var(--fs-m) var(--sans);color:var(--fg);cursor:pointer;display:flex;align-items:baseline;gap:var(--sp-2);overflow:hidden}
+.vd-name-btn{flex:1;min-width:0;min-height:44px;border:0;background:none;padding:0;text-align:start;font:600 var(--fs-m) var(--sans);color:var(--fg);cursor:pointer;display:flex;align-items:center;gap:var(--sp-2);overflow:hidden}
 .vd-name-btn .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vd-name-btn .at{font:400 var(--fs-s) var(--sans);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .vd-name-btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:var(--r-s)}

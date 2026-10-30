@@ -163,6 +163,7 @@ function updateSlot(id){
   const el=document.querySelector(`.vd-slot[data-id="${CSS.escape(id)}"]`); if(!el) return;
   const slot=st.M.texts.find(s=>s.id===id), v=st.texts[id]||'', info=(st.reel.textInfo(st.texts)||{})[id]||{};
   el.querySelector('[data-warn]').innerHTML=info.warn?I.warn+'<span>Too long for its spot: the words get smaller to fit. Shorten them to keep them big.</span>':'';
+  const inp=el.querySelector('input'); inp.parentElement.dataset.d=inp.matches(':dir(rtl)')?'rtl':'ltr';
   el.querySelector('[data-clear]').hidden=!v;
   el.querySelector('[data-orig]').hidden=v===slot.value;
   el.querySelector('[data-hint]').textContent=v?'':'Nothing shows here while this is empty.';

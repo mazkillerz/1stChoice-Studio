@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.24.0 · 30 Oct 2026
+
+### New: Video editor
+type: feature
+Our coded reels now open in Studio as templates you can edit. Find **Video editor** in All tools (or search "video"); it opens the Winter cat reel. Tap Play or drag along the timeline to watch any moment; the coloured blocks are the reel's scenes. In **Text**, change the headline in Arabic or English and the preview jumps to the end card so you see it at once, in the reel's own fonts. If the words are too long for their spot, they get smaller to fit and a note tells you. The corner button shows Instagram's safe zones, so nothing important hides under the caption or the buttons. **Save** makes a sharp MP4 (1080×1920) frame by frame, so it never stutters, with a progress bar; on a phone it opens the share sheet so you can save it to Photos. "Save edits to the team" keeps your words and your mix in Saved (no video files are uploaded).
+![after](assets/whatsnew/1.24.0-video-editor-after.jpg)
+
+### Your reel's sound, your way
+type: feature
+The **Sound** tab is a mixer: a volume slider, a mute button and a ▶ to listen for the music and for every sound effect, each at its exact moment in the reel (the dots on the timeline). The music dips by itself under the big sounds, like the hood slap and the can landing; switch that off if you like. "Reset to original mix" brings back the reel exactly as it was made. When you save, the sound is levelled for Instagram so it is never too quiet or harsh. Mute the music for a sound-effects-only version.
+![after](assets/whatsnew/1.24.0-video-sound-after.jpg)
+
 ## 1.23.0 · 30 Oct 2026
 
 ### Save every unfinished story at once
