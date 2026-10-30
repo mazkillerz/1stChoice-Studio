@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 34 | 1.23.0 | 4 (new suite draft-pictures 39/0; `--changed` 40 suites green; found and guarded two side effects of a render frame on a draft before any test: rewriting the draft, taking the queue) | 5 (both items in one pass; suite by a sonnet helper while shots and notes went on) | 0 | 35/35 pass | Before reusing a page in a hidden frame for a new input, list what that page writes on load and on leave, and guard it |
 | 33 | 1.22.0 | 4 (backgrounds 37/0 with a Carousel part: Plain = no value pixel-identical; waiting-tag 57/0; found and fixed a stale banner on queue continue) | 5 (both items in one pass; dropped Highlight covers after one look at the shot) | 0 | see release | Shoot a tool's real preview before adding a visual option to it: the Highlight shot showed the finish had no room |
 | 32 | 1.21.0 | 4 (old designs pixel-identical in restock-styles 56/0 and photostory-styles 16/0 before the commit; new suite backgrounds 31/0) | 5 (feature + audit fix in one pass; suite written by a sonnet helper while shots and notes went on) | 0 | see release | Look at a new finish at phone-preview size, not only zoomed: Glow on white was invisible in the preview at first |
 | 31 | 1.20.0 | 4 (full sweep 49/49 green; new suite brandkit; Offer/Restock start lines now chosen by the kit, not by matching 1st Choice text) | 4 (lean: one sweep at the end; two proposals dropped after checking their cost) | 0 | 35/35 pass | Test plumbing with a second brand at every major version, not only when the backlog says so |
@@ -30,6 +31,11 @@ What worked, what failed, and process tweaks. Newest session first.
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
 
+
+## 1.23.0 (session 34, team)
+- Worked: reusing render.js for drafts was a 3-line change (`?draft=` instead of `?design=`, `ok` true when a draft loaded); the hub only builds the list.
+- Watch out: a tool page opened with `?draft=` in a hidden frame would rewrite the draft on pagehide (new `at`, reorders Continue editing) and could take over the photo queue (`here` matches the draft). `RENDER` in `tool()` now makes `saveDraft()` a no-op and skips the queue block.
+- Watch out: a 44px `.link` in a `.sec-head` is taller than the h2, so a "same line" check compares centres, not tops.
 
 ## 1.22.0 (session 33, Mazoon)
 - Worked: `{...Studio.groundField(),global:true}` + `h.ground()` gave Carousel backgrounds in two lines, the same on every slide.
