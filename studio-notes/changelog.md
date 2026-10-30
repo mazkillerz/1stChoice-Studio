@@ -13,6 +13,26 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.30.0 · 30 Oct 2026
+
+### New place: the frame is really see-through
+type: fix
+Save the frame only (New place → Save) now gives just the frame: the place where your photo goes is see-through, ready to lay over a video or another photo. Before, it saved the photo in it too, the same as the story. The window is exactly where it is in your story. The normal Save is unchanged.
+![before](assets/whatsnew/1.30.0-frame-before.jpg)
+![after](assets/whatsnew/1.30.0-frame-after.jpg)
+
+### Every tool says what it does in one line
+type: design
+On a phone, every tool's description in All tools was cut off with "…" (11 of 11). They are shorter now and fit on one line, even on a small phone; search still finds a tool by the old words (try "flavours" or "mosaic"). All tools also has one short line on top instead of two, and its Done is the quiet grey button like everywhere else.
+![before](assets/whatsnew/1.30.0-tools-before.jpg)
+![after](assets/whatsnew/1.30.0-tools-after.jpg)
+
+### Neater menus, and / to search on a computer
+type: design
+A saved design's menu (⋯) had icons of four sizes, so the words did not start in one line. Now every icon is the same size and every label lines up. Settings → Done is grey like the other sheets. On a computer, press / to search: on Home it goes to the search box, on Saved it opens the Saved search (finding a design: 2 clicks → 1).
+![before](assets/whatsnew/1.30.0-menu-before.jpg)
+![after](assets/whatsnew/1.30.0-menu-after.jpg)
+
 ## 1.29.0 · 30 Oct 2026
 
 ### Backgrounds in Cinematic, New place, Offer and Collage
