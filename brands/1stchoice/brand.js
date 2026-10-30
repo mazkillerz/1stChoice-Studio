@@ -81,7 +81,18 @@ Studio.registerBrand({
     {id:'can-passion',label:'Passion Fruit can',file:'assets/passion_can.png',prev:'assets/prev/passion_can.webp',group:'Cans (HD cut-outs)',noFlip:true},
     {id:'can-passion-shadow',label:'Passion + shadow',file:'assets/passion_can_shadow.png',prev:'assets/prev/passion_can_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true},
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',prev:'assets/prev/cans_pair.webp',group:'Cans (HD cut-outs)',noFlip:true},
-    {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true}
+    {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true},
+    /* the cat in the can-label style (from the winter cat reel, Oct 2026). The owner's rule: the cat only when asked. */
+    {id:'cat-wink',label:'Cat · wink with can',file:'reels/winter-cat/img/L4b.webp',prev:'assets/prev/winter_cat_wink.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'cat-can',label:'Cat · holding can',file:'reels/winter-cat/img/L4.webp',prev:'assets/prev/winter_cat_can.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'cat-calm',label:'Cat · calm',file:'reels/winter-cat/img/L1.webp',prev:'assets/prev/winter_cat_calm.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'cat-shiver',label:'Cat · hood up, cold',file:'reels/winter-cat/img/L2.webp',prev:'assets/prev/winter_cat_shiver.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'cat-deadpan',label:'Cat · deadpan stare',file:'reels/winter-cat/img/S3.webp',prev:'assets/prev/winter_cat_deadpan.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'winter-camp',label:'Desert camp (ink)',file:'assets/winter/camp.webp',prev:'assets/prev/winter_camp.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'winter-campfire',label:'Campfire',file:'assets/winter/campfire.webp',prev:'assets/prev/winter_campfire.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'winter-moon',label:'Moon',file:'reels/winter-cat/img/moon.webp',prev:'assets/prev/winter_moon.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'winter-cloud',label:'Cloud',file:'reels/winter-cat/img/cloud1.webp',prev:'assets/prev/winter_cloud.webp',group:'Cat · winter camp (only when asked)'},
+    {id:'winter-star',label:'Star',file:'reels/winter-cat/img/star1.webp',prev:'assets/prev/winter_star.webp',group:'Cat · winter camp (only when asked)'}
   ],
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
