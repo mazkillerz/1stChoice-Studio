@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.29.0 · 30 Oct 2026
+
+### Backgrounds in Cinematic, New place, Offer and Collage
+type: feature
+The Background finishes (Plain, Fade, Glow, Dots, Lines, Grain) are now in four more tools: Cinematic bars, New place, Offer and the gaps of a Collage. Style → Background, under the colour. They only show where there is a background to finish (not on Offer's Full photo). New place keeps the photo window clean. Plain is the default, so every design you made before looks exactly the same. Before: a flat colour; now: 1 tap for a finish.
+![before](assets/whatsnew/1.29.0-backgrounds-before.jpg)
+![after](assets/whatsnew/1.29.0-backgrounds-after.jpg)
+
+### Templates that start with a finish
+type: feature
+Templates has two new starts: Cans with a glow (Restock, no photo needed) and Offer with dots. One tap opens the tool with the finish already on; change it in Style → Background.
+![before](assets/whatsnew/1.29.0-templates-before.jpg)
+![after](assets/whatsnew/1.29.0-templates-after.jpg)
+
 ## 1.28.0 · 30 Oct 2026
 
 ### Emoji stickers
