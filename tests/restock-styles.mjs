@@ -50,7 +50,9 @@ const reg=pg=>pg.evaluate(()=>Studio.debug.reg().map(r=>({id:r.id,label:r.label,
 /* 1. same pixels as the old file for the three original looks */
 for(const st of ['white','cream','photo']){
   const a=await mk({style:st}), o=await mk({style:st,oldFile:true});
-  const [hn,ho]=[await settle(a.pg),await settle(o.pg)];
+  await Promise.all([a.pg,o.pg].map(p=>p.waitForTimeout(1200)));   // fonts and can pictures finish loading (1 in ~3 runs measured too early)
+  let [hn,ho]=[await settle(a.pg),await settle(o.pg)];
+  for(let t=0;t<2&&hn.h!==ho.h;t++){ await a.pg.waitForTimeout(1500); [hn,ho]=[await settle(a.pg),await settle(o.pg)]; }   // a real difference stays
   ok('compatible: '+st+' looks exactly like before',hn.h===ho.h&&hn.ink>.02,{new:hn.h,old:ho.h,ink:+hn.ink.toFixed(2)});
   await a.ctx.close(); await o.ctx.close();
 }
