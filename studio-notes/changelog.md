@@ -13,6 +13,26 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.32.0 · 30 Oct 2026
+
+### Clear Continue editing after saving
+type: feature
+After Save pictures in Continue editing, the Saved! message now offers "Remove these 3 from Continue editing". Tap it, then Remove, and the stories you just saved leave the list (their photos too); Keep them leaves everything as it was. It never happens by itself, and a story that was skipped (like a Create design) is never removed. Before: tap ✕ and Remove on every story; now: 2 taps for all of them.
+![before](assets/whatsnew/1.32.0-continue-before.jpg)
+![after](assets/whatsnew/1.32.0-continue-after.jpg)
+
+### Find what you made today
+type: feature
+Search in Saved now understands days: type "today", "yesterday" or "this week" (the last 7 days) and only the designs from then stay on the page. Mix it with a word, like "restock today". Names still count: "Today's offer" is found by its name too.
+![before](assets/whatsnew/1.32.0-find-before.jpg)
+![after](assets/whatsnew/1.32.0-find-after.jpg)
+
+### New place and Cinematic bars from a photo
+type: design
+In All tools, New place and Cinematic bars now have the camera button, like Offer: tap it, pick a photo and the tool opens with your photo in. 3 taps to a saved story instead of 4.
+![before](assets/whatsnew/1.32.0-alltools-before.jpg)
+![after](assets/whatsnew/1.32.0-alltools-after.jpg)
+
 ## 1.31.0 · 30 Oct 2026
 
 ### Stickers and emoji in Create
