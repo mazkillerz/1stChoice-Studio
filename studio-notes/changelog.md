@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.27.0 · 30 Oct 2026
+
+### Search your saved designs
+type: feature
+Saved has a magnifier next to Select. Tap it and type part of a name, a tool (Restock, Offer…) or a collection, in English or Arabic, and only the designs that match stay on the page. It works inside the collection you picked and keeps your sort. Cancel, or leaving the page, shows everything again. Before: scroll and look at every picture; now: 1 tap and a word.
+![before](assets/whatsnew/1.27.0-search-before.jpg)
+![after](assets/whatsnew/1.27.0-search-after.jpg)
+
+### Sound rows take half the room
+type: design
+In the Video editor's Mix and Sound sheets each sound is now one line: mute, the name with its time and level under it, the volume slider and play. A row is 57 px instead of 101 px, so you see twice as many sounds without scrolling. Nothing moved out of reach: every button is still the same size.
+![before](assets/whatsnew/1.27.0-sound-before.jpg)
+![after](assets/whatsnew/1.27.0-sound-after.jpg)
+
 ## 1.26.0 · 30 Oct 2026
 
 ### Reels in Templates

@@ -313,11 +313,11 @@ function mixHTML(c,r){
   const rows=[...r.mix.rows].sort((a,b)=>(a.kind==='music'?0:1)-(b.kind==='music'?0:1));
   return `<label class="vd-duck"><span class="txt"><b>Duck the music under big sounds</b><small>The music dips when the big sounds hit</small></span><input type="checkbox" class="switch" role="switch" data-duck${duckOn(c)?' checked':''}></label>
     <div class="vd-rows">${rows.map(x=>{ const n=(x.hits||[]).length, db=rowDb(c,x.id), m=rowMute(c,x.id);
-      return `<div class="vd-row${m?' muted':''}" data-id="${esc(x.id)}">
-      <div class="vd-r1"><button type="button" class="vd-name-btn" data-jump title="Go to this sound"><span class="n">${esc(x.label)}</span>${n?`<span class="at"><bdi>${fmt(Math.min(...x.hits))}</bdi>${n>1?' ×'+n:''}</span>`:''}</button><span class="vd-val"><bdi data-val>${m?'Muted':dbText(db)}</bdi></span></div>
-      <div class="vd-r2"><button type="button" class="icon-btn vd-mute" data-mute aria-pressed="${m}" aria-label="Mute ${esc(x.label)}">${m?I.mute:I.vol}</button>
-        <input type="range" min="-24" max="6" step="1" value="${db}" data-db aria-label="${esc(x.label)} volume" aria-valuetext="${dbText(db)}"${m?' disabled':''}>
-        <button type="button" class="icon-btn vd-solo" data-solo aria-label="Play ${esc(x.label)} on its own">${I.play}</button></div></div>`; }).join('')}</div>
+      return `<div class="vd-row vd-cmp${m?' muted':''}" data-id="${esc(x.id)}">
+      <button type="button" class="icon-btn vd-mute" data-mute aria-pressed="${m}" aria-label="Mute ${esc(x.label)}">${m?I.mute:I.vol}</button>
+      <button type="button" class="vd-name-btn" data-jump title="Go to this sound"><span class="n">${esc(x.label)}</span><span class="sub">${n?`<span class="at"><bdi>${fmt(Math.min(...x.hits))}</bdi>${n>1?' ×'+n:''}</span>`:''}<span class="vd-val"><bdi data-val>${m?'Muted':dbText(db)}</bdi></span></span></button>
+      <input type="range" min="-24" max="6" step="1" value="${db}" data-db aria-label="${esc(x.label)} volume" aria-valuetext="${dbText(db)}"${m?' disabled':''}>
+      <button type="button" class="icon-btn vd-solo" data-solo aria-label="Play ${esc(x.label)} on its own">${I.play}</button></div>`; }).join('')}</div>
     <div class="vd-foot"><button type="button" class="link" data-reset>Reset to original mix</button>${credits}</div>`;
 }
 function refreshReset(body,c,r){ const b=body.querySelector('[data-reset]'); if(b&&r.mix) b.disabled=r.mix.isDefault({mix:c.mix||{},duck:duckOn(c)}); }
@@ -349,8 +349,8 @@ SHEETS.mix=()=>{
 SHEETS.sound=()=>{
   const reels=st.R.clips.filter(c=>c.kind==='reel');
   const trk=st.R.audio.map(a=>{ const nm=(st.R.media[a.media]||{}).name||'Sound', m=!!a.mute, db=a.db||0;
-    return `<div class="vd-row vd-trk${m?' muted':''}" data-aid="${esc(a.id)}"><div class="vd-r1"><button type="button" class="vd-name-btn" data-pick title="Show on the timeline"><span class="n" dir="auto">${esc(nm)}</span><span class="at"><bdi>${fmt(a.start)}</bdi></span></button><span class="vd-val"><bdi data-val>${m?'Muted':dbText(db)}</bdi></span></div>
-      <div class="vd-r2"><button type="button" class="icon-btn vd-mute" data-tmute aria-pressed="${m}" aria-label="Mute ${esc(nm)}">${m?I.mute:I.vol}</button><input type="range" min="-24" max="6" step="1" value="${db}" data-tdb aria-label="${esc(nm)} volume" aria-valuetext="${dbText(db)}"${m?' disabled':''}></div></div>`; }).join('');
+    return `<div class="vd-row vd-cmp vd-trk${m?' muted':''}" data-aid="${esc(a.id)}"><button type="button" class="icon-btn vd-mute" data-tmute aria-pressed="${m}" aria-label="Mute ${esc(nm)}">${m?I.mute:I.vol}</button><button type="button" class="vd-name-btn" data-pick title="Show on the timeline"><span class="n" dir="auto">${esc(nm)}</span><span class="sub"><span class="at"><bdi>${fmt(a.start)}</bdi></span><span class="vd-val"><bdi data-val>${m?'Muted':dbText(db)}</bdi></span></span></button>
+      <input type="range" min="-24" max="6" step="1" value="${db}" data-tdb aria-label="${esc(nm)} volume" aria-valuetext="${dbText(db)}"${m?' disabled':''}></div>`; }).join('');
   const sections=reels.map(c=>`<section class="vd-sec" data-clip="${esc(c.id)}"><h3 dir="auto">Mix · ${esc((st.reels[c.reel]&&st.reels[c.reel].M.title)||'Reel')}</h3><p class="small">Loading the sounds…</p></section>`).join('');
   const mh=mixHandlers(()=>null);
   return {title:'Sound',

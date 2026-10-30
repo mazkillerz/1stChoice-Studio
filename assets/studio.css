@@ -1338,6 +1338,26 @@ input[type=range]{min-height:44px}
 .sort-btn svg{color:var(--muted)}
 .sort-btn:active{transform:scale(.94);background:var(--chip);transition-duration:.09s}
 .sort-btn:focus{outline:none}.sort-btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+/* Search on the Saved page (1.27.0): a round magnifier next to Select, and a box under the title */
+.sp-find{width:var(--tap);height:var(--tap);flex:none;margin-inline-end:2px;border-radius:50%;border:0;background:var(--chip);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .42s var(--spring),background-color .15s}
+.sp-find[hidden]{display:none}
+.sp-find:active{transform:scale(.88);transition-duration:.09s}
+.sp-find:focus{outline:none}.sp-find:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sp-find-row{display:flex;align-items:center;gap:var(--sp-1);padding:var(--sp-1) 0 0}
+.sp-find-row[hidden]{display:none}
+.sp-find-box{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-2);min-height:var(--tap);padding:0 4px 0 14px;border-radius:var(--r-pill);background:var(--chip);color:var(--muted)}
+.sp-find-box:dir(rtl){padding:0 14px 0 4px}
+.sp-find-box>svg{flex:none}
+.sp-find-box input[type=search]{flex:1;min-width:0;width:auto;height:var(--tap);min-height:0;border:0;border-radius:0;background:none;color:var(--fg);font:400 16px var(--sans);outline:none;box-shadow:none;padding:0;-webkit-appearance:none;appearance:none}
+.sp-find-box input[type=search]:focus,.sp-find-box input[type=search]:focus-visible{outline:none;box-shadow:none}
+.sp-find-box:focus-within{box-shadow:0 0 0 2px var(--accent)}
+.sp-find-box input::placeholder{color:var(--muted);opacity:1}
+.sp-find-box input::-webkit-search-cancel-button{display:none}
+.sp-find-clr{flex:none;width:40px;height:40px;position:relative;border:0;border-radius:50%;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sp-find-clr[hidden]{display:none}
+.sp-find-clr::after{content:"";position:absolute;inset:-4px}
+.sp-find-clr:focus{outline:none}.sp-find-clr:focus-visible{outline:3px solid var(--focus)}
+.sp-find-x{flex:none}
 .sort-dlg .dlg-body{gap:var(--sp-2)}
 .sort-dlg .dlg-body{padding-bottom:calc(max(var(--safe-b),16px) + 16px)}
 @media (min-width:561px){.dlg.sort-dlg{width:min(360px,calc(100vw - 24px))}}
