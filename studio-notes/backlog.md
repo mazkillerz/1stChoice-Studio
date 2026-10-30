@@ -2,11 +2,11 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 35–37 were 1.24.0–1.26.0 (30 Oct 2026), the owner-directed Video editor in three phases (1.24.0 reel template + Text/Sound + MP4; 1.25.0 CapCut-style timeline with own clips, text layers, sound tracks; 1.26.0 undo/redo, autosave drafts, performance, Reels in Templates). The owner asked to finish all three and test live. The next session, 1.27.0, is a **team** session.
-**Simplify session:** every 5th minor version. The next one is 1.25.0.
+**Last session:** session 38 was 1.27.0 (30 Oct 2026), a **team** session: search on the Saved page (#31) and compact sound rows in the Video editor (the phase-1 finding). The next session, 1.28.0, is a **Mazoon** session.
+**Simplify session:** every 5th minor version. The next one is 1.30.0 (1.25.0 went to the owner-directed Video editor).
 
 ## Next up
-_Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Found in phase 1: the Sound rows are tall (two fit on a phone); a compact row would show four. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
+_Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
 
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
@@ -20,7 +20,6 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 41 | After Save pictures in Continue editing, offer "Remove these N from Continue editing" (one confirm) for stories that are done | 2 | 1 | 1 | 1 | 3 | From 1.23.0: drafts stay on purpose today (never lose work); ask the team whether they clear them by hand. |
 | 42 | Save pictures for Create drafts too (Create has its own editor and no `render=1` renderer; they are listed as skipped) | 1 | 2 | 1 | 2 | 2 | From 1.23.0. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
-| 31 | Search box (or a magnifier that opens hub search on saved designs) on the Saved page | 2 | 2 | 1 | 1 | 4 | From 1.15.0: finding a design from Saved is back + search + row. |
 | 32 | Flip for the tool's own photo boxes (a mirrored selfie in Photo story); needs a control in the Photo sheet | 1 | 2 | 1 | 2 | 2 | From 1.14.0. |
 | 33 | Emoji in Create's highlight layout and as stickers (the same 24 could feed the Sticker sheet) | 1 | 2 | 2 | 1 | 4 | From 1.14.0. |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
@@ -32,6 +31,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 40 | Background finishes as starting points in brand presets (e.g. a Restock preset with Glow) and in Templates | 2 | 2 | 2 | 1 | 5 | From 1.21.0. |
 
 ## UX audit findings (open)
+- 1.27.0: Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
 - 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
 - 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
