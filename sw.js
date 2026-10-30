@@ -5,7 +5,7 @@
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
    - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
      IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
-const VERSION='studio-v1-27-1';   // Studio 1.27.1
+const VERSION='studio-v1-28-0';   // Studio 1.28.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
