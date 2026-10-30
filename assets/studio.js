@@ -839,7 +839,7 @@ async function tool(cfg){
     const el=sheetEl(n); if(!el) return;
     if(!isPhone()){   // desktop: cards are always there; bring this one into view
       if(n==='assets'||n==='comps'||n==='stickers'||n==='insp') el.classList.add('active');
-      if(!(opt&&opt.quiet)) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+      if(!(opt&&opt.quiet)) el.scrollIntoView({block:el.offsetHeight>innerHeight*.8?'start':'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       return;
     }
     if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
