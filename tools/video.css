@@ -1,6 +1,6 @@
 /* Video editor: preview on top, transport, then Text / Sound. Phone first; on a computer the panel sits beside the preview.
    Light + dark from the shared tokens. The reel's own fonts come from the template, the interface font from studio.css. */
-body.vd{height:100dvh;overflow:hidden;display:flex;flex-direction:column;overscroll-behavior:none;--ws:#e9e7e2;--vd-warn-bg:#fff2d3;--vd-warn-fg:#5e3b00;--vd-warn-line:#e9c779;--vd-tint:color-mix(in srgb,var(--fg) 6%,transparent);--vd-tint-2:color-mix(in srgb,var(--fg) 12%,transparent)}
+body.vd{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;overscroll-behavior:none;--ws:#e9e7e2;--vd-warn-bg:#fff2d3;--vd-warn-fg:#5e3b00;--vd-warn-line:#e9c779;--vd-tint:color-mix(in srgb,var(--fg) 6%,transparent);--vd-tint-2:color-mix(in srgb,var(--fg) 12%,transparent)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.vd{--ws:#0b0a09;--vd-warn-bg:#392b10;--vd-warn-fg:#f8d994;--vd-warn-line:#6b5120}}
 :root[data-theme="dark"] body.vd{--ws:#0b0a09;--vd-warn-bg:#392b10;--vd-warn-fg:#f8d994;--vd-warn-line:#6b5120}
 body.vd input{user-select:text;-webkit-user-select:text}

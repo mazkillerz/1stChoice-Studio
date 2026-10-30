@@ -36,7 +36,9 @@ function wobble(src,dst,o,px,on){
   const w=src.canvas.width, h=src.canvas.height;
   dst.save(); dst.setTransform(1,0,0,1,0,0);
   if(!on||!o||!o.amount){ dst.drawImage(src.canvas,0,0); dst.restore(); return; }
-  const F=field(o.seed|0,o.freq,o.amount,w,h,px), T=tmp(w,h), s32=new Uint32Array(src.getImageData(0,0,w,h).data.buffer), out=T.o32, gw=F.gw, DX=F.dx, DY=F.dy;
+  let px32; try{ px32=src.getImageData(0,0,w,h); }catch(_){ px32=null; }   // a canvas the browser won't read back (pictures from another site): draw it plain, never blank
+  if(!px32){ dst.drawImage(src.canvas,0,0); dst.restore(); return; }
+  const F=field(o.seed|0,o.freq,o.amount,w,h,px), T=tmp(w,h), s32=new Uint32Array(px32.data.buffer), out=T.o32, gw=F.gw, DX=F.dx, DY=F.dy;
   for(let y=0;y<h;y++){ const row=(y>>2)*gw, yo=y*w;
     for(let x=0;x<w;x++){ const i=row+(x>>2), sx=x+DX[i], sy=y+DY[i];
       out[yo+x]=(sx<0||sy<0||sx>=w||sy>=h)?0:s32[sy*w+sx]; } }
@@ -56,7 +58,7 @@ async function load(base,opt){
     const jobs=[]; let done=0; const total=1+M.fonts.length+Object.keys(M.images).length+1;
     const tick=p=>p.then(v=>{ done++; opt&&opt.onProgress&&opt.onProgress(done/total); return v; });
     for(const f of M.fonts) jobs.push(tick(new FontFace(f.family,'url('+base+f.src+')',{weight:f.weight||'100 900'}).load().then(ff=>document.fonts.add(ff))));
-    for(const [k,p] of Object.entries(M.images)) jobs.push(tick(new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>im.decode().catch(()=>{}).then(()=>{ imgs[k]=im; ok(); });
+    for(const [k,p] of Object.entries(M.images)) jobs.push(tick(new Promise((ok,no)=>{ const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>im.decode().catch(()=>{}).then(()=>{ imgs[k]=im; ok(); });
       im.onerror=()=>no(new Error('Could not load '+base+p)); im.src=base+p; })));
     let def; jobs.push(tick(new Promise((ok,no)=>{ lastDef=null; const s=document.createElement('script'); s.src=base+M.scene;
       s.onload=()=>{ def=lastDef; lastDef=null; def?ok():no(new Error('scene.js did not call StudioReel.scene')); }; s.onerror=()=>no(new Error('Could not load '+base+M.scene)); document.head.appendChild(s); })));

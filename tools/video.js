@@ -45,7 +45,7 @@ function layout(){
 function drawNow(){
   if(!st.reel) return;
   try{ st.reel.draw($('vdCv').getContext('2d'),Math.min(st.t,dur()-0.5/fps()),{texts:st.texts}); }
-  catch(err){ if(!st.drawErr){ st.drawErr=true; console.error('draw failed',err); } }
+  catch(err){ if(!st.drawErr){ st.drawErr=true; console.error('draw failed',err); showError('The reel could not be drawn on this '+L.devWord()+'. ('+(err&&err.message||err)+')'); } }
 }
 function paint(){
   drawNow();
@@ -372,7 +372,7 @@ async function start(){
     id=id||((st.B.reels||[])[0]||{}).id;
     if(!id) return showError('There is no reel in this brand kit yet.');
     await openReel(id,design);
-  }catch(err){ console.error(err); showError('The reel could not be opened. Check your connection and try again.'); }
+  }catch(err){ console.error(err); showError('The reel could not be opened. Check your connection and try again. ('+(err&&err.message||err)+')'); }
 }
 $('vdRetry').addEventListener('click',start);
 $('vdName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
