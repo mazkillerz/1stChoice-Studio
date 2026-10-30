@@ -688,6 +688,12 @@ label.opt-row{cursor:pointer}
 #inspFlip svg{flex:none}
 #inspFlip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 #inspFlip:focus:not(:focus-visible){outline:none}
+/* Flip for the tool's own photos (1.33.0): a button under Zoom in the Photo sheet; the slot thumbnail and the look previews mirror with it */
+.photo-flip{display:flex;margin-top:var(--sp-3)}
+#photoFlip svg{flex:none}
+#photoFlip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+#photoFlip:focus:not(:focus-visible){outline:none}
+.slot img.flip,.looks.flip canvas{transform:scaleX(-1)}
 
 /* "2 waiting" on the Restock / Photo story rows in Your tools and All tools (1.13.0): photos waiting in that tool's row.
    Small and calm: a tinted pill like the row's camera, never a filled button; it wraps under the title in a narrow grid card. */
