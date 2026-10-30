@@ -1628,7 +1628,11 @@ async function tool(cfg){
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
-    $('addSticker').addEventListener('click',()=>{ paintStickers($('stickerList')); openSheet('stickers'); emojiStickers().then(ok=>{ if(ok) paintStickers($('stickerList')); }); });
+    /* the emoji shapes: started on press (and by the Layers sheet on a phone); the sheet opens with them, or after 1.5 s without */
+    $('addSticker').addEventListener('pointerdown',()=>emojiStickers());
+    $('addSticker').addEventListener('click',async()=>{ const late=emojiStickers().then(ok=>{ if(ok) paintStickers($('stickerList')); });
+      if(!hasEmojiStickers()) await Promise.race([late,new Promise(r=>setTimeout(r,1500))]);
+      paintStickers($('stickerList')); openSheet('stickers'); });
     $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));

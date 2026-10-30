@@ -1,6 +1,9 @@
 /* Studio 1.28.0: Emoji stickers. The Sticker sheet has a "Drawn" and an "Emoji" part (24 emoji from highlight-emoji.js);
    an emoji layer draws in its own colours (layer colour 'Original'), a picked colour makes a one-colour silhouette,
    Original goes back; saved PNG is 2160×3840; reopening keeps it; drawn stickers are unchanged; five-option seg rows use seg-32.
+   1.33.0: the emoji shapes (tools/highlight-emoji.js) load only when needed: not on a fresh tool page; the Layers sheet starts
+   loading them, the Sticker sheet shows them; a draft with an emoji sticker draws it; the hidden render frame (?render=1)
+   waits for them even when the file is slow; Highlight covers still have them from the start. See the block at the end.
    Run like tests/stickers.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -132,6 +135,63 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   await pg.tap('#bar [data-open="layers"]'); await pg.waitForTimeout(500); await pg.tap('#addSticker'); await pg.waitForTimeout(500);
   const ts=await pg.evaluate(tileStats);
   ok('phone dark: 24 emoji tiles, none blank',ts.count===24&&!ts.blank.length,ts);
+  await ctx.close(); }
+
+/* 11. 1.33.0: highlight-emoji.js loads only when needed */
+{ const N='lazy emoji, phone: ';
+  const ctx=await newCtx({width:390,height:844,touch:true},'light'); await fakeRoutes(ctx);
+  let slow=false, reqs=0, release=null;
+  await ctx.route(/highlight-emoji\.js/,async r=>{ reqs++; if(slow) await new Promise(s=>{ release=s; }); r.continue(); });   // slow: held until the picture has been asked for
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(N+e.message));
+  await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1500); await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(3400);
+  const st0=await pg.evaluate(()=>({hl:!!window.HL_EMOJI,emo:(window.STUDIO_STICKERS||[]).filter(s=>s.emoji).length,drawn:(window.STUDIO_STICKERS||[]).length}));
+  ok(N+'a fresh tool page does not load highlight-emoji.js (drawn stickers are there)',reqs===0&&!st0.hl&&st0.emo===0&&st0.drawn===14,{reqs,...st0});
+  await pg.tap('#bar [data-open="layers"]'); await pg.waitForTimeout(1200);
+  ok(N+'opening the Layers sheet starts loading it (once)',reqs===1&&await pg.evaluate(()=>(window.STUDIO_STICKERS||[]).filter(s=>s.emoji).length)===24,{reqs});
+  await pg.tap('#addSticker'); await pg.waitForTimeout(600);
+  const ts=await pg.evaluate(tileStats);
+  ok(N+'the Sticker sheet shows the 24 emoji, none blank',ts.count===24&&!ts.blank.length,{count:ts.count,blank:ts.blank});
+  await pg.locator('[data-sticker="sticker:emoji-heart"]').scrollIntoViewIfNeeded(); await pg.tap('[data-sticker="sticker:emoji-heart"]'); await pg.waitForTimeout(700);
+  const hid=await pg.evaluate(()=>Studio.debug.S.sel);
+  await pg.evaluate(id=>{ const l=Studio.debug.S.layers[id]||(Studio.debug.S.layers[id]={}); l.dy=-400; Studio.debug.render(); },hid); await pg.waitForTimeout(400);
+  const geo=await pg.evaluate(id=>{ const r=Studio.debug.reg().find(q=>q.id===id); return {x:r.x,y:r.y,w:r.w,h:r.h}; },hid);
+  await pg.waitForTimeout(1500); const did=await pg.evaluate(()=>Studio.debug.draftId());
+  await pg.goto('about:blank'); await pg.waitForTimeout(500); await pg.close();
+  ok(N+'the design with an emoji sticker is a draft',!!did,did);
+  /* a draft with an emoji sticker opened in a new page: loads it and draws the heart */
+  reqs=0; const p2=await ctx.newPage(); p2.on('pageerror',e=>errs.push(N+e.message));
+  await p2.goto(BASE+'tools/restock.html?draft='+did); await p2.waitForTimeout(3000);
+  const back=await p2.evaluate(()=>{ const e=Studio.debug.S.extras.find(q=>q.ref==='sticker:emoji-heart'), r=e&&Studio.debug.reg().find(q=>q.id===e.id); return e&&{kind:r&&r.kind,empty:!!(r&&r.empty)}; });
+  const bp=back&&!back.empty?await pixels(p2,(await p2.evaluate(()=>Studio.debug.S.extras.find(q=>q.ref==='sticker:emoji-heart').id))):{red:0};
+  ok(N+'reopening the draft loads the emoji and draws the heart in its own red',reqs===1&&!!back&&back.kind==='sticker'&&!back.empty&&bp.red>200,{reqs,back,red:bp.red});
+  await p2.close();
+  /* the hidden render frame, with a slow highlight-emoji.js: the picture still has the heart */
+  slow=true; reqs=0; const p3=await ctx.newPage(); p3.on('pageerror',e=>errs.push(N+e.message));
+  await p3.goto(BASE+'tools/restock.html?draft='+did+'&render=1',{waitUntil:'domcontentloaded'});   // the held file would hold the load event
+  await p3.waitForFunction(()=>window.Studio&&Studio.renderer,null,{timeout:15000}).catch(()=>{});
+  const early=await p3.evaluate(()=>{ const early=!(window.STUDIO_STICKERS||[]).some(s=>s.emoji); const R=Studio.renderer; window.__pic=R&&R.ok?R.page(0,1):Promise.resolve(null); return early; });
+  await p3.waitForTimeout(800); if(release) release(); else await new Promise(s=>setTimeout(s,100));
+  const out=await p3.evaluate(async([g,early])=>{ const res=await window.__pic; if(!res) return {early,ok:!!(Studio.renderer&&Studio.renderer.ok),blob:false};
+    const im=new Image(); im.src=URL.createObjectURL(res.blob); await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d'); x.drawImage(im,0,0);
+    const k=im.width/1080, d=x.getImageData(Math.round(g.x*k),Math.round(g.y*k),Math.round(g.w*k),Math.round(g.h*k)).data; let red=0; for(let i=0;i<d.length;i+=4) if(d[i]>180&&d[i+1]<90&&d[i+2]<100) red++;
+    return {early,ok:true,blob:true,w:im.width,red}; },[geo,early]);
+  ok(N+'render=1 frame: the picture waits for the slow emoji file and has the heart (not loaded when the picture was asked for)',out.ok&&out.blob&&out.red>200&&out.early,out);
+  await p3.close(); slow=false;
+  /* Highlight covers keep the file from the start */
+  reqs=0; const p4=await ctx.newPage(); p4.on('pageerror',e=>errs.push(N+e.message));
+  await p4.goto(BASE+'tools/highlight.html'); await p4.waitForTimeout(2000);
+  const hl=await p4.evaluate(()=>({hl:Array.isArray(window.HL_EMOJI)&&window.HL_EMOJI.length,emo:(window.STUDIO_STICKERS||[]).filter(s=>s.emoji).length}));
+  ok(N+'Highlight covers load highlight-emoji.js on their own, once, with the 24 emoji stickers ready',reqs===1&&hl.hl===24&&hl.emo===24,{reqs,...hl});
+  await ctx.close(); }
+{ const N='lazy emoji, desktop: ';
+  const ctx=await newCtx({width:1280,height:800},'light'); await fakeRoutes(ctx);
+  let reqs=0; await ctx.route(/highlight-emoji\.js/,r=>{ reqs++; r.continue(); });
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(N+e.message));
+  await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1500); await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(1500);
+  ok(N+'a fresh tool page does not load highlight-emoji.js',reqs===0,{reqs});
+  await pg.locator('#addSticker').scrollIntoViewIfNeeded(); await pg.click('#addSticker'); await pg.waitForTimeout(1000);
+  const ts=await pg.evaluate(tileStats);
+  ok(N+'Sticker: loads it once and shows the 24 emoji after the drawn ones',reqs===1&&ts.count===24&&!ts.blank.length,{reqs,count:ts.count});
   await ctx.close(); }
 
 await b.close();
