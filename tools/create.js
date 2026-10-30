@@ -391,7 +391,7 @@ function addBlank(size){ afterBuild(makePages(size)); }
 const DKEY=()=>L.draftBase(B.id,TOOL)+':'+S.id;
 function touch(){ if(!st.ready||st.design) return; st.dirty=true;
   if(!S.id){ const n=L.listDrafts(B.id,TOOL).length; S.id=U.uid(); history.replaceState(null,'',location.pathname+'?draft='+S.id);
-    if(n>=L.DRAFT_CAP&&!st.capWarned){ st.capWarned=true; toast('You have '+(n+1)+' unfinished designs on this phone. Remove old ones in Continue editing.',6000); } }
+    if(n>=L.DRAFT_CAP&&!st.capWarned){ st.capWarned=true; toast('You have '+(n+1)+' unfinished designs on this '+L.devWord()+'. Remove old ones in Continue editing.',6000); } }
   BD.scheduleSave(); }
 BD.onSaved=d=>{ if(st.design||!S.id||!st.dirty) return; const key=DKEY(); st.draftKey=key;
   if(L.store(key,{board:S.id,at:Date.now(),imgs:d.imgs||[],name:S.name,pages:frames().length})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
@@ -530,7 +530,7 @@ document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&!e.shiftKey&
   await BD.start(); B=BD.B; BD.ICONS=CR.allIcons(); document.title=TITLE+' · Studio';
   const q=new URLSearchParams(location.search), draft=q.get('draft'), design=q.get('design'), tpl=q.get('tpl'), team=q.get('team'), size=q.get('size');
   let startWith=null;
-  if(draft){ const x=L.listDrafts(B.id,TOOL).find(d=>d.id===draft); if(x&&x.d.board&&await BD.openStored(x.d.board)){ st.dirty=true; st.draftKey=x.key; } else toast('That unfinished design is no longer on this phone.'); }
+  if(draft){ const x=L.listDrafts(B.id,TOOL).find(d=>d.id===draft); if(x&&x.d.board&&await BD.openStored(x.d.board)){ st.dirty=true; st.draftKey=x.key; } else toast('That unfinished design is no longer on this '+L.devWord()+'.'); }
   if(!S.id&&design){ const r=await openDesign(design,q.get('go')==='1'); if(r==='away') return; }
   if(!S.id&&!st.design){ history.replaceState(null,'',location.pathname); const f=BD.makeFrame(0,0,1080,1920,{label:'Story',fill:'#FFFFFF'}); BD.showPage(f); BD.resetHistory();
     if(tpl&&CR.templates().some(d=>d.id===tpl)) startWith=()=>applyTemplate(tpl,'replace');

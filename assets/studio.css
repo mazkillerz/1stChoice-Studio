@@ -878,6 +878,7 @@ button.fab-item{border:0;background:none;font:inherit;text-align:start;width:100
 
 /* home: Saved designs row */
 .see-all{display:inline-flex;align-items:center;gap:2px;min-height:var(--tap);padding:0 4px 0 14px;margin-inline-end:-4px;border-radius:var(--r-pill);color:var(--accent);font:600 var(--fs-m) var(--sans);text-decoration:none;transition:background-color .15s,transform .42s var(--spring)}
+.sec-head .link{margin-inline-end:calc(-1*var(--sp-3))}   /* a text button in a section heading ends where the cards end (1.23.0) */
 .see-all:active{transform:scale(.94);transition-duration:.09s}
 @media (hover:hover){.see-all:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}}
 .see-all:focus-visible{outline:3px solid var(--focus);outline-offset:2px}

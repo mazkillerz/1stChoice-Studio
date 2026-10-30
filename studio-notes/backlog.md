@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 33 was 1.22.0 (29 Oct 2026), a **Mazoon** session: Background finishes in Carousel (#39, for all slides), plus a tap cut: a tool row with an "N waiting" tag continues the queue in one tap (#38), and continuing the queue no longer leaves the "unfinished story" banner up (found while testing). The next session, 1.23.0, is a **team** session. (Sessions 24–31: 1.13.0–1.20.0, see `sessions.md`.)
+**Last session:** session 34 was 1.23.0 (30 Oct 2026), a **team** session: Save pictures for every unfinished story in Continue editing (#29), plus wording: "phone" only on a phone (1.13.0 audit finding). The next session, 1.24.0, is a **Mazoon** session. (Session 33: 1.22.0, Mazoon: Carousel backgrounds, waiting rows in one tap.) (Sessions 24–31: 1.13.0–1.20.0, see `sessions.md`.)
 **Simplify session:** every 5th minor version. The next one is 1.25.0.
 
 ## Next up
@@ -15,7 +15,8 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
 | 26 | Stickers in Create and Board (own editors) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
-| 29 | Save pictures for unfinished drafts in Continue editing (same hidden frame as Saved, `?draft=<id>&render=1`) | 3 | 2 | 2 | 2 | 5 | From 1.18.0. |
+| 41 | After Save pictures in Continue editing, offer "Remove these N from Continue editing" (one confirm) for stories that are done | 2 | 1 | 1 | 1 | 3 | From 1.23.0: drafts stay on purpose today (never lose work); ask the team whether they clear them by hand. |
+| 42 | Save pictures for Create drafts too (Create has its own editor and no `render=1` renderer; they are listed as skipped) | 1 | 2 | 1 | 2 | 2 | From 1.23.0. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
 | 31 | Search box (or a magnifier that opens hub search on saved designs) on the Saved page | 2 | 2 | 1 | 1 | 4 | From 1.15.0: finding a design from Saved is back + search + row. |
 | 32 | Flip for the tool's own photo boxes (a mirrored selfie in Photo story); needs a control in the Photo sheet | 1 | 2 | 1 | 2 | 2 | From 1.14.0. |
@@ -33,7 +34,7 @@ Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (eac
 - 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
 - 1.14.0: the Cover type row (Highlight covers) is 4 + 1 (Emoji alone on a second row); a Simplify session could make `segCols()` give 5 options a 3 + 2 layout engine-wide.
-- 1.13.0: some wording still says "phone" on a computer: "This phone is out of room for drafts", "You have N unfinished … stories on this phone", the queue Clear status "still in your phone's photos". (The low-memory save message and "Your device could not make the image" say device on a computer since 1.13.0.)
+- 1.13.0: done in 1.23.0: "phone" wording now comes from `devWord()` (phone on a touch screen ≤820px, device otherwise), incl. Create's draft messages and the Home footer (`#footDev`). Comments in code still say phone; harmless.
 - 1.19.0: the More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
 - 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.
 - 1.15.0: the toast's Undo is now a pill: check it still reads on the dark toast on a real phone.
