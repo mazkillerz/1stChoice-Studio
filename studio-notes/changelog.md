@@ -13,6 +13,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.25.0 · 30 Oct 2026
+
+### Video editor: your own clips, words and music
+type: feature
+The Video editor now has a timeline, like CapCut. Tap **Add** for your own clips and photos (or another reel template), **Text** for words anywhere on the video, and **Sound** for your own music and sound effects. Slide the timeline under the blue line to move through the video. Tap a clip to trim it with the handles at its ends, split it at the blue line, move it earlier or later (or hold and drag it), or delete it (with Undo). Words get a font, size, colour, a box behind them and an animation in and out (fade, pop, slide or type); drag them on the preview to place them. Music and sounds get their own volume, fade in and out, and trimming. Your clips, photos and sounds stay on this phone; Save edits to the team keeps your edits, and Save video makes the MP4 with everything in it, levelled for Instagram. Start a new video from the menu next to the name.
+![after](assets/whatsnew/1.25.0-video-timeline-after.jpg)
+
 ## 1.24.0 · 30 Oct 2026
 
 ### New: Video editor

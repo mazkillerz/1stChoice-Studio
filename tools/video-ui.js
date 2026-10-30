@@ -235,7 +235,9 @@ function addText(){
   const d=V.dur(); let s=clamp(st.t,0,Math.max(0,d-0.5)); if(d>0&&d-s<2.5) s=Math.max(0,d-2.5);
   const e=d>0?Math.min(d,s+2.5):s+2.5, id=V.uid('t');
   st.R.texts.push({id,value:newWords(),start:+s.toFixed(3),end:+e.toFixed(3),x:540,y:960,size:96,font:'display',color:brandInk(),box:null,in:'pop',out:'fade'});
-  V.select({kind:'text',id},{keepSheet:true}); V.touch({bar:true}); V.openSheet('edit');
+  V.select({kind:'text',id},{keepSheet:true}); V.touch({bar:true});
+  if(d>0) V.setT(Math.min(e,s+0.5));   // show the words fully (past their entrance) while you type
+  V.openSheet('edit');
 }
 
 /* ---- Edit a text layer ---- */
