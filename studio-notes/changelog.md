@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.33.0 · 30 Oct 2026
+
+### Flip a photo
+type: feature
+A selfie or a photo taken the other way round? Photo → Flip mirrors the photo in its box, left to right. Tap again to put it back. It works with every photo look, stays with the photo when you Swap two or Shuffle, and the saved picture is flipped too. Designs saved before are unchanged. Two taps (Photo, Flip).
+![before](assets/whatsnew/1.33.0-flip-before.jpg)
+![after](assets/whatsnew/1.33.0-flip-after.jpg)
+
+### Tool pages open a little lighter
+type: fix
+The 24 emoji stickers are now fetched only when you need them: when you open Layers or Sticker, or open a design that has one. Every tool page loads less at the start, and a saved picture always waits for its emoji, so none goes missing.
+
 ## 1.32.0 · 30 Oct 2026
 
 ### Clear Continue editing after saving
