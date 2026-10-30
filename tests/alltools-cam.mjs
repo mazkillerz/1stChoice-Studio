@@ -4,6 +4,7 @@
    (their camera is on Home); Create (no photo) gets none. Since 1.15.0 Offer has one too (its product photo).
    Picking photos with it opens the tool with them in, like Home's camera: Carousel from photos is 3 taps (All tools, camera, Save)
    instead of 4 (All tools, Carousel, Add your photos, Save).
+   Since 1.32.0 New place and Cinematic bars have one too (#37): one photo each, opened in the tool like Offer.
    Phone (390 and 360, touch) and desktop (1280), light and dark. Run: server on :8080, then node tests/alltools-cam.mjs. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -29,6 +30,9 @@ for(const scheme of ['light','dark']) for(const vp of VPS){
   ok(N+'Carousel and Highlight covers (not pinned) have a camera',R('carousel').cam&&R('highlight').cam,rows.filter(r=>r.cam).map(r=>r.id));
   ok(N+'Photo story and Collage (not pinned here) have one too',R('photo-story').cam&&R('collage').cam);
   ok(N+'pinned Restock has none (its camera is on Home), nor does Create; Offer has one (1.15.0)',!R('restock').cam&&R('restock').pinned&&R('offer').cam&&!R('create').cam);
+  ok(N+'New place and Cinematic bars have a camera too (1.32.0), one photo each',R('new-place').cam&&R('cinematic').cam&&!R('new-place').multiple&&!R('cinematic').multiple,{np:R('new-place').label,ci:R('cinematic').label});
+  ok(N+'…labelled "from a photo"',R('new-place').label==='New place from a photo'&&R('cinematic').label==='Cinematic bars from a photo',[R('new-place').label,R('cinematic').label]);
+  ok(N+'Two-photo split and Video editor still have none',!R('split').cam&&!R('video').cam);
   ok(N+'each camera has a label and its own picker',rows.filter(r=>r.cam).every(r=>/from (a photo|photos)$/.test(r.label)&&r.input===r.id),rows.filter(r=>r.cam).map(r=>r.label));
   ok(N+'multi-photo tools pick several photos',R('carousel').multiple&&R('highlight').multiple&&R('collage').multiple);
   ok(N+'cameras are 48x48, inside the row, before the star',rows.filter(r=>r.cam).every(r=>r.w>=48&&r.h>=48&&r.before&&r.inRow),rows.filter(r=>r.cam).map(r=>r.id+':'+r.w+'x'+r.h));
@@ -46,6 +50,20 @@ for(const scheme of ['light','dark']) for(const vp of VPS){
     await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S.P&&Studio.debug.S.P.length===3,null,{timeout:15000}).catch(()=>{});
     const st=await pg.evaluate(()=>({pages:Studio.debug.S.P.length,real:Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length,url:location.search}));
     ok(N+'picking 3 photos opens Carousel with 3 slides, each with its photo',st.pages===3&&st.real===3&&!/quick/.test(st.url),st);
+  }
+  /* 1.32.0: New place from a photo, from All tools: one tap to pick, the tool opens with the photo in (phone light only) */
+  if(scheme==='light'&&vp.name==='phone'){
+    await pg.goto(BASE+'index.html'); await pg.waitForTimeout(900);
+    await tap('#allTools'); await pg.waitForSelector('dialog[open] .lib-row[data-id="new-place"] .lib-cam',{timeout:5000}); await pg.waitForTimeout(400);
+    await Promise.all([pg.waitForURL(/new-place\.html/,{timeout:15000}),pg.setInputFiles('dialog[open] .lib-row[data-id="new-place"] input[data-quick]',S+'shelf.jpg')]);
+    await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S.photos.some(p=>p.img&&!p.sample),null,{timeout:15000}).catch(()=>{});
+    const st=await pg.evaluate(()=>({real:Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length,url:location.search}));
+    ok(N+'picking a photo opens New place with it in',st.real===1&&!/quick/.test(st.url),st);
+    for(const id of ['cinematic']){ await pg.goto(BASE+'index.html'); await pg.waitForTimeout(900);
+      await tap('#allTools'); await pg.waitForSelector(`dialog[open] .lib-row[data-id="${id}"] .lib-cam`,{timeout:5000}); await pg.waitForTimeout(400);
+      await Promise.all([pg.waitForURL(new RegExp(id+'\\.html'),{timeout:15000}),pg.setInputFiles(`dialog[open] .lib-row[data-id="${id}"] input[data-quick]`,S+'pair.jpg')]);
+      await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S.photos.some(p=>p.img&&!p.sample),null,{timeout:15000}).catch(()=>{});
+      ok(N+'picking a photo opens Cinematic bars with it in',await pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length===1)); }
   }
   await ctx.close();
 }
