@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 38 was 1.27.0 (30 Oct 2026), a **team** session: search on the Saved page (#31) and compact sound rows in the Video editor (the phase-1 finding). The next session, 1.28.0, is a **Mazoon** session.
+**Last session:** session 39 was 1.28.0 (30 Oct 2026), a **Mazoon** session: emoji stickers (#33, the Sticker sheet half) and five-option rows laid out 3 + 2 (the 1.14.0 audit finding). The next session, 1.29.0, is a **team** session.
 **Simplify session:** every 5th minor version. The next one is 1.30.0 (1.25.0 went to the owner-directed Video editor).
 
 ## Next up
@@ -21,7 +21,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 42 | Save pictures for Create drafts too (Create has its own editor and no `render=1` renderer; they are listed as skipped) | 1 | 2 | 1 | 2 | 2 | From 1.23.0. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
 | 32 | Flip for the tool's own photo boxes (a mirrored selfie in Photo story); needs a control in the Photo sheet | 1 | 2 | 1 | 2 | 2 | From 1.14.0. |
-| 33 | Emoji in Create's highlight layout and as stickers (the same 24 could feed the Sticker sheet) | 1 | 2 | 2 | 1 | 4 | From 1.14.0. |
+| 33 | Emoji in Create's highlight layout (the Sticker sheet got them in 1.28.0) | 1 | 2 | 1 | 1 | 3 | From 1.14.0. Create has its own editor; reuse the `STUDIO_STICKERS` entries with `emoji:true`. |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
 | 35 | Text styles in Create and Board (own editors) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
 | 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
@@ -35,7 +35,9 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
 - 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
-- 1.14.0: the Cover type row (Highlight covers) is 4 + 1 (Emoji alone on a second row); a Simplify session could make `segCols()` give 5 options a 3 + 2 layout engine-wide.
+- 1.14.0: done in 1.28.0: five-option rows are 3 + 2 engine-wide (`segOdd()` adds `.seg-32`, a 6-column grid). Seven options are still 4 + 3 (fine).
+- 1.28.0: an emoji sticker in one colour (a picked colour) loses inner details such as the chat bubble's dots (same as Emoji covers). If the owner wants, draw the lighter parts as cut-outs instead.
+- 1.28.0: every tool page now also loads `tools/highlight-emoji.js` (20 KB, cached by the service worker) before stickers.js. If load time matters, load it only when the Sticker sheet opens or a design has an emoji sticker.
 - 1.13.0: done in 1.23.0: "phone" wording now comes from `devWord()` (phone on a touch screen ≤820px, device otherwise), incl. Create's draft messages and the Home footer (`#footDev`). Comments in code still say phone; harmless.
 - 1.19.0: the More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
 - 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.

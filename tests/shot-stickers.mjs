@@ -8,5 +8,5 @@ const pg=await ctx.newPage(); await pg.goto(BASE+(page||'tools/restock.html')); 
 await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(3000);
 if(sheet&&sheet!=='-'){ await pg.tap(`#bar [data-open="${sheet}"]`); await pg.waitForTimeout(700); }
 else { await pg.evaluate(()=>document.getElementById('addSticker').click()); await pg.waitForTimeout(800);
-  if(process.env.SCROLL) await pg.evaluate(()=>{ const t=document.querySelector('[data-sticker^="sticker:emoji-"]'); t&&t.scrollIntoView({block:'start'}); }); await pg.waitForTimeout(300); }
+  if(process.env.SCROLL) await pg.evaluate(()=>{ const t=[...document.querySelectorAll('#stickerList .lbl')].find(l=>l.textContent==='Emoji'); t&&t.scrollIntoView({block:'start'}); }); await pg.waitForTimeout(300); }
 await pg.screenshot({path:out,type:'jpeg',quality:72}); await b.close();
