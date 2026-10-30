@@ -119,7 +119,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Save engine, Save sheet, team save, Save all (`assets/batch.js`), Save pictures (`assets/render.js`, incl. Continue editing) | `quicksave`, `simplify`, `home7-save`, `batch`, `batch-saved`, `draft-pictures` |
 | Quick start, "Your photo is in", several photos in a row (`queue` tools), drafts written on leave / Skip | `quicksave`, `queue`, `queue-keep`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar, "N waiting" tag on tool rows, Offer's camera in All tools | `home7-hub`, `pins`, `pinorder`, `fresh`, `waiting-tag`, `alltools-cam`, `simplify15` |
-| Saved page, collections, a design's menu, Peek, select mode (incl. Save pictures), card names | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames`, `batch-saved` |
+| Saved page, collections, a design's menu, Peek, select mode (incl. Save pictures), card names, Saved search (`findHit`, `#findRow`) | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames`, `batch-saved`, `saved-find` |
 | Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search` |
 | Copy / Paste style, text styles, Paste on all text, the inspector's More tab | `copystyle`, `textstyles` |
 | Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`) | `stickers`, `copystyle`, `full` |
@@ -136,6 +136,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Save card on a computer (the dock), Done in sheets, `.link` text buttons | `simplify15`, `taste`, `home7-save` |
 | Backgrounds (`groundFx`, `h.ground`, the `gfx` field in Restock / Photo story) | `backgrounds`, `restock-styles`, `photostory-styles` |
 | Brand kit plumbing (`useBrand`, `brands/`, anything that reads brand colours, fonts or words) | `brandkit` |
+| Video editor (`tools/video*`, `assets/reel-*.js`, reels in Templates) | `video`, `video-timeline`, `video-polish`, `video-project`, `reels-hub` (the `tools/video` rows in `run.mjs` `MAP`) |
 | Any screen (the owner's recurring issues) | `taste` (every session, with smoke) |
 
 **Test-writing tips (folded in from lessons.md):** a touch press-and-hold needs `pointerdown`/`pointerup` with `pointerType:'touch'` (CDP touchStart does not start the timer); a touch drag needs CDP `Input.dispatchTouchEvent` (touchStart, ~10 touchMoves, touchEnd); `fakecloud.collections()` keeps insertion order while the real one sorts, so compare sorted lists; `page.click` scrolls the target into view (click from `page.evaluate` in shot scripts); Board merges panel clicks within 250 ms into one undo step, so wait ≥ 400 ms between steps that undo.

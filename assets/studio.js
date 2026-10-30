@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.26.0';
+const VERSION='1.27.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -2095,7 +2095,7 @@ async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(); const $=id=>document.getElementById(id);
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
-  let all=[], cols=[], filter='all', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
+  let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
   let sortBy=SORTS[store('studio:savedSort')]?store('studio:savedSort'):'recent', loaded=false;
   let sel=null, shown=[];   // sel: the designs ticked in select mode (null = not selecting); shown: the Saved page's list right now
@@ -2261,6 +2261,7 @@ async function home(){
     const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
+    if(was==='saved') closeFind(true);
     if(was==='home') homeY=scrollY;
     Object.entries(VIEWS).forEach(([k,id])=>{ const el=$(id); if(el) el.hidden=k!==v; });
     document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates');
@@ -2467,7 +2468,7 @@ async function home(){
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
     $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    endSelect(true); $('colChips').hidden=$('sortBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    endSelect(true); closeFind(true); $('colChips').hidden=$('sortBtn').hidden=$('findBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -2501,15 +2502,18 @@ async function home(){
       return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
     { const box=$('colChips'), on=box.querySelector('.col-sel'); if(on&&!box.hidden){ const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
       if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; } }
-    const list=all.filter(d=>filter==='all'||d.collections.includes(filter.slice(2)));
+    const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&findHit(d));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='oldest'?(a,b)=>lastUse(a)-lastUse(b):(a,b)=>lastUse(b)-lastUse(a));
+    $('findBtn').hidden=!has||!!sel||!$('findRow').hidden;
     $('spCount').textContent=has?(list.length===all.length?all.length+' design'+(all.length===1?'':'s'):list.length+' of '+all.length):'';
-    $('savedTip').hidden=!has||!list.length||list.length>=6;   // a few designs: a tip under them, so the page isn't bare
+    $('savedTip').hidden=!has||!list.length||list.length>=6||!!findQ;   // a few designs: a tip under them, so the page isn't bare
     shown=list; $('selBtn').hidden=!has;
     if(sel){ const ids=new Set(list.map(d=>d.id)); [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); }); }   // only what you can see stays ticked
     if(!has){ endSelect(true); $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
     const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
-    $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=colOn&&!colOn.count
+    $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=findQ
+      ?note(ICON.search,'No saved design matches “'+esc(findQ.trim())+'”','Try part of the name, a tool such as Restock, or a collection.','<button type="button" class="btn slim ghost" data-clearfind>Clear search</button>')
+      :colOn&&!colOn.count
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
       :note(ICON.search,'No saved design matches that','Try another collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
     $('savedGrid').innerHTML=list.map(svCard).join('');
@@ -2525,7 +2529,22 @@ async function home(){
     d.querySelector('.sort-opts').addEventListener('keydown',e=>{ if(!/^Arrow(Up|Down)$/.test(e.key)) return; e.preventDefault(); const o=[...d.querySelectorAll('.sort-opt')], i=o.indexOf(document.activeElement); o[(i+(e.key==='ArrowDown'?1:o.length-1))%o.length].focus(); });
     d.addEventListener('close',()=>{ btn.setAttribute('aria-expanded','false'); }); });
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: All
-  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } });
+  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } else if(e.target.closest('[data-clearfind]')) setFind('',true); });
+  /* Search on the Saved page (1.27.0): the magnifier opens a box under the title; every word typed must match the design's name,
+     its tool or one of its collections (Arabic folded like the hub search). It works inside the chosen collection and sort;
+     Cancel, Escape or leaving the page clears it. */
+  function findHit(d){ if(!findQ.trim()) return true;
+    const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName)].join(' '));
+    return normText(findQ).split(/\s+/).filter(Boolean).every(w=>hay.includes(w)); }
+  function setFind(v,focus){ findQ=v; const i=$('findIn'); if(i.value!==v) i.value=v; $('findClr').hidden=!v; paintPage(); if(focus) i.focus({preventScroll:true}); }
+  function openFind(){ haptic('tick'); $('findRow').hidden=false; $('findBtn').hidden=true; $('findBtn').setAttribute('aria-expanded','true'); $('findIn').focus({preventScroll:true}); }
+  function closeFind(quiet){ const was=!$('findRow').hidden||findQ; $('findRow').hidden=true; $('findBtn').setAttribute('aria-expanded','false'); $('findIn').value=''; $('findClr').hidden=true; findQ='';
+    if(!quiet&&was){ paintPage(); $('findBtn').focus({preventScroll:true}); } }
+  $('findBtn').addEventListener('click',openFind);
+  $('findIn').addEventListener('input',e=>setFind(e.target.value));
+  $('findIn').addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeFind(); } else if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+  $('findClr').addEventListener('click',()=>{ haptic('tick'); setFind('',true); });
+  $('findX').addEventListener('click',()=>closeFind());
   /* the chosen collection's ⋯: a small menu with Rename and Delete (Delete still asks first) */
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('#colMore'); if(!b) return; e.stopPropagation(); haptic('tick');
     popMenu(b,[{id:'colRename',icon:ICON.pencil,label:'Rename collection',run:renameCol},{id:'colDelete',icon:ICON.trash,label:'Delete collection',danger:true,run:deleteCol}]); });
@@ -2580,7 +2599,7 @@ async function home(){
     back.innerHTML=on?ICON.close:ICON.back; back.setAttribute('aria-label',on?'Stop selecting':'Back to home');
     const sb=$('selBtn'), every=on&&shown.length&&n===shown.length;
     sb.textContent=on?(every?'Clear':'Select all'):'Select'; sb.setAttribute('aria-pressed',String(on));
-    $('sortBtn').hidden=on||!all.length;
+    $('sortBtn').hidden=on||!all.length; $('findBtn').hidden=on||!all.length||!$('findRow').hidden;
     document.querySelectorAll('#savedGrid .sv-card').forEach(c=>{ const p=on&&sel.has(c.dataset.id), a=c.querySelector('.sv-open');
       c.classList.toggle('picked',p); if(on){ a.setAttribute('role','checkbox'); a.setAttribute('aria-checked',String(p)); } else { a.removeAttribute('role'); a.removeAttribute('aria-checked'); } });
     const col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);

@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 38 | 1.27.0 | 4 (new suite saved-find; video-polish/timeline rerun on the new rows; taste) | 5 (both items in one pass; suite by a sonnet helper while notes went on) | 0 | see release | Check a global input rule before styling a new input: `input[type=search]` + the global focus ring gave a double ring at first |
 | 37 | 1.26.0 | 4 (video-polish 122/0; reels-hub 71/0; full sweep at release) | 4 (two helpers in parallel; the owner's phone bug could not be reproduced) | 1 (blank preview on the githack preview link) | see release | Test a preview link the way the owner opens it: cross-origin hosting taints canvases; add a ?debug=1 panel from day one |
 | 36 | 1.25.0 | 4 (video-timeline 173/0, video-project 48/0) | 5 (engine + UI helpers on a written contract) | – | 35/35 | A new text layer must show fully while editing (its entrance hid it at first) |
 | 35 | 1.24.0 | 4 (scene port strict diff 0.06–0.48/255 vs the DOM original; mix correlation 1.00 with the owner's MUSIC/SFX mixes at -14.06/-16.02 LUFS; video 100/100) | 5 (three sonnet helpers in parallel on one written contract, docs/reels.md; no integration rework) | 0 | see release | Write the contract (format + API names) before starting parallel helpers: it made three pieces fit on the first try |
@@ -34,6 +35,10 @@ What worked, what failed, and process tweaks. Newest session first.
 | 11 | 1.0.0 | 4 (every gate green; full.mjs caught one regression of my own before release; 8 taste findings fixed) | 3 (shipped all 8 asks in one session, but three helpers hit the usage limit and their work was finished by hand) | 2 (+ menu title left of its icons; three tools with one camera icon), both fixed | 32/32 pass | Brief helpers to save and report progress early; grow tap areas with `::after`, never by resizing controls in a bar |
 
 
+
+## 1.27.0 (session 38, team: Saved search + compact sound rows)
+- A search box inside a pill: the global `input[type=search]` (border, padding, pill radius) and `:is(input…):focus-visible` ring both apply; override them on the inner input and put the focus ring on the box (`:focus-within`), or you get two rings.
+- Changing a list row to one line: grid on the row with the old children as direct items kept every data attribute, so the handlers and existing tests needed no change.
 
 ## 1.24.0 (session 35, Mazoon, owner-directed: Video editor phase 1)
 - Asked for the reel files before building (owner's instruction); the zip had pictures/fonts, a second zip had the sound pack with a cue sheet and the mix script: porting the script 1:1 gave a bit-exact match, so ask for the mix script, not just the files.
