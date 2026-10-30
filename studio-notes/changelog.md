@@ -13,6 +13,30 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.31.0 · 30 Oct 2026
+
+### Stickers and emoji in Create
+type: feature
+Create → Add has two new groups after Icons: Stickers (the same arrows, sparkles, starburst, heart, seal, scribbles, speech bubble and tick as the tool pages) and Emoji (the 24 colourful emoji of the Highlight covers). Tap one and it lands in the middle of your page, sharp at any size. Recolour a sticker under Colour; an emoji takes one colour too, and Original brings its own colours back. Your phone's emoji are still there under Phone emoji, now one button each (they used to be squeezed into one big button).
+![before](assets/whatsnew/1.31.0-add-emoji-before.jpg)
+![after](assets/whatsnew/1.31.0-add-emoji-after.jpg)
+
+### Swap: an emoji on your highlight cover
+type: feature
+Tap the icon on a highlight cover (or any sticker or emoji) and the edit bar has Swap. Pick an emoji or a sticker and it takes the old one's place, size and turn. The sheet stays open so you can try a few, then Done. A highlight cover with an emoji: Templates → Highlight → tap the icon → Swap → one tap.
+![before](assets/whatsnew/1.31.0-highlight-before.jpg)
+![after](assets/whatsnew/1.31.0-highlight-after.jpg)
+
+### Text styles in Create
+type: feature
+The Font sheet now ends with Text styles: the same saved looks as the tool pages' text panel (on this phone, up to 8). Tap one to put its colour, font, pill and spacing on the selected words; Save this style adds the look you made; ⋯ uses a style on every text on the page or removes it. A style saved in Create shows up in Restock, Offer and the other tools, and the other way round.
+![before](assets/whatsnew/1.31.0-font-before.jpg)
+![after](assets/whatsnew/1.31.0-font-after.jpg)
+
+### One tap adds one thing
+type: fix
+In Create, opening Add (or another sheet) several times and then tapping an element could add it several times on top of each other. Now one tap always adds one.
+
 ## 1.30.0 · 30 Oct 2026
 
 ### New place: the frame is really see-through

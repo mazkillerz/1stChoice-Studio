@@ -17,10 +17,10 @@ import fs from 'fs';
 const MAP=[
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit']],
   [/^tools\/(?!video)|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave']],
-  [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers']],
+  [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30']],
   [/assets\/search\./,['search','polish71-search','create-search']],
-  [/tools\/create/,['create','create-search','tplfav']],
+  [/tools\/create/,['create','create-search','tplfav','create-stickers']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
@@ -40,7 +40,7 @@ const MAP=[
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
-const SKIP=['run','shot','shot-stickers','tapscan','tplthumbs','reelthumbs','look8','seed'];
+const SKIP=['run','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
 const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30'],
       HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
@@ -84,7 +84,7 @@ const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={backgrounds:165,'batch-saved':75,'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+const SLOW={'continue-clear':66,backgrounds:165,'batch-saved':75,'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
   'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));
