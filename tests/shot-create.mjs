@@ -13,6 +13,8 @@ const jump=async j=>{ await pg.tap('#crBar [data-cr="add"]'); await pg.waitForTi
   await pg.evaluate(j=>{ const t=document.getElementById('j-'+j)||document.getElementById('j-emoji'); const b=document.getElementById('crSheetB'); b.scrollTop=t.offsetTop-56; },j); await pg.waitForTimeout(500); };
 if(what==='add-emoji') await jump('emoji');
 else if(what==='add-stickers') await jump('stickers');
-else if(what==='highlight'){ await pg.evaluate(()=>{ const f=BD.activeFrame(); const n=f.getChildren(c=>BD.util.isObj(c)).slice(-1)[0]; BD.select([n]); }); await pg.waitForTimeout(500); }
-else if(what==='font'){ await pg.tap('#crBar [data-cr="text"]'); await pg.waitForTimeout(800); await pg.tap('#crCtx [data-x="font"]'); await pg.waitForTimeout(600); }
+else if(what==='highlight'){ await pg.evaluate(()=>{ const f=BD.activeFrame(); const n=f.getChildren(c=>BD.util.isObj(c)).slice(-1)[0]; BD.select([n]); }); await pg.waitForTimeout(500);
+  if(process.env.SWAP){ await pg.tap('#crCtx [data-x="swap"]'); await pg.waitForTimeout(700); await pg.tap('#crSwE [data-sticker="sticker:emoji-'+process.env.SWAP+'"]'); await pg.waitForTimeout(900); } }
+else if(what==='font'){ if(process.env.STYLES) await pg.evaluate(()=>localStorage.setItem('studio:textstyles',JSON.stringify([{id:'a',name:'Headline',st:{color:'#111111'},at:1},{id:'b',name:'Pill',st:{color:'#FFFFFF',bg:'#111111'},at:2},{id:'c',name:'Berry',st:{color:'#BE2C5C'},at:3}]))); await pg.tap('#crBar [data-cr="text"]'); await pg.waitForTimeout(800); await pg.tap('#crCtx [data-x="font"]'); await pg.waitForTimeout(600); }
+if(what==='font') await pg.evaluate(()=>{ const b=document.getElementById('crSheetB'); b.scrollTop=b.scrollHeight; }), await pg.waitForTimeout(300);
 await pg.screenshot({path:out,type:'jpeg',quality:72}); await b.close();
