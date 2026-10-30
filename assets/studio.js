@@ -2625,6 +2625,11 @@ async function home(){
     if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
   addEventListener('popstate',()=>{ if(sel&&!(history.state&&history.state.sel)) endSelect(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sel&&!document.querySelector('dialog[open],.pop-menu')){ e.preventDefault(); history.state&&history.state.sel?history.back():endSelect(); } });
+  /* "/" on a computer jumps into search, like many web apps: Saved → its own search, Home → the Studio search. Never while typing or with a pop-up open */
+  document.addEventListener('keydown',e=>{ if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey) return; const t=e.target;
+    if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))||document.querySelector('dialog[open],.pop-menu')) return;
+    if(!$('saved').hidden){ if($('findBtn').hidden&&$('findRow').hidden) return; e.preventDefault(); if($('findRow').hidden) openFind(); else $('findIn').focus(); }
+    else if(!$('homeView').hidden){ e.preventDefault(); $('uq').focus(); } });
   const picked=()=>all.filter(d=>sel&&sel.has(d.id));
   /* run one call per design, with a running count; stops at the first error and says how far it got */
   async function eachDesign(list,st,verb,fn){ for(let i=0;i<list.length;i++){ st(verb+' '+(i+1)+' of '+list.length+'…'); await fn(list[i]); } }

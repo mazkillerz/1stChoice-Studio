@@ -5,6 +5,7 @@
    3. All tools and Settings: Done is a quiet button (not the blue accent); All tools has one intro line that says phone / device;
       with one pinned tool there is no drag hint, with two there is.
    4. A saved design's menu: every row icon is the same size and every label starts at the same x.
+   5. On a computer "/" jumps into search: Saved's own search, or the Studio search on Home; a "/" typed in a box stays text.
    Run like tests/full.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -99,6 +100,22 @@ for(const [mode,opt] of [['phone',PHONE],['computer',DESK]]){
   const ws=m.map(r=>r.w), xs=m.map(r=>r.x);
   ok('design menu: every row icon is the same size',m.length>=5&&Math.max(...ws)-Math.min(...ws)<=1&&Math.max(...m.map(r=>r.h))-Math.min(...m.map(r=>r.h))<=1,ws);
   ok('design menu: every label starts at the same x',Math.max(...xs)-Math.min(...xs)<=1,xs);
+  await ctx.close(); }
+
+/* 5. "/" on a computer: Saved → its search opens and takes the typing; Home → the Studio search; never while typing */
+{ const {ctx,pg}=await newCtx(DESK);
+  await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200);
+  await pg.keyboard.press('/'); await pg.waitForTimeout(300);
+  ok('computer: "/" on Home focuses the Studio search',await pg.evaluate(()=>document.activeElement&&document.activeElement.id==='uq'));
+  await pg.keyboard.type('a/b'); await pg.waitForTimeout(200);
+  ok('computer: "/" typed in the search stays text',await pg.inputValue('#uq')==='a/b',await pg.inputValue('#uq'));
+  await pg.goto(BASE+'index.html?o=1#saved'); await pg.waitForTimeout(1500);
+  await pg.keyboard.press('/'); await pg.waitForTimeout(400);
+  const f=await pg.evaluate(()=>({row:!document.getElementById('findRow').hidden,focus:document.activeElement&&document.activeElement.id}));
+  ok('computer: "/" on Saved opens its search and focuses it',f.row&&f.focus==='findIn',f);
+  await pg.keyboard.type('Offer'); await pg.waitForTimeout(500);
+  const n=await pg.$$eval('#savedGrid .sv-card',l=>l.filter(c=>c.offsetParent).length);
+  ok('computer: typing after "/" filters Saved (no "/" in the box)',await pg.inputValue('#findIn')==='Offer'&&n>=1&&n<8,{v:await pg.inputValue('#findIn'),n});
   await ctx.close(); }
 
 ok('no page errors',!errs.length,errs.slice(0,3));
