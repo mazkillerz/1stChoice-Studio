@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.27.1 · 30 Oct 2026
+
+### The winter cat in your pictures
+type: feature
+Pictures has a new group, Cat · winter camp: the cat from the winter reel (wink with a can, holding a can, calm, cold with the hood up, deadpan stare), the desert camp, the campfire, the moon, a cloud and a star, all in the can-label style. The approved «حتى في البرد...» post is in Saved, built from these pieces, so every word and picture in it can be changed.
+
 ## 1.27.0 · 30 Oct 2026
 
 ### Search your saved designs
