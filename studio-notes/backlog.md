@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 39 was 1.28.0 (30 Oct 2026), a **Mazoon** session: emoji stickers (#33, the Sticker sheet half) and five-option rows laid out 3 + 2 (the 1.14.0 audit finding). The next session, 1.29.0, is a **team** session.
+**Last session:** session 40 was 1.29.0 (30 Oct 2026), a **team** session in the parallel round 1.29–1.33 (`sessions.md`): backgrounds in Cinematic, New place, Offer and Collage (#39) and two Templates that start with a finish (#40). Next in the round: 1.30.0 (Simplify).
 **Simplify session:** every 5th minor version. The next one is 1.30.0 (1.25.0 went to the owner-directed Video editor).
 
 ## Next up
@@ -27,10 +27,10 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
 | 37 | New place and Cinematic bars get `quick` (camera in All tools, like Offer in 1.15.0) if the team uses them | 2 | 1 | 1 | 1 | 3 | From 1.15.0; the share sheet keeps its five tools. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
-| 39 | Backgrounds in more tools: Cinematic, New place, Offer, Collage gaps (`Studio.groundField()` + `h.ground()`, one line each) | 2 | 2 | 2 | 1 | 5 | From 1.21.0; Carousel got it in 1.22.0 (global). Highlight covers deliberately skipped: the finish only shows in a thin ring round the disc and a cover is seen ~60px wide, so it reads as noise. Ask the owner which story tools want it. |
-| 40 | Background finishes as starting points in brand presets (e.g. a Restock preset with Glow) and in Templates | 2 | 2 | 2 | 1 | 5 | From 1.21.0. |
 
 ## UX audit findings (open)
+- 1.29.0: New place "Save the frame only (see-through PNG)" is not see-through when a photo is in: `renderPage(pg,K,withPhotos)` still calls `draw()`, which draws the photo; `withPhotos=false` only skips the black backing. Skip `h.photo` for the frame save, or rename the button (handed to 1.30.0).
+- 1.29.0: `backgrounds.mjs` "Grain same after reload" failed once in 4 runs (no Grain change); give that reload a longer settle if it shows again.
 - 1.27.0: Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
 - 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
 - 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
