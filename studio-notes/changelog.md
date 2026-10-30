@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.23.0 · 30 Oct 2026
+
+### Save every unfinished story at once
+type: feature
+Made a few stories and left them in Continue editing? Tap **Save pictures** at the top of Continue editing and Studio saves the picture of every one of them at full quality, exactly as if you opened each and tapped Save. On a phone they open in one share sheet (choose Save Images); on a computer they come as one ZIP. You see "Saving 2 of 3…" with Cancel. A story that still needs its photo is skipped and named, and your unfinished stories stay in the list so you can still change them. Three stories: 1 tap plus the share sheet, instead of opening and saving each one (6 taps or more).
+![before](assets/whatsnew/1.23.0-draft-pictures-before.jpg)
+![after](assets/whatsnew/1.23.0-draft-pictures-after.jpg)
+
+### "Phone" only on a phone
+type: fix
+On a computer some messages still talked about "this phone": the drafts warnings, removing an unfinished story, the Settings footer, the team sign-in note and the line at the bottom of Home. They now say "this device" on a computer and "this phone" on a phone. Clearing waiting photos on a computer now says your photo files are not touched, instead of pointing at a phone's photos.
+
 ## 1.22.0 · 29 Oct 2026
 
 ### Backgrounds for Carousel

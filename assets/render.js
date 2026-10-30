@@ -10,7 +10,7 @@
   /* a hidden frame of the design's tool page, resolved once its renderer is ready */
   function frame(d,stop){ return new Promise((res,rej)=>{
     const f=document.createElement('iframe'); f.className='render-frame'; f.setAttribute('aria-hidden','true'); f.tabIndex=-1; f.title='';
-    f.src=L().toolPage(d.tool)+'?design='+encodeURIComponent(d.id)+'&render=1';
+    f.src=L().toolPage(d.tool)+(d.draft?'?draft=':'?design=')+encodeURIComponent(d.id)+'&render=1';   // an unfinished story (1.23.0) or a saved design
     document.body.appendChild(f); const t0=Date.now();
     const tick=()=>{ if(stop.now){ f.remove(); return rej(STOP); }
       let r=null; try{ r=f.contentWindow&&f.contentWindow.Studio&&f.contentWindow.Studio.renderer; }catch(_){}
@@ -24,7 +24,7 @@
     const {f,r}=got;
     try{
       if(!r.ok) return {error:'could not be opened'};
-      if(r.missing&&r.missing.length) return {error:'has a photo missing'};
+      if(r.missing&&r.missing.length) return {error:d.draft?'has no photo yet':'has a photo missing'};
       const out=[];
       for(let pg=0;pg<r.pages;pg++){ if(stop.now) throw STOP; if(onPage) onPage(pg,r.pages);
         const x=await r.page(pg,max); if(!x) return {error:'memory',out}; out.push(x); max=x.K; }
@@ -42,7 +42,7 @@
     if(list.length>MAX){ ui.toast('Pick up to '+MAX+' designs at a time.'); return; }
     const tpl=list.filter(d=>d.kind==='template'), todo=list.filter(d=>d.kind!=='template');
     if(!todo.length){ ui.toast(tpl.length===1?'That is a template: open it to make a design, then save its picture.':'Those are templates: open one to make a design, then save its picture.'); return; }
-    const touch=matchMedia('(pointer:coarse)').matches, what=touch?'phone':'device';
+    const touch=matchMedia('(pointer:coarse)').matches, what=L().devWord();
     const dl=dialog(`<div class="dlg-body bs-dlg"><h3 id="bsH">Saving ${plural(todo.length,'picture')}</h3>
       <div class="progress" id="bsProg"><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="bsRole"><i id="bsBar"></i></div><span id="bsTxt" dir="auto">Getting ready…</span></div>
       <p class="small" id="bsNote" dir="auto" hidden></p>
@@ -60,11 +60,12 @@
     try{
       for(let i=0;i<todo.length;i++){
         const d=todo[i], tag='Saving '+(i+1)+' of '+todo.length+'…';
+        if(d.skip){ skipped.push('“'+(d.label||d.name)+'” '+d.skip); continue; }
         bar(i/todo.length,tag);
         const res=await design(d,stop,used||0,(pg,n)=>bar((i+pg/n)/todo.length,n>1?tag+' ('+(pg+1)+' of '+n+')':tag));
         if(res.error==='memory'){ busy=false; bar(0,''); $('bsProg').hidden=true; $('bsH').textContent='Not saved';
           $('bsNote').hidden=false; $('bsNote').textContent='Your '+what+' could not make the image. Close other apps or tabs and try again.'; $('bsCancel').textContent='Close'; $('bsCancel').disabled=false; return; }
-        if(res.error){ skipped.push('“'+d.name+'” '+res.error); continue; }
+        if(res.error){ skipped.push('“'+(d.label||d.name)+'” '+res.error); continue; }
         W=res.W; H=res.H; const base=uniq(slug(d.name)||'design');
         res.out.forEach((x,pg)=>{ used=used?Math.min(used,x.K):x.K;
           files.push(new File([x.blob],(res.out.length>1?base+'-'+z2(pg+1):base)+'.png',{type:'image/png'})); });

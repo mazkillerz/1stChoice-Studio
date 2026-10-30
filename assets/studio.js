@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.22.0';
+const VERSION='1.23.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -268,6 +268,8 @@ const idb={
    Each draft: localStorage 'studio:draft:<brand>:<tool>:<id>' = {json,keys,at,pfx}; its photos in IndexedDB under
    '<pfx>:<photo key>' (pfx = the draft's own key; drafts moved from the old single slot keep their old prefix) and its
    preview under '<key>:thumb'. A draft is only ever removed by the person (✕ in Continue editing) or after a team save. */
+/* the word for this device in messages: "phone" on a phone, "device" on a computer or tablet (1.23.0; a computer is not a phone) */
+function devWord(){ return matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width: 820px)').matches?'phone':'device'; }
 const DRAFT_CAP=20;   // more than this per tool: a warning (never silent loss)
 const draftBase=(brand,tool)=>'studio:draft:'+brand+':'+tool;
 function migrateDraft(brand,tool){
@@ -321,7 +323,7 @@ async function ensureMember(reason){
       <input type="email" name="username" autocomplete="username" value="${esc(C.teamEmail||'')}" hidden readonly>
       <div class="field"><label class="lbl" for="siPass">Team password</label>
         <div class="inline"><input type="password" id="siPass" name="password" autocomplete="current-password" required><button type="button" class="mini" id="siShow" aria-pressed="false">Show</button></div></div>
-      <span class="small">You stay signed in on this phone. Tip: add Studio to your home screen so it never forgets.</span>
+      <span class="small">You stay signed in on this ${devWord()}. Tip: add Studio to your home screen so it never forgets.</span>
       <div class="status" id="siStatus" role="status"></div>
       <div class="dlg-actions"><button type="button" class="mini" id="siCancel">Not now</button><button type="submit" class="btn" id="siGo">Sign in</button></div>
     </form>`);
@@ -1186,12 +1188,13 @@ async function tool(cfg){
      This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
   const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
   const DKEY=()=>DBASE+':'+draftId;
+  const RENDER=new URLSearchParams(location.search).get('render')==='1';   // a hidden frame taking pictures (assets/render.js): it never writes a draft
   function saveDraft(s){
-    if(!hist.ready) return; if(design) return;   // a saved design never goes to Continue editing
+    if(!hist.ready||RENDER) return; if(design) return;   // a saved design never goes to Continue editing
     if(hist.i>0) dirty=true; if(!dirty) return;
     if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
       $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
-      if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this phone. Remove old ones in Continue editing.',6000); } }
+      if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this '+devWord()+'. Remove old ones in Continue editing.',6000); } }
     draftNext=s; clearTimeout(draftTimer); draftTimer=setTimeout(()=>writeDraft(false),800);
   }
   /* the write itself: the photos first, then the record that points at them. now=true (the page is being left, 1.13.0): the
@@ -1201,7 +1204,7 @@ async function tool(cfg){
     if(!s||design||!draftId) return;   // saved to the team meanwhile
     const key=DKEY(), pfx=draftPfx||key, ph=S.photos.slice(), keys=ph.map(p=>p.img&&!p.sample&&p.key?p.key:null);
     const record=()=>{ const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
-      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This '+devWord()+' is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
       if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); }); };
     if(now) record();
     for(const p of ph){ if(p.img&&!p.sample&&p.key&&p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } }
@@ -1866,7 +1869,7 @@ async function tool(cfg){
   let kept=null;
   $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
   $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
-    status('The waiting photos are cleared here. They are still in your phone’s photos.',3500); });
+    status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
   function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
@@ -2040,7 +2043,7 @@ async function tool(cfg){
   try{
     if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
     else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
-    else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this phone.'); } }
+    else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this '+devWord()+'.'); } }
     else if(q.get('quick')!=='1'){ const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
       if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
@@ -2049,7 +2052,7 @@ async function tool(cfg){
   setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
   /* photos still waiting from an earlier visit (1.8.0): the page reloaded on the story you were on (after the share sheet, or
      with ?draft=) picks the row up again as it was; anything else (a fresh visit, ?queue=1 from Home) offers or continues it */
-  if(QUEUE&&q.get('quick')!=='1'){ const k=await keptQueue();
+  if(QUEUE&&q.get('quick')!=='1'&&!RENDER){ const k=await keptQueue();   // a hidden render frame leaves the waiting photos alone
     if(k){ kept=k;
       const dsg=q.get('design'), here=dsg?dsg===k.m.design:want&&want!=='1'&&!k.m.saved&&(!k.m.draft||k.m.draft===want);
       if(here){ takeQueue(k); qSaved=!!dsg; if(qSaved) offerQueue(k); else { quickReady=true; showReady(false,...queueNote()); } syncQueue(); }
@@ -2067,7 +2070,7 @@ async function tool(cfg){
   else if(noPhotoStyle()&&!design&&!draftId) quickReady=true;
   /* Save pictures from Saved (1.18.0): assets/render.js opens this page in a hidden frame with ?design=…&render=1 and takes
      each page's picture from here, drawn by the same renderPage() as Save, so the pixels are the same as opening it and saving */
-  if(q.get('render')==='1') Studio.renderer={ok:!!design&&design.kind!=='template',missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
+  if(q.get('render')==='1') Studio.renderer={ok:design?design.kind!=='template':!!draftId,missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
     async page(pg,max){ await assetsHD(); if(document.fonts&&document.fonts.ready) await document.fonts.ready;
       for(const K of [EXPORT_SCALE,1.5,1]){ if(max&&K>max) continue; const blob=await renderPage(pg,K,true); if(blob) return {blob,K}; } return null; }};   // the same steps down as Save
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
@@ -2235,13 +2238,14 @@ async function home(){
       let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
       const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
       el.innerHTML=`<a class="qw-go" href="${toolPage(id)}?queue=1"><span class="install-ic" aria-hidden="true">${u?`<img alt="" src="${u}">`:''}</span><span class="install-txt"><b>${n===1?'1 photo still waiting':n+' photos still waiting'}</b><span>${esc(t.title)} · tap to continue</span></span><span class="qw-chev" aria-hidden="true">${ICON.next}</span></a><button type="button" class="mini icon" aria-label="Clear the ${n===1?'photo':n+' photos'} waiting for ${esc(t.title)}">✕</button>`;
-      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); waitN[id]=0; paintWaitTags(); if(u) URL.revokeObjectURL(u); hubToast('Cleared. The photos are still in your phone’s photos.'); };
+      el.querySelector('button').onclick=()=>{ el.remove(); idb.del(k); idb.del(k+':pos'); waitN[id]=0; paintWaitTags(); if(u) URL.revokeObjectURL(u); hubToast(devWord()==='phone'?'Cleared. The photos are still in your phone’s photos.':'Cleared. Your photo files are not touched.'); };
       const at=$('sharedBar'); if(at) at.after(el); else { const h=document.querySelector('header'); if(h) h.after(el); } }
     paintWaitTags(); }
   queueWaiting();
   /* What's New: a dot on the button until this version's notes have been opened */
   const wn=$('wnBtn'); if(wn){ const fresh=store('studio:seenVersion')!==VERSION; wn.classList.toggle('has-new',fresh); wn.setAttribute('aria-label',fresh?"What's new (new update)":"What's new"); }
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
+  const ft=$('footDev'); if(ft) ft.textContent=devWord();
   /* a friendly line above the title, by the time of day on this phone */
   const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening'; }
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
@@ -2326,11 +2330,21 @@ async function home(){
   }
   /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
   $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.key===b.dataset.rm); if(!x) return;
-    const d=dialog(`<div class="dlg-body">${thumbs[x.key]?`<img class="cf-thumb" src="${thumbs[x.key]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this phone. This can't be undone.</p>
+    const d=dialog(`<div class="dlg-body">${thumbs[x.key]?`<img class="cf-thumb" src="${thumbs[x.key]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this ${devWord()}. This can't be undone.</p>
       <div class="dlg-actions"><button type="button" class="mini" id="rmNo">Keep it</button><button type="button" class="btn danger" id="rmYes">Remove</button></div></div>`);
     d.querySelector('#rmNo').onclick=()=>d.close();
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont();
+  /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
+     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
+     own editor and no renderer, so they are listed as skipped. */
+  $('contSave').onclick=async()=>{ haptic('tick');
+    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,draft:true,name:TOOLS[x.tool].title,label:TOOLS[x.tool].title+' ('+ago(x.d.at)+')',
+      skip:x.d.json?'':'is a Create design: open it to save its picture'}));
+    if(!list.length) return;
+    try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
+    const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
+    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true}); };
 
   /* ---------- first-run welcome (assets/welcome.js): three short swipes (the main tools, pins and search, saving). Once per device,
      only on a device that never used Studio; Settings → Welcome tour (or ?welcome=1) shows it again. ---------- */
@@ -2355,7 +2369,7 @@ async function home(){
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
       ${row('lab',ICON.lab,'Experimental','New things being tested (passcode)')}</div>
-      <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this phone.</p></div>`,'set-dlg');
+      <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this ${devWord()}.</p></div>`,'set-dlg');
     d.setAttribute('aria-labelledby','setH'); d.tabIndex=-1; d.focus();
     d.querySelector('[data-x]').onclick=()=>d.close();
     d.querySelector('.set-list').addEventListener('click',e=>{ const b=e.target.closest('[data-set]'); if(!b) return; const a=b.dataset.set; haptic('tick');
@@ -2693,7 +2707,7 @@ async function home(){
   /* account menu: who's signed in, team (owner), sign out */
   $('acct').addEventListener('click',async()=>{
     if(!me){ await ensureMember(); loadSaved(true); return; }
-    const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">${me.email===C.teamEmail?'Signed in with the team login. You stay signed in on this phone until you sign out.':'Signed in as<br><b>'+esc(me.email||'')+'</b>'}</p>
+    const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">${me.email===C.teamEmail?'Signed in with the team login. You stay signed in on this '+devWord()+' until you sign out.':'Signed in as<br><b>'+esc(me.email||'')+'</b>'}</p>
       <div id="teamBox"></div><div class="dlg-actions"><button type="button" class="mini" id="acSignOut">Sign out</button><button type="button" class="btn" id="acClose">Done</button></div></div>`);
     d.querySelector('#acClose').onclick=()=>d.close();
     d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(true); };
@@ -2728,7 +2742,7 @@ async function home(){
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
-  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
+  cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
