@@ -65,6 +65,7 @@ Studio.tool({
     {id:'bcol',type:'color',in:'style',label:'Border colour',default:null,auto:'Auto'},
     {id:'radius',type:'range',in:'style',label:'Corner radius',min:0,max:60,step:2,default:0,unit:'px'},
     {id:'bg',type:'color',in:'style',label:'Gap & background colour',default:null,auto:'Style colour'},
+    Studio.groundField(),
     {id:'margin',type:'toggle',in:'style',label:'Outer margin',default:true},
     {id:'edge',type:'range',in:'style',label:'Edge space',min:0,max:120,step:2,default:40,unit:'px',when:{field:'margin',is:[true]}},
     {id:'logo',type:'toggle',in:'style',label:'Show the logo',default:true}
@@ -73,7 +74,7 @@ Studio.tool({
     const {ctx,W,H,C}=h, light=h.isLight||(x=>{const m=/^#?([0-9a-f]{6})$/i.exec(x||'');if(!m)return false;const n=parseInt(m[1],16);return ((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000>150;});
     const V=(id,d)=>{const v=o.value(id);return v==null?d:v;};
     const bg=o.value('bg')||(o.style==='black'?C.night:o.style==='cream'?(C.cream||C.paper):C.paper), dk=!light(bg);
-    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);   // gaps show this colour
+    h.ground(bg,o.value('gfx'));   // gaps show this colour and its Background finish
     const n=o.count, a=i=>h.photoAspect(i), gap=V('gap',14), g=gap, rad=V('radius',0), showLogo=!!V('logo',true), margin=V('margin',true)!==false;
     /* border: a frame of this width and colour around every photo (the photo shrinks inside its cell). Frame colour white unless chosen;
        with no border, only the "Big + small" print keeps its old built-in frame (paper in the dark look) */

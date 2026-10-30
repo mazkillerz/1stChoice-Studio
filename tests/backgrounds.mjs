@@ -11,6 +11,10 @@
    10. Dark theme: the Background buttons render and the pressed one looks different from the others.
    11. No page errors.
    12. Carousel (1.22.0): the Background group for all slides, Plain = no value, Dots on every slide, Save at 2160x2700.
+   13. Cinematic, New place, Offer, Collage (1.29.0): the group shows only on styles with a ground (Offer: not on Full photo); in every
+       style no value and Plain draw the same pixels and every finish differs from Plain; tapping Glow sets the value and the recipe;
+       New place "Save the frame only" with Dots leaves the photo window untouched and finishes the ground; Offer + Dots saves 2160x3840.
+   14. Templates (1.29.0): the "Cans with a glow" and "Offer with dots" presets open their tool with the finish chosen.
    Run like tests/smoke.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -217,6 +221,75 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   for(let i=0;i<80&&!pg.dls.length;i++) await pg.waitForTimeout(300);
   const sz=pg.dls[0]?await pngSize(pg.dls[0]):'';
   ok('Carousel + Dots: Save makes full-size 2160x2700 slides',sz==='2160x2700',sz);
+  await ctx.close();
+}
+
+/* 13. Cinematic, New place, Offer, Collage (1.29.0) */
+const T13={cinematic:{on:['white','cream','black'],off:[]},'new-place':{on:['A','B','C','D'],off:[]},offer:{on:['white','cream','black'],off:['photo']},collage:{on:['white','cream','black'],off:[]}};
+for(const [tool,{on,off}] of Object.entries(T13)){
+  const {ctx,pg}=await mk({tool});
+  await pg.evaluate(()=>document.getElementById('draftFresh')?.click());
+  await pg.waitForFunction(()=>Studio.debug.S.photos.every(p=>!p||p.img),null,{timeout:20000}).catch(()=>{});
+  await openStyle(pg);
+  const bs=await btns(pg);
+  ok(tool+': Background group has the 6 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs.map(x=>x.l+':'+x.p));
+  const order=await pg.evaluate(()=>{ const fw=[...document.querySelectorAll('#sh-style [data-fw]')].map(x=>x.dataset.fw); return {bg:fw.indexOf('bg'),gfx:fw.indexOf('gfx')}; });
+  ok(tool+': Background sits right under the background colour',order.gfx===order.bg+1,order);
+  const vis={};
+  for(const st of [...on,...off]){ await pg.tap(`#styles [data-style="${st}"]`); await pg.waitForTimeout(250); vis[st]=await groupVisible(pg); }
+  ok(tool+': Background shows on '+on.join(', ')+(off.length?' and is hidden on '+off.join(', '):''),on.every(s=>vis[s])&&off.every(s=>!vis[s]),vis);
+  await pg.tap(`#styles [data-style="${on[0]}"]`); await pg.waitForTimeout(250);
+  await pg.tap('[data-seg="gfx"] .seg[data-v="glow"]'); await pg.waitForTimeout(400);
+  const g=await pg.evaluate(()=>({v:Studio.debug.S.values.gfx,rec:Studio.debug.recipe().values.gfx,p:document.querySelector('[data-seg="gfx"] .seg[data-v="glow"]').getAttribute('aria-pressed')}));
+  ok(tool+': tapping Glow sets the value, the pressed state and the recipe',g.v==='glow'&&g.rec==='glow'&&g.p==='true',g);
+  await closeStyle(pg);
+  const same=[], diff=[];
+  for(const st of on){
+    await set(pg,st,{gfx:undefined}); const none=await settle(pg);
+    await set(pg,null,{gfx:'plain'}); const plain=await settle(pg);
+    if(none!==plain) same.push(st);
+    for(const k of KINDS.slice(1)){ if(await gfxHash(pg,k)===plain) diff.push(st+':'+k); }
+  }
+  ok(tool+': in every style no value and Plain draw exactly the same pixels',!same.length,same);
+  ok(tool+': in every style each finish differs from Plain',!diff.length,diff);
+  if(off.length){ await set(pg,off[0],{gfx:'plain'}); const a=await settle(pg); await set(pg,null,{gfx:'dots'}); const d=await settle(pg);
+    ok(tool+': on '+off[0]+' a finish draws nothing (no ground there)',a===d,[a,d]); }
+
+  if(tool==='new-place'){   // the finish stays on the ground: inside the photo window a frame save is the same as with Plain
+    await pg.evaluate(()=>{ navigator.canShare=()=>false; });
+    const frame=async k=>{ await set(pg,'A',{gfx:k}); await settle(pg); const n=pg.dls.length;
+      await pg.evaluate(()=>document.getElementById('saveFrame').click());
+      for(let i=0;i<60&&pg.dls.length===n;i++) await pg.waitForTimeout(300);
+      const d=pg.dls[n]; if(!d) return null;
+      return pg.evaluate(async b64=>{ const im=new Image(); im.src='data:image/png;base64,'+b64; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d'); x.drawImage(im,0,0);
+        const r=Studio.debug.reg().find(q=>q.photo===0), k=im.width/document.getElementById('view').width;
+        const hs=(X,Y,w,h)=>{ const d=x.getImageData(Math.round(X*k),Math.round(Y*k),Math.round(w*k),Math.round(h*k)).data; let a=2166136261>>>0; for(let i=0;i<d.length;i++) a=Math.imul(a^d[i],16777619)>>>0; return a; };
+        return {w:im.width,h:im.height,win:hs(r.x+60,r.y+60,r.w-120,r.h-120),ground:hs(0,r.y+r.h+20,1080,200)}; },fs.readFileSync(await d.path()).toString('base64')); };
+    const fp=await frame('plain'), fd=await frame('dots');
+    ok('new-place: Save the frame only with Dots is 2160x3840, the photo window untouched, the ground finished',!!fp&&!!fd&&fd.w===2160&&fd.h===3840&&fp.win===fd.win&&fp.ground!==fd.ground,{fp,fd});
+  }
+  if(tool==='offer'){   // the example photo is not saved: add a real one first
+    await pg.setInputFiles('#pick',[new URL('../brands/1stchoice/samples/hands.jpg',import.meta.url).pathname]); await pg.waitForTimeout(800);
+    await set(pg,'white',{gfx:'dots'}); await settle(pg);
+    await pg.evaluate(()=>{ navigator.canShare=()=>false; });
+    await pg.tap('#barSave'); await pg.waitForTimeout(700);
+    if(!pg.dls.length) await pg.evaluate(()=>document.getElementById('save').click());
+    for(let i=0;i<60&&!pg.dls.length;i++) await pg.waitForTimeout(300);
+    const sz=pg.dls[0]?await pngSize(pg.dls[0]):'';
+    ok('Offer + Dots: Save makes the 2160x3840 PNG',sz==='2160x3840',sz);
+  }
+  await ctx.close();
+}
+
+/* 14. Templates (1.29.0): presets that start with a finish */
+for(const [id,tool,st,k] of [['rs-glow','restock','cans','glow'],['of-dots','offer','white','dots']]){
+  const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block'});
+  await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(id+': '+e.message));
+  await pg.goto(BASE+'tools/'+tool+'.html?preset='+id);
+  await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S,null,{timeout:15000}); await pg.waitForTimeout(800);
+  const r=await pg.evaluate(()=>({st:Studio.debug.S.style,gfx:Studio.debug.S.values.gfx,p:(document.querySelector('[data-seg="gfx"] .seg[aria-pressed="true"]')||{}).dataset?.v}));
+  ok('Template '+id+' opens '+tool+' '+st+' with '+k+' chosen',r.st===st&&r.gfx===k&&r.p===k,r);
   await ctx.close();
 }
 
