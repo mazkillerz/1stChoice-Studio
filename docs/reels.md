@@ -50,7 +50,7 @@ colours and sounds live only in the template folder.
 
 - One line. Arabic or English: the direction comes from the first strong letter (`R.text[id].dir`).
 - `maxWidth`: the room the line has. The engine measures the line in `font`; if it is wider, the scene draws it smaller
-  (`R.text[id].fit`, 1 = full size, never below `minFit`). Below `warnBelow` the editor shows "too long for its spot".
+  (`R.text[id].fit`, 1 = full size), so it never runs off the frame. Below `warnBelow` the editor shows "too long for its spot". (`minFit` is kept for older templates and not used.)
 - `show`: a time where the words are fully on screen (the editor jumps there while you type). `in`: when they start to appear.
 - `box`: where the words sit (used for the selection outline in the preview).
 
