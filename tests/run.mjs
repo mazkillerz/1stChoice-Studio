@@ -16,28 +16,33 @@ import fs from 'fs';
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit']],
-  [/^tools\/|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles','brandkit']],
+  [/^tools\/(?!video)|assets\/studio\.js/,['full','v5','polish','queue','queue-keep','copystyle','stickers','flip','simplify15','textstyles','brandkit']],
   [/^assets\/stickers\.js$/,['stickers','copystyle']],
-  [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit']],
+  [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub']],
   [/assets\/search\./,['search','polish71-search','create-search']],
   [/tools\/create/,['create','create-search','tplfav']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
   [/^lab\//,['lab','lab-pro','board-penpot','board-flex']],
-  [/assets\/templates\.|brands\//,['templates','postpresets','tplfav']],
+  [/assets\/templates\.|brands\//,['templates','postpresets','tplfav','reels-hub']],
   [/tools\/create-templates|assets\/search\./,['postpresets']],
   [/assets\/welcome\./,['welcome']],
   [/tools\/restock/,['restock-styles','backgrounds']],[/tools\/photo-story/,['photostory-styles','backgrounds']],[/tools\/collage/,['collage-grids']],
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch']],
   [/assets\/batch\.js/,['batch','batch-saved']],
-  [/assets\/render\.js/,['batch-saved','draft-pictures']],
+  [/assets\/render\.js/,['batch-saved','draft-pictures','reels-hub']],
+  [/tools\/video/,['video','video-timeline','video-polish']],
+  [/assets\/reel-project\.js/,['video-project','video','video-timeline','video-polish']],
+  [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene']],
+  [/assets\/reel-audio\.js/,['video','reel-audio']],
+  [/assets\/reel-export\.js/,['video','reel-export']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
-const SKIP=['run','shot','tapscan','tplthumbs','look8','seed'];
+const SKIP=['run','shot','tapscan','tplthumbs','reelthumbs','look8','seed'];
 const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures'],
-      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures'];
+      HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','reels-hub'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */

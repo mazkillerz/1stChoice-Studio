@@ -83,6 +83,11 @@ Studio.registerBrand({
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',prev:'assets/prev/cans_pair.webp',group:'Cans (HD cut-outs)',noFlip:true},
     {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true}
   ],
+  /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
+     The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
+  reels:[
+    {id:'winter-cat'}
+  ],
   /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
      cat: restock | story | post | highlight. Previews: assets/thumbs/<brand>/tpl/<id>.jpg (node tests/tplthumbs.mjs makes them).
      Words come only from the approved phrases above. A tap opens the tool with these settings, as a new story. */

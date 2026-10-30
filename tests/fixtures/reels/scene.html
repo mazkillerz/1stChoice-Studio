@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>Reel scene test page</title>
+<script src="../../../assets/reel.js"></script>
+<script>
+/* test helpers: load a reel, draw a frame to a canvas, compare two images (downscaled) */
+window.T={reels:{},
+ async open(id){ return this.reels[id]||(this.reels[id]=await StudioReel.load('../../../brands/1stchoice/reels/'+id+'/')); },
+ cv(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; },
+ async frame(id,t,o,w){ const r=await this.open(id), c=this.cv(w||1080,Math.round((w||1080)*r.H/r.W)); r.draw(c.getContext('2d'),t,o); return c; },
+ async png(id,t,o,w){ return (await this.frame(id,t,o,w)).toDataURL('image/png'); },
+ async load(url){ const i=new Image(); i.src=url; await i.decode(); return i; },
+ small(img,w,h){ const c=this.cv(w,h), x=c.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(img,0,0,w,h); return x.getImageData(0,0,w,h).data; },
+ async cmp(a,b,w,h,keep){ const A=this.small(await this.load(a),w,h), B=this.small(await this.load(b),w,h), d=[]; let s=0;
+   for(let i=0;i<A.length;i+=4) for(let k=0;k<3;k++){ const v=Math.abs(A[i+k]-B[i+k]); d.push(v); s+=v; }
+   d.sort((x,y)=>x-y); let side=null;
+   if(keep){ const c=this.cv(w*3,h), x=c.getContext('2d'); x.drawImage(await this.load(a),0,0,w,h); x.drawImage(await this.load(b),w,0,w,h);
+     const im=x.createImageData(w,h); for(let i=0;i<A.length;i+=4){ const e=Math.min(255,Math.max(Math.abs(A[i]-B[i]),Math.abs(A[i+1]-B[i+1]),Math.abs(A[i+2]-B[i+2]))*3); im.data[i]=im.data[i+1]=im.data[i+2]=255-e; im.data[i+3]=255; }
+     x.putImageData(im,w*2,0); side=c.toDataURL('image/png'); }
+   return {mean:s/d.length,p99:d[Math.floor(d.length*0.99)],side}; },
+ /* bounding box of the pixels the given words add to a frame (frame with words vs. frame with no words), inside a band */
+ async bbox(id,t,o,y0,y1){ const r=await this.open(id), g=async o=>(await this.frame(id,t,o,1080)).getContext('2d').getImageData(0,y0,1080,y1-y0).data,
+   A=await g(o), B=await g({...o,texts:{...(o&&o.texts),[r.M.texts[0].id]:''}}); let x0=1e9,x1=-1,n=0;
+   for(let y=0;y<y1-y0;y++) for(let X=0;X<1080;X++){ const i=(y*1080+X)*4; if(Math.abs(A[i]-B[i])+Math.abs(A[i+1]-B[i+1])+Math.abs(A[i+2]-B[i+2])>60){ n++; if(X<x0)x0=X; if(X>x1)x1=X; } } return {x0,x1,n}; },
+ async time(id,t,w,n){ const r=await this.open(id), c=this.cv(w,Math.round(w*r.H/r.W)), x=c.getContext('2d'); r.draw(x,t); const a=performance.now(); for(let i=0;i<n;i++) r.draw(x,t+i/30); x.getImageData(0,0,1,1); return (performance.now()-a)/n; }
+};
+</script>

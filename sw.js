@@ -5,7 +5,7 @@
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
    - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
      IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
-const VERSION='studio-v1-23-0';   // Studio 1.23.0
+const VERSION='studio-v1-26-0';   // Studio 1.26.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -16,6 +16,7 @@ const SHELL=[
   'tools/restock.html','tools/restock.js','tools/offer.html','tools/offer.js',
   'tools/carousel.html','tools/carousel.js','tools/highlight.html','tools/highlight.js',
   'tools/create.html','tools/create.js','tools/create.css','tools/create-core.js','tools/create-lib.js','tools/create-templates.js','brands/1stchoice/brand.js',
+  'tools/video.html','tools/video.js','tools/video.css','assets/reel.js','assets/reel-audio.js','assets/reel-export.js','assets/reel-project.js','tools/video-tl.js','tools/video-ui.js','assets/vendor/mp4-muxer.js',
   'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-comp.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','lab/board-flex.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
 ];
 self.addEventListener('install',e=>{
@@ -34,6 +35,7 @@ self.addEventListener('fetch',e=>{
   if(url.origin!==self.location.origin) return;
   if(req.mode==='navigate'||/\.(html|js|css|json|webmanifest|md)$/.test(url.pathname)||url.pathname.endsWith('/')){ e.respondWith(networkFirst(req)); return; }
   if(/\.(png|jpe?g|webp|gif|svg|woff2?)$/.test(url.pathname)){ e.respondWith(cacheFirst(req,true)); return; }
+  if(/\.(flac|mp3|wav|m4a)$/.test(url.pathname)){ e.respondWith(cacheFirst(req)); return; }   // reel sounds (Video editor): kept once fetched
 });
 async function networkFirst(req){
   const c=await caches.open(VERSION);

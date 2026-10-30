@@ -1,7 +1,7 @@
 /* Studio Templates library (brand-agnostic). A calm, Photos-style browser for templates: a header, category chips that stick to the top,
    and a grid of preview cards. The page hands in the data and helpers:
    StudioTemplates.init({root,cats,entries,onOpen,onBack,teamNote,esc,haptic,store,icons,favKey?,recentKey?}) -> {show(cat?),refresh(),cat,favs,recent}.
-   Entry = {id,cat,title,sub,thumb,shape:'story'|'post'|'square'|'circle',href,badge?,keys?}. Uses only the tokens from studio.css; classes are tp-*.
+   Entry = {id,cat,title,sub,thumb,shape:'story'|'post'|'square'|'circle',href,badge?,keys?,video?,dur?} (video: a play glyph on the preview; dur: seconds, shown as "Video · 10 s"). Uses only the tokens from studio.css; classes are tp-*.
    Favourites + Recently used (since 1.16.0): with favKey/recentKey each card gets a star, All starts with a Favourites section and a
    Recently used row (only when they have something), and a category puts its favourites first. Both are lists of entry ids kept by `store`
    (per device); StudioTemplates.mark(store,key,id,max) is the shared "put this id first" helper (Create's picker writes the same keys). */
@@ -17,6 +17,9 @@ const SVG=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 /* used when the page has no icon of its own */
 const FB={back:SVG('<path d="m15 18-6-6 6-6"/>'),template:SVG('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18"/><path d="M9 9v12"/>')};
 const STAR='<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></svg>';
+/* a video template: a small play glyph on the preview, and "Video · 10 s" on the line under the title */
+const PLAY='<span class="tp-vid" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></span>';
+const secs=e=>{ const n=Math.round(+e.dur); return e.video&&n>0?n:0; };
 let cur=null;
 
 function make(o){
@@ -62,21 +65,21 @@ function make(o){
   /* ---- drawing ---- */
   function card(e,i){
     const t=String(e.title==null?'':e.title), s=e.sub==null?'':String(e.sub), k=shown.push(e)-1;
-    const label=[t,s,e.badge].filter(Boolean).join(', ');
+    const label=[t,e.video?'Video'+(secs(e)?', '+secs(e)+' s':''):'',s,e.badge].filter(Boolean).join(', ');
     const img=e.thumb?`<img class="tp-img" src="${esc(e.thumb)}" alt="" loading="lazy" decoding="async" draggable="false">`:'';
     /* the badge sits on the line under the title, never on the preview (it used to cover the headline of post previews) */
     const badge=e.badge?`<span class="tp-badge">${esc(e.badge)}</span>`:'';
     const fav=useFav&&e.id!=null, on=fav&&isFav(String(e.id));
     const star=fav?`<button type="button" class="tp-star" data-fav="${esc(e.id)}" aria-pressed="${on}" aria-label="${esc('Favourite: '+t)}" title="${on?'Remove from favourites':'Add to favourites'}">${STAR}</button>`:'';
     /* dir="auto" on the text block: the title decides, so title and line below always start on the same side */
-    return `<li class="tp-li${fav?' tp-fav':''}" role="listitem"${fav?` style="--ar:${AR[e.shape]||AR.story}"`:''}><a class="tp-card" href="${esc(e.href||'#')}" data-i="${k}" style="--i:${Math.min(i,14)}" aria-label="${esc(label)}"><span class="tp-frame tp-${e.shape} ${e.thumb?'tp-wait':'tp-none'}"><span class="tp-ph" aria-hidden="true">${ic('template')}</span>${img}</span><span class="tp-tx" dir="auto"><span class="tp-t">${esc(t)}</span>${s||badge?`<span class="tp-s">${badge}${esc(s)}</span>`:''}</span></a>${star}</li>`;
+    return `<li class="tp-li${fav?' tp-fav':''}" role="listitem"${fav?` style="--ar:${AR[e.shape]||AR.story}"`:''}><a class="tp-card" href="${esc(e.href||'#')}" data-i="${k}" style="--i:${Math.min(i,14)}" aria-label="${esc(label)}"><span class="tp-frame tp-${e.shape} ${e.thumb?'tp-wait':'tp-none'}"><span class="tp-ph" aria-hidden="true">${ic('template')}</span>${img}${e.video?PLAY:''}</span><span class="tp-tx" dir="auto"><span class="tp-t">${esc(t)}</span>${s||badge||e.video?`<span class="tp-s">${badge}${e.video?'Video'+(s||secs(e)?' · ':''):''}${esc(s)}${secs(e)?(s?' · ':'')+'<bdi>'+secs(e)+' s</bdi>':''}</span>`:''}</span></a>${star}</li>`;
   }
   const grid=list=>`<ul class="tp-grid" role="list">${list.map(card).join('')}</ul>`;
   /* Recently used: one calm row of small previews, title only */
   function mini(e){
     const t=String(e.title==null?'':e.title), k=shown.push(e)-1;
     const img=e.thumb?`<img class="tp-img" src="${esc(e.thumb)}" alt="" loading="lazy" decoding="async" draggable="false">`:'';
-    return `<li class="tp-li" role="listitem"><a class="tp-card tp-mini" href="${esc(e.href||'#')}" data-i="${k}" aria-label="${esc([t,e.sub].filter(Boolean).join(', '))}"><span class="tp-frame tp-${e.shape} ${e.thumb?'tp-wait':'tp-none'}"><span class="tp-ph" aria-hidden="true">${ic('template')}</span>${img}</span><span class="tp-mt" dir="auto">${esc(t)}</span></a></li>`;
+    return `<li class="tp-li" role="listitem"><a class="tp-card tp-mini" href="${esc(e.href||'#')}" data-i="${k}" aria-label="${esc([t,e.video?'Video':'',e.sub].filter(Boolean).join(', '))}"><span class="tp-frame tp-${e.shape} ${e.thumb?'tp-wait':'tp-none'}"><span class="tp-ph" aria-hidden="true">${ic('template')}</span>${img}${e.video?PLAY:''}</span><span class="tp-mt" dir="auto">${esc(t)}</span></a></li>`;
   }
   const recentRow=list=>`<ul class="tp-recent" role="list">${list.map(mini).join('')}</ul>`;
   function noteHtml(n){

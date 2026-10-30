@@ -13,6 +13,40 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.26.0 · 30 Oct 2026
+
+### Reels in Templates
+type: feature
+Home → Templates has a new **Reels** chip with our coded reels, starting with Winter cat. Tap one and it opens in the Video editor as a new video, ready for your words, your clips and your sound. Star it to keep it in your favourites. Every new coded reel we make can be added the same way (the steps are written down in the project), so this list will grow.
+![after](assets/whatsnew/1.26.0-reels-templates-after.jpg)
+
+### Undo, and your video is kept as you go
+type: feature
+The Video editor now has Undo and Redo at the top, for everything: trims, splits, words, the mix. A drag counts as one step, and typing counts as one step per pause. Your video is also kept on this phone while you work: leave and come back, and it is in Continue editing on Home, or tap Continue on the note at the top of the editor. Your clips, photos and sounds stay on the phone too.
+
+### Smoother on phones, and you know how long saving takes
+type: fix
+The preview plays more smoothly on phones: it draws a little lighter while playing and never falls behind the sound, then goes back to full sharpness when you pause. The Save sheet now tells you about how long the video takes on this phone, and while it saves you see the time left. Reels with heavy 3D get a clear note that they take longer, so you know to keep Studio open.
+
+## 1.25.0 · 30 Oct 2026
+
+### Video editor: your own clips, words and music
+type: feature
+The Video editor now has a timeline, like CapCut. Tap **Add** for your own clips and photos (or another reel template), **Text** for words anywhere on the video, and **Sound** for your own music and sound effects. Slide the timeline under the blue line to move through the video. Tap a clip to trim it with the handles at its ends, split it at the blue line, move it earlier or later (or hold and drag it), or delete it (with Undo). Words get a font, size, colour, a box behind them and an animation in and out (fade, pop, slide or type); drag them on the preview to place them. Music and sounds get their own volume, fade in and out, and trimming. Your clips, photos and sounds stay on this phone; Save edits to the team keeps your edits, and Save video makes the MP4 with everything in it, levelled for Instagram. Start a new video from the menu next to the name.
+![after](assets/whatsnew/1.25.0-video-timeline-after.jpg)
+
+## 1.24.0 · 30 Oct 2026
+
+### New: Video editor
+type: feature
+Our coded reels now open in Studio as templates you can edit. Find **Video editor** in All tools (or search "video"); it opens the Winter cat reel. Tap Play or drag along the timeline to watch any moment; the coloured blocks are the reel's scenes. In **Text**, change the headline in Arabic or English and the preview jumps to the end card so you see it at once, in the reel's own fonts. If the words are too long for their spot, they get smaller to fit and a note tells you. The corner button shows Instagram's safe zones, so nothing important hides under the caption or the buttons. **Save** makes a sharp MP4 (1080×1920) frame by frame, so it never stutters, with a progress bar; on a phone it opens the share sheet so you can save it to Photos. "Save edits to the team" keeps your words and your mix in Saved (no video files are uploaded).
+![after](assets/whatsnew/1.24.0-video-editor-after.jpg)
+
+### Your reel's sound, your way
+type: feature
+The **Sound** tab is a mixer: a volume slider, a mute button and a ▶ to listen for the music and for every sound effect, each at its exact moment in the reel (the dots on the timeline). The music dips by itself under the big sounds, like the hood slap and the can landing; switch that off if you like. "Reset to original mix" brings back the reel exactly as it was made. When you save, the sound is levelled for Instagram so it is never too quiet or harsh. Mute the music for a sound-effects-only version.
+![after](assets/whatsnew/1.24.0-video-sound-after.jpg)
+
 ## 1.23.0 · 30 Oct 2026
 
 ### Save every unfinished story at once

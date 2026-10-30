@@ -21,7 +21,7 @@ for(const vp of [{name:'phone',viewport:{width:390,height:844},isMobile:true,has
   const at=await pg.$eval('#allTools',e=>{ const r=e.getBoundingClientRect(); return {h:r.height,top:r.top}; });
   ok(vp.name+': All tools button is finger-sized',at.h>=48,JSON.stringify(at));
   await tap('#allTools'); await pg.waitForTimeout(450);
-  ok(vp.name+': All tools opens with every tool',await pg.$$eval('dialog[open] .lib-row',r=>r.length)===10);
+  ok(vp.name+': All tools opens with every tool',await pg.$$eval('dialog[open] .lib-row',r=>r.length)===11);
   const stars=await pg.$$eval('dialog[open] .pin-btn',l=>l.map(x=>{ const r=x.getBoundingClientRect(); return Math.min(r.width,r.height); }));
   ok(vp.name+': every star is at least 44px',stars.every(x=>x>=44),stars.join(','));
   ok(vp.name+': Restock\'s star is on',await pg.getAttribute('dialog[open] [data-pin="restock"]','aria-pressed')==='true');

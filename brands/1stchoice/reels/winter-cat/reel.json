@@ -1,0 +1,82 @@
+{
+  "format": 1,
+  "id": "winter-cat",
+  "title": "Winter cat",
+  "sub": "The cat, the fire and the cold can · 10 s",
+  "size": [1080, 1920],
+  "fps": 30,
+  "duration": 10.0,
+  "cuts": [7.2],
+  "poster": 9.0,
+  "heavy": false,
+  "background": "#ffffff",
+  "scene": "scene.js",
+  "fonts": [
+    { "family": "Reel Lalezar", "src": "fonts/lalezar-arabic-400-normal.woff" },
+    { "family": "Reel Cairo", "src": "fonts/cairo-latin-800-normal.woff" }
+  ],
+  "images": {
+    "bg": "img/bg_noblob.jpg", "moon": "img/moon.webp", "cloud1": "img/cloud1.webp", "cloud2": "img/cloud2.webp",
+    "star1": "img/star1.webp", "star2": "img/star2.webp", "star3": "img/star3.webp",
+    "candrawn": "img/candrawn.webp", "flames": "img/flames.webp", "logs": "img/logs.webp",
+    "can_real": "img/can_real.webp", "logo": "img/logo.webp",
+    "L1": "img/L1.webp", "H1": "img/H1.webp", "H2": "img/H2.webp", "L2": "img/L2.webp", "L2b": "img/L2b.webp",
+    "S1": "img/S1.webp", "R1": "img/R1.webp", "L3": "img/L3.webp", "S3": "img/S3.webp", "G1": "img/G1.webp",
+    "L4": "img/L4.webp", "L4b": "img/L4b.webp"
+  },
+  "scenes": [
+    { "id": "calm", "label": "By the fire", "start": 0.0, "end": 0.8 },
+    { "id": "gust", "label": "Gust of wind", "start": 0.8, "end": 2.3 },
+    { "id": "reach", "label": "Reaches for the fire", "start": 2.3, "end": 3.5 },
+    { "id": "bang", "label": "The \"!\" and the stare", "start": 3.5, "end": 4.95 },
+    { "id": "grab", "label": "Grabs the cold can", "start": 4.95, "end": 6.75 },
+    { "id": "zoom", "label": "Whip zoom", "start": 6.75, "end": 7.2 },
+    { "id": "end", "label": "End card", "start": 7.2, "end": 10.0 }
+  ],
+  "texts": [
+    {
+      "id": "headline",
+      "label": "Headline",
+      "value": "حتى في البرد...",
+      "font": "178px \"Reel Lalezar\", \"Reel Cairo\", sans-serif",
+      "size": 178,
+      "maxWidth": 1000,
+      "warnBelow": 0.85,
+      "minFit": 0.45,
+      "show": 9.0,
+      "in": 7.63,
+      "box": [40, 430, 1000, 200]
+    }
+  ],
+  "music": {
+    "id": "music",
+    "label": "Music",
+    "file": "snd/music_bed.flac",
+    "lufs": -21,
+    "cuts": [{ "from": 4.10, "to": 4.93, "ramp": 0.04, "why": "silence for the deadpan stare" }],
+    "fadeOut": 1.4,
+    "duck": { "db": -5, "half": 0.28, "lead": 0.05 }
+  },
+  "sounds": [
+    { "id": "campfire", "label": "Campfire crackle", "file": "snd/campfire_crackle.flac", "level": -30, "fade": 0.5, "hits": [{ "at": 0.00 }] },
+    { "id": "wind", "label": "Wind", "file": "snd/wind_body.flac", "level": -21, "hits": [{ "at": 0.25 }] },
+    { "id": "windSwoosh", "label": "Wind swoosh", "file": "snd/wind_swoosh.flac", "level": -15, "duck": true, "hits": [{ "at": 0.56 }] },
+    { "id": "flare", "label": "Fire flare", "file": "snd/fire_flare.flac", "level": -22, "hits": [{ "at": 0.82 }] },
+    { "id": "hood", "label": "Hood slap", "file": "snd/hood_slap.flac", "level": -13, "duck": true, "hits": [{ "at": 0.90 }] },
+    { "id": "cloth", "label": "Cloth rustle", "file": "snd/cloth.flac", "level": -21, "ss": 1.3, "hits": [{ "at": 0.93 }] },
+    { "id": "reach", "label": "Reach swish", "file": "snd/swish.flac", "level": -21, "hits": [{ "at": 2.61 }] },
+    { "id": "ding", "label": "\"!\" ding", "file": "snd/alert_ding.flac", "level": -15, "duck": true, "hits": [{ "at": 3.50 }] },
+    { "id": "cricket", "label": "Cricket chirps", "file": "snd/cricket.flac", "level": -19, "hits": [{ "at": 4.32 }, { "at": 4.62 }] },
+    { "id": "grab", "label": "Grab swish", "file": "snd/swish.flac", "level": -17, "hits": [{ "at": 4.61 }] },
+    { "id": "touch", "label": "Paw on the can", "file": "snd/can_touch.flac", "level": -15, "duck": true, "hits": [{ "at": 4.83 }] },
+    { "id": "sparkle", "label": "Cold sparkles", "file": "snd/sparkle.flac", "level": -23, "hits": [{ "at": 5.20 }] },
+    { "id": "wink", "label": "Wink sparkle", "file": "snd/sparkle_wink.flac", "level": -21, "hits": [{ "at": 5.66 }] },
+    { "id": "whip", "label": "Whip whoosh", "file": "snd/whip_whoosh.flac", "level": -15, "duck": true, "hits": [{ "at": 6.12 }] },
+    { "id": "thump", "label": "Low thump", "file": "snd/low_thump.flac", "level": -18, "hits": [{ "at": 7.39 }] },
+    { "id": "land", "label": "Can lands", "file": "snd/can_land.flac", "level": -11, "duck": true, "hits": [{ "at": 7.40 }] },
+    { "id": "pops", "label": "Headline pops", "file": "snd/pop.flac", "level": -19, "hits": [{ "at": 7.58 }, { "at": 7.70 }, { "at": 7.82 }] },
+    { "id": "logoPop", "label": "Logo pop", "file": "snd/logo_pop.flac", "level": -21, "hits": [{ "at": 8.00 }] }
+  ],
+  "master": { "lufs": -14, "lufsNoMusic": -16, "ceiling": -1.5 },
+  "credits": "Sound effects: Mixkit (Mixkit Sound Effects Free License). Music: made with Google Lyria for 1st Choice."
+}

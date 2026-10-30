@@ -35,6 +35,8 @@ Built from 15 past Studio sessions (first prompt read in 8; only the newest part
 - Trusts a reasoned call: "do whats best accordingly" (Penpot, 24 Oct). [S] We ported its ideas instead of embedding it.
 - Other sessions can run at once: "keeping in mind another session ongoing". [S 24 Oct] Fetch main and merge it in before release.
 - No AI features in 1.0.0. [S 25 Oct]
+- Big features come in phases, each in its own session with its own helpers, approved on a preview branch before the next phase; still no AI features; test phone-first in both themes and in Arabic. [S 30 Oct, Video editor]
+- When a build needs his files (reels, sounds), ask where they are before starting. [S 30 Oct]
 - Answers choice questions fast (22 Oct, Create). Offer a recommended option, ask at most two questions.
 - The team uses Studio on phones for restock stories. Team jobs come before his power tools.
 
