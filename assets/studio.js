@@ -90,9 +90,9 @@ const TOOLS={
   'restock':{title:'Restock',blurb:'Back in stock: the cans, the flavours, a button.',quick:'Photos of the cans: a story each',queue:true,icon:'restock',qi:1,group:'story',type:'story',keys:'available again stock'},
   'photo-story':{title:'Photo story',blurb:'A tall photo, full screen, headline and logo.',quick:'Tall photos: a story each',queue:true,icon:'story',qi:2,group:'story',type:'story',keys:'picture single'},
   'collage':{title:'Collage',blurb:'2 to 9 photos in grids, mosaics or scattered prints.',quick:'2 to 9 photos',icon:'collage',multi:true,qi:3,group:'story',type:'story',keys:'grid mosaic several pictures'},
-  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',group:'story',type:'story',keys:'shop store location map opening'},
+  'new-place':{title:'New place',blurb:'A new sale point: photo, place name, pin.',quick:'A photo of the new place',group:'story',type:'story',keys:'shop store location map opening'},
   'split':{title:'Two-photo split',blurb:'Close-up on top, wide below, words on the cut.',group:'story',type:'story',keys:'two pictures half'},
-  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',group:'story',type:'story',keys:'film movie wide letterbox'},
+  'cinematic':{title:'Cinematic bars',blurb:'A wide photo shown whole, text on black bars.',quick:'A wide photo, shown whole',group:'story',type:'story',keys:'film movie wide letterbox'},
   'offer':{title:'Offer',blurb:'Discount tiles, dates, a product photo and a button.',quick:'A product photo for the offer',group:'post',type:'story',keys:'sale deal promo price percent'},
   'carousel':{title:'Carousel',blurb:'A 1080×1350 feed carousel: several slides, page dots.',quick:'Up to 10 photos, a slide each',icon:'carousel',multi:true,max:10,qi:4,group:'post',type:'post',keys:'slides swipe feed post'},
   'highlight':{title:'Highlight covers',blurb:'Round covers for your story highlights: an icon, a word or a photo.',quick:'Up to 12 photos, a cover each',icon:'highlight',multi:true,max:12,qi:5,group:'post',type:'highlight',keys:'circle icons profile'},
@@ -2209,7 +2209,7 @@ async function home(){
     history.replaceState(null,'',location.pathname+location.hash);
     const got=n>0?await idb.get('studio:shared'):null, fs=got&&got.files||[];
     if(!fs.length){ hubToast('That photo did not come through. Share it again, or tap + to pick it.'); return; }
-    const q=quickTools().filter(([,t])=>t.qi), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });   // the five photo tools; Offer's camera is in All tools
+    const q=quickTools().filter(([,t])=>t.qi), urls=fs.slice(0,4).map(f=>{ try{ return URL.createObjectURL(f); }catch(_){ return ''; } });   // the five photo tools; Offer's, New place's and Cinematic's cameras are in All tools
     const many=fs.length>1, use=t=>!many?t.quick:t.multi?'Uses '+(fs.length>(t.max||9)?'the first ':'all ')+Math.min(fs.length,t.max||9)+' photos':t.queue?'A story from each, '+Math.min(fs.length,QUEUE_MAX)+' in a row':'Uses the first photo';
     const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
     d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice
@@ -2359,14 +2359,24 @@ async function home(){
   if(cont.length) paintCont();
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
      ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
-     own editor and no renderer, so they are listed as skipped. */
+     own editor and no renderer, so they are listed as skipped. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
+     whose pictures were saved (#41): one confirm, never by itself, never the skipped ones, and not one edited since it was drawn. */
   $('contSave').onclick=async()=>{ haptic('tick');
-    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
+    const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
       skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
-    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true}); };
+    const one=n=>n===1, dev=devWord();
+    const offer={label:n=>one(n)?'Remove it from Continue editing':'Remove these '+n+' from Continue editing',
+      title:n=>one(n)?'Remove this story from Continue editing?':'Remove these '+n+' stories from Continue editing?',
+      note:n=>(one(n)?'Its picture is saved. The unfinished story and its photos are':'Their pictures are saved. The unfinished stories and their photos are')+' deleted from this '+dev+'. This can’t be undone.',
+      yes:'Remove', no:n=>one(n)?'Keep it':'Keep them', run:items=>{ let n=0;
+        items.forEach(it=>{ const x=cont.find(c=>c.key===it.key), now=store(it.key);
+          if(!x||x.gone||!now||now.at!==it.at) return;   // edited in another tab since: keep it
+          x.gone=true; removeDraft(x.key); n++; });
+        paintCont(); haptic('tick'); hubToast(n?(one(n)?'1 story':n+' stories')+' removed from Continue editing.':'Nothing removed: those stories changed since.'); }};
+    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true,offer}); };
 
   /* ---------- first-run welcome (assets/welcome.js): three short swipes (the main tools, pins and search, saving). Once per device,
      only on a device that never used Studio; Settings → Welcome tour (or ?welcome=1) shows it again. ---------- */
@@ -2515,7 +2525,7 @@ async function home(){
     if(!has){ endSelect(true); $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=emptyNote; return; }
     const colOn=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('savedEmpty').hidden=!!list.length; if(!list.length) $('savedEmpty').innerHTML=findQ
-      ?note(ICON.search,'No saved design matches “'+esc(findQ.trim())+'”','Try part of the name, a tool such as Restock, or a collection.','<button type="button" class="btn slim ghost" data-clearfind>Clear search</button>')
+      ?note(ICON.search,'No saved design matches “'+esc(findQ.trim())+'”','Try part of the name, a tool such as Restock, a collection, or a day: today, yesterday, this week.','<button type="button" class="btn slim ghost" data-clearfind>Clear search</button>')
       :colOn&&!colOn.count
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
       :note(ICON.search,'No saved design matches that','Try another collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
@@ -2534,11 +2544,23 @@ async function home(){
   $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: All
   $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } else if(e.target.closest('[data-clearfind]')) setFind('',true); });
   /* Search on the Saved page (1.27.0): the magnifier opens a box under the title; every word typed must match the design's name,
-     its tool or one of its collections (Arabic folded like the hub search). It works inside the chosen collection and sort;
+     its tool or one of its collections (Arabic folded like the hub search), or a day word (1.32.0, below). It works inside the chosen collection and sort;
      Cancel, Escape or leaving the page clears it. */
+  /* Day words (1.32.0): "today", "yesterday" and "this week" (today and the 6 days before) match a design by the day it was
+     last used, the date the sort uses. The brand kit can add words in its own language (B.findDates={today:[…],yesterday:[…],
+     week:[…]}), folded like the rest. A design whose name has the word still matches by name ("Today's offer"). */
+  const DAY_WORDS={today:['today'],yesterday:['yesterday'],week:['this week']};
+  let dayWords=null;
+  const getDayWords=()=>dayWords||(dayWords=Object.entries(DAY_WORDS).flatMap(([k,l])=>[...l,...(((B.findDates||{})[k])||[])].map(w=>[k,normText(w)]))
+    .filter(([,w])=>w).sort((a,b)=>b[1].length-a[1].length));
+  function onDay(d,k){ const t=lastUse(d), day=new Date(); day.setHours(0,0,0,0);
+    const back=n=>{ const x=new Date(day); x.setDate(x.getDate()-n); return +x; };
+    return k==='today'?t>=+day:k==='yesterday'?t>=back(1)&&t<+day:t>=back(6); }
   function findHit(d){ if(!findQ.trim()) return true;
     const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName)].join(' '));
-    return normText(findQ).split(/\s+/).filter(Boolean).every(w=>hay.includes(w)); }
+    let q=' '+normText(findQ)+' ';
+    for(const [k,w] of getDayWords()) while(q.includes(' '+w+' ')){ if(!hay.includes(w)&&!onDay(d,k)) return false; q=q.replace(' '+w+' ',' '); }
+    return q.split(' ').filter(Boolean).every(w=>hay.includes(w)); }
   function setFind(v,focus){ findQ=v; const i=$('findIn'); if(i.value!==v) i.value=v; $('findClr').hidden=!v; paintPage(); if(focus) i.focus({preventScroll:true}); }
   function openFind(){ haptic('tick'); $('findRow').hidden=false; $('findBtn').hidden=true; $('findBtn').setAttribute('aria-expanded','true'); $('findIn').focus({preventScroll:true}); }
   function closeFind(quiet){ const was=!$('findRow').hidden||findQ; $('findRow').hidden=true; $('findBtn').setAttribute('aria-expanded','false'); $('findIn').value=''; $('findClr').hidden=true; findQ='';

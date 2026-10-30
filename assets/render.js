@@ -2,7 +2,9 @@
    full quality, as if you opened it and tapped Save: every design is opened in a hidden frame of its own tool page
    (tools/<tool>.html?design=<id>&render=1) and drawn there by the same code as Save (Studio.renderer in tool()), so the pixels
    are the same. One share sheet on a phone, one ZIP on a computer (assets/batch.js), with a running count and Cancel.
-   StudioRender.design(d,stop) → {files:[Blob…], K} · StudioRender.saveDesigns(designs,{toast,done}) */
+   StudioRender.design(d,stop) → {files:[Blob…], K} · StudioRender.saveDesigns(designs,{toast,done,offer})
+   offer (1.32.0, Continue editing): once the pictures are saved, a text button offers to tidy up the ones actually saved (never
+   the skipped ones), with one confirm: {label(n), title(n), note(n), yes, no(n), run(items)}. Nothing is removed by itself. */
 (function(){
   const L=()=>window.Studio.lab;
   const MAX=20;   // designs in one go: a phone keeps every picture in memory until the share sheet
@@ -46,6 +48,7 @@
     const dl=dialog(`<div class="dlg-body bs-dlg"><h3 id="bsH">Saving ${plural(todo.length,'picture')}</h3>
       <div class="progress" id="bsProg"><div class="progress-bar" role="progressbar" aria-label="Saving" aria-valuemin="0" aria-valuemax="100" id="bsRole"><i id="bsBar"></i></div><span id="bsTxt" dir="auto">Getting ready…</span></div>
       <p class="small" id="bsNote" dir="auto" hidden></p>
+      <button type="button" class="link bs-offer" id="bsOffer" hidden></button>
       <div class="dlg-actions"><button type="button" class="mini" id="bsCancel">Cancel</button><button type="button" class="btn" id="bsGo" hidden></button></div></div>`,'bs');
     dl.tabIndex=-1; dl.focus();
     const $=id=>dl.querySelector('#'+id), stop={now:false};
@@ -55,7 +58,7 @@
     $('bsCancel').onclick=()=>{ if(busy) halt(); else dl.close(); };
     dl.addEventListener('cancel',e=>{ if(busy){ e.preventDefault(); halt(); } });
     dl.addEventListener('close',()=>{ if(busy) stop.now=true; });
-    const files=[], names=new Set(), skipped=[]; let used=0, W=0, H=0, at=new Date();
+    const files=[], names=new Set(), skipped=[], saved=[]; let used=0, W=0, H=0, at=new Date();
     const uniq=n=>{ let x=n, i=2; while(names.has(x.toLowerCase())) x=n+'-'+i++; names.add(x.toLowerCase()); return x; };
     try{
       for(let i=0;i<todo.length;i++){
@@ -70,6 +73,7 @@
         W=res.W; H=res.H; const base=uniq(slug(d.name)||'design');
         res.out.forEach((x,pg)=>{ used=used?Math.min(used,x.K):x.K;
           files.push(new File([x.blob],(res.out.length>1?base+'-'+z2(pg+1):base)+'.png',{type:'image/png'})); });
+        saved.push(d);   // only what was drawn: skipped and failed ones are never offered for removal
       }
     }catch(err){ if(err===STOP){ busy=false; dl.close(); ui.toast('Stopped. Nothing was saved.'); return; }
       busy=false; $('bsProg').hidden=true; $('bsH').textContent='Not saved'; $('bsNote').hidden=false; $('bsNote').textContent='Something went wrong while making the pictures. Try again.'; $('bsCancel').textContent='Close'; $('bsCancel').disabled=false; return; }
@@ -79,7 +83,14 @@
     const left=[tpl.length?plural(tpl.length,'template')+' skipped (templates have no picture of their own).':'',skipped.length?'Not saved: '+skipped.join(', ')+'.':''].filter(Boolean).join(' ');
     const n=files.length, pics=plural(n,'picture');
     const finish=(title,txt)=>{ $('bsProg').hidden=true; $('bsH').textContent=title; $('bsNote').hidden=false; $('bsNote').textContent=[txt+small,left].filter(Boolean).join(' ');
-      $('bsGo').hidden=true; $('bsCancel').hidden=false; $('bsCancel').textContent='Done'; $('bsCancel').className='btn'; celebrate(); if(ui.done) ui.done(n); };
+      $('bsGo').hidden=true; $('bsCancel').hidden=false; $('bsCancel').textContent='Done'; $('bsCancel').className='btn'; celebrate(); if(ui.done) ui.done(n);
+      if(ui.offer&&saved.length) offer(); };
+    /* the tidy-up offer: tap it, then confirm (the dialog turns into the question; Keep closes, nothing changes) */
+    const offer=()=>{ const o=ui.offer, k=saved.length, b=$('bsOffer'); b.textContent=o.label(k); b.hidden=false;
+      b.onclick=()=>{ haptic('tick'); b.hidden=true; $('bsH').textContent=o.title(k); $('bsNote').textContent=o.note(k);
+        $('bsCancel').textContent=o.no(k); $('bsCancel').className='mini'; $('bsCancel').onclick=()=>dl.close();
+        $('bsGo').hidden=false; $('bsGo').textContent=o.yes; $('bsGo').className='btn danger';
+        $('bsGo').onclick=()=>{ dl.close(); o.run(saved.slice()); }; $('bsCancel').focus({preventScroll:true}); }; };
     if(!n){ $('bsProg').hidden=true; $('bsH').textContent='Nothing saved'; $('bsNote').hidden=false; $('bsNote').textContent=left; $('bsCancel').textContent='Close'; return; }
     bar(1,'Done');
     /* a phone: one share sheet with every picture; it needs a fresh tap if the drawing took too long, so ask for one then */
