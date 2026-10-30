@@ -5,7 +5,7 @@ const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:3
 await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
 const pg=await ctx.newPage();
 for(const u of (process.argv[2]||'tools/offer.html,tools/carousel.html').split(',')){
-  await pg.goto('http://127.0.0.1:8080/'+u); await pg.waitForTimeout(1500);
+  await pg.goto((process.env.BASE||'http://127.0.0.1:8080/')+u); await pg.waitForTimeout(1500);
   const sheets=await pg.$$eval('#bar [data-open]',bs=>bs.map(b=>b.dataset.open)).catch(()=>[]);
   for(const s of ['',...sheets]){ if(s){ await pg.tap(`#bar [data-open="${s}"]`); await pg.waitForTimeout(400); }
     const small=await pg.evaluate(()=>[...document.querySelectorAll('button,a,input,select,[role=button],label.check')].filter(e=>{const r=e.getBoundingClientRect(); const cs=getComputedStyle(e);
