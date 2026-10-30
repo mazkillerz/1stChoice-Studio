@@ -722,6 +722,8 @@ label.opt-row{cursor:pointer}
 .render-frame{position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;opacity:0;pointer-events:none}
 .bs-dlg .progress{text-align:start}
 .bs-dlg .progress[hidden]{display:none}
+.bs-dlg .bs-offer{min-height:48px;align-self:flex-start;margin-inline-start:calc(-1*var(--sp-3));text-align:start}   /* "Remove these N from Continue editing" (1.32.0): a quiet text button under the note */
+.bs-dlg .bs-offer[hidden]{display:none}
 
 /* text styles (1.19.0): saved looks in a layer's More tab. Each is a pill: tap the name to use it, ⋯ for its menu */
 .tstyles{display:flex;flex-direction:column;gap:var(--sp-2)}

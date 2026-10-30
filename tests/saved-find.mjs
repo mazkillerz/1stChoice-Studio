@@ -116,6 +116,35 @@ for(const dark of [false,true]) await core({name:'phone',w:390,h:844,touch:true}
   ok(N+'14 the box follows the text direction (dir=auto)',await pg.getAttribute('#findIn','dir')==='auto');
   await ctx.close(); }
 
+/* ---- 15 day words (1.32.0): "today", "yesterday", "this week" match the day a design was last used; a name with the word
+   still matches by name; the brand kit can add its own words (B.findDates), folded like the rest (here injected into brand.js) ---- */
+{ const N='phone: ', db=seedDesigns(), ids=Object.keys(db.designs), now=Date.now(), mid=new Date(); mid.setHours(0,0,0,0);
+  const back=(days,h)=>{ const x=new Date(mid); x.setDate(x.getDate()-days); x.setHours(h); return x.toISOString(); };
+  const todayAt=new Date(Math.max(+mid+1000,now-60e3)).toISOString();
+  /* 0,1 today · 2 yesterday · 3 three days ago · 4 ten days ago · 5-7 older; 7 is named "Today's offer" (old) */
+  [todayAt,todayAt,back(1,12),back(3,12),back(10,12),back(20,12),back(30,12),back(40,12)].forEach((t,i)=>db.designs[ids[i]].updated_at=t);
+  db.designs[ids[7]].name="Today's offer";
+  const ctx=await mk(390,844,{db});
+  await ctx.route(/brands\/1stchoice\/brand\.js/,async r=>{ const res=await r.fetch(); const body=(await res.text()).replace('Studio.registerBrand({',"Studio.registerBrand({findDates:{today:['اليوم'],yesterday:['أمس'],week:['هالأسبوع']},");
+    r.fulfill({response:res,body,contentType:'application/javascript'}); });
+  const pg=await open(ctx,N); await pg.tap('#findBtn'); await settle(pg);
+  const names=async v=>{ await pg.fill('#findIn',v); await settle(pg); return (await pg.$$eval('#savedGrid .sv-card',l=>l.map(x=>x.dataset.id||x.querySelector('.sv-txt b').textContent))); };
+  const n=async v=>(await names(v)).length;
+  ok(N+'15 "today" -> the 2 from today + "Today\'s offer" by name',await n('today')===3,await names('today'));
+  ok(N+'15 "yesterday" -> 1',await n('yesterday')===1,await names('yesterday'));
+  ok(N+'15 "this week" -> the last 7 days (4)',await n('this week')===4,await names('this week'));
+  ok(N+'15 any case: "THIS WEEK" -> 4',await n('THIS WEEK')===4);
+  ok(N+'15 with a word: "restock today" -> 1 (Restock – 24 Oct, today)',await n('restock today')===1,await names('restock today'));
+  ok(N+'15 with a word: "restock this week" -> 2 (both Restocks are in the last 7 days)',await n('restock this week')===2,await names('restock this week'));
+  ok(N+'15 "week" alone is a plain word (no match)',await n('week')===0);
+  ok(N+'15 brand word "اليوم" -> 2 (by day)',await n('اليوم')===2,await names('اليوم'));
+  ok(N+'15 harakat folded: "اليَوْم" -> 2',await n('اليَوْم')===2);
+  ok(N+'15 hamza folded: "امس" finds yesterday\'s',await n('امس')===1);
+  ok(N+'15 "هالأسبوع" -> 4',await n('هالأسبوع')===4);
+  await names('xyzq');
+  ok(N+'15 the empty note mentions the day words',/today, yesterday, this week/.test(await txt(pg,'#savedEmpty')),await txt(pg,'#savedEmpty'));
+  await ctx.close(); }
+
 await b.close();
 ok('no page errors',!errs.length,errs.join(' | '));
 console.log(res.join('\n')); const nf=res.filter(r=>r.startsWith('FAIL')).length, secs=((Date.now()-T0)/1000).toFixed(1);
