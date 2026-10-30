@@ -457,7 +457,7 @@ async function openSave(){
   }
   async function estimate(sup,total){
     const put=()=>{ const e=body.querySelector('#vsEst'), hv=body.querySelector('#vsHeavy'); if(!e) return; const r=ctl.est; if(!r) return;
-      e.innerHTML=`<bdi>${estText(r.secs)}</bdi> on this ${L.devWord()}`; if(r.secs>120&&hv) hv.hidden=false; };
+      e.innerHTML=`<bdi>${estText(r.secs)}</bdi> on this ${L.devWord()}`; if(r.secs>120&&hv&&hv.hidden){ hv.textContent='This video takes a while to save. Keep Studio open.'; hv.hidden=false; } };
     if(ctl.est) return put();
     await wait(60);   // let the sheet paint first
     if(!d.open) return;

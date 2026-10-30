@@ -6,7 +6,7 @@ const bar=$('bar'), sheetEl=$('vdSheet'), shB=$('vdShB'), shT=$('vdShT'), main=$
 const desk=()=>matchMedia('(min-width:900px)').matches;
 const dbText=db=>db===0?'0 dB':(db>0?'+'+db:'−'+Math.abs(db))+' dB';
 const sid=id=>String(id).replace(/[^\w-]/g,'_');
-const brandInk=()=>{ const c=(L.brand()||{}).colors||{}; return c.ink||'#161210'; };
+const brandInk=()=>{ const c=(L.brand()||{}).colors||{}; return c.ink||'#111111'; };
 const brandPaper=()=>{ const c=(L.brand()||{}).colors||{}; return c.paper||'#FFFFFF'; };
 
 /* ---------- the bar ---------- */

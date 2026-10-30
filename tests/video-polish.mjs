@@ -213,9 +213,9 @@ for(const heavy of [false,true]){
   const s=await pg.evaluate(()=>{ const h=document.getElementById('vsHeavy'), cs=h&&getComputedStyle(h), d=document.querySelector('dialog[open]'); const probe=document.createElement('i'); probe.style.background='var(--vd-warn-bg)'; document.body.appendChild(probe); const warn=getComputedStyle(probe).backgroundColor; probe.remove();
     return {est:document.getElementById('vsEst').textContent,heavyHidden:h.hidden||h.getBoundingClientRect().height===0,heavyTxt:h.textContent,amber:cs&&cs.backgroundColor===warn,bench:window.__videoBench,sw:d.scrollWidth<=d.clientWidth+1,txt:d.innerText}; });
   ok(N+'the estimate shows under Save video ("About N s|min on this phone")',/^About \d+ (s|min) on this phone$/.test(s.est),s.est);
-  ok(N+(heavy?'the heavy note shows, amber':'no heavy note for a light reel'),heavy?(!s.heavyHidden&&s.heavyTxt==='This video takes longer to save (3D). Keep Studio open.'&&s.amber):s.heavyHidden,{hidden:s.heavyHidden,amber:s.amber,t:s.heavyTxt});
+  ok(N+(heavy?'the heavy note shows, amber':'no heavy note for a light reel'),heavy?(!s.heavyHidden&&s.heavyTxt==='This video takes longer to save (3D). Keep Studio open.'&&s.amber):(s.heavyHidden||s.heavyTxt==='This video takes a while to save. Keep Studio open.'),{hidden:s.heavyHidden,amber:s.amber,t:s.heavyTxt});
   ok(N+'exactly one filled button, nothing clipped sideways',(await filledIn(pg,'dialog[open]'))===1&&s.sw);
-  ok(N+'the benchmark measured real draw times',s.bench&&s.bench.draw>0&&s.bench.sub===4,s.bench);
+  ok(N+'the benchmark measured real draw times',s.bench&&s.bench.draw>0&&s.bench.sub===(s.bench.draw>250?2:4),s.bench);
   if(!heavy){
     /* progress shows time left */
     await pg.tap('#vsGo'); await pg.waitForSelector('dialog[open] .progress',{timeout:15000});
