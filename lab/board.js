@@ -754,7 +754,7 @@ async function paste(data){ let c=data||clip; if(!c) try{ c=JSON.parse(localStor
     if(sameSpot){ const m=new Konva.Transform(it.abs); const inv=par.getAbsoluteTransform().copy().invert(); inv.multiply(m); n.setAttrs(inv.decompose()); n.x(n.x()+24); n.y(n.y()+24); }
     out.push(n); });
   if(selFrame&&out.length){ const r=unionRect(out), s=fsize(selFrame); out.forEach(n=>moveByWorld(n,selFrame.x()+s.w/2-(r.x+r.width/2),selFrame.y()+s.h/2-(r.y+r.height/2))); }
-  out.forEach(n=>{ n.find('Image').concat(kind(n)==='image'||kind(n)==='asset'?[n]:[]).forEach(applyFx); });
+  out.forEach(n=>{ (n.find?n.find('Image'):[]).concat(kind(n)==='image'||kind(n)==='asset'?[n]:[]).forEach(applyFx); });   // a text or sticker has no find()
   select(out); changed(); emit('doc'); }
 BD.copy=copy; BD.paste=paste;
 

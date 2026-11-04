@@ -158,6 +158,19 @@ const TOOL_STYLE=[{id:'tsTool',name:'Pill white',st:{color:'#ffffff',font:'syste
   ok('no text chosen: tapping a style adds a text in that look',await pg.evaluate(()=>BD.main.find(x=>x.getAttr('kind')==='text').length)===nt+1&&await pg.evaluate(()=>BD.S.sel[0]&&BD.S.sel[0].getAttr('tbg')==='#161210'));
   await ctx.close(); }
 
+/* shadow, opacity, copy + paste (paste of a text or sticker used to stop at n.find) */
+{ const {pg,ctx}=await page('lab/board.html?preset=square');
+  const r=await pg.evaluate(async()=>{ const n=await BD.stickers.add('sticker:star'); n.position({x:300,y:300}); const f=BD.util.frames()[0], out={};
+    const px=async(x,y)=>{ const e=await BD.exportFrame(f,{canvas:true}); const d=e.canvas.getContext('2d').getImageData(x*2,y*2,1,1).data; e.canvas.width=0; return [d[0],d[1],d[2]]; };
+    out.plain=await px(420,504); n.setAttrs({shadowEnabled:true,shadowOn:true,shadowColor:'#000000',shadowBlur:10,shadowOffsetX:0,shadowOffsetY:60,shadowOpacity:1}); out.shadow=await px(420,504);
+    n.setAttrs({shadowEnabled:false,shadowOn:undefined}); n.opacity(.5); out.half=await px(420,440); n.opacity(1);
+    const t=BD.make.text('Hi'); BD.place(t); BD.select([n,t]); BD.copy(); let err=null; try{ await BD.paste(); }catch(e){ err=e.message; }
+    out.err=err; out.stickers=BD.main.find(x=>x.getAttr('kind')==='sticker').map(x=>typeof x.sceneFunc()); out.texts=BD.main.find('Text').length; return out; });
+  ok('shadow is drawn under a sticker',near(r.plain,[255,255,255])&&near(r.shadow,[0,0,0],40),r);
+  ok('opacity 50% shows half the ink',near(r.half,[138,136,135],12),r.half);
+  ok('copy + paste a sticker and a text: no error, both pasted, sticker drawn',!r.err&&r.stickers.length===2&&r.stickers.every(x=>x==='function')&&r.texts===2,r);
+  await ctx.close(); }
+
 /* 19-20: phone (390×844, touch), light and dark */
 for(const dark of [false,true]){ const {pg,ctx}=await page('lab/board.html?preset=story',{vp:{width:390,height:844},touch:true,dark,styles:TOOL_STYLE});
   const tag=dark?' (dark)':' (light)';
