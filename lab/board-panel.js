@@ -211,6 +211,7 @@ function setW(n,w,h){ const k=kind(n), r=wrect(n);
   if(k==='group'&&BD.flex.of(n)&&!n.rotation()){ BD.flex.resize(n,kx,ky); return; }
   if(n.rotation()||['group','mask','bool','barcode','qr','path','icon','stroke','star','poly','ring','pen','arc'].includes(k)){ n.scaleX(n.scaleX()*kx); n.scaleY(n.scaleY()*ky); return; }
   if(k==='text'){ if(kx!==1&&ky===1){ n.width(Math.max(10,n.width()*kx)); n.setAttr('autoW',false); } else { n.fontSize(n.fontSize()*ky); if(!n.getAttr('autoW')) n.width(n.width()*kx); } return; }
+  if(k==='sticker'){ if(!S.lockRatio){ if(w!=null&&h==null) ky=kx; else if(h!=null&&w==null) kx=ky; } n.width(n.width()*kx); n.height(n.height()*ky); return; }   // a sticker keeps its shape
   if(k==='rect'||k==='image'||k==='asset'){ n.width(n.width()*kx); n.height(n.height()*ky); if(k!=='rect'){ BD.applyCrop(n); BD.applyFx(n); } return; }
   if(k==='ellipse'){ n.radiusX(n.radiusX()*kx); n.radiusY(n.radiusY()*ky); return; }
   n.scaleX(n.scaleX()*kx); n.scaleY(n.scaleY()*ky); }

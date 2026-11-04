@@ -381,4 +381,4 @@
 .bts[aria-pressed="true"]{border-color:var(--hi);background:var(--hi-soft);color:var(--hi-fg)}
 .bts:focus:not(:focus-visible),.stk:focus:not(:focus-visible){outline:none}
 .bts-dot{display:inline-block;flex:none;width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 25%,transparent)}
-@media (pointer:coarse){.bts{min-height:44px}}
+@media (pointer:coarse){.bts{min-height:44px}.stk-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}

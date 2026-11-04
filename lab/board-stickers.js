@@ -55,8 +55,9 @@ function paint(root){ if(!root) return; const dpr=Math.min(3,devicePixelRatio||1
     const box=Math.round(Math.min(b.clientWidth||48,b.clientHeight||48)*(s.emoji?.7:.64))||30, col=getComputedStyle(b).color||'#111', key=box+'|'+col; if(cv.dataset.k===key) return;
     cv.width=Math.ceil(box*dpr); cv.height=Math.ceil(box*dpr); cv.style.width=cv.style.height=box+'px';
     const c=cv.getContext('2d'), k=box/Math.max(s.w,s.h); c.scale(dpr,dpr); c.translate((box-s.w*k)/2,(box-s.h*k)/2); c.scale(k,k); s.draw(c,s.emoji?null:col); cv.dataset.k=key; }); }
-const drawn=q=>list().filter(s=>!s.emoji&&(!q||s.label.toLowerCase().includes(q)||'sticker'.includes(q)));
-const emoji=q=>list().filter(s=>s.emoji&&(!q||s.label.toLowerCase().includes(q)||'emoji sticker'.includes(q)));
+const found=(s,q,w)=>!q||s.label.toLowerCase().includes(q)||s.id.slice(8).replace(/^emoji-/,'').replace(/-/g,' ').includes(q)||w.includes(q);   // label, id ('heart' finds the Love emoji) or the group's word
+const drawn=q=>list().filter(s=>!s.emoji&&found(s,q,'sticker'));
+const emoji=q=>list().filter(s=>s.emoji&&found(s,q,'emoji sticker'));
 
 BD.stickers={load,def,make,setColor,add,prep,need,isSticker,isEmojiRef,tiles,paint,drawn,emoji,ready:()=>!!window.STUDIO_STICKERS,emojiReady:hasEmoji};
 })();
