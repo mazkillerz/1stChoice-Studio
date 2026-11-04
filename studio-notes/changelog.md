@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.35.0 · 4 Nov 2026
+
+### More room for your story while you style words
+type: design
+Tap words, then More: Save this style now sits next to Copy style on one row, and the empty Text styles space is gone until you save a style. More is one row shorter, so the preview of your story is bigger while it is open. Nothing moved out of reach: same buttons, same taps.
+![before](assets/whatsnew/1.35.0-more-before.jpg)
+![after](assets/whatsnew/1.35.0-more-after.jpg)
+
+### A calmer Home with one tool
+type: design
+With one tool on your home (a new phone starts with Restock), the list or grid switch next to Your tools is hidden: one tool looks the same either way. Pin a second tool and the switch comes back. You can still change it any time in Settings → Your tools, or by searching "grid".
+![before](assets/whatsnew/1.35.0-home-before.jpg)
+![after](assets/whatsnew/1.35.0-home-after.jpg)
+
 ## 1.34.0 · 4 Nov 2026
 
 ### Star the team's templates in Create

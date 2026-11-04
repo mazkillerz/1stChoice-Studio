@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 46 | 1.35.0 | 5 (full sweep: 65 suites, contrast clean, tapscan clean; new suite simplify35 23/0; fixed the flaky stickers pixel check, red once on main) | 4 (the 2-at-a-time sweep was too slow and was restarted at 4 at a time on the branch head) | 0 | pass | Start the full sweep with JOBS=4 on the branch head once the cuts are in, not on main first |
 | 45 | 1.34.0 | 5 (new suite tplteam 24/0 by a sonnet helper on the first run; `--changed` at release) | 5 (both items in one pass; notes and the pattern review written while the helper tested) | 0 (no owner reports since 1.33.0 known) | pass | Read a truncated line in full before calling it a bug (a `cut -c` made run.mjs look broken) |
 | 44 | 1.33.0 | 5 (flip 72/0 incl. old designs pixel-identical; emoji-stickers 32/0 with a held-back file proving Save waits) | 5 (parallel; fit 1.31's loader on the first try after one lead note) | 0 | pass | Name the globals another session reads before changing how a file loads |
 | 43 | 1.32.0 | 5 (continue-clear 32/0 new; saved-find 65/0, alltools-cam 89/0) | 5 (first of the round to finish, ~12 min) | 0 | pass | Propose Arabic words in the notes and leave brand.js alone until the owner approves |
@@ -23,6 +24,13 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## 1.35.0 (session 46, Simplify + pattern review)
+- Worked: shooting the tool and hub screens at 390 and 360 first; the cuts came from the shots (More tab one row shorter, the list/grid switch with one tool), not from the backlog.
+- Worked: "before" shots straight from the sweep's worktree of `main` on :8081 while it ran.
+- Didn't work: the sweep at JOBS=2 did 9 suites in 20 min (would pass the 2-hour limit); at JOBS=4 the other 58 took 17 min. Only `share` failed under load, as before.
+- Watch out: hiding a block's only content (Text styles with nothing saved) leaves an empty flex item with a gap: hide the block itself.
+- Pattern review: lessons for sessions 16–31 and scoreboard rows 11–30 moved to `_archive/lessons sessions 16-31 (2026-11-04)/`; five durable rules went into the skill's test tips; the test-map gap line found `continue-clear` and `create-stickers` missing from the skill table (added).
 
 ## 1.34.0 (session 45, team: team template stars, search → Recently used, Skip wording)
 - Worked: a search entry can carry its own `opened()` hook (search.js calls it before navigating, also for a new-tab open), so the hub marks Recently used without search.js knowing about templates.
