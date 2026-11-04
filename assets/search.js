@@ -212,6 +212,7 @@ function make(cfg){
     const en=shown[+row.dataset.i]; if(!en) return;
     remember();
     if(en.quick) return;   // the label opens the photo picker itself
+    if(en.opened){ try{ en.opened(); }catch(_){} }   // e.g. a template counts as Recently used (also when opened in a new tab)
     if(en.href){
       if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey) return;   // let "open in new tab" work
       e.preventDefault(); if(going) return; going=true; await close(); location.href=en.href; setTimeout(()=>{ going=false; },1500); return;

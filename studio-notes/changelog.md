@@ -13,6 +13,24 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.34.0 · 4 Nov 2026
+
+### Star the team's templates in Create
+type: feature
+In Create's template picker, the team's own templates now have a star like the brand's templates. Star the ones you use most and they come first in Team templates the next time you open it, on this device, the same favourites as the Templates page. Using a team template puts it in Recently used on the Templates page.
+![before](assets/whatsnew/1.34.0-teamstar-before.jpg)
+![after](assets/whatsnew/1.34.0-teamstar-after.jpg)
+
+### Templates from search count as Recently used
+type: fix
+Open a template from the Studio search and it now shows under Recently used on the Templates page (a Create template in Create's picker too), the same as opening it from Templates. Before, a template opened from search was not remembered.
+
+### One word for Skip
+type: design
+With several photos in a row, the note on your story says Skip and the Save sheet said "Skip to the next photo (2 of 3)". Both now say the same thing: the Save sheet reads "Skip to photo 2 of 3", and the note's Skip tells a screen reader which photo comes next. They do the same thing: go to the next photo without saving this one (it waits in Continue editing). After Save, the button still says Next photo.
+![before](assets/whatsnew/1.34.0-skip-before.jpg)
+![after](assets/whatsnew/1.34.0-skip-after.jpg)
+
 ## 1.33.0 · 30 Oct 2026
 
 ### Flip a photo

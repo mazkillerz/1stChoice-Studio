@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 40–44 were the parallel round 1.29.0–1.33.0 (30 Oct 2026, `sessions.md`): 1.29.0 team (backgrounds in four more tools, Templates with a finish), 1.30.0 Simplify (see-through New place frame, one-line tool descriptions, quiet hub Done, `/` to search), 1.31.0 Mazoon (stickers, emoji, Swap and text styles in Create), 1.32.0 team (clear Continue editing after Save pictures, day words in Saved search, camera for New place / Cinematic), 1.33.0 Mazoon (Flip for photos, emoji loaded when needed). The next session, 1.34.0, is a **team** session.
+**Last session:** session 45, 1.34.0 (team, 4 Nov 2026): stars on team templates in Create's picker (#36 done), templates opened from hub search count as Recently used, one wording for Skip (the 1.8.0 idea). Session 46 is 1.35.0, a **Simplify** session. The session after it, 1.36.0, is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.35.0.
 
 ## Next up
@@ -21,7 +21,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
 | 35 | Text styles in Board (Create got them in 1.31.0) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
-| 36 | Star team templates in Create's picker (they can be starred on the Templates page); opening a template from hub search counts as Recently used | 2 | 1 | 1 | 1 | 3 | From 1.16.0 (search.js was outside that scope). |
+| 46 | Create's Recently used row shows team templates too (today only the brand's `t:` ids; team thumbnails arrive later, so the row would fill in after paintTeam) | 1 | 1 | 1 | 1 | 2 | From 1.34.0. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 | 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
@@ -47,7 +47,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - 1.11.0: owner to confirm the Did you know post's numbered lines (١ كولد برو · ٢ منعش · ٣ يصحصحك) or send real facts to approve.
 - 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
-- 1.8.0 idea: one wording for the note's Skip and the Save sheet's "Skip to the next photo" (the "2 waiting" tag shipped in 1.13.0).
+- 1.8.0 idea: done in 1.34.0: the Save sheet says "Skip to photo 2 of 3", the note's Skip has the same words as its label.
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
 - 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
 - 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
@@ -75,6 +75,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.34.0 (team): stars on team templates in Create's picker (#36), templates opened from search count as Recently used, one word for Skip.
 - 1.13.0–1.19.0 (parallel round, 29 Oct 2026): 1.13.0 (team) unfinished stories kept when you leave at once (the `queue.mjs` flake root cause), "N waiting" tag on tool rows, "device" not "phone" on a computer; 1.14.0 (Mazoon) Flip (#25) and Emoji highlight covers (#10 emoji part); 1.15.0 (Simplify) computer Save dock, quiet Done in sheets, `.link` text buttons, Offer camera, shorter labels, two new taste checks; 1.16.0 (team) Favourites + Recently used templates (#6), New badge off the headline, Create template `sub` lines; 1.17.0 (Mazoon) Board flex layout as a preview (#15); 1.18.0 (team) Save pictures from Saved (#5 second half); 1.19.0 (Mazoon) Text styles (#8) and Paste on all text (#22).
 - 1.12.0 (Mazoon): Stickers pack (14 drawn stickers as asset layers `sticker:<id>`, Layers → Sticker, recolour/opacity/copy style/undo for free, old designs pixel-identical); fixed the empty Add an element card on a computer.
 - 1.11.0 (team): Ice cold / Did you know / Your choice as finished 1080×1350 posts in Templates → Posts and search (#3); search finds Create templates by their Arabic words, and `?tpl=` behaviour locked in tests (#20).
