@@ -74,7 +74,9 @@ for(const scheme of ['light','dark']){
   const d1=await pg.evaluate(()=>({t:window.__video().t,vt:document.getElementById('vtScroll').getAttribute('aria-valuetext')}));
   ok(N+'a touch drag on the timeline scrolls it and moves the time, and the slider text follows',d1.t>1.2&&/seconds of 10/.test(d1.vt),d1);
   ok(N+'the timeline is a slider with a ≥ 100px tall touch area',await pg.getAttribute('#vtScroll','role')==='slider'&&(await pg.evaluate(()=>document.getElementById('vtScroll').getBoundingClientRect().height))>=100);
-  await pg.focus('#vtScroll'); await pg.keyboard.press('Home'); await pg.keyboard.press('ArrowRight');
+  /* the drag above can leave the timeline coasting (momentum): wait until the time stops moving before the key checks (1.40.0) */
+  for(let i=0,prev=-1;i<30;i++){ const t=await pg.evaluate(()=>window.__video().t); if(t===prev) break; prev=t; await pg.waitForTimeout(150); }
+  await pg.focus('#vtScroll'); await pg.keyboard.press('Home'); await pg.waitForTimeout(200); await pg.keyboard.press('ArrowRight');
   const k1=await pg.evaluate(()=>window.__video().t); await pg.keyboard.press('Shift+ArrowRight'); const k2=await pg.evaluate(()=>window.__video().t);
   ok(N+'arrow keys: one frame, Shift one second',Math.abs(k1-1/30)<.002&&Math.abs(k2-k1-1)<.002,{k1,k2});
   await pg.keyboard.press('Space'); await pg.waitForTimeout(500); const sp=await pg.evaluate(()=>window.__video()); await pg.keyboard.press('Space');

@@ -163,10 +163,10 @@ await setRange(pg,'border',20); await setHex(pg,'bcol','#ff0000'); await settle(
 await setRange(pg,'radius',30); await settle(pg);
 { const [a]=await photoBoxes(pg); const cx0=a.x-20, cy0=a.y-20; const [corner,mid]=await px(pg,[[cx0+2,cy0+2],[cx0+60,cy0+10]]);
   ok('border: with a corner radius the frame is rounded (the frame\'s corner shows the background, its edge shows the colour)',!isRed(corner)&&isRed(mid),[corner,mid]); }
-await setRange(pg,'radius',0); await setRange(pg,'border',0); await settle(pg);
+await setRange(pg,'radius',0); await setAuto(pg,'bcol'); await setRange(pg,'border',0); await settle(pg);
 ok('border: border 0 draws what it drew before (grid)',await bands(pg)===plain);
+ok('border: Border colour hides again at border 0 (1.40.0)',await pg.$eval('[data-fw="bcol"]',e=>e.hidden));
 /* whole-photo layouts: even frame on all four sides, whatever the shrink-to-fit */
-await setAuto(pg,'bcol');
 const spots=[[2,'inset'],[3,'row'],[3,'tall2'],[4,'film'],[4,'big3'],[6,'scatter'],[3,'scatter']], plainSpots={};
 for(const [n,v] of spots){ await setCount(pg,n); await setLay(pg,n,v); plainSpots[n+'/'+v]=await bands(pg); }
 await setRange(pg,'border',20); await setHex(pg,'bcol','#ff0000');
@@ -190,7 +190,7 @@ const wholes={2:['stack','diag','side','inset'],3:['framed','stagger','big','row
     const reds=await pg.evaluate(()=>{ const c=document.getElementById('view'), d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let k=0; for(let i=0;i<d.length;i+=16) if(d[i]>200&&d[i+1]<60&&d[i+2]<60) k++; return k; });
     if(reds<n*50) bad.push(n+' no frame ('+reds+')'); else framed++; }
   ok('border: scattered prints (2 to 6 photos) get a frame in the border colour and stay inside the canvas',!bad.length&&framed===5,bad.join()); }
-await setRange(pg,'border',0); await setAuto(pg,'bcol');
+await setAuto(pg,'bcol'); await setRange(pg,'border',0);
 { const bad=[]; for(const [n,v] of spots){ await setCount(pg,n); await setLay(pg,n,v); if(await bands(pg)!==plainSpots[n+'/'+v]) bad.push(n+'/'+v); }
   ok('border: border 0 draws what it drew before (whole-photo, inset, film and scattered layouts)',!bad.length,bad.join()); }
 
@@ -213,7 +213,9 @@ await setRange(pg,'gap',14); await setRange(pg,'edge',40); await settle(pg);
 
 /* ================= 5. the Style sheet's order; a real set saves ================= */
 { await openSheet(pg,'style'); const order=await pg.$$eval('#sh-style [data-fields="style"] > .field',l=>l.filter(x=>!x.hidden).map(x=>x.dataset.fw));
-  ok('style sheet: Layout, Gap, Border, Border colour, Corner radius, background, Background, Outer margin, Edge space, logo (in that order)',order.join()==='lay4,gap,border,bcol,radius,bg,gfx,margin,edge,logo',order.join());
+  ok('style sheet at border 0: Layout, Gap, Border, Corner radius, background, Background, Outer margin, Edge space, logo (Border colour waits for a border, 1.40.0)',order.join()==='lay4,gap,border,radius,bg,gfx,margin,edge,logo',order.join());
+  await setRange(pg,'border',10); const order2=await pg.$$eval('#sh-style [data-fields="style"] > .field',l=>l.filter(x=>!x.hidden).map(x=>x.dataset.fw)); await setRange(pg,'border',0);
+  ok('style sheet: Border colour shows under Border as soon as the slider leaves 0',order2.join()==='lay4,gap,border,bcol,radius,bg,gfx,margin,edge,logo',order2.join());
   const labels=await pg.$$eval('#sh-style [data-fields="style"] > .field:not([hidden]) .lbl, #sh-style [data-fields="style"] > .field:not([hidden]) .check',l=>l.map(x=>x.textContent.replace(/\s+/g,' ').trim().replace(/\d+px$/,'').trim()));
   ok('style sheet: short labels',labels.every(t=>t.length<=26),labels.join(' | ')); }
 { const dls=[]; pg.on('download',d=>dls.push(d));

@@ -207,7 +207,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   const bs=await btns(pg);
   ok('Carousel: Background group has the 6 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs);
   const order=await pg.evaluate(()=>{ const fw=[...document.querySelectorAll('#sh-style [data-fw]')].map(x=>x.dataset.fw); return {bg:fw.indexOf('bg'),gfx:fw.indexOf('gfx'),gThis:fw.indexOf('gThis')}; });
-  ok('Carousel: Background sits right under Background colour, in All slides (before This slide)',order.gfx===order.bg+1&&order.gfx<order.gThis,order);
+  ok('Carousel: Background sits right under Background colour, in All slides (after This slide, which comes first since 1.40.0)',order.gfx===order.bg+1&&order.gfx>order.gThis,order);
   const h0=await gfxHash(pg,undefined), hp=await gfxHash(pg,'plain');
   ok('Carousel: Plain draws exactly what an older carousel (no value) draws',h0===hp,[h0,hp]);
   await pg.tap('[data-seg="gfx"] .seg[data-v="dots"]'); await pg.waitForTimeout(400);

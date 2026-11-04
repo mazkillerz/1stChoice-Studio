@@ -62,7 +62,7 @@ Studio.tool({
     lay(5,[]),lay(6,[]),lay(7,[]),lay(8,[]),lay(9,[]),
     {id:'gap',type:'range',in:'style',label:'Gap',min:0,max:80,step:2,default:14,unit:'px'},
     {id:'border',type:'range',in:'style',label:'Border',min:0,max:40,step:2,default:0,unit:'px'},
-    {id:'bcol',type:'color',in:'style',label:'Border colour',default:null,auto:'Auto'},
+    {id:'bcol',type:'color',in:'style',label:'Border colour',default:null,auto:'Auto',when:{field:'border',not:0}},
     {id:'radius',type:'range',in:'style',label:'Corner radius',min:0,max:60,step:2,default:0,unit:'px'},
     {id:'bg',type:'color',in:'style',label:'Gap & background colour',default:null,auto:'Style colour'},
     Studio.groundField(),
