@@ -47,9 +47,11 @@ async function createDraft(ctx,tpl){ const pg=await newPage(ctx,'make '+tpl);
   await pg.goto(BASE+'tools/create.html?tpl='+tpl);
   const key=await pg.waitForFunction(()=>Object.keys(localStorage).find(k=>{ if(!k.startsWith('studio:draft:1stchoice:create:')) return false; try{ return !!JSON.parse(localStorage.getItem(k)).board; }catch(_){ return false; } }),null,{timeout:30000}).then(h=>h.jsonValue());
   await pg.waitForTimeout(2200);   // the draft thumbnail (1.2 s) lands too
-  const rec=JSON.parse(await pg.evaluate(k=>localStorage.getItem(k),key));
-  const board=await pg.evaluate(id=>Studio.lab.idb.get('board:'+id),rec.board);
-  await pg.close(); return {key,id:key.split(':').pop(),rec,board}; }
+  await pg.close();   // leaving saves once more (pagehide): read the record and board only after that, from a fresh page
+  const p2=await newPage(ctx,'read '+tpl); await p2.goto(BASE+'index.html'); await p2.waitForFunction(()=>window.Studio&&Studio.lab); await p2.waitForTimeout(300);
+  const rec=JSON.parse(await p2.evaluate(k=>localStorage.getItem(k),key));
+  const board=await p2.evaluate(id=>Studio.lab.idb.get('board:'+id),rec.board);
+  await p2.close(); return {key,id:key.split(':').pop(),rec,board}; }
 async function restockDraft(ctx){ const pg=await newPage(ctx,'restock'); const t=s=>pg.$eval(s,e=>e.click());
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForFunction(()=>window.Studio&&Studio.debug);
   await t('#styles [data-style="photo"]'); await pg.waitForTimeout(900); await t('#styles [data-style="cans"]');
