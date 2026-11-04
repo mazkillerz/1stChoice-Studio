@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.36.0';
+const VERSION='1.37.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -2387,12 +2387,12 @@ async function home(){
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont();
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
-     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
-     own editor and no renderer, so they are listed as skipped. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
+     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create drafts too (1.37.0):
+     Create has its own render=1 mode with the same Studio.renderer hook. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
      whose pictures were saved (#41): one confirm, never by itself, never the skipped ones, and not one edited since it was drawn. */
   $('contSave').onclick=async()=>{ haptic('tick');
     const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
-      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
+      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json||x.d.board?'':'could not be opened'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');

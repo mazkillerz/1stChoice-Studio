@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.37.0 · 4 Nov 2026
+
+### Save pictures saves Create designs too
+type: feature
+Continue editing → Save pictures now saves your unfinished Create designs as well, every page at full quality (the same picture as opening it and tapping Save). Before, they were skipped. Your designs stay in Continue editing, and afterwards you can remove the saved ones in one step. Saved → Save pictures works for Create designs too.
+![before](assets/whatsnew/1.37.0-createpics-before.jpg)
+![after](assets/whatsnew/1.37.0-createpics-after.jpg)
+
+### Team templates in Recently used
+type: feature
+In Create's templates, Recently used now shows the team templates you used too, in the order you used them, next to the brand ones.
+![before](assets/whatsnew/1.37.0-recent-before.jpg)
+![after](assets/whatsnew/1.37.0-recent-after.jpg)
+
 ## 1.36.0 · 4 Nov 2026
 
 ### Stickers and sharp emoji in Board

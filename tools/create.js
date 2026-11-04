@@ -9,6 +9,9 @@ const TOOL='create', TITLE='Create';
 let B=null;
 const st={ready:false,dirty:false,design:null,base:null,draftKey:null,blobs:new Map(),paths:new Map(),thumbT:0,capWarned:false,pickTarget:null,replaceTarget:null,leaving:false,saving:false};
 const isPhone=()=>innerWidth<900;
+/* a hidden frame taking pictures for Continue editing / Saved (assets/render.js, ?render=1): it opens the draft or design and
+   never writes anything back, so the unfinished design stays exactly as it was */
+const RENDER=new URLSearchParams(location.search).get('render')==='1';
 const tick=ms=>new Promise(r=>setTimeout(r,ms||0));
 const svg=(d,s)=>`<svg width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I={
@@ -388,7 +391,7 @@ function tplSearch(body,list){ const q=body.querySelector('#crTplQ'); if(!q) ret
   const hay=new Map(list.map(d=>[d.id,normQ([d.label,d.id,d.layout,d.size].concat(Object.values(d.words||{})).join(' '))]));
   const run=()=>{ const toks=normQ(q.value).split(/\s+/).filter(Boolean); let n=0;
     body.querySelectorAll('.cr-tw').forEach(w=>{ const b=w.querySelector('[data-tpl]'); if(!b) return; const h=hay.get(b.dataset.tpl)||'', show=toks.every(t=>h.includes(t)); w.hidden=!show; if(show) n++; });
-    none.hidden=n>0; clr.hidden=!q.value; const rec=body.querySelector('#crRecent'); if(rec) rec.hidden=!!toks.length; };
+    none.hidden=n>0; clr.hidden=!q.value; const rec=body.querySelector('#crRecent'); if(rec) rec.hidden=!!toks.length||!rec.querySelector('.cr-rec'); };
   q.addEventListener('input',run); clr.addEventListener('click',e=>{ e.stopPropagation(); q.value=''; run(); q.focus(); }); }
 /* favourites + recently used: the same per-device lists as the hub's Templates page (ids 't:'+template id; assets/templates.js) */
 const favKey=()=>'studio:tplFav:'+(B&&B.id), recKey=()=>'studio:tplRecent:'+(B&&B.id), RECENT_MAX=8;
@@ -402,29 +405,45 @@ const tplCard=(d,opt)=>{ const s=CR.templateSize(d), th=`<span class="th ${esc(d
 async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.start, all=CR.templates();
   const favs=new Set(idList(favKey())), byId=new Map(all.map(d=>[d.id,d]));
   const list=all.filter(d=>favs.has('t:'+d.id)).concat(all.filter(d=>!favs.has('t:'+d.id)));   // favourites first
-  const recent=idList(recKey()).filter(x=>x.startsWith('t:')).map(x=>byId.get(x.slice(2))).filter(Boolean).slice(0,3);
+  const recent=recentRow(byId,null).filter(r=>r.d).map(r=>r.d);   // brand templates now; team ones fill in once paintTeam has them (#46)
   const body=openSheet('templates',start?'What are you making?':'Templates',
     `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
-     ${recent.length?`<div id="crRecent"><span class="lbl">Recently used</span><div class="cr-tpls cr-recent">${recent.map(d=>tplCard(d,{recent:true})).join('')}</div></div>`:''}
+     ${recent.length?recentHtml(recent.map(d=>tplCard(d,{recent:true})).join('')):'<span id="crRecentAt" hidden></span>'}
      <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>tplCard(d,{favs,focus:opt.focus})).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
-  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team]'), si=e.target.closest('#crTeamSign'), sr=e.target.closest('[data-star],[data-tstar]');
+  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team],[data-rteam]'), si=e.target.closest('#crTeamSign'), sr=e.target.closest('[data-star],[data-tstar]');
     if(sr){ const id=sr.dataset.tstar?'team:'+sr.dataset.tstar:'t:'+sr.dataset.star, on=sr.getAttribute('aria-pressed')!=='true'; idMark(favKey(),id,on); sr.setAttribute('aria-pressed',String(on)); sr.title=on?'Remove from favourites':'Add to favourites'; return; }   // order changes the next time the sheet opens, nothing jumps now
     if(sz){ closeSheet(true); if(start||isBlank()) startBlank(sz.dataset.size); else addBlank(sz.dataset.size); }
     if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl||tp.dataset.rtpl,mode));
-    if(tt) chooseMode(mode=>applyTeam(tt.dataset.team,mode));
-    if(si){ if(await L.ensureMember('Team templates are shared with the team. Sign in to see them.')) paintTeam(); } });
+    if(tt) chooseMode(mode=>applyTeam(tt.dataset.team||tt.dataset.rteam,mode));
+    if(si){ if(await L.ensureMember('Team templates are shared with the team. Sign in to see them.')) paintTeam(byId); } });
   tplSearch(body,list); if(opt.focus){ const f=body.querySelector(`[data-tpl="${CSS.escape(opt.focus)}"]`); if(f) setTimeout(()=>f.scrollIntoView({block:'center'}),60); }
-  paintTeam();
+  paintTeam(byId);
   for(const d of recent.concat(list.filter(d=>!recent.includes(d)))){ const url=await tplThumb(d); if(!sheet||sheet.name!=='templates') return;
-    body.querySelectorAll(`[data-tpl="${CSS.escape(d.id)}"] .th,[data-rtpl="${CSS.escape(d.id)}"] .th`).forEach(th=>{ th.classList.remove('loading'); if(url) th.insertAdjacentHTML('afterbegin',`<img alt="" src="${url}">`); }); } }
-async function paintTeam(){ const box=$('crTeamT'); if(!box) return;
+    body.querySelectorAll(`[data-tpl="${CSS.escape(d.id)}"] .th,[data-rtpl="${CSS.escape(d.id)}"] .th`).forEach(th=>{ th.classList.remove('loading'); if(url&&!th.querySelector('img')) th.insertAdjacentHTML('afterbegin',`<img alt="" src="${url}">`); }); } }
+/* Recently used: the newest 3 of the shared list ('t:' brand template, 'team:' team template), skipping ones that are gone.
+   team=null before the team list has loaded: only brand templates then (a team id can't be checked yet) */
+function recentRow(byId,team){ const out=[];
+  for(const x of idList(recKey())){ if(out.length>=3) break;
+    if(x.startsWith('t:')){ const d=byId.get(x.slice(2)); if(d) out.push({d}); }
+    else if(team&&x.startsWith('team:')){ const t=team.get(x.slice(5)); if(t) out.push({t}); } }
+  return out; }
+/* once the team templates are in: redraw the row in true order, keeping the thumbnails already drawn */
+const recentHtml=cards=>`<div id="crRecent"><span class="lbl">Recently used</span><div class="cr-tpls cr-recent">${cards}</div></div>`;
+function paintRecent(byId,team,urls){ if(!byId) return; const row=recentRow(byId,team);
+  if(!row.some(r=>r.t)) return;   // no team template in the row: it stays as it is
+  let box=$('crRecent'); if(!box){ const at=$('crRecentAt'); if(!at) return; at.insertAdjacentHTML('afterend',recentHtml('')); at.remove(); box=$('crRecent'); }
+  box.querySelector('.cr-recent').innerHTML=row.map(r=>{ if(r.d){ const u=TH.get(r.d.id); return tplCard(r.d,{recent:true}).replace(' loading">',u?'"><img alt="" src="'+u+'">':' loading">'); }
+    const t=r.t, u=urls[t.thumb_path]; return `<button type="button" class="cr-rec" data-rteam="${esc(t.id)}" aria-label="${esc(t.name)}"><span class="th">${u?`<img alt="" src="${u}">`:''}</span><span class="nm" dir="auto">${esc(t.name)}</span></button>`; }).join('');
+  const q=$('crTplQ'); box.hidden=!!(q&&q.value.trim()); }
+async function paintTeam(byId){ const box=$('crTeamT'); if(!box) return;
   try{ const C=await L.cloud(); if(!(await C.session())||!(await C.isMember())){ box.innerHTML='<div class="cr-empty">Templates the team saves show here. <button type="button" class="link" id="crTeamSign">Sign in</button></div>'; return; }
     const all=(await C.designs(B.id)).filter(d=>d.tool===TOOL&&d.kind==='template'); if(!$('crTeamT')) return;
     if(!all.length){ box.innerHTML='<div class="cr-empty">No team templates yet. Make a design, then in Save choose “Save as a team template”.</div>'; return; }
     const urls=await C.fileUrls(all.map(d=>d.thumb_path)).catch(()=>({}));
     const favs=new Set(idList(favKey())), on=d=>favs.has('team:'+d.id), list=all.filter(on).concat(all.filter(d=>!on(d)));   // starred first, like the brand's templates
+    paintRecent(byId,new Map(all.map(d=>[d.id,d])),urls);
     box.innerHTML=`<div class="cr-tpls">${list.map(d=>`<div class="cr-tw"><button type="button" class="cr-tpl" data-team="${esc(d.id)}"><span class="th">${urls[d.thumb_path]?`<img alt="" src="${urls[d.thumb_path]}">`:''}</span><span class="nm" dir="auto">${esc(d.name)}</span></button><button type="button" class="cr-star" data-tstar="${esc(d.id)}" aria-pressed="${on(d)}" aria-label="${esc('Favourite: '+d.name)}" title="${on(d)?'Remove from favourites':'Add to favourites'}">${STAR}</button></div>`).join('')}</div>`;
   }catch(_){ box.innerHTML='<div class="cr-empty">Team templates could not load. Check the connection.</div>'; } }
 const isBlank=()=>frames().length<=1&&frames().every(f=>items(f).filter(n=>!n.hasName('frame-bg')).length===0);
@@ -449,7 +468,7 @@ function addBlank(size){ afterBuild(makePages(size)); }
 
 /* ---------- drafts: kept on this phone, listed in Continue editing ---------- */
 const DKEY=()=>L.draftBase(B.id,TOOL)+':'+S.id;
-function touch(){ if(!st.ready||st.design) return; st.dirty=true;
+function touch(){ if(!st.ready||st.design||RENDER) return; st.dirty=true;
   if(!S.id){ const n=L.listDrafts(B.id,TOOL).length; S.id=U.uid(); history.replaceState(null,'',location.pathname+'?draft='+S.id);
     if(n>=L.DRAFT_CAP&&!st.capWarned){ st.capWarned=true; toast('You have '+(n+1)+' unfinished designs on this '+L.devWord()+'. Remove old ones in Continue editing.',6000); } }
   BD.scheduleSave(); }
@@ -585,11 +604,27 @@ $('crName').addEventListener('change',()=>{ S.name=$('crName').value.trim(); if(
 $('crName').addEventListener('keydown',e=>{ if(e.key==='Enter') e.target.blur(); });
 document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==='s'){ e.preventDefault(); openSave(); } },true);
 
+/* ---------- Save pictures (Continue editing, Saved): assets/render.js opens ?draft=…&render=1 or ?design=…&render=1 in a
+   hidden frame and takes each page from Studio.renderer, drawn by the same exportFrame() as the Save sheet (2× lossless PNG,
+   stepping down to 1.5× / 1× only when memory runs out), so the pixels are the ones Save would make. ---------- */
+async function startRender(draft,design){ let ok=false;
+  try{ if(draft){ const x=L.listDrafts(B.id,TOOL).find(d=>d.id===draft); ok=!!(x&&x.d.board&&await BD.openStored(x.d.board)); }
+    else if(design){ const r=await openDesign(design,false); ok=r===true&&!!st.design&&st.design.kind!=='template'; } }
+  catch(err){ console.warn(err); ok=false; }
+  S.id=null; st.ready=false; BD.select([],{quiet:true});   // no id: the editor can never save a draft from this frame
+  const fs=frames(), s=fs[0]?fsize(fs[0]):{w:1080,h:1920};
+  const lost=design&&!draft?[...(S.imgs||[])].filter(id=>!String(id).startsWith('brand:')&&!BD.IMGS.get(id)).length   // a team photo that did not download
+    :BD.main.find(n=>kind(n)==='image'&&!BD.IMGS.get(n.getAttr('imgId'))).length;   // a photo no longer on this device
+  Studio.renderer={ok:ok&&fs.length>0,missing:lost?['photo']:[],pages:fs.length,W:s.w,H:s.h,
+    async page(pg,max){ const f=frames()[pg]; if(!f) return null; if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+      try{ const r=await BD.exportFrame(f,{scale:max&&max<2?max:2,type:'image/png'}); return {blob:r.blob,K:r.scale}; }catch(_){ return null; } }}; }
+
 /* ---------- start ---------- */
 (async function(){
   await BD.start(); B=BD.B; BD.ICONS=CR.allIcons(); document.title=TITLE+' · Studio';
   const q=new URLSearchParams(location.search), draft=q.get('draft'), design=q.get('design'), tpl=q.get('tpl'), team=q.get('team'), size=q.get('size');
   let startWith=null;
+  if(RENDER){ await startRender(draft,design); return; }
   if(draft){ const x=L.listDrafts(B.id,TOOL).find(d=>d.id===draft); if(x&&x.d.board&&await BD.openStored(x.d.board)){ st.dirty=true; st.draftKey=x.key; } else toast('That unfinished design is no longer on this '+L.devWord()+'.'); }
   if(!S.id&&design){ const r=await openDesign(design,q.get('go')==='1'); if(r==='away') return; }
   if(!S.id&&!st.design){ history.replaceState(null,'',location.pathname); const f=BD.makeFrame(0,0,1080,1920,{label:'Story',fill:'#FFFFFF'}); BD.showPage(f); BD.resetHistory();

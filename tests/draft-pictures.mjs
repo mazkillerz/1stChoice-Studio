@@ -3,7 +3,8 @@
       tap -> ONE ZIP with 2 PNGs of 2160x3840; dialog ends "Saved!".
    2. Drafts unchanged afterwards (same keys, same at + json); Continue editing still lists 2 cards in the same order.
    3. One draft -> a single .png (not zip), 2160x3840.
-   4. A Create draft (record with board) + one real draft -> 1 picture, note says "Create design".
+   4. A broken Create draft (record with a board that is not on this device) + one real draft -> 1 picture, note says
+      "could not be opened" (1.37.0: real Create drafts are saved too: tests/create-render.mjs).
    5. Phone 390x844 touch, light + dark: button on the heading's line, no sideways scroll at 360, text contrast >= 4.5.
    6. Footer #footDev: "phone" on a touch phone, "device" on the computer.
    7. No drafts: #continueSec hidden.   8. No iframe.render-frame left after saving.   9. No page errors.
@@ -78,7 +79,7 @@ let before;
   ok('no render frame left',await frames(pg)===0);
   await ctx.close(); }
 
-/* ===== 4: a Create draft is skipped ===== */
+/* ===== 4: a broken Create draft (its board is gone) is skipped ===== */
 { const ctx=await mk(DESK,{touch:false}); await makeDraft(ctx,{tap:false});
   const pg=await newPage(ctx); await pg.goto(BASE+'index.html');
   await pg.evaluate(()=>localStorage.setItem('studio:draft:1stchoice:create:zz1',JSON.stringify({board:'x',at:Date.now()})));
@@ -89,7 +90,7 @@ let before;
   ok('1 picture saved (single PNG)',/\.png$/i.test(dl.suggestedFilename())&&isPng(buf)&&pngWH(buf)==='2160x3840',dl.suggestedFilename());
   await waitH(pg,/Saved!/,20000).catch(()=>{});
   const note=(await pg.textContent('#bsNote')).trim();
-  ok('note mentions "Create design"',/Create design/.test(note),note);
+  ok('note says the broken Create draft "could not be opened"',/could not be opened/.test(note),note);
   ok('the Create draft record is untouched',await pg.evaluate(()=>JSON.parse(localStorage.getItem('studio:draft:1stchoice:create:zz1')).board==='x'));
   await ctx.close(); }
 
