@@ -81,7 +81,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   /* a computer shows "Skip to the next photo" before saving */
   if(!vp.touch){ await quick(['pair.jpg','shelf.jpg']); const k=await photoKey();
     const sk=await pg.evaluate(()=>{ const b=document.getElementById('queueNext'); return {hidden:b.hidden,txt:b.textContent.trim(),ghost:b.classList.contains('ghost')}; });
-    ok(N+'before saving: a quiet "Skip to the next photo (2 of 2)"',!sk.hidden&&sk.ghost&&sk.txt==='Skip to the next photo (2 of 2)',JSON.stringify(sk));
+    ok(N+'before saving: a quiet "Skip to photo 2 of 2"',!sk.hidden&&sk.ghost&&sk.txt==='Skip to photo 2 of 2',JSON.stringify(sk));
     await pg.click('#queueNext'); await pg.waitForTimeout(800);
     ok(N+'Skip brings in photo 2 without saving',(await photoKey())!==k&&await ready()==='Last photo: 2 of 2'&&await pg.$eval('#queueNext',e=>e.hidden)); }
 

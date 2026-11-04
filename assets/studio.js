@@ -1867,10 +1867,11 @@ async function tool(cfg){
   function keepQueue(){ if(!QUEUE||!qTotal) return; if(!queue.length) return dropQueue();
     idb.put(QPOS,{pos:qPos,saved:qSaved,draft:draftId,design:design&&design.id||null,at:Date.now()}); }
   function dropQueue(){ idb.del(QK); idb.del(QPOS); }
-  /* the photos still waiting: "Next photo (2 of 3)" once this one is saved; before that, a quieter "Skip to the next photo" */
+  /* the photos still waiting: "Next photo (2 of 3)" once this one is saved; before that, a quieter "Skip to photo 2 of 3"
+     (the same word as the ready note's Skip, which does the same thing) */
   function syncQueue(){ keepQueue(); const b=$('queueNext'), on=QUEUE&&queue.length>0&&!saving; b.hidden=!on; $('save').classList.toggle('ghost',on&&qSaved);   // Next is the main step now: Save again goes quiet
     if(!on) return;
-    b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=(qSaved?'Next photo':'Skip to the next photo')+' ('+(qPos+1)+' of '+qTotal+')'; }
+    b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=qSaved?'Next photo ('+(qPos+1)+' of '+qTotal+')':'Skip to photo '+(qPos+1)+' of '+qTotal; }
   function queueNote(){ const last=qPos===qTotal; return [last?'Last photo: '+qPos+' of '+qTotal:'Photo '+qPos+' of '+qTotal+' is in',
     qPos===1?(isPhone()?'Tap Save for the next one':'Save it for the next one'):'Same words and look']; }   // one line next to Skip, even on a 360px phone
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
@@ -1953,7 +1954,7 @@ async function tool(cfg){
     r.classList.add('out'); setTimeout(()=>{ if(r.classList.contains('out')){ r.hidden=true; r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; } },280); }
   function showReady(many,txt,sub){ const r=$('readyBar'); $('readyTxt').textContent=txt||(many?'Your photos are in':'Your photo is in');
     $('readySub').textContent=sub||(isPhone()?'Tap Save when it looks good':'Save it when it looks good');
-    const skip=QUEUE&&qTotal>0&&queue.length>0; $('readySkip').hidden=!skip; r.classList.toggle('has-skip',skip);   // a photo is waiting: Skip goes straight to it
+    const skip=QUEUE&&qTotal>0&&queue.length>0; $('readySkip').hidden=!skip; r.classList.toggle('has-skip',skip); if(skip){ $('readySkip').setAttribute('aria-label','Skip to photo '+(qPos+1)+' of '+qTotal); $('readySkip').title='Skip to photo '+(qPos+1)+' of '+qTotal+' without saving this one'; }   // a photo is waiting: Skip goes straight to it
     r.classList.remove('out'); r.style.transform=''; r.style.opacity=''; r.hidden=false; clearTimeout(readyT); readyT=setTimeout(()=>hideReady(),skip?4000:3200);
     const sv=$('barSave'); sv.classList.remove('nudge'); void sv.offsetWidth; sv.classList.add('nudge'); setTimeout(()=>sv.classList.remove('nudge'),2600); }   // a soft pulse on Save: the note points at it
   { const r=$('readyBar'); let y0=null, dy=0;
@@ -2442,6 +2443,8 @@ async function home(){
   /* ---------- universal search (assets/search.js): tools, templates, saved designs, unfinished stories, settings and actions ---------- */
   const goSaved=()=>openSaved();
   const tplSize={story:'Story',post:'Post',square:'Square'};
+  /* a template opened from search counts as Recently used, the same list as the Templates page and Create's picker */
+  const tplUsed=id=>{ if(window.StudioTemplates&&StudioTemplates.mark) StudioTemplates.mark(store,'studio:tplRecent:'+B.id,id,8); };
   let tq=null;   // saved-design thumbnails are asked for in one batch
   const thumbFor=p=>{ if(!p||!C) return Promise.resolve(null); if(urls[p]) return Promise.resolve(urls[p]);
     if(!tq){ const q=tq={paths:new Set()}; q.p=new Promise(r=>setTimeout(async()=>{ tq=null; try{ Object.assign(urls,await C.fileUrls([...q.paths])); }catch(_){} r(); },30)); }
@@ -2450,10 +2453,10 @@ async function home(){
     const pins=getPins(), out=[];
     Object.entries(TOOLS).forEach(([id,t])=>out.push({kind:'tool',id:'tool:'+id,title:t.title,sub:t.blurb,keys:[TOOL_GROUPS[t.group],t.quick,t.keys].filter(Boolean).join(' '),thumb:toolThumb(id),href:toolPage(id),pinned:pins.includes(id),togglePin:()=>togglePin(id,true)}));
     cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:draftTitle(x),sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
-    if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:['template create',d.size||'story',d.cat,d.keys].concat(Object.values(d.words||{})).filter(Boolean).join(' '),thumb:tplThumb(d.id),shape:d.layout==='highlight'?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id)}));
+    if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:['template create',d.size||'story',d.cat,d.keys].concat(Object.values(d.words||{})).filter(Boolean).join(' '),thumb:tplThumb(d.id),shape:d.layout==='highlight'?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),opened:()=>tplUsed('t:'+d.id)}));
     if(TOOLS.video) reelIds().forEach(id=>{ const m=reelMeta[id]; if(m===null) return; const d=reelDur(m);   // (m is undefined until Templates has been opened: the name then comes from the folder name)
-      out.push({kind:'template',id:'reel:'+id,title:m?m.title:reelHuman(id),sub:'Template · Video'+(d?' · '+d+' s':''),keys:'reel reels video template '+id.replace(/[-_]+/g,' '),thumb:tplThumb('reel-'+id),shape:'story',icon:ICON.template,href:toolPage('video')+'?reel='+encodeURIComponent(id)}); });
-    (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id)}); });
+      out.push({kind:'template',id:'reel:'+id,title:m?m.title:reelHuman(id),sub:'Template · Video'+(d?' · '+d+' s':''),keys:'reel reels video template '+id.replace(/[-_]+/g,' '),thumb:tplThumb('reel-'+id),shape:'story',icon:ICON.template,href:toolPage('video')+'?reel='+encodeURIComponent(id),opened:()=>tplUsed('r:'+id)}); });
+    (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),opened:()=>tplUsed('p:'+p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
       out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
     cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));
