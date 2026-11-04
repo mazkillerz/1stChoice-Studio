@@ -28,7 +28,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 ## UX audit findings (open)
 - 1.40.0: on a computer the photo tools show Add photo twice (the Photo card tile and "Add your photo" under the preview). Only if the owner finds it confusing.
 - 1.40.0 pattern review: lessons sessions 32–39 (1.21–1.28) can move to `_archive/` like 16–31; their rules are in the skill.
-- 1.37.0 release: `batch-saved` "pixel identity: restock tool Save == batch" failed once under 4-way load in `--changed` and passed 36/0 alone; watch it (a pixel suite that flakes hides real failures).
+- 1.37.0 + 1.40.0 releases: `batch-saved` "pixel identity: <tool> Save == batch" failed under 4-way load twice (Restock, then Photo story) and passed 36/0 alone each time (3 of 3). Next session: find the cause (likely a font or photo not yet decoded in one of the two renders under load) and make the suite wait for it; a pixel suite that flakes hides real failures.
 - 1.38.0: Create's two emoji highlight templates make the start sheet load `highlight-emoji.js` + `stickers.js` once on the first visit (live previews); later visits use the IndexedDB preview cache (`create-stickers` 1e/1f check it).
 - 1.36.0: Board-saved text styles can carry `wt` / `bf`; a tool page never shows such a style as "on" (applying works).
 - 1.29.0: done in 1.30.0: New place's frame save is see-through (`framePass` in `renderPage()`; any new photo-drawing helper must also no-op under it).
