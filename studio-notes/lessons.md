@@ -5,6 +5,11 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 51 | 1.40.0 | 5 (full sweep 80 runs: 79 then 80 green after a test-side video fix; contrast + tapscan clean; simplify40 34/0 new; three cuts) | 4 (the 19-min sweep waited for wave 1) | 0 | pass | Open sheets with a real tap in shot scripts; take "before" shots from the base |
+| 50 | 1.39.0 | 5 (select-swipe 38/0; 38 suites green at release) | 5 (first to finish, ~13 min) | 0 | pass | Repaint state, never the list, while a finger is down on it |
+| 49 | 1.38.0 | 5 (highlight-product 63/0 with a pixel hash against the old file; 27 suites green) | 4 (one test decision needed the lead) | 0 | pass | A template that needs lazy data loads it in the start sheet's previews: check the lazy-load tests when adding one |
+| 48 | 1.37.0 | 4 (create-render 47/0; one code bug and one timing flake fixed before the report; the suite had its own port hard-coded) | 5 | 0 | pass | Default every new suite's BASE to :8080, whatever port you test on |
+| 47 | 1.36.0 | 5 (board-stickers 57/0; found and fixed an old Board paste bug) | 4 | 0 | pass | Shoot the first build sooner (the sticker tile blow-up showed only in the shot) |
 | 46 | 1.35.0 | 5 (full sweep: 65 suites, contrast clean, tapscan clean; new suite simplify35 23/0; fixed the flaky stickers pixel check, red once on main) | 4 (the 2-at-a-time sweep was too slow and was restarted at 4 at a time on the branch head) | 0 | pass | Start the full sweep with JOBS=4 on the branch head once the cuts are in, not on main first |
 | 45 | 1.34.0 | 5 (new suite tplteam 24/0 by a sonnet helper on the first run; `--changed` at release) | 5 (both items in one pass; notes and the pattern review written while the helper tested) | 0 (no owner reports since 1.33.0 known) | pass | Read a truncated line in full before calling it a bug (a `cut -c` made run.mjs look broken) |
 | 44 | 1.33.0 | 5 (flip 72/0 incl. old designs pixel-identical; emoji-stickers 32/0 with a held-back file proving Save waits) | 5 (parallel; fit 1.31's loader on the first try after one lead note) | 0 | pass | Name the globals another session reads before changing how a file loads |
@@ -24,6 +29,18 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## 1.36.0–1.39.0 (sessions 47–50, parallel round of five with a lead)
+- Worked: four sessions at once plus the Simplify one started when the first finished; all four reported within ~25 min, releases one after another in order with one `--changed` each (9, 42, 27, 38 suites).
+- Worked: scopes by file kept merges conflict-free (only `home()` was shared, by two distant blocks).
+- Failed: a suite written on a helper port (`create-render`, :8082) failed in the lead's run on :8080. Rule: every suite defaults to :8080 and reads `BASE`.
+- Failed: `contrast.mjs` read its URL only from argv, so inside `run.mjs` on another port it reported 0/0 (fixed in 1.40.0).
+- Lesson: a hidden render frame of an autosaving editor must drop its draft id after opening, not only skip its own save (1.37.0).
+- Lesson: a name clash inside one IIFE breaks the whole Board script; `node --check lab/<file>.js` catches it in a second (1.36.0).
+- 1.40.0: measure each sheet's scroll height at 390 first (one number per sheet): it pointed straight at the longest (Collage 1522, Highlight 1363, Carousel 1292).
+- 1.40.0: shot scripts open sheets with `pg.tap`, not `el.click()` from `evaluate` (a programmatic click leaves keyboard-style focus, and the focus ring looks like a bug).
+- 1.40.0 sweep: `video` arrow-key check failed alone too; the touch drag before it left the timeline coasting (test-side, fixed by waiting for time to settle).
+- Lesson: in Board, Escape after a colour pop has closed clears the selection; tests must not press Escape "to be safe" (1.36.0).
 
 ## 1.35.0 (session 46, Simplify + pattern review)
 - Worked: shooting the tool and hub screens at 390 and 360 first; the cuts came from the shots (More tab one row shorter, the list/grid switch with one tool), not from the backlog.

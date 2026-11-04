@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.39.0';
+const VERSION='1.40.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -802,7 +802,7 @@ async function tool(cfg){
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
     <div class="insp-row light-row"><label class="lbl" for="light">Light</label><input type="range" id="light" min="-1" max="1" step="0.05" value="0"><output id="lightOut" for="light">0</output></div>
     <button type="button" class="link" id="lookAll" hidden>Use this look on every photo</button></div>`}</div></section>`;
-  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid${segOdd(cfg.styles)}" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
+  if(hasStyle) html+=`<section class="sheet" id="sh-style" data-sheet="style" aria-labelledby="h-style">${sheetHead('style','Style',step++)}<div class="sheet-body">${styleFields.some(f=>f.lead)?'<div data-fields="lead" class="field fields"></div>':''}${cfg.stylesTitle?`<h3 class="fgroup">${esc(cfg.stylesTitle)}</h3>`:''}${cfg.styles?`<div class="row seg-grid${segOdd(cfg.styles)}" style="--c:${segCols(cfg.styles.map(x=>({ic:x.swatch})))}" role="group" aria-label="Style" id="styles">${cfg.styles.map(s=>`<button type="button" class="seg" data-style="${s.id}" aria-pressed="false">${s.swatch||''}${esc(s.label)}</button>`).join('')}</div>`:''}<div data-fields="style" class="field fields"></div></div></section>`;
   if(hasWords) html+=`<section class="sheet" id="sh-words" data-sheet="words" aria-labelledby="h-words">${sheetHead('words','Words',step++)}<div class="sheet-body"><div data-fields="words" class="field fields"></div><div class="small">Tip: tap any text in the preview to edit, move or resize it.</div></div></section>`;
   html+=`<section class="sheet" id="sh-layers" data-sheet="layers" aria-labelledby="h-layers">${sheetHead('layers','Layers')}<div class="sheet-body">
     <div class="add-row"><button type="button" class="mini" id="addText">${ICON.text} Text</button><button type="button" class="mini" id="addComp" aria-controls="sh-comps">${ICON.plus} Element</button><button type="button" class="mini" id="addAsset" aria-controls="sh-assets">${ICON.shapes} Asset</button>${hasStickers?`<button type="button" class="mini" id="addSticker" aria-controls="sh-stickers">${ICON.sparkle} Sticker</button>`:''}</div>
@@ -925,7 +925,7 @@ async function tool(cfg){
   /* ---- words ---- */
   const fieldBoxes=[...document.querySelectorAll('[data-fields]')];
   fieldBoxes.forEach(box=>{
-    const list=box.dataset.fields==='style'?styleFields:wordFields;
+    const list=box.dataset.fields==='style'?styleFields.filter(f=>!f.lead):box.dataset.fields==='lead'?styleFields.filter(f=>f.lead):wordFields;   // lead: fields that open the Style sheet, above the styles (e.g. This slide)
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
@@ -959,7 +959,7 @@ async function tool(cfg){
       if(t.dataset.ownfor) S.values[t.dataset.ownfor].own=t.value; else if(t.dataset.text) S.values[t.dataset.text].text=t.value;
       else if(t.dataset.tile){ const [id,i,k]=t.dataset.tile.split(':'); S.values[id][+i][k]=t.value; }
       else if(t.dataset.date){ const [id,k]=t.dataset.date.split(':'); if(t.value) S.values[id][k]=t.value; }
-      else if(t.dataset.range){ S.values[t.dataset.range]=+t.value; const o=document.querySelector(`[data-rout="${t.dataset.range}"]`); if(o) o.textContent=t.value+(fields.find(x=>x.id===t.dataset.range).unit||''); }
+      else if(t.dataset.range){ S.values[t.dataset.range]=+t.value; const o=document.querySelector(`[data-rout="${t.dataset.range}"]`); if(o) o.textContent=t.value+(fields.find(x=>x.id===t.dataset.range).unit||''); fields.forEach(f=>{ if(f.when&&f.when.field===t.dataset.range){ const fw=document.querySelector(`[data-fw="${f.id}"]`); if(fw) fw.hidden=!whenOk(f); } }); }
       else return;
       remember(); render(); syncInspector(); });
     wirePalettes(box,(key,v)=>{ if(!key.startsWith('f:')) return; S.values[key.slice(2)]=v||null; syncUI(); remember(); render(); });
@@ -981,7 +981,7 @@ async function tool(cfg){
       if(!b||a===b) return day(A)+' '+mon(A);
       return A.getMonth()===Z.getMonth()?day(A)+' – '+day(Z)+' '+mon(Z):day(A)+' '+mon(A)+' – '+day(Z)+' '+mon(Z);
     }catch(_){ return ''; } }
-  const whenOk=f=>!f.when||((f.when.count==null||f.when.count===S.count)&&(f.when.style==null||[].concat(f.when.style).includes(S.style))&&(!f.when.field||[].concat(f.when.is).includes(S.values[f.when.field])));
+  const whenOk=f=>!f.when||((f.when.count==null||f.when.count===S.count)&&(f.when.style==null||[].concat(f.when.style).includes(S.style))&&(!f.when.field||((f.when.is===undefined||[].concat(f.when.is).includes(S.values[f.when.field]))&&(f.when.not===undefined||![].concat(f.when.not).includes(S.values[f.when.field])))));
   function paintTiles(f){
     const box=document.querySelector(`[data-tiles="${f.id}"]`), v=S.values[f.id], sig=S.page+':'+v.length;
     if(box.dataset.sig!==sig){ box.dataset.sig=sig;

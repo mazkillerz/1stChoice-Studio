@@ -13,6 +13,26 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.40.0 · 4 Nov 2026
+
+### Carousel: change a slide without scrolling
+type: design
+Style now opens on This slide: the slide type, Two photos and Words place are at the top, and the settings for all slides (White, Cream or Black, counter, background) follow below. Changing one slide's type was a long scroll down; now it is right there.
+![before](assets/whatsnew/1.40.0-carousel-style-before.jpg)
+![after](assets/whatsnew/1.40.0-carousel-style-after.jpg)
+
+### Collage: a shorter Layout sheet
+type: design
+Border colour now shows only once you give the photos a border, right under the Border slider as you drag it. With no border it did nothing, so the sheet is one colour palette shorter.
+![before](assets/whatsnew/1.40.0-collage-border-before.jpg)
+![after](assets/whatsnew/1.40.0-collage-border-after.jpg)
+
+### Highlight covers: pick each cover's icon first
+type: design
+Style now opens on This cover: the cover type and the icon, emoji or product for the cover you are on are at the top; White, Cream or Black and the colours for all covers follow below. Giving every cover its own icon no longer needs a scroll down each time.
+![before](assets/whatsnew/1.40.0-highlight-style-before.jpg)
+![after](assets/whatsnew/1.40.0-highlight-style-after.jpg)
+
 ## 1.39.0 · 4 Nov 2026
 
 ### Swipe to pick several designs

@@ -1,9 +1,9 @@
 /* Contrast + direction sweep: every main screen, light and dark, phone size. Lists text whose contrast is below WCAG AA
    (4.5:1, or 3:1 for large text) against the colour actually behind it, and Arabic text that runs left-to-right.
-   Usage: node tests/contrast.mjs [base]   (server on :8080). Exit code 1 when something is found. */
+   Usage: node tests/contrast.mjs [base]   (or BASE=…; server on :8080). Exit code 1 when something is found. */
 import { chromium } from 'playwright'; import fs from 'fs';
 import { seedDesigns, seedScript } from './seed.js';
-const BASE=process.argv[2]||'http://127.0.0.1:8080/';
+const BASE=process.argv[2]||process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const S=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
 const SEED=seedDesigns(); const AR=['رجع متوفر – Classic','Restock وفرنا كمية جديدة'];

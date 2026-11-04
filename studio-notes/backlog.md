@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 45–46 (4 Nov 2026): 1.34.0 team (stars on team templates in Create, search → Recently used, one word for Skip) and 1.35.0 Simplify (Save this style beside Copy style, Home list/grid switch hidden with one tool, full sweep, pattern review). The next session, 1.36.0, is a **Mazoon** session.
-**Simplify session:** every 5th minor version. The next one is 1.40.0.
+**Last session:** sessions 47–51 (4 Nov 2026, parallel round led by one lead session): 1.36.0 Mazoon (Board stickers, sharp emoji, shared text styles, Board paste fix), 1.37.0 team (Save pictures for Create drafts, team templates in Recently used), 1.38.0 Mazoon (Product highlight Size + Position, two emoji highlight templates), 1.39.0 team (swipe to select in Saved, / key hint), 1.40.0 Simplify (Carousel and Highlight Style sheets open on this slide/cover, Collage Border colour only with a border, full sweep, `contrast.mjs` reads BASE). The next session, 1.41.0, is a **Mazoon** session.
+**Simplify session:** every 5th minor version. The next one is 1.45.0.
 
 ## Next up
 _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
@@ -13,22 +13,24 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
 | 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
-| 10 | Highlight covers: Product covers with a size/position slider | 1 | 3 | 2 | 2 | 4 | Product type shipped in 1.4.0; emoji covers shipped in 1.14.0. Product can already be sized and moved as a layer. |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
-| 26 | Stickers in Board (own editor; Create got them in 1.31.0) | 1 | 3 | 2 | 2 | 4 | From 1.12.0. |
-| 42 | Save pictures for Create drafts too (Create has its own editor and no `render=1` renderer; they are listed as skipped) | 1 | 2 | 1 | 2 | 2 | From 1.23.0. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
-| 35 | Text styles in Board (Create got them in 1.31.0) | 1 | 2 | 1 | 2 | 2 | From 1.19.0. |
-| 46 | Create's Recently used row shows team templates too (today only the brand's `t:` ids; team thumbnails arrive later, so the row would fill in after paintTeam) | 1 | 1 | 1 | 1 | 2 | From 1.34.0. |
 | 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
 
 | 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
-| 44 | Brand template entries for emoji highlight covers in Create (`{layout:'highlight', emoji:'places'}` in `create.templates`) | 1 | 2 | 1 | 1 | 3 | From 1.31.0. |
-| 45 | On a computer, show the `/` key once in the search placeholder ("Search all of Studio  /") | 1 | 2 | 1 | 1 | 3 | From 1.30.0, if the owner likes the key. |
+
+| 47 | Board: Shapes / Icons grid tiles are 43.8px on a phone (5 a row), under the 44px floor | 1 | 2 | 1 | 1 | 3 | From 1.36.0. |
+| 48 | Board: "Use on all text" in a text style's ⋯ (like the tool pages' Paste on all text) | 1 | 2 | 1 | 1 | 3 | From 1.36.0. |
+| 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
 
 ## UX audit findings (open)
+- 1.40.0: on a computer the photo tools show Add photo twice (the Photo card tile and "Add your photo" under the preview). Only if the owner finds it confusing.
+- 1.40.0 pattern review: lessons sessions 32–39 (1.21–1.28) can move to `_archive/` like 16–31; their rules are in the skill.
+- 1.37.0 + 1.40.0 releases: `batch-saved` "pixel identity: <tool> Save == batch" failed under 4-way load twice (Restock, then Photo story) and passed 36/0 alone each time (3 of 3). Next session: find the cause (likely a font or photo not yet decoded in one of the two renders under load) and make the suite wait for it; a pixel suite that flakes hides real failures.
+- 1.38.0: Create's two emoji highlight templates make the start sheet load `highlight-emoji.js` + `stickers.js` once on the first visit (live previews); later visits use the IndexedDB preview cache (`create-stickers` 1e/1f check it).
+- 1.36.0: Board-saved text styles can carry `wt` / `bf`; a tool page never shows such a style as "on" (applying works).
 - 1.29.0: done in 1.30.0: New place's frame save is see-through (`framePass` in `renderPage()`; any new photo-drawing helper must also no-op under it).
 - 1.29.0: done in 1.30.0: the Grain-reload and restock-styles "compatible" flakes are fixed test-side (warm-up + re-settle; colour-grid compare within 4).
 - 1.27.0: partly done in 1.32.0 (day words). Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
@@ -75,6 +77,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.36.0–1.39.0 (parallel round, 4 Nov 2026): Board stickers + sharp emoji + shared text styles (#26, #35) and a Board paste fix; Save pictures for Create drafts and saved Create designs (#42); team templates in Create's Recently used (#46); Product highlight Size + Position (#10); emoji highlight templates (#44); swipe to select in Saved; / key hint (#45). 1.40.0 Simplify: three shorter sheets, full sweep green.
 - 1.35.0 (Simplify): More tab one row shorter on text layers, Home list/grid switch only with 2+ pinned tools, full sweep (65 suites + contrast + tapscan), stickers pixel check de-flaked, lessons 16–31 archived.
 - 1.34.0 (team): stars on team templates in Create's picker (#36), templates opened from search count as Recently used, one word for Skip.
 - 1.13.0–1.19.0 (parallel round, 29 Oct 2026): 1.13.0 (team) unfinished stories kept when you leave at once (the `queue.mjs` flake root cause), "N waiting" tag on tool rows, "device" not "phone" on a computer; 1.14.0 (Mazoon) Flip (#25) and Emoji highlight covers (#10 emoji part); 1.15.0 (Simplify) computer Save dock, quiet Done in sheets, `.link` text buttons, Offer camera, shorter labels, two new taste checks; 1.16.0 (team) Favourites + Recently used templates (#6), New badge off the headline, Create template `sub` lines; 1.17.0 (Mazoon) Board flex layout as a preview (#15); 1.18.0 (team) Save pictures from Saved (#5 second half); 1.19.0 (Mazoon) Text styles (#8) and Paste on all text (#22).
