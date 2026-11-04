@@ -125,15 +125,21 @@ const TOOL_STYLE=[{id:'tsTool',name:'Pill white',st:{color:'#ffffff',font:'syste
   await pg.evaluate(()=>BD.undo()); await pg.waitForTimeout(500);
   ok('one undo brings the old look back',await pg.evaluate(()=>BD.docJson())===h0);
   // save as style
-  await pg.evaluate(()=>{ const n=BD.main.findOne(x=>x.getAttr('kind')==='text'); BD.select([n]); n.fill('#7a563a'); n.fontStyle('800'); n.lineHeight(1.25); BD.changed(); BD.UI.paintProps(); }); await pg.waitForTimeout(300);
+  await pg.evaluate(()=>{ const n=BD.main.findOne(x=>x.getAttr('kind')==='text'); BD.select([n]); n.fill('#7a563a'); n.fontFamily(BD.bodyFont()); n.fontStyle('800'); n.lineHeight(1.25); BD.changed(); BD.UI.paintProps(); }); await pg.waitForTimeout(300);
   await pg.click('#props [data-act="saveStyle"]'); await pg.waitForTimeout(300);
   let list=await pg.evaluate(()=>JSON.parse(localStorage.getItem('studio:textstyles')));
   const mine=list.find(x=>x.id!=='tsTool');
   ok('Save as style: stored in studio:textstyles as {id,name,st,at}, named "Style 1", no prompt',list.length===2&&mine&&mine.name==='Style 1'&&typeof mine.at==='number'&&mine.id,list);
-  ok('st has the tool pages\' shape (+ wt)',mine&&mine.st.color==='#7a563a'&&mine.st.font==='system-ui'&&mine.st.align==='center'&&mine.st.lh===1.25&&mine.st.shadow===false&&mine.st.wt==='800'&&!('fontSize' in mine.st),mine&&mine.st);
+  ok('st has the tool pages\' shape (+ wt)',mine&&mine.st.color==='#7a563a'&&mine.st.font===await pg.evaluate(()=>BD.bodyFont())&&!('bf' in mine.st)&&mine.st.align==='center'&&mine.st.lh===1.25&&mine.st.shadow===false&&mine.st.wt==='800'&&!('fontSize' in mine.st),mine&&mine.st);
   ok('the new chip shows, pressed',await pg.locator(`[data-tsuse="${mine.id}"]`).getAttribute('aria-pressed')==='true');
   await pg.click('#props [data-act="saveStyle"]'); await pg.waitForTimeout(300);
   ok('saving the same look again adds nothing and says so',(await pg.evaluate(()=>JSON.parse(localStorage.getItem('studio:textstyles')).length))===2&&/Already saved/.test(await pg.locator('#bToast').innerText()));
+  // a font only Board has goes in bf, so a tool page keeps its own font
+  await pg.evaluate(()=>{ const n=BD.S.sel[0]; n.fontFamily('Inter'); BD.changed(); BD.UI.paintProps(); }); await pg.waitForTimeout(200);
+  await pg.click('#props [data-act="saveStyle"]'); await pg.waitForTimeout(300);
+  list=await pg.evaluate(()=>JSON.parse(localStorage.getItem('studio:textstyles')));
+  const bfs=list[list.length-1]; ok('a Board-only font is kept as bf, not font',list.length===3&&bfs.st.bf==='Inter'&&!('font' in bfs.st),bfs);
+  await pg.evaluate(()=>{ const l=JSON.parse(localStorage.getItem('studio:textstyles')); l.pop(); localStorage.setItem('studio:textstyles',JSON.stringify(l)); });
   // up to 8
   await pg.evaluate(()=>{ const l=JSON.parse(localStorage.getItem('studio:textstyles')); for(let i=0;i<6;i++) l.push({id:'f'+i,name:'F'+i,st:{color:'#00000'+i,font:'system-ui'},at:i}); localStorage.setItem('studio:textstyles',JSON.stringify(l)); const n=BD.S.sel[0]; n.fill('#123456'); BD.changed(); BD.UI.paintProps(); }); await pg.waitForTimeout(200);
   await pg.click('#props [data-act="saveStyle"]'); await pg.waitForTimeout(300);

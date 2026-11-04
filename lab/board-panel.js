@@ -144,8 +144,7 @@ function stickerPanel(list){ const n=list[0], em=list.every(x=>BD.stickers.isEmo
   return sec('sticker',em?'Emoji':'Sticker',`<div class="row">${swatch('scol',c,em?'Emoji colour':'Sticker colour',em)}</div>${em?'<p class="hint">Original keeps the emoji’s own colours. A colour makes it one colour.</p>':''}`); }
 /* the text styles shared with the tool pages and Create (board-tools.js T.tStyles); the one the text has now is pressed */
 function tsChips(list){ const T=BD.tools, all=T.tStyles(); if(!all.length) return '';
-  const cur=list.length===1?T.styleKey(T.styleOfText(list[0])):'';
-  return `<div class="bts-list">${all.map(t=>{ const on=T.styleKey(t.st)===cur; return `<button type="button" class="bts" data-tsuse="${esc(t.id)}" aria-pressed="${on}" dir="auto" title="Use ${esc(t.name)}"><i class="bts-dot" style="background:${esc(t.st.color||'currentColor')}" aria-hidden="true"></i><span${t.st.font?` style="font-family:'${esc(t.st.font)}'"`:''}>${esc(t.name)}</span></button>`; }).join('')}</div>`; }
+  return `<div class="bts-list">${all.map(t=>{ const on=list.length===1&&T.isOn(t.st,list[0]); return `<button type="button" class="bts" data-tsuse="${esc(t.id)}" aria-pressed="${on}" dir="auto" title="Use ${esc(t.name)}"><i class="bts-dot" style="background:${esc(t.st.color||'currentColor')}" aria-hidden="true"></i><span${(t.st.bf||t.st.font)?` style="font-family:'${esc(t.st.bf||t.st.font)}'"`:''}>${esc(t.name)}</span></button>`; }).join('')}</div>`; }
 function arcPanel(n){ const r=n.getAttr('arcR')||300, mode=n.getAttr('arcMode')||'up';
   return sec('arc','Curved text',`<label class="f wide"><span>Text</span><input type="text" data-k="arcText" value="${esc(n.text())}" dir="auto"></label>
     ${seg('arcMode',mode,[['up','Arc up'],['down','Arc down'],['circle','Circle']])}${range('Curve size','arcR',Math.round(r),20,3000,1,'px')}
