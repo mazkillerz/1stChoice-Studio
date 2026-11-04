@@ -64,6 +64,9 @@ Everything else in this skill can be rewritten by the skill itself.
 - **Backgrounds (since 1.21.0):** `GROUNDS` + `groundFx()` in `studio.js`; a tool adds `Studio.groundField({style:[...]})` to its fields (id `gfx`, Style sheet) and draws its ground with `h.ground(color,o.value('gfx'))` instead of `fillRect`. Finishes are tone-on-tone from the ground colour (no brand colours), drawn in story units; 'plain' or a missing value draws nothing extra, so old designs stay pixel-identical. Grain uses a fixed seeded list: never change `GRAIN`'s seed or count, saved designs would reopen differently.
 - **Simplify 1.30.0 pieces:** "Save the frame only" (`frameOnly` tools) draws with `framePass` set, so `h.photo` / `h.backdrop` draw nothing while `photoAspect` still reads the photo (same window size); a `TOOLS` blurb fits one line at 360px (about 24 characters; extra words go in `keys`, which search reads); hub dialogs (All tools, Settings) have a quiet `.mini` Done like the tool sheets; `.act-row` icons are one 20px size; on a computer "/" focuses the Studio search on Home and opens Saved's own search. `simplify30` checks all of them.
 - **Simplify 1.35.0 pieces:** in a text layer's More tab `#inspSaveStyle` sits in `#inspStyleRow` (beside Copy style) and is hidden for non-text layers; `#inspTStyles` (the saved list) is hidden until a style exists (`paintStyles()`). Home hides `.vswitch[data-view="tools"]` while fewer than two tools are pinned (`paintTools()`); Settings → Your tools and search still switch the view. `simplify35` checks both.
+- **Board stickers + text styles (since 1.36.0):** `lab/board-stickers.js` = `BD.stickers` (lazy `load(emoji)`, `prep(n)` from `decorate()`, `need(nodes)` from `loadDoc()`); a sticker is a `Konva.Shape` kind `sticker` with `ref`/`scol`, drawn by `STUDIO_STICKERS[i].draw`. Board text styles live in the shared `studio:textstyles`; Board-only keys `wt`, `bf`. A change to `assets/stickers.js` or `tools/highlight-emoji.js` runs `board-stickers` too.
+- **Create render frames (since 1.37.0):** `tools/create.html?…&render=1` exposes `Studio.renderer` through Create's own export (same 2× PNG as Save) and drops `S.id` after opening so nothing is written; Save pictures in Continue editing and Saved both use it.
+- **Suites and ports:** every suite defaults to `http://127.0.0.1:8080/` and reads `BASE`, whatever port a helper session tests on (1.37.0's suite hard-coded :8082 and failed in the lead's run).
 - **Model split:** CLAUDE.md asks for routine building to go to a `sonnet` subagent with a precise brief, and lookups/test runs to `haiku` (see **Testing → Who runs the tests**). Give a subagent files that nobody else is editing at the same time.
 
 ## Design system
@@ -121,16 +124,16 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Save engine, Save sheet, team save, Save all (`assets/batch.js`), Save pictures (`assets/render.js`, incl. Continue editing) | `quicksave`, `simplify`, `home7-save`, `batch`, `batch-saved`, `draft-pictures` , `continue-clear` |
 | Quick start, "Your photo is in", several photos in a row (`queue` tools), drafts written on leave / Skip | `quicksave`, `queue`, `queue-keep`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar, "N waiting" tag on tool rows, Offer's camera in All tools | `home7-hub`, `pins`, `pinorder`, `fresh`, `waiting-tag`, `alltools-cam`, `simplify15` , `simplify35` |
-| Saved page, collections, a design's menu, Peek, select mode (incl. Save pictures), card names, Saved search (`findHit`, `#findRow`) | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames`, `batch-saved`, `saved-find` |
+| Saved page, collections, a design's menu, Peek, select mode (incl. Save pictures), card names, Saved search (`findHit`, `#findRow`) | `home7-saved`, `polish71-saved`, `extra`, `select`, `select-swipe`, `peek`, `cardnames`, `batch-saved`, `saved-find` |
 | Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search`, `tplteam` |
 | Copy / Paste style, text styles, Paste on all text, the inspector's More tab | `copystyle`, `textstyles` , `simplify35` |
-| Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`, emoji stickers) | `stickers`, `emoji-stickers`, `copystyle`, `full` |
+| Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`, emoji stickers) | `stickers`, `emoji-stickers`, `copystyle`, `full`, `board-stickers`, `create-stickers` |
 | Highlight covers (incl. Emoji covers), paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `highlight-product`, `highlight-emoji`, `quickpages`, `batch` |
-| Create (`tools/create*`, incl. team template stars, stickers and emoji in Create) | `create`, `create-search`, `tplteam`, `create-stickers` |
+| Create (`tools/create*`, incl. team template stars, stickers and emoji in Create) | `create`, `create-search`, `tplteam`, `create-stickers`, `create-render` |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71-saved`, `polish71-bar`, `fresh` |
-| Board, lab (`lab/`), flex layout preview | `lab`, `lab-pro`, `board-penpot`, `board-flex` |
+| Board, lab (`lab/`), flex layout preview, Board stickers + text styles | `lab`, `lab-pro`, `board-penpot`, `board-flex`, `board-stickers` |
 | Templates library (`assets/templates.*`, brand `presets`, `?preset=`), previews, Create post templates, favourites / Recently used | `templates`, `postpresets`, `tplfav`, `taste` (regenerate previews: `node tests/tplthumbs.mjs [ids]`) |
 | Welcome tour, Settings sheet (`assets/welcome.*`) | `welcome`, `taste` |
 | Restock / Photo story / Collage drawing (`tools/restock.js`, `photo-story.js`, `collage.js`) | `restock-styles`, `photostory-styles`, `collage-grids` (each compares the old styles pixel for pixel) |
