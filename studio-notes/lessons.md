@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 45 | 1.34.0 | 5 (new suite tplteam 24/0 by a sonnet helper on the first run; `--changed` at release) | 5 (both items in one pass; notes and the pattern review written while the helper tested) | 0 (no owner reports since 1.33.0 known) | pass | Read a truncated line in full before calling it a bug (a `cut -c` made run.mjs look broken) |
 | 44 | 1.33.0 | 5 (flip 72/0 incl. old designs pixel-identical; emoji-stickers 32/0 with a held-back file proving Save waits) | 5 (parallel; fit 1.31's loader on the first try after one lead note) | 0 | pass | Name the globals another session reads before changing how a file loads |
 | 43 | 1.32.0 | 5 (continue-clear 32/0 new; saved-find 65/0, alltools-cam 89/0) | 5 (first of the round to finish, ~12 min) | 0 | pass | Propose Arabic words in the notes and leave brand.js alone until the owner approves |
 | 42 | 1.31.0 | 5 (create-stickers 56/0; found two Create bugs by tapping through for the before shots) | 5 (parallel) | 0 | pass | Check new tap areas in the Add sheet at 360px by eye too |
@@ -22,6 +23,11 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## 1.34.0 (session 45, team: team template stars, search → Recently used, Skip wording)
+- Worked: a search entry can carry its own `opened()` hook (search.js calls it before navigating, also for a new-tab open), so the hub marks Recently used without search.js knowing about templates.
+- Worked: keeping `data-star` for brand templates and adding `data-tstar` for team ones left tplfav untouched.
+- Watch out: Create's template search walks every `.cr-tw`; a wrapper without `[data-tpl]` (team cards) must be skipped, or a search hides it.
 
 ## Round 1.29.0–1.33.0 (30 Oct 2026, lead)
 - Four sessions at once + the Simplify one started after 1.29.0 shipped: no usage pause (the 5-hour limit showed a warning near the end). Wave 1 finished in 12–32 min; 1.30.0's full sweep took ~80 min and set the pace.

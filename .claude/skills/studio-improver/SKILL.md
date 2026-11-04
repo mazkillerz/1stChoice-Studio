@@ -121,11 +121,11 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Quick start, "Your photo is in", several photos in a row (`queue` tools), drafts written on leave / Skip | `quicksave`, `queue`, `queue-keep`, `whatsnew` |
 | Hub home: pins, + menu, Saved row, bottom bar, "N waiting" tag on tool rows, Offer's camera in All tools | `home7-hub`, `pins`, `pinorder`, `fresh`, `waiting-tag`, `alltools-cam`, `simplify15` |
 | Saved page, collections, a design's menu, Peek, select mode (incl. Save pictures), card names, Saved search (`findHit`, `#findRow`) | `home7-saved`, `polish71-saved`, `extra`, `select`, `peek`, `cardnames`, `batch-saved`, `saved-find` |
-| Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search` |
+| Search (`assets/search.*`, `searchEntries` in `home()`, `normText`) | `search`, `polish71-search`, `create-search`, `tplteam` |
 | Copy / Paste style, text styles, Paste on all text, the inspector's More tab | `copystyle`, `textstyles` |
 | Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`, emoji stickers) | `stickers`, `emoji-stickers`, `copystyle`, `full` |
 | Highlight covers (incl. Emoji covers), paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `highlight-product`, `highlight-emoji`, `quickpages`, `batch` |
-| Create (`tools/create*`) | `create`, `create-search` |
+| Create (`tools/create*`, incl. team template stars) | `create`, `create-search`, `tplteam` |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek` |
 | Colours, tokens, type, Arabic text handling | `contrast`, `polish71-saved`, `polish71-bar`, `fresh` |
