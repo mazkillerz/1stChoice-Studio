@@ -52,7 +52,7 @@ const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 function tiles(items){ return `<div class="sgrid stk-grid">${items.map(s=>`<button type="button" class="sg stk" data-sticker="${esc(s.id)}" draggable="true" title="${esc(s.label)}" aria-label="${esc(s.label)}${s.emoji?' emoji':''}"><canvas aria-hidden="true"></canvas></button>`).join('')}</div>`; }
 function paint(root){ if(!root) return; const dpr=Math.min(3,devicePixelRatio||1);
   root.querySelectorAll('[data-sticker] canvas').forEach(cv=>{ const b=cv.parentNode, s=def(b.dataset.sticker); if(!s) return;
-    const box=Math.round(Math.min(b.clientWidth||48,b.clientHeight||48)*.62)||30, col=getComputedStyle(b).color||'#111', key=box+'|'+col; if(cv.dataset.k===key) return;
+    const box=Math.round(Math.min(b.clientWidth||48,b.clientHeight||48)*(s.emoji?.7:.64))||30, col=getComputedStyle(b).color||'#111', key=box+'|'+col; if(cv.dataset.k===key) return;
     cv.width=Math.ceil(box*dpr); cv.height=Math.ceil(box*dpr); cv.style.width=cv.style.height=box+'px';
     const c=cv.getContext('2d'), k=box/Math.max(s.w,s.h); c.scale(dpr,dpr); c.translate((box-s.w*k)/2,(box-s.h*k)/2); c.scale(k,k); s.draw(c,s.emoji?null:col); cv.dataset.k=key; }); }
 const drawn=q=>list().filter(s=>!s.emoji&&(!q||s.label.toLowerCase().includes(q)||'sticker'.includes(q)));

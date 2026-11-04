@@ -359,9 +359,10 @@ function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); cons
   if(id==='brand'){ const as=L.brandAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
     return (as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
-  if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
+  if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)), sh=BD.tools.tStyles().filter(t=>m(t.name)||m('style')); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
     return `<div class="tadd">${base.map(([l,t])=>`<button type="button" class="ta ta-${t}" data-addtext="${t}" draggable="true">${l}</button>`).join('')}${m('curved')||m('text')?`<button type="button" class="ta ta-arc" data-arc="1">${IC.arc} Curved text</button>`:''}</div>`+
-      `<span class="lbl sub">Saved text styles</span>`+(st.length?`<div class="tstyles">${st.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tstyle="${t.id}" style="font-family:'${esc(t.attrs.fontFamily)}';font-weight:${(String(t.attrs.fontStyle||'').match(/\d{3}/)||['400'])[0]}">${esc(t.name)}</button><button type="button" class="ib" data-tsdel="${t.id}" aria-label="Remove ${esc(t.name)}">${IC.close}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel to keep it here.</p>'); }
+      `<span class="lbl sub">Text styles</span>`+(sh.length?`<div class="tstyles">${sh.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tshared="${esc(t.id)}" dir="auto" style="${t.st.font?`font-family:'${esc(t.st.font)}';`:''}font-weight:${esc(t.st.wt||'400')}">${t.st.color?`<i class="bts-dot" style="background:${esc(t.st.color)}" aria-hidden="true"></i>`:''}${esc(t.name)}</button><button type="button" class="ib" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}" title="Rename or remove">${IC.more}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel. Styles you save on the tool pages show here too.</p>')+
+      (st.length?`<span class="lbl sub">This board</span><div class="tstyles">${st.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tstyle="${t.id}" style="font-family:'${esc(t.attrs.fontFamily)}';font-weight:${(String(t.attrs.fontStyle||'').match(/\d{3}/)||['400'])[0]}">${esc(t.name)}</button><button type="button" class="ib" data-tsdel="${t.id}" aria-label="Remove ${esc(t.name)}">${IC.close}</button></div>`).join('')}</div>`:''); }
   if(id==='photos'){ const photos=[...new Set(BD.main.find('Image').filter(n=>kind(n)==='image'&&!n.getAttr('isBg')).map(n=>n.getAttr('imgId')))];
     return `<button type="button" class="mini wide" data-act2="upload">${IC.upload} Upload photos, SVG or PDF</button>${photos.length?`<div class="agrid ph">${photos.map(id=>`<button type="button" class="ag" data-photo="${id}" draggable="true" aria-label="Add this photo again"><canvas data-thumb="${id}" width="80" height="80"></canvas></button>`).join('')}</div>`:''}<p class="hint">You can also drop or paste files on the canvas. SVG files keep their layers; each PDF page becomes a frame.</p>`; }
   if(id==='shapes'){ const sh=BD.SHAPES.filter(s=>m(s.label)||m('shape')); return sh.length?`<div class="sgrid">${sh.map(s=>`<button type="button" class="sg" data-shape="${s.id}" draggable="true" title="${esc(s.label)}" aria-label="${esc(s.label)}">${shapeThumb(s.path||nativeShape[s.id]||nativeShape.rect)}</button>`).join('')}</div>`:''; }
@@ -393,6 +394,7 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
     BD.ensureFont(n.fontFamily(),n.fontStyle()).then(()=>{ BD.place(n,{frame:f,at}); BD.startEdit(n,true); }); return; }
   if(d.arc){ BD.tools.makeArc(); return; }
   if(d.tstyle){ const st=S.styles.text.find(x=>x.id===d.tstyle); if(st) BD.tools.applyTextStyle(st); return; }
+  if(d.tshared){ const t=BD.tools.tStyles().find(x=>x.id===d.tshared); if(t) BD.tools.applyShared(t.st).then(()=>UI.paintProps&&UI.paintProps()); return; }
   if(d.phrase){ const f=tf(), fw=f?fsize(f).w:1080; BD.place(BD.make.text(d.phrase,{fontSize:Math.round(fw*.09)}),{frame:f,at}); return; }
   if(d.asset){ const a=L.brandAssets().find(x=>x.id===d.asset); if(a) BD.addAsset(a,at); return; }
   if(d.photo){ const im=BD.IMGS.get(d.photo); if(!im) return; const f=tf(), box=f?fsize(f):{w:1080,h:1080}, k=Math.min(1,box.w*.8/im.w,box.h*.8/im.h); BD.place(BD.make.image(d.photo,Math.round(im.w*k),Math.round(im.h*k)),{frame:f,at}); return; }
@@ -404,14 +406,26 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
   if(d.code==='barcode'){ UI.barcodeDialog(); return; } if(d.code==='qr'){ UI.qrDialog(); return; }
 }
 UI.addItem=addItem;
+/* a shared text style's menu: rename it or remove it (from this device: the tool pages and Create lose it too) */
+function tsMenu(id){ const T=BD.tools, t=T.tStyles().find(x=>x.id===id); if(!t) return;
+  const d=L.dialog(`<form method="dialog" class="dlg-body ts-dlg"><h3>Text style</h3><label class="lbl" for="tsName">Name</label><input type="text" id="tsName" dir="auto" maxlength="24" autocomplete="off">
+    <div class="act-list"><button type="button" class="act-row danger" data-tsact="del">${IC.trash}<span>Remove</span></button></div>
+    <p class="hint">Text styles are kept on this device and shared with the tool pages and Create.</p>
+    <div class="dlg-actions"><button type="button" class="mini" id="tsX">Cancel</button><button type="submit" class="btn">Done</button></div></form>`,'ts-menu');
+  const inp=d.querySelector('#tsName'); inp.value=t.name; d.tabIndex=-1; d.focus();
+  d.querySelector('#tsX').onclick=()=>d.close();
+  d.querySelector('form').onsubmit=e=>{ e.preventDefault(); T.renameShared(id,inp.value); d.close(); paintAdd(); UI.paintProps&&UI.paintProps(); };
+  d.querySelector('[data-tsact="del"]').onclick=()=>{ d.close(); T.removeShared(id); paintAdd(); UI.paintProps&&UI.paintProps(); toast('“'+t.name+'” removed.'); }; }
+UI.tsMenu=tsMenu;
 addList.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]'); if(cat){ addCat=cat.dataset.cat; paintAdd(); $('addPane').scrollTop=0; return; }
   const a2=e.target.closest('[data-act2]'); if(a2){ if(a2.dataset.act2==='upload') $('pickImg').click(); if(a2.dataset.act2==='printDialog') UI.printFrameDialog(); return; }
   const fr=e.target.closest('[data-addframe]'); if(fr){ UI.addFrame(BD.PRESETS.find(p=>p.id===fr.dataset.addframe)); return; }
   const pr=e.target.closest('[data-addprint]'); if(pr){ const p=BD.PRINT.find(x=>x.id===pr.dataset.addprint); UI.addPrintFrame(p.w,p.h,p.label); return; }
   const tp=e.target.closest('[data-tpl]'); if(tp){ await BD.buildTemplate(tp.dataset.tpl,true); return; }
+  const tm=e.target.closest('[data-tsmore]'); if(tm){ tsMenu(tm.dataset.tsmore); return; }
   const del=e.target.closest('[data-tsdel]'); if(del){ S.styles.text=S.styles.text.filter(x=>x.id!==del.dataset.tsdel); BD.scheduleSave(); paintAdd(); return; }
-  const it=e.target.closest('[data-addtext],[data-arc],[data-tstyle],[data-phrase],[data-asset],[data-photo],[data-shape],[data-stroke],[data-icon],[data-sticker],[data-emoji],[data-code]'); if(it){ addItem(it); if(innerWidth<900) panel('L',false); } });
+  const it=e.target.closest('[data-addtext],[data-arc],[data-tstyle],[data-tshared],[data-phrase],[data-asset],[data-photo],[data-shape],[data-stroke],[data-icon],[data-sticker],[data-emoji],[data-code]'); if(it){ addItem(it); if(innerWidth<900) panel('L',false); } });
 addList.addEventListener('dragstart',e=>{ const it=e.target.closest('[draggable]'); if(!it) return; e.dataTransfer.setData('application/x-board-add',JSON.stringify(Object.assign({},it.dataset))); e.dataTransfer.effectAllowed='copy'; });
 
 /* ---------- opening files: photos, SVG (layers), PDF (pages), board files ---------- */

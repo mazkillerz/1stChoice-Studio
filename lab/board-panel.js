@@ -137,11 +137,15 @@ function textPanel(list){ const n=list[0], w=weightOf(n), dec=n.textDecoration()
     ${ar&&n.letterSpacing()?'<p class="hint warn">Arabic letters may not join when letter spacing isn\'t 0.</p>':''}
     ${toggle('autoW',!!n.getAttr('autoW'),'Width follows the text')}
     <div class="row"><button type="button" class="mini" data-act="editText">Edit text</button>${/[a-z]/i.test(n.text())?'<button type="button" class="mini" data-act="caseUp">AA</button><button type="button" class="mini" data-act="caseLow">aa</button>':''}</div>`)+
-    sec('tstyle','Text styles',`${st.length?`<label class="f wide"><span>Apply</span><select data-k="applyStyle" class="b-sel"><option value="">Pick a saved style…</option>${st.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>`:''}<button type="button" class="mini" data-act="saveStyle">Save as style</button>`)+
+    sec('tstyle','Text styles',tsChips(list)+`${st.length?`<label class="f wide"><span>This board</span><select data-k="applyStyle" class="b-sel"><option value="">Pick a style saved with this board…</option>${st.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>`:''}<button type="button" class="mini" data-act="saveStyle">Save as style</button>`)+
     sec('tbg','Text background',`<div class="row">${swatch('tbg',n.getAttr('tbg')||'','Box colour',true)}</div>${n.getAttr('tbg')?range('Padding','padding',num(n.padding()),0,200,1,'px')+range('Corners','tbgR',n.getAttr('tbgR')||0,0,200,1,'px'):''}`); }
 /* stickers and sharp emoji (board-stickers.js): one colour; an emoji can go back to its own colours */
 function stickerPanel(list){ const n=list[0], em=list.every(x=>BD.stickers.isEmojiRef(x.getAttr('ref'))), c=n.getAttr('scol')||'';
   return sec('sticker',em?'Emoji':'Sticker',`<div class="row">${swatch('scol',c,em?'Emoji colour':'Sticker colour',em)}</div>${em?'<p class="hint">Original keeps the emoji’s own colours. A colour makes it one colour.</p>':''}`); }
+/* the text styles shared with the tool pages and Create (board-tools.js T.tStyles); the one the text has now is pressed */
+function tsChips(list){ const T=BD.tools, all=T.tStyles(); if(!all.length) return '';
+  const cur=list.length===1?T.styleKey(T.styleOfText(list[0])):'';
+  return `<div class="bts-list">${all.map(t=>{ const on=T.styleKey(t.st)===cur; return `<button type="button" class="bts" data-tsuse="${esc(t.id)}" aria-pressed="${on}" dir="auto" title="Use ${esc(t.name)}"><i class="bts-dot" style="background:${esc(t.st.color||'currentColor')}" aria-hidden="true"></i><span${t.st.font?` style="font-family:'${esc(t.st.font)}'"`:''}>${esc(t.name)}</span></button>`; }).join('')}</div>`; }
 function arcPanel(n){ const r=n.getAttr('arcR')||300, mode=n.getAttr('arcMode')||'up';
   return sec('arc','Curved text',`<label class="f wide"><span>Text</span><input type="text" data-k="arcText" value="${esc(n.text())}" dir="auto"></label>
     ${seg('arcMode',mode,[['up','Arc up'],['down','Arc down'],['circle','Circle']])}${range('Curve size','arcR',Math.round(r),20,3000,1,'px')}
@@ -296,6 +300,7 @@ function dashFor(n,v){ const w=Math.max(1,n.strokeWidth()); return v==='dot'?[0.
 
 props.addEventListener('click',e=>{
   const fo=e.target.closest('[data-fold]'); if(fo){ const id=fo.dataset.fold, on=fo.getAttribute('aria-expanded')==='true'; fo.setAttribute('aria-expanded',String(!on)); fo.closest('.ps').querySelector('.ps-b').hidden=on; on?folded.add(id):folded.delete(id); L.store('lab:folds',[...folded]); return; }
+  const ts=e.target.closest('[data-tsuse]'); if(ts){ const t=BD.tools.tStyles().find(x=>x.id===ts.dataset.tsuse); if(t) BD.tools.applyShared(t.st).then(()=>{ paintProps(); UI.toast('“'+t.name+'” is on. Undo brings the old look back.'); }); return; }
   const sw=e.target.closest('[data-color]'); if(sw){ colorFor(sw); return; }
   const sg=e.target.closest('[data-seg]'); if(sg){ segSet(sg.dataset.seg,sg.dataset.v); return; }
   const al=e.target.closest('[data-align]'); if(al){ BD.act.align(al.dataset.align); return; }
@@ -315,7 +320,8 @@ props.addEventListener('click',e=>{
     underline:()=>apply(m=>{ const d=m.textDecoration()||''; m.textDecoration(/underline/.test(d)?d.replace('underline','').trim():(d+' underline').trim()); },{repaint:true}),
     strike:()=>apply(m=>{ const d=m.textDecoration()||''; m.textDecoration(/line-through/.test(d)?d.replace('line-through','').trim():(d+' line-through').trim()); },{repaint:true}),
     editText:()=>BD.startEdit(n), caseUp:()=>apply(m=>m.text(m.text().toUpperCase())), caseLow:()=>apply(m=>m.text(m.text().toLowerCase())),
-    saveStyle:()=>{ const name=prompt('Name this text style',(n.text()||'').slice(0,20)||'Text style'); if(name===null) return; BD.tools.saveTextStyle(n,name.trim()||undefined); UI.toast('Saved. Find it under Assets › Text.'); paintProps(); },
+    saveStyle:()=>{ const r=BD.tools.saveShared(n);   // shared with the tool pages and Create (1.36.0); auto-named, renamed in Assets › Text
+      UI.toast(r.dup?'Already saved as “'+r.dup.name+'”.':r.full?'You have '+BD.tools.TS_MAX+' styles. Remove one in Assets › Text to save a new one.':'Saved as “'+r.t.name+'”. Find it in the tool pages too.'); paintProps(); },
     crop:()=>UI.startCrop(n), replace:()=>UI.replacePhoto(n), fillFrame:()=>BD.act.fillFrame(n), asBg:()=>BD.act.fillFrame(n,true),
     circle:()=>apply(m=>{ const s=Math.min(m.width(),m.height()); const r=wrect(m); m.width(s); m.height(s); BD.applyCrop(m); m.cornerRadius(s/2); const r2=wrect(m); U.moveByWorld(m,r.x+r.width/2-(r2.x+r2.width/2),r.y+r.height/2-(r2.y+r2.height/2)); BD.applyFx(m); },{repaint:true}),
     resetCrop:()=>apply(m=>{ m.setAttrs({cropZ:1,focX:.5,focY:.5,stretch:undefined}); BD.applyCrop(m); BD.applyFx(m); },{repaint:true}),

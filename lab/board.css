@@ -368,3 +368,17 @@
 .board-app .ps-tag{font:500 10.5px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-inline-start:8px}
 .board-app .seg2 [data-seg="flexDir"]{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 @media (pointer:coarse){.ps .mini[data-act^="flex"]{min-height:48px}.board-app .seg2 [data-seg^="flex"]{height:auto;min-height:48px}}
+
+/* stickers, sharp emoji and shared text styles (1.36.0) */
+.stk-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.stk{overflow:hidden;min-width:0}
+.stk canvas{display:block;width:28px;height:28px;pointer-events:none}
+.tst-b .bts-dot{margin-inline-end:8px;vertical-align:-1px}
+.bts-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.bts{display:inline-flex;align-items:center;gap:6px;min-height:36px;max-width:100%;padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--ui-2);color:var(--fg);font:500 13px var(--sans);cursor:pointer}
+.bts span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bts:hover{border-color:#2f7bff}
+.bts[aria-pressed="true"]{border-color:var(--hi);background:var(--hi-soft);color:var(--hi-fg)}
+.bts:focus:not(:focus-visible),.stk:focus:not(:focus-visible){outline:none}
+.bts-dot{display:inline-block;flex:none;width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 25%,transparent)}
+@media (pointer:coarse){.bts{min-height:44px}}
