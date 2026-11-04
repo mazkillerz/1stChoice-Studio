@@ -408,7 +408,7 @@ async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.s
   const recent=recentRow(byId,null).filter(r=>r.d).map(r=>r.d);   // brand templates now; team ones fill in once paintTeam has them (#46)
   const body=openSheet('templates',start?'What are you making?':'Templates',
     `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
-     <div id="crRecent"${recent.length?'':' hidden'}><span class="lbl">Recently used</span><div class="cr-tpls cr-recent">${recent.map(d=>tplCard(d,{recent:true})).join('')}</div></div>
+     ${recent.length?recentHtml(recent.map(d=>tplCard(d,{recent:true})).join('')):'<span id="crRecentAt" hidden></span>'}
      <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>tplCard(d,{favs,focus:opt.focus})).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
@@ -430,10 +430,11 @@ function recentRow(byId,team){ const out=[];
     else if(team&&x.startsWith('team:')){ const t=team.get(x.slice(5)); if(t) out.push({t}); } }
   return out; }
 /* once the team templates are in: redraw the row in true order, keeping the thumbnails already drawn */
-function paintRecent(byId,team,urls){ const box=$('crRecent'); if(!box||!byId) return; const row=recentRow(byId,team);
+const recentHtml=cards=>`<div id="crRecent"><span class="lbl">Recently used</span><div class="cr-tpls cr-recent">${cards}</div></div>`;
+function paintRecent(byId,team,urls){ if(!byId) return; const row=recentRow(byId,team);
   if(!row.some(r=>r.t)) return;   // no team template in the row: it stays as it is
-  const rowEl=box.querySelector('.cr-recent'); if(!rowEl) return;
-  rowEl.innerHTML=row.map(r=>{ if(r.d){ const u=TH.get(r.d.id); return tplCard(r.d,{recent:true}).replace(' loading">',u?'"><img alt="" src="'+u+'">':' loading">'); }
+  let box=$('crRecent'); if(!box){ const at=$('crRecentAt'); if(!at) return; at.insertAdjacentHTML('afterend',recentHtml('')); at.remove(); box=$('crRecent'); }
+  box.querySelector('.cr-recent').innerHTML=row.map(r=>{ if(r.d){ const u=TH.get(r.d.id); return tplCard(r.d,{recent:true}).replace(' loading">',u?'"><img alt="" src="'+u+'">':' loading">'); }
     const t=r.t, u=urls[t.thumb_path]; return `<button type="button" class="cr-rec" data-rteam="${esc(t.id)}" aria-label="${esc(t.name)}"><span class="th">${u?`<img alt="" src="${u}">`:''}</span><span class="nm" dir="auto">${esc(t.name)}</span></button>`; }).join('');
   const q=$('crTplQ'); box.hidden=!!(q&&q.value.trim()); }
 async function paintTeam(byId){ const box=$('crTeamT'); if(!box) return;
