@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.39.0 · 4 Nov 2026
+
+### Swipe to pick several designs
+type: feature
+On Saved, tap Select, then swipe sideways across your designs: every design you pass is ticked, and going down a row ticks the whole run, like in Photos. Swipe back to untick. Up and down still scrolls, so the page never runs away. No need to tap Select first: press and hold a design, then drag. On a computer, drag with the mouse. Ticking a row of three is two taps instead of four.
+![before](assets/whatsnew/1.39.0-swipe-before.jpg)
+![after](assets/whatsnew/1.39.0-swipe-after.jpg)
+
+### The search shows its key
+type: design
+On a computer, the search on Home now shows a small / at its end: press / anywhere on Home to start searching. It hides while you type, and never shows on a phone.
+![before](assets/whatsnew/1.39.0-key-before.jpg)
+![after](assets/whatsnew/1.39.0-key-after.jpg)
+
 ## 1.38.0 · 4 Nov 2026
 
 ### Make the can bigger on a highlight cover
