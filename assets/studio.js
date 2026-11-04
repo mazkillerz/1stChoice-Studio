@@ -2387,12 +2387,12 @@ async function home(){
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont();
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
-     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
-     own editor and no renderer, so they are listed as skipped. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
+     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create drafts too (1.37.0):
+     Create has its own render=1 mode with the same Studio.renderer hook. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
      whose pictures were saved (#41): one confirm, never by itself, never the skipped ones, and not one edited since it was drawn. */
   $('contSave').onclick=async()=>{ haptic('tick');
     const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
-      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
+      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json||x.d.board?'':'could not be opened'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
