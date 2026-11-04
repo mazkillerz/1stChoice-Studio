@@ -103,7 +103,7 @@ T.findNodes=(q,cs)=>q?texts().filter(n=>rx(q,cs).test(n.text()||'')):[];
 T.replaceAll=function(q,w,cs){ if(!q) return 0; let c=0; texts().forEach(n=>{ const t=n.text()||'', m=t.match(rx(q,cs)); if(!m) return; c+=m.length; n.text(t.replace(rx(q,cs),w)); if(kind(n)==='text') BD.prepText(n); }); if(c){ BD.main.batchDraw(); BD.changed(); } return c; };
 
 /* ---------- replace a colour everywhere ---------- */
-const CKEYS=['fill','stroke','gradA','gradB','tbg','shadowColor','color'];
+const CKEYS=['fill','stroke','gradA','gradB','tbg','shadowColor','color','scol'];
 const hex6=c=>{ if(typeof c!=='string'||!c) return null; if(/^#[0-9a-f]{6}/i.test(c)) return c.slice(0,7).toLowerCase(); const k=Konva.Util.colorToRGBA(c); return k?'#'+[k.r,k.g,k.b].map(v=>v.toString(16).padStart(2,'0')).join(''):null; };
 T.usedColors=function(){ const m=new Map(); BD.main.find(()=>true).forEach(n=>CKEYS.forEach(k=>{ const h=hex6(n.getAttr(k)); if(h) m.set(h,(m.get(h)||0)+1); })); return [...m.entries()].sort((a,b)=>b[1]-a[1]).map(([c,n])=>({c,n})); };
 T.replaceColor=function(from,to){ let c=0; from=from.toLowerCase();
@@ -117,5 +117,56 @@ T.saveTextStyle=function(n,name){ const a={}; TS_KEYS.forEach(k=>{ const v=n.get
 T.applyTextStyle=function(st,list){ list=(list||S.sel).filter(n=>kind(n)==='text'||kind(n)==='arc');
   if(!list.length){ const n=BD.make.text((BD.B&&BD.B.lang)==='ar'?'اكتب هنا':'Text',Object.assign({},st.attrs)); BD.ensureFont(st.attrs.fontFamily,st.attrs.fontStyle).then(()=>BD.place(n)); return; }
   BD.ensureFont(st.attrs.fontFamily,st.attrs.fontStyle).then(()=>{ list.forEach(n=>{ Object.entries(st.attrs).forEach(([k,v])=>{ if(kind(n)==='arc'&&['tbg','tbgR','padding','lineHeight'].includes(k)) return; n.setAttr(k,v); }); if(kind(n)==='text') BD.prepText(n); }); BD.main.batchDraw(); BD.tr.forceUpdate(); BD.changed(); BD.emitSelect&&BD.emitSelect(); }); };
+/* ---------- text styles shared with the tool pages and Create (1.36.0): localStorage 'studio:textstyles' = [{id,name,st,at}], up to 8.
+   st is the tool pages' styleOf() look: color, font, align, lh (line height), ls (letter spacing), bg (box colour), op, shadow.
+   Board adds wt (font weight) when it isn't 400, and bf for a font only Board has (Inter, Poppins…: font is then left out, so a tool
+   page keeps its own font instead of a missing one); the tool pages ignore both. Size and place never change.
+   The styles a board saved for itself before 1.36.0 (S.styles.text) stay with that board and still work. ---------- */
+const TS_KEY='studio:textstyles', TS_MAX=8;
+T.TS_MAX=TS_MAX;
+T.tStyles=()=>{ const v=L.store(TS_KEY); return Array.isArray(v)?v.filter(x=>x&&x.id&&x.st&&typeof x.st==='object').slice(0,TS_MAX):[]; };
+const setTStyles=v=>{ L.store(TS_KEY,v.length?v:null); };
+T.styleKey=st=>JSON.stringify(Object.keys(st||{}).sort().map(k=>[k,st[k]]));
+const r2=v=>Math.round(v*100)/100;
+const normSt=st=>{ const o=Object.assign({},st); if(o.bf){ o.font=o.bf; delete o.bf; } if(o.bg==='none') delete o.bg; return o; };
+/* the text already has saved style t: every part of t matches (font and bf count as the same) */
+T.isOn=(st,n)=>{ const a=normSt(st), b=normSt(T.styleOfText(n)); return Object.keys(a).every(k=>JSON.stringify(a[k])===JSON.stringify(b[k]??(k==='shadow'?false:undefined))); };
+const weightOf=n=>{ const m=(n.fontStyle()||'').match(/\d{3}/); return m?m[0]:/bold/.test(n.fontStyle()||'')?'700':'400'; };
+const shadowOn=n=>!!(n.shadowEnabled()&&n.getAttr('shadowOn'));
+T.styleOfText=function(n){ const st={}, f=n.fill();
+  if(typeof f==='string'&&f&&(n.getAttr('fillType')||'solid')==='solid') st.color=f;
+  const fam=n.fontFamily(), known=L.brandFonts().concat(L.MORE_FONTS||[]).some(x=>x.family===fam); if(known) st.font=fam; else st.bf=fam;
+  if(kind(n)==='text'){ const al=n.align(); if(['left','center','right'].includes(al)) st.align=al; st.lh=r2(n.lineHeight()); const bg=n.getAttr('tbg'); if(bg) st.bg=bg; }
+  if(n.letterSpacing()) st.ls=r2(n.letterSpacing());
+  if(n.opacity()<1) st.op=r2(n.opacity());
+  st.shadow=shadowOn(n);
+  const w=weightOf(n); if(w!=='400') st.wt=w;
+  return st; };
+const nextName=list=>{ let i=1; const used=new Set(list.map(t=>t.name)); while(used.has('Style '+i)) i++; return 'Style '+i; };
+/* save the look of text n: {t} when saved, {dup} when it is already there, {full} when 8 are saved */
+T.saveShared=function(n){ const st=T.styleOfText(n), list=T.tStyles();
+  const dup=list.find(t=>T.styleKey(normSt(t.st))===T.styleKey(normSt(st))); if(dup) return {dup};
+  if(list.length>=TS_MAX) return {full:true};
+  const t={id:'ts'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:nextName(list),st,at:Date.now()};
+  setTStyles([...list,t]); return {t}; };
+T.removeShared=id=>setTStyles(T.tStyles().filter(x=>x.id!==id));
+T.renameShared=(id,name)=>{ name=String(name||'').trim().slice(0,24); if(name) setTStyles(T.tStyles().map(x=>x.id===id?{...x,name}:x)); };
+function putStyle(n,st){ const arc=kind(n)==='arc';
+  if(st.color){ n.fill(st.color); n.setAttr('fillType','solid'); n.fillPriority('color'); }
+  if(st.bf||st.font) n.fontFamily(st.bf||st.font);
+  if(st.wt){ const it=/italic/.test(n.fontStyle()||''); n.fontStyle(((it?'italic ':'')+st.wt).trim()); }
+  n.letterSpacing(st.ls||0);
+  if(!arc){ if(st.align) n.align(st.align); if(st.lh) n.lineHeight(st.lh);
+    if(st.bg&&st.bg!=='none'){ n.setAttr('tbg',st.bg); if(!n.padding()) n.padding(Math.round(n.fontSize()*.3)); } else n.setAttr('tbg',undefined); }
+  n.opacity(st.op!=null?st.op:1);
+  if(st.shadow===true&&!shadowOn(n)) n.setAttrs({shadowEnabled:true,shadowOn:true,shadowColor:n.shadowColor()||'#000000',shadowBlur:n.shadowBlur()||30,shadowOffsetX:n.shadowOffsetX()||0,shadowOffsetY:n.shadowOffsetY()||16,shadowOpacity:n.shadowOpacity()<1?n.shadowOpacity():.35});
+  else if(st.shadow===false) n.setAttrs({shadowEnabled:false,shadowOn:undefined});
+  if(arc&&T.updateArc) T.updateArc(n); else BD.prepText(n); }
+/* put a saved look on the chosen text (one undo step); with no text chosen, add a new text in that look */
+T.applyShared=async function(st,list){ list=(list||S.sel).filter(n=>kind(n)==='text'||kind(n)==='arc');
+  const fs=(st.wt||'')+'';
+  if(!list.length){ const n=BD.make.text((BD.B&&BD.B.lang)==='ar'?'اكتب هنا':'Text'); await BD.ensureFont(st.bf||st.font||n.fontFamily(),fs); putStyle(n,st); BD.place(n); return [n]; }
+  await BD.ensureFont(st.bf||st.font||list[0].fontFamily(),fs); list.forEach(n=>putStyle(n,st));
+  BD.main.batchDraw(); BD.tr.forceUpdate(); BD.changed(); BD.emitSelect&&BD.emitSelect(); return list; };
 T.addColor=function(c){ c=hex6(c)||c; if(!S.styles.colors.includes(c)) S.styles.colors.push(c); BD.scheduleSave(); };
 })();

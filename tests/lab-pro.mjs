@@ -135,7 +135,7 @@ ok('layer blur',await pg.evaluate(()=>BD.S.sel[0].isCached()&&BD.S.sel[0].getAtt
 await pg.click('[data-rtab="design"]');
 // text style save/apply
 await pg.evaluate(()=>BD.select([BD.main.find('Text').find(t=>BD.util.kind(t)==='text')])); await pg.waitForTimeout(100); await pg.click('[data-act="saveStyle"]'); await pg.waitForTimeout(100);
-ok('text style saved',await pg.evaluate(()=>BD.S.styles.text.length===1&&BD.S.styles.text[0].name==='My style'));
+ok('text style saved',await pg.evaluate(()=>{ const l=JSON.parse(localStorage.getItem('studio:textstyles')||'[]'); return l.length===1&&l[0].name==='Style 1'&&!!l[0].st.font; }));   // since 1.36.0 shared with the tool pages, auto-named (no prompt)
 // palette
 await pg.keyboard.press('Control+k'); await pg.waitForTimeout(100); await pg.keyboard.type('export pdf'); await pg.waitForTimeout(100);
 ok('quick find',/Export PDF/.test(await pg.textContent('#palList')));

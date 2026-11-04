@@ -335,6 +335,12 @@ async function nodeSvg(n,defs,fontsUsed){ if(!n.visible()) return ''; const cls=
     return `<g${c}>${o}</g>`; }
   if(cls==='TextPath'){ fontsUsed.add(n.fontFamily()); const id='p'+uid(); defs.push(`<path id="${id}" d="${esc(n.data())}"/>`); const fw=(n.fontStyle().match(/\d{3}/)||['400'])[0];
     return `<text${c} font-family="${esc(n.fontFamily())}" font-size="${num(n.fontSize())}" font-weight="${fw}"${n.letterSpacing()?` letter-spacing="${num(n.letterSpacing())}"`:''}${paintAttrs(n,defs)}><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(n.text())}</textPath></text>`; }
+  if(k==='sticker'){ /* emoji as vector paths; a drawn sticker (canvas strokes) as a sharp lossless picture */
+    const K=BD.stickers, s=K&&K.def(n.getAttr('ref')); if(!s) return ''; const w=n.width(), h=n.height(), col=n.getAttr('scol'), e=s.emoji&&(window.HL_EMOJI||[]).find(x=>'sticker:emoji-'+x[0]===s.id);
+    if(e){ const parts=col?`<path d="${e[3].map(p=>esc(p[1])).join(' ')}"${fillA('fill',col)}/>`:e[3].map(([f,d,op])=>`<path d="${esc(d)}"${fillA('fill',f)}${op!=null?` opacity="${num(op)}"`:''}/>`).join('');
+      return `<g${c}><g transform="scale(${num(w/s.w)} ${num(h/s.h)})">${parts}</g></g>`; }
+    const pr=Math.max(1,Math.min(4,2048/Math.max(w,h))), cv=document.createElement('canvas'); cv.width=Math.ceil(w*pr); cv.height=Math.ceil(h*pr); const x=cv.getContext('2d'); x.scale(pr*w/s.w,pr*h/s.h); s.draw(x,col||(s.emoji?null:'#000'));
+    let url=''; try{ url=cv.toDataURL('image/png'); }catch(_){} cv.width=cv.height=0; return `<image${c} width="${num(w)}" height="${num(h)}" preserveAspectRatio="none" href="${url}"/>`; }
   if(cls==='Image'){ /* the photo as it looks (crop, corners, looks) as a lossless picture */
     const im=BD.IMGS.get(n.getAttr('imgId')), cw=n.crop().width||n.width(), pr=Math.max(1,Math.min(4,im?cw/n.width():2));
     const cl=n.clone({x:0,y:0,rotation:0,scaleX:Math.sign(n.scaleX())||1,scaleY:Math.sign(n.scaleY())||1,skewX:0,skewY:0,opacity:1,shadowEnabled:false,globalCompositeOperation:'source-over'}); BD.applyFx(cl,pr);
