@@ -56,6 +56,12 @@ for(const [w,h] of [[390,844],[360,740]]){ const N=w+': ';
   const m=await pg.evaluate(()=>{ const s=document.getElementById('sh-style'), y=e=>e.getBoundingClientRect().top; return {first:s.querySelector('[data-fields]').dataset.fields, above:y(s.querySelector('[data-seg="kind"]'))<y(document.getElementById('styles'))}; });
   ok('1280: Carousel: This slide comes first in the Style card too',m.first==='lead'&&m.above,m);
   await ctx.close(); }
+/* a rejected thing with no check before (taste.md: the "New" label on hub tools, dropped 22 Oct) */
+{ const {ctx,pg}=await mk(390,844); await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1500); await pg.tap('#allTools'); await pg.waitForTimeout(700);
+  const tags=await pg.evaluate(()=>[...document.querySelectorAll('.tool-item, .lib-row')].filter(e=>e.getClientRects().length).flatMap(r=>[...r.querySelectorAll('*')].filter(x=>!x.children.length&&/^\s*new\s*$/i.test(x.textContent)).map(x=>x.className||x.tagName)));
+  const rows=await pg.evaluate(()=>document.querySelectorAll('.tool-item, .lib-row').length);
+  ok('Home + All tools: no "New" label on any tool row',rows>3&&!tags.length,{rows,tags});
+  await ctx.close(); }
 /* run.mjs runs contrast.mjs on the session's port */
 ok('contrast.mjs reads BASE from the environment when no URL is given',/process\.argv\[2\]\|\|process\.env\.BASE/.test(fs.readFileSync(new URL('contrast.mjs',import.meta.url),'utf8')));
 await b.close();
