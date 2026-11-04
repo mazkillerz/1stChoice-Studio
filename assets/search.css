@@ -105,3 +105,6 @@
   .us-cancel{display:none!important}
   .us-panel{position:absolute;top:calc(100% + var(--sp-2));inset-inline-start:0;width:100%;min-width:420px;max-height:70vh;padding:var(--sp-1) var(--sp-3) var(--sp-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow)}
 }
+/* the "/" key hint (1.39.0, #45): only on a computer, only while the field is empty and not focused */
+.us-field .us-kbd{display:none;position:absolute;inset-inline-end:14px;top:50%;transform:translateY(-50%);min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;align-items:center;justify-content:center;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:none;color:var(--muted);font-family:inherit;font-size:12px;font-weight:500;line-height:1;pointer-events:none}
+@media (hover:hover) and (pointer:fine){ .us-field input:placeholder-shown:not(:focus)~.us-kbd{display:inline-flex} }
