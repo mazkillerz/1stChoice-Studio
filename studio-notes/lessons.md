@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 51 | 1.40.0 | 5 (full sweep 80 runs: 79 then 80 green after a test-side video fix; contrast + tapscan clean; simplify40 34/0 new; three cuts) | 4 (the 19-min sweep waited for wave 1) | 0 | pass | Open sheets with a real tap in shot scripts; take "before" shots from the base |
 | 50 | 1.39.0 | 5 (select-swipe 38/0; 38 suites green at release) | 5 (first to finish, ~13 min) | 0 | pass | Repaint state, never the list, while a finger is down on it |
 | 49 | 1.38.0 | 5 (highlight-product 63/0 with a pixel hash against the old file; 27 suites green) | 4 (one test decision needed the lead) | 0 | pass | A template that needs lazy data loads it in the start sheet's previews: check the lazy-load tests when adding one |
 | 48 | 1.37.0 | 4 (create-render 47/0; one code bug and one timing flake fixed before the report; the suite had its own port hard-coded) | 5 | 0 | pass | Default every new suite's BASE to :8080, whatever port you test on |
@@ -36,6 +37,9 @@ What worked, what failed, and process tweaks. Newest session first.
 - Failed: `contrast.mjs` read its URL only from argv, so inside `run.mjs` on another port it reported 0/0 (fixed in 1.40.0).
 - Lesson: a hidden render frame of an autosaving editor must drop its draft id after opening, not only skip its own save (1.37.0).
 - Lesson: a name clash inside one IIFE breaks the whole Board script; `node --check lab/<file>.js` catches it in a second (1.36.0).
+- 1.40.0: measure each sheet's scroll height at 390 first (one number per sheet): it pointed straight at the longest (Collage 1522, Highlight 1363, Carousel 1292).
+- 1.40.0: shot scripts open sheets with `pg.tap`, not `el.click()` from `evaluate` (a programmatic click leaves keyboard-style focus, and the focus ring looks like a bug).
+- 1.40.0 sweep: `video` arrow-key check failed alone too; the touch drag before it left the timeline coasting (test-side, fixed by waiting for time to settle).
 - Lesson: in Board, Escape after a colour pop has closed clears the selection; tests must not press Escape "to be safe" (1.36.0).
 
 ## 1.35.0 (session 46, Simplify + pattern review)

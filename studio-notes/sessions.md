@@ -35,3 +35,9 @@ One **lead** session coordinates five version sessions (owner: "Improve studio 5
 - Lead: `session_01Y65H7YqEgcneCKbnnyebNr` (branch `ccr-9c2f6ba7-pohcld`)
 - 1.36.0: `session_01Y65H7XBCvrXHPBG6PFa3qn` · 1.37.0: `session_01Y65H7XdfPQPmeD2VmuBQSp` · 1.38.0: `session_01Y65H7YewZMtbti16h3zwpN` · 1.39.0: `session_01Y65H7ZtiKkzRrPZ4sjYtn2` (all started 10:35 UTC)
 - 1.40.0: `session_01Y65H7WyvGU3Lak3F1wS4sS` (started 10:48 after 1.39.0 reported done)
+
+## Result
+- All five finished within ~90 min. 1.39.0 reported first (10:48) and 1.40.0 started then; 1.36.0 (10:58) opened the merge order.
+- Released in order on the lead branch, each with its own version commit and one `run.mjs --changed` before merging to `main`: 1.36.0 (9 suites), 1.37.0 (42; create-render's hard-coded :8082 fixed, batch-saved flaked once under load and passed alone), 1.38.0 (27), 1.39.0 (38), 1.40.0 after its full sweep (80 runs green after a test-side video fix).
+- No merge conflicts. One cross-session decision: 1.38.0's emoji templates load the emoji files for Create's first preview pass; `create-stickers` 1a was relaxed and 1e/1f added (file granted to 1.38.0).
+- Waiting for the owner: the search "/" hint, always or only until used once (backlog #49).

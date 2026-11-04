@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 47–51 (4 Nov 2026, parallel round led by one lead session): 1.36.0 Mazoon (Board stickers, sharp emoji, shared text styles, Board paste fix), 1.37.0 team (Save pictures for Create drafts, team templates in Recently used), 1.38.0 Mazoon (Product highlight Size + Position, two emoji highlight templates), 1.39.0 team (swipe to select in Saved, / key hint), 1.40.0 Simplify. The next session, 1.41.0, is a **Mazoon** session.
+**Last session:** sessions 47–51 (4 Nov 2026, parallel round led by one lead session): 1.36.0 Mazoon (Board stickers, sharp emoji, shared text styles, Board paste fix), 1.37.0 team (Save pictures for Create drafts, team templates in Recently used), 1.38.0 Mazoon (Product highlight Size + Position, two emoji highlight templates), 1.39.0 team (swipe to select in Saved, / key hint), 1.40.0 Simplify (Carousel and Highlight Style sheets open on this slide/cover, Collage Border colour only with a border, full sweep, `contrast.mjs` reads BASE). The next session, 1.41.0, is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.45.0.
 
 ## Next up
@@ -26,6 +26,8 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
 
 ## UX audit findings (open)
+- 1.40.0: on a computer the photo tools show Add photo twice (the Photo card tile and "Add your photo" under the preview). Only if the owner finds it confusing.
+- 1.40.0 pattern review: lessons sessions 32–39 (1.21–1.28) can move to `_archive/` like 16–31; their rules are in the skill.
 - 1.37.0 release: `batch-saved` "pixel identity: restock tool Save == batch" failed once under 4-way load in `--changed` and passed 36/0 alone; watch it (a pixel suite that flakes hides real failures).
 - 1.38.0: Create's two emoji highlight templates make the start sheet load `highlight-emoji.js` + `stickers.js` once on the first visit (live previews); later visits use the IndexedDB preview cache (`create-stickers` 1e/1f check it).
 - 1.36.0: Board-saved text styles can carry `wt` / `bf`; a tool page never shows such a style as "on" (applying works).
@@ -75,7 +77,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
-- 1.36.0–1.39.0 (parallel round, 4 Nov 2026): Board stickers + sharp emoji + shared text styles (#26, #35) and a Board paste fix; Save pictures for Create drafts and saved Create designs (#42); team templates in Create's Recently used (#46); Product highlight Size + Position (#10); emoji highlight templates (#44); swipe to select in Saved; / key hint (#45).
+- 1.36.0–1.39.0 (parallel round, 4 Nov 2026): Board stickers + sharp emoji + shared text styles (#26, #35) and a Board paste fix; Save pictures for Create drafts and saved Create designs (#42); team templates in Create's Recently used (#46); Product highlight Size + Position (#10); emoji highlight templates (#44); swipe to select in Saved; / key hint (#45). 1.40.0 Simplify: three shorter sheets, full sweep green.
 - 1.35.0 (Simplify): More tab one row shorter on text layers, Home list/grid switch only with 2+ pinned tools, full sweep (65 suites + contrast + tapscan), stickers pixel check de-flaked, lessons 16–31 archived.
 - 1.34.0 (team): stars on team templates in Create's picker (#36), templates opened from search count as Recently used, one word for Skip.
 - 1.13.0–1.19.0 (parallel round, 29 Oct 2026): 1.13.0 (team) unfinished stories kept when you leave at once (the `queue.mjs` flake root cause), "N waiting" tag on tool rows, "device" not "phone" on a computer; 1.14.0 (Mazoon) Flip (#25) and Emoji highlight covers (#10 emoji part); 1.15.0 (Simplify) computer Save dock, quiet Done in sheets, `.link` text buttons, Offer camera, shorter labels, two new taste checks; 1.16.0 (team) Favourites + Recently used templates (#6), New badge off the headline, Create template `sub` lines; 1.17.0 (Mazoon) Board flex layout as a preview (#15); 1.18.0 (team) Save pictures from Saved (#5 second half); 1.19.0 (Mazoon) Text styles (#8) and Paste on all text (#22).
