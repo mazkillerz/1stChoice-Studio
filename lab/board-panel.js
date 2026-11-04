@@ -14,7 +14,7 @@ const unitSfx=()=>S.unit==='px'?'':`<em>${S.unit}</em>`;
 function field(label,key,val,o){ o=o||{}; return `<label class="f ${o.cls||''}" title="${esc(o.title||label)}"><span>${esc(label)}</span><input type="number" data-k="${key}" value="${val==null?'':val}" ${o.min!=null?`min="${o.min}"`:''} ${o.max!=null?`max="${o.max}"`:''} step="${o.step||'any'}" ${val==null?'placeholder="Mixed"':''}>${o.sfx===false?'':o.sfx||''}</label>`; }
 function ufield(label,key,px,dpi,o){ return field(label,key,px==null?null:+BD.units.fmt(px,dpi),Object.assign({sfx:unitSfx()},o||{})); }
 function range(label,key,val,min,max,step,unit){ return `<label class="rg"><span>${esc(label)}</span><input type="range" data-k="${key}" min="${min}" max="${max}" step="${step||1}" value="${val}"><output>${val}${unit||''}</output></label>`; }
-function swatch(key,val,label,none){ const v=typeof val==='string'?val:''; return `<button type="button" class="swb" data-color="${key}" ${none?'data-none="1"':''} data-pop-owner aria-label="${esc(label)}" title="${esc(label)}"><i style="--c:${v||'transparent'}" class="${v?'':'empty'}"></i><span>${v?esc(UI.hex6(v)).toUpperCase()+(UI.alphaOf(v)<100?' · '+UI.alphaOf(v)+'%':''):(key==='workspace'?'Default':'None')}</span></button>`; }
+function swatch(key,val,label,none){ const v=typeof val==='string'?val:''; return `<button type="button" class="swb" data-color="${key}" ${none?'data-none="1"':''} data-pop-owner aria-label="${esc(label)}" title="${esc(label)}"><i style="--c:${v||'transparent'}" class="${v?'':'empty'}"></i><span>${v?esc(UI.hex6(v)).toUpperCase()+(UI.alphaOf(v)<100?' · '+UI.alphaOf(v)+'%':''):(key==='workspace'?'Default':key==='scol'?'Original':'None')}</span></button>`; }
 function seg(key,val,opts){ return `<div class="seg2" role="group">${opts.map(([v,l,ic])=>`<button type="button" data-seg="${key}" data-v="${v}" aria-pressed="${String(val)===String(v)}" title="${esc(l)}" aria-label="${esc(l)}">${ic||esc(l)}</button>`).join('')}</div>`; }
 function toggle(key,on,label){ return `<label class="tg"><input type="checkbox" data-k="${key}" ${on?'checked':''}><span>${esc(label)}</span></label>`; }
 function qa(act,label,ic,cls){ return `<button type="button" class="ib ${cls||''}" data-act="${act}" aria-label="${esc(label)}" title="${esc(label)}">${ic}</button>`; }
@@ -29,7 +29,7 @@ const weightOf=n=>{ const s=n.fontStyle()||''; const m=s.match(/\d{3}/); return 
 const italicOf=n=>/italic/.test(n.fontStyle()||'');
 const setStyle=(n,w,it)=>n.fontStyle(((it?'italic ':'')+(w||'400')).trim());
 const num=(v,d)=>Math.round((+v||0)*(d||1))/(d||1);
-const kindLabel=n=>n.getAttr('isMask')?'Mask shape':n.getAttr('comp')?(n.getAttr('compMain')?'Main component':'Component copy'):({frame:n.getAttr('print')?'Print frame':'Frame',text:'Text',arc:'Curved text',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Brand asset',group:'Group',bool:'Combined shape',mask:'Mask',stroke:'Line',barcode:'Barcode',qr:'QR code'})[kind(n)]||'';
+const kindLabel=n=>n.getAttr('isMask')?'Mask shape':n.getAttr('comp')?(n.getAttr('compMain')?'Main component':'Component copy'):({frame:n.getAttr('print')?'Print frame':'Frame',text:'Text',arc:'Curved text',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Brand asset',sticker:'Sticker',group:'Group',bool:'Combined shape',mask:'Mask',stroke:'Line',barcode:'Barcode',qr:'QR code'})[kind(n)]||'';
 function geomOf(){ const list=S.sel; if(!list.length) return null; const n=list[0];
   if(list.length===1){ if(isFrame(n)){ const s=fsize(n); return {x:n.x(),y:n.y(),w:s.w,h:s.h,r:null}; } const p=frameOf(n), r=wrect(n); return {x:r.x-(p?p.x():0),y:r.y-(p?p.y():0),w:r.width,h:r.height,r:num(n.rotation(),10)}; }
   const r=unionRect(list), p=frameOf(n); const same=list.every(x=>frameOf(x)===p&&!isFrame(x)); return {x:r.x-(same&&p?p.x():0),y:r.y-(same&&p?p.y():0),w:r.width,h:r.height,r:null}; }
@@ -54,6 +54,7 @@ function paintProps(){
   if(k==='frame'&&list.length===1) h+=framePanel(n);
   if(all&&k==='text') h+=textPanel(list);
   if(all&&k==='arc'&&list.length===1) h+=arcPanel(n);
+  if(all&&k==='sticker') h+=stickerPanel(list);
   if(all&&k==='barcode'&&list.length===1) h+=barcodePanel(n);
   if(all&&k==='qr'&&list.length===1) h+=qrPanel(n);
   if(objs.length&&objs.some(x=>FILLABLE.includes(kind(x)))&&!(all&&k==='image')) h+=fillPanel(objs.filter(x=>FILLABLE.includes(kind(x))));
@@ -90,7 +91,7 @@ function compPanel(list){ const C=BD.comps, n=list.length===1?list[0]:null;
     return sec('comp','Component',`<p class="hint">${m?'A copy of <b>'+esc(nameOf(m))+'</b>. It follows the main one; words you type into it stay.':'The main component is not on this board, so this copy works like a group.'}</p><div class="row">${m?'<button type="button" class="mini" data-act="compMain">Go to main</button>':''}${ov?'<button type="button" class="mini" data-act="compReset">Reset words</button>':''}<button type="button" class="mini" data-act="compDetach">Detach</button></div>`); }
   if(C.can(list)&&!list.some(x=>x.getAttr('comp')||C.compOf(x))) return sec('comp','Component',`<p class="hint">Use it again and again: copies update when you change it.</p><button type="button" class="mini" data-act="compMake">${IC.comp} Make component</button>`,{cls:'ps-quiet'});
   return ''; }
-function kindIconFor(n){ const k=n.getAttr('isMask')?'mask':kind(n); if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
+function kindIconFor(n){ const k=n.getAttr('isMask')?'mask':kind(n); if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,sticker:IC.sticker,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
 UI.paintProps=paintProps;
 UI.focusField=k=>{ tab='design'; paintProps(); setTimeout(()=>{ const i=props.querySelector(`input[data-k="${k}"]`); if(i){ i.focus(); i.select(); } },30); };
 
@@ -138,6 +139,9 @@ function textPanel(list){ const n=list[0], w=weightOf(n), dec=n.textDecoration()
     <div class="row"><button type="button" class="mini" data-act="editText">Edit text</button>${/[a-z]/i.test(n.text())?'<button type="button" class="mini" data-act="caseUp">AA</button><button type="button" class="mini" data-act="caseLow">aa</button>':''}</div>`)+
     sec('tstyle','Text styles',`${st.length?`<label class="f wide"><span>Apply</span><select data-k="applyStyle" class="b-sel"><option value="">Pick a saved style…</option>${st.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>`:''}<button type="button" class="mini" data-act="saveStyle">Save as style</button>`)+
     sec('tbg','Text background',`<div class="row">${swatch('tbg',n.getAttr('tbg')||'','Box colour',true)}</div>${n.getAttr('tbg')?range('Padding','padding',num(n.padding()),0,200,1,'px')+range('Corners','tbgR',n.getAttr('tbgR')||0,0,200,1,'px'):''}`); }
+/* stickers and sharp emoji (board-stickers.js): one colour; an emoji can go back to its own colours */
+function stickerPanel(list){ const n=list[0], em=list.every(x=>BD.stickers.isEmojiRef(x.getAttr('ref'))), c=n.getAttr('scol')||'';
+  return sec('sticker',em?'Emoji':'Sticker',`<div class="row">${swatch('scol',c,em?'Emoji colour':'Sticker colour',em)}</div>${em?'<p class="hint">Original keeps the emoji’s own colours. A colour makes it one colour.</p>':''}`); }
 function arcPanel(n){ const r=n.getAttr('arcR')||300, mode=n.getAttr('arcMode')||'up';
   return sec('arc','Curved text',`<label class="f wide"><span>Text</span><input type="text" data-k="arcText" value="${esc(n.text())}" dir="auto"></label>
     ${seg('arcMode',mode,[['up','Arc up'],['down','Arc down'],['circle','Circle']])}${range('Curve size','arcR',Math.round(r),20,3000,1,'px')}
@@ -346,7 +350,7 @@ const flexSet=(patch,repaint)=>apply(m=>{ if(BD.flex.of(m)) BD.flex.set(m,patch)
 function setFillType(n,v){ if(v!=='solid'){ if(!n.getAttr('gradA')) n.setAttr('gradA',typeof n.fill()==='string'&&n.fill()?UI.hex6(n.fill()):'#ffffff'); if(!n.getAttr('gradB')) n.setAttr('gradB',BD.brandColors().ink); if(n.getAttr('gradAngle')==null) n.setAttr('gradAngle',180); }
   n.setAttr('fillType',v); if(v==='solid'){ n.fillPriority('color'); if(!n.fill()) n.fill(n.getAttr('gradA')||'#ffffff'); } BD.applyFill(n); }
 function colorFor(btn){ const key=btn.dataset.color, n=n0();
-  const get={flexFill:()=>(BD.flex.of(n)||{}).fill||'',boolFill:()=>{ const b=BD.bool.base(n); return b&&b.fill(); },workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff'};
+  const get={flexFill:()=>(BD.flex.of(n)||{}).fill||'',boolFill:()=>{ const b=BD.bool.base(n); return b&&b.fill(); },workspace:()=>S.bg||'',pen:()=>S.pen.color,bgFill:()=>frameBg(n).fill(),bgGradA:()=>frameBg(n).getAttr('gradA'),bgGradB:()=>frameBg(n).getAttr('gradB'),oFill:()=>n.fill(),oGradA:()=>n.getAttr('gradA'),oGradB:()=>n.getAttr('gradB'),stroke:()=>n.stroke(),tbg:()=>n.getAttr('tbg'),shadowColor:()=>n.shadowColor(),bcColor:()=>n.getAttr('color'),qrColor:()=>n.getAttr('color'),qrBgC:()=>n.getAttr('bg')||'#ffffff',scol:()=>n.getAttr('scol')};
   let cur=(get[key]||(()=>''))()||'';
   UI.colorPop(btn,(typeof cur==='string'&&cur)||'#000000',v=>{
     const set={workspace:()=>{ S.bg=v||null; BD.wrap.style.backgroundColor=S.bg||''; BD.scheduleSave(); }, pen:()=>{ S.pen.color=v; },
@@ -357,10 +361,10 @@ function colorFor(btn){ const key=btn.dataset.color, n=n0();
       oFill:()=>apply(m=>{ m.fill(v); if(kind(m)==='arrow') m.stroke(v||m.stroke()); }), oGradA:()=>apply(m=>m.setAttr('gradA',v)), oGradB:()=>apply(m=>m.setAttr('gradB',v)),
       stroke:()=>apply(m=>{ m.stroke(v); if(v&&!m.strokeWidth()) m.strokeWidth(kind(m)==='text'?4:6); if(kind(m)==='arrow') m.fill(v); }),
       tbg:()=>apply(m=>{ m.setAttr('tbg',v||undefined); if(v&&!m.padding()) m.padding(Math.round(m.fontSize()*.3)); }), shadowColor:()=>apply(m=>m.shadowColor(v)),
-      bcColor:()=>apply(m=>{ m.setAttr('color',v); BD.tools.buildBarcode(m); }),
+      bcColor:()=>apply(m=>{ m.setAttr('color',v); BD.tools.buildBarcode(m); }), scol:()=>apply(m=>BD.stickers.setColor(m,v)),
       qrColor:()=>{ targets().forEach(m=>m.setAttr('color',v)); Promise.all(targets().map(m=>BD.tools.buildQR(m))).then(()=>apply(()=>{})); },
       qrBgC:()=>{ targets().forEach(m=>m.setAttr('bg',v)); Promise.all(targets().map(m=>BD.tools.buildQR(m))).then(()=>apply(()=>{})); }};
     (set[key]||(()=>{}))();
-    const i=btn.querySelector('i'), s=btn.querySelector('span'); if(i){ i.style.setProperty('--c',v||'transparent'); i.classList.toggle('empty',!v); } if(s) s.textContent=v?UI.hex6(v).toUpperCase()+(UI.alphaOf(v)<100?' · '+UI.alphaOf(v)+'%':''):(key==='workspace'?'Default':'None');
+    const i=btn.querySelector('i'), s=btn.querySelector('span'); if(i){ i.style.setProperty('--c',v||'transparent'); i.classList.toggle('empty',!v); } if(s) s.textContent=v?UI.hex6(v).toUpperCase()+(UI.alphaOf(v)<100?' · '+UI.alphaOf(v)+'%':''):(key==='workspace'?'Default':key==='scol'?'Original':'None');
     if(key==='tbg'&&!!v!==!!cur){ cur=v; setTimeout(paintProps,0); } UI.paintQbar(); },{none:!!btn.dataset.none}); }
 })();

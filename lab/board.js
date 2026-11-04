@@ -62,7 +62,7 @@ function reparent(n,to,index){ const m=n.getAbsoluteTransform().copy(); n.moveTo
 function moveByWorld(n,dx,dy){ const p=n.absolutePosition(), k=sc(); n.absolutePosition({x:p.x+dx*k,y:p.y+dy*k}); }
 function nameOf(n){ const l=n.getAttr('label'); if(l) return l; const k=kind(n);
   if(k==='text'){ const t=(n.text()||'').replace(/\s+/g,' ').trim(); return t.slice(0,28)||'Text'; }
-  return ({frame:'Frame',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Asset',group:'Group',bool:'Combined shape',stroke:'Line'})[k]||'Layer'; }
+  return ({frame:'Frame',rect:'Rectangle',ellipse:'Ellipse',poly:'Polygon',star:'Star',ring:'Ring',path:'Shape',icon:'Icon',line:'Line',arrow:'Arrow',pen:'Drawing',image:'Photo',asset:'Asset',sticker:'Sticker',group:'Group',bool:'Combined shape',stroke:'Line'})[k]||'Layer'; }
 /* units: everything is stored in pixels; print frames know their DPI, so sizes can be shown and typed in mm, cm, inches or points */
 const UNITS={mm:25.4,cm:2.54,in:1,pt:72};
 function dpiOf(n){ const f=n&&(isFrame(n)?n:frameOf(n)); return (f&&f.getAttr('dpi'))||S.dpi||300; }
@@ -154,6 +154,7 @@ function boolScene(ctx,shape){ const g=shape.getParent();
   c.restore(); }
 BD.boolScene=boolScene;
 function decorate(n){
+  if(BD.stickers&&BD.stickers.prep(n)) return;   // a sticker: its drawing is put back (board-stickers.js)
   if(kind(n)==='bool'){ n.getChildren().forEach(ch=>{ if(ch._sceneFunc&&ch.sceneFunc) ch.sceneFunc(boolScene); }); return; }
   if(kind(n)==='mask'){ n.clipFunc(maskClip); const ms=n.getChildren(c=>c.getAttr('isMask')); if(ms.length){ let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; ms.forEach(m=>{ const r=m.getClientRect({relativeTo:n,skipStroke:true}); a=Math.min(a,r.x); b=Math.min(b,r.y); c=Math.max(c,r.x+r.width); d=Math.max(d,r.y+r.height); }); n.setAttrs({clipX:a,clipY:b,clipWidth:Math.max(1,c-a),clipHeight:Math.max(1,d-b)}); } }
   const a=n.getAttr('strokeAlign');
@@ -266,7 +267,7 @@ function select(list,opt){
   tr.enabledAnchors(onlyText?['top-left','top-right','bottom-left','bottom-right','middle-left','middle-right']:
     t.length===1&&['line','arrow'].includes(kind(t[0]))?['middle-left','middle-right']:
     ['top-left','top-center','top-right','middle-right','middle-left','bottom-left','bottom-center','bottom-right']);
-  tr.keepRatio(t.length>1||t.some(n=>['icon','path','stroke','star','poly','ring','group','pen','asset'].includes(kind(n))));
+  tr.keepRatio(t.length>1||t.some(n=>['icon','path','stroke','star','poly','ring','group','pen','asset','sticker'].includes(kind(n))));
   hoverBox.visible(false);
   paintUI();
   if(!(opt&&opt.quiet)) emit('select',list);
@@ -407,7 +408,7 @@ function bakeScale(n){
   if(k==='text'){ if(/middle-(left|right)/.test(anchor)){ n.width(Math.max(24,n.width()*ax)); n.setAttr('autoW',false); }
       else { n.fontSize(Math.max(4,n.fontSize()*ay)); if(!n.getAttr('autoW')) n.width(Math.max(24,n.width()*ax)); n.padding(n.padding()*ay); }
       n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); if(n.getAttr('autoW')) n.width(undefined); return; }
-  if(k==='rect'||k==='image'||k==='asset'){ n.width(Math.max(2,n.width()*ax)); n.height(Math.max(2,n.height()*ay)); n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); if(k!=='rect') applyCrop(n); return; }
+  if(k==='rect'||k==='image'||k==='asset'||k==='sticker'){ n.width(Math.max(2,n.width()*ax)); n.height(Math.max(2,n.height()*ay)); n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); if(k!=='rect'&&k!=='sticker') applyCrop(n); return; }
   if(k==='ellipse'){ n.radiusX(Math.max(1,n.radiusX()*ax)); n.radiusY(Math.max(1,n.radiusY()*ay)); n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); return; }
   if(k==='line'||k==='arrow'){ n.points(n.points().map((v,i)=>i%2?v*ay:v*ax)); n.scale({x:Math.sign(sx)||1,y:Math.sign(sy)||1}); return; }
 }
@@ -715,7 +716,7 @@ function resizeWithContent(f,w,h,copy,label){ if(!isFrame(f)) return null;
   const s=fsize(f), k=Math.min(w/s.w,h/s.h), kids=items(f), bgs=kids.filter(n=>n.getAttr('isBg'));
   const g=new Konva.Group(); f.add(g); kids.forEach(n=>reparent(n,g)); g.scale({x:k,y:k}); g.position({x:(w-s.w*k)/2,y:(h-s.h*k)/2});
   setFrameSize(f,w,h); [...g.getChildren()].forEach(n=>reparent(n,f)); g.destroy(); frameBg(f).moveToBottom();
-  kids.forEach(n=>{ const sw=n.strokeWidth&&n.strokeWidth(); const was=['text','rect','image','asset','ellipse','line','arrow'].includes(kind(n));
+  kids.forEach(n=>{ const sw=n.strokeWidth&&n.strokeWidth(); const was=['text','rect','image','asset','sticker','ellipse','line','arrow'].includes(kind(n));
     if(was){ bakeScale(n); if(sw&&n.strokeScaleEnabled&&n.strokeScaleEnabled()!==false) n.strokeWidth(sw*k); if(n.shadowBlur&&n.shadowBlur()) n.setAttrs({shadowBlur:n.shadowBlur()*k,shadowOffsetX:n.shadowOffsetX()*k,shadowOffsetY:n.shadowOffsetY()*k}); }
     applyFill(n); applyFx(n); });
   bgs.forEach(n=>{ const l=n.getAttr('locked'); n.setAttr('locked',undefined); fillFrame(n,false,true); n.setAttr('locked',l); });
@@ -772,7 +773,7 @@ function rebuild(o,fresh){ const a=Object.assign({},o.a); if(fresh&&a.id) a.id=u
 BD.toObj=toObj; BD.rebuild=rebuild; BD.collectImgs=collectImgs;
 function docJson(){ const en=edit&&edit.n; if(en) en.visible(true); try{ return JSON.stringify({v:1,name:S.name,bg:S.bg,unit:S.unit,dpi:S.dpi,rulers:S.rulers,styles:S.styles,nodes:main.getChildren().map(toObj)}); } finally{ if(en&&edit) en.visible(false); } }
 async function loadDoc(d){ tr.nodes([]); main.destroyChildren(); S.entered=null; const ids=new Set(); (d.nodes||[]).forEach(o=>collectImgs(o,ids));
-  await Promise.all([...ids].map(getImg)); (d.nodes||[]).forEach(o=>main.add(rebuild(o)));
+  await Promise.all([...ids].map(getImg).concat(BD.stickers?[BD.stickers.need(d.nodes)]:[])); (d.nodes||[]).forEach(o=>main.add(rebuild(o)));
   await fontsInDoc(); main.find('Image').forEach(n=>applyFx(n)); main.batchDraw(); paintUI(); }
 async function fontsInDoc(){ const fams=new Set(); main.find('Text').forEach(t=>fams.add(t.fontFamily()+'|'+t.fontStyle())); await Promise.all([...fams].map(s=>{ const [f,st]=s.split('|'); return BD.ensureFont(f,st); })); main.find('Text').forEach(t=>{ if(t._setTextData) t._setTextData(); }); main.batchDraw(); }
 BD.docJson=docJson;

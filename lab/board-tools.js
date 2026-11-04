@@ -103,7 +103,7 @@ T.findNodes=(q,cs)=>q?texts().filter(n=>rx(q,cs).test(n.text()||'')):[];
 T.replaceAll=function(q,w,cs){ if(!q) return 0; let c=0; texts().forEach(n=>{ const t=n.text()||'', m=t.match(rx(q,cs)); if(!m) return; c+=m.length; n.text(t.replace(rx(q,cs),w)); if(kind(n)==='text') BD.prepText(n); }); if(c){ BD.main.batchDraw(); BD.changed(); } return c; };
 
 /* ---------- replace a colour everywhere ---------- */
-const CKEYS=['fill','stroke','gradA','gradB','tbg','shadowColor','color'];
+const CKEYS=['fill','stroke','gradA','gradB','tbg','shadowColor','color','scol'];
 const hex6=c=>{ if(typeof c!=='string'||!c) return null; if(/^#[0-9a-f]{6}/i.test(c)) return c.slice(0,7).toLowerCase(); const k=Konva.Util.colorToRGBA(c); return k?'#'+[k.r,k.g,k.b].map(v=>v.toString(16).padStart(2,'0')).join(''):null; };
 T.usedColors=function(){ const m=new Map(); BD.main.find(()=>true).forEach(n=>CKEYS.forEach(k=>{ const h=hex6(n.getAttr(k)); if(h) m.set(h,(m.get(h)||0)+1); })); return [...m.entries()].sort((a,b)=>b[1]-a[1]).map(([c,n])=>({c,n})); };
 T.replaceColor=function(from,to){ let c=0; from=from.toLowerCase();
