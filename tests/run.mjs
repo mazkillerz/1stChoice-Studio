@@ -15,7 +15,7 @@ import fs from 'fs';
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
-  [/^brands\/|^tests\/fixtures\/brands\//,['brandkit']],
+  [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers']],
   [/^tools\/(?!video)|assets\/studio\.js/,['simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave']],
   [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers','board-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear','create-render']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30','continue-clear','create-render']],
