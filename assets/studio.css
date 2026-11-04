@@ -750,6 +750,12 @@ label.opt-row{cursor:pointer}
 #inspPasteAll{flex-basis:100%}
 .ts-dlg input{width:100%}
 
+/* Swipe to select on the Saved page (1.39.0): sideways fingers belong to the swipe while selecting (up and down still scroll);
+   nothing gets text-selected while a swipe runs */
+body.selecting #savedGrid .sv-open{touch-action:pan-y}
+body.swiping,body.swiping *{-webkit-user-select:none;user-select:none}
+body.swiping #savedGrid .sv-open{cursor:default}
+
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */
 :root{
