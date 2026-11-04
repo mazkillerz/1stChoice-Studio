@@ -36,6 +36,7 @@ const IC={
   grid:svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/>'),repeat:svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
   history:svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>'),findr:svg('<circle cx="10" cy="10" r="6"/><path d="m20 20-5.5-5.5M7 10h6"/>'),palette:svg('<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.9-4.5-8.6-10-8.6z"/>'),
   print:svg('<path d="M6 9V2h12v7"/><rect x="2" y="9" width="20" height="8" rx="2"/><path d="M6 14h12v8H6z"/>'),emoji:svg('<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>'),
+  sticker:svg('<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>'),
   icons:svg('<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/>'),tpl:svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>'),
   union:svg('<path d="M4 4h10v6h6v10H10v-6H4z"/>'),subtract:svg('<path d="M4 4h10v6h-4v4H4z"/><path d="M10 14v6h10V10h-6" stroke-dasharray="2 2.5"/>'),
   intersect:svg('<path d="M4 14V4h10M20 10v10H10" stroke-dasharray="2 2.5"/><path d="M10 10h4v4h-4z" fill="currentColor"/>'),exclude:svg('<path d="M4 4h10v6h-4v4H4zM20 20H10v-6h4v-4h6z"/>'),
@@ -196,6 +197,7 @@ function paintQbar(){ const list=S.sel; if(!list.length||BD.editing()||(S.tool!=
       <input class="qnum" type="number" data-qs="fontSize" value="${Math.round(n.fontSize())}" min="4" aria-label="Font size">`+qsw('oFill',typeof n.fill()==='string'?n.fill():'','Text colour')+qb('bold',IC.bold,'Bold',/[6-9]00|bold/.test(n.fontStyle()))+(k==='text'?qb('align',IC[{left:'tl',center:'tc',right:'tr',justify:'tj'}[n.align()]||'tc'],'Alignment'):''); }
   else if(all&&(k==='image'||k==='asset')){ h=(one&&k==='image'?qb('crop',IC.crop+'<span>Crop</span>','Crop / move photo'):'')+qb('looks','Looks','Photo looks')+(one&&k==='image'?qb('replace','Replace','Replace photo'):'')+(one?qb('fillFrame','Fill frame','Fill the frame'):''); }
   else if(all&&['rect','ellipse','poly','star','ring','path','icon','stroke','line','arrow','pen'].includes(k)){ const ln=['line','arrow','pen','stroke','icon'].includes(k); h=(ln?'':qsw('oFill',typeof n.fill()==='string'?n.fill():'','Fill'))+qsw('stroke',n.stroke()||'',ln?'Line colour':'Outline'); }
+  else if(all&&k==='sticker') h=qsw('scol',n.getAttr('scol')||'',list.every(x=>BD.stickers.isEmojiRef(x.getAttr('ref')))?'Emoji colour':'Sticker colour');
   else if(all&&(k==='barcode'||k==='qr')){ h=qb(k==='qr'?'editQR':'editBarcode','Edit '+(k==='qr'?'QR code':'barcode'),'Change it'); }
   if(!locked&&!(one&&k==='frame')){ const r=unionRect(list), dp=BD.units.dpiOf(n); h+=`<span class="qsep"></span><button type="button" class="qb qtxt" data-q="size" title="Width × height (change it in the Design panel)">${BD.units.fmt(r.width,dp)} × ${BD.units.fmt(r.height,dp)}</button>`;
     if(list.length>1) h+=qb('group',IC.group,'Group ('+mod+'+G)'); if(list.some(x=>kind(x)==='group')) h+=qb('ungroup',IC.group+'<span>Ungroup</span>','Ungroup');
@@ -224,11 +226,13 @@ qbar.addEventListener('change',e=>{ const t=e.target, k=t.dataset.qs; if(!k) ret
   if(k==='fontFamily'){ const fam=t.value; Promise.all(targets().map(n=>BD.ensureFont(fam,n.fontStyle()))).then(()=>apply(n=>{ n.fontFamily(fam); if(kind(n)==='text') BD.prepText(n); },{repaint:true})); }
   if(k==='fontSize'&&+t.value>=1) apply(n=>n.fontSize(+t.value),{repaint:true}); });
 qbar.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.target.dispatchEvent(new Event('change',{bubbles:true})); e.target.blur(); } e.stopPropagation(); });
-function qColor(btn){ const key=btn.dataset.qc, n=S.sel[0]; const cur=key==='bgFill'?frameBg(n).fill():key==='stroke'?n.stroke():n.fill();
-  colorPop(btn,(typeof cur==='string'&&cur)||'#000000',v=>{ if(key==='bgFill') apply(f=>{ const bg=frameBg(f); bg.fill(v||'#ffffff'); bg.setAttr('fillType','solid'); BD.applyFill(bg); });
+function qColor(btn){ const key=btn.dataset.qc, n=S.sel[0]; const cur=key==='bgFill'?frameBg(n).fill():key==='stroke'?n.stroke():key==='scol'?n.getAttr('scol'):n.fill();
+  const emo=key==='scol'&&S.sel.every(x=>BD.stickers.isEmojiRef(x.getAttr('ref')));
+  colorPop(btn,(typeof cur==='string'&&cur)||'#000000',v=>{ if(key==='scol') apply(x=>BD.stickers.setColor(x,v));
+    else if(key==='bgFill') apply(f=>{ const bg=frameBg(f); bg.fill(v||'#ffffff'); bg.setAttr('fillType','solid'); BD.applyFill(bg); });
     else if(key==='stroke') apply(x=>{ x.stroke(v); if(v&&!x.strokeWidth()) x.strokeWidth(kind(x)==='text'?4:6); if(kind(x)==='arrow') x.fill(v); });
     else apply(x=>{ x.fill(v); x.setAttr('fillType','solid'); x.fillPriority('color'); if(kind(x)==='arrow') x.stroke(v||x.stroke()); });
-    const i=btn.querySelector('i'); if(i){ i.style.setProperty('--c',v||'transparent'); i.classList.toggle('empty',!v); } UI.paintProps&&UI.paintProps(); },{none:key!=='bgFill'}); }
+    const i=btn.querySelector('i'); if(i){ i.style.setProperty('--c',v||'transparent'); i.classList.toggle('empty',!v); } UI.paintProps&&UI.paintProps(); },{none:key==='scol'?emo:key!=='bgFill'}); }
 function looksPop(anchor){ if(!S.sel[0]) return;
   openPop(anchor,`<div class="looks">${BD.LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}">${esc(l.label)}</button>`).join('')}</div>`,{cls:'pop-looks'});
   pop.onclick=e=>{ const b=e.target.closest('[data-look]'); if(!b) return; const l=BD.LOOKS.find(x=>x.id===b.dataset.look); apply(x=>{ x.setAttr('fx',Object.assign({},l.fx)); BD.applyFx(x); },{repaint:true}); }; }
@@ -293,7 +297,7 @@ if(L.store('lab:fold:pages')){ document.querySelector('[data-fold="pages"]').set
 const layersEl=$('layers'); const open=new Set(); let layT=0;
 function paintLayersSoon(){ clearTimeout(layT); layT=setTimeout(()=>{ paintLayers(); paintPages(); },60); }
 UI.paintLayersSoon=paintLayersSoon;
-function kindIcon(n){ if(n.getAttr('isMask')) return IC.mask; if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; const k=kind(n); if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
+function kindIcon(n){ if(n.getAttr('isMask')) return IC.mask; if(n.getAttr('comp')) return n.getAttr('compMain')?IC.comp:IC.compCopy; const k=kind(n); if(k==='bool') return IC[n.getAttr('boolOp')]||IC.union; return ({frame:IC.frame,text:IC.text,arc:IC.arc,rect:IC.rect,ellipse:IC.ellipse,poly:IC.poly,star:IC.star,ring:IC.ellipse,path:IC.shapes,icon:IC.icons,line:IC.line,arrow:IC.arrow,pen:IC.pen,image:IC.image,asset:IC.brand,sticker:IC.sticker,group:IC.group,mask:IC.mask,stroke:IC.line,barcode:IC.barcode,qr:IC.qr})[k]||IC.rect; }
 function autoOpen(){ const s=S.sel[0]; if(!s){ const f=BD.activeFrame&&BD.activeFrame(); if(f) open.add(f.id()); return; } let p=isFrame(s)?s:s.getParent(); while(p&&p!==BD.main){ open.add(p.id()); p=p.getParent(); } }
 function row(n,d){ const box=isFrame(n)||['group','mask','bool'].includes(kind(n)), kids=box?items(n):[], on=box&&open.has(n.id()), lk=isLocked(n), vis=n.visible();
   return `<div class="lr${isFrame(n)?' lr-frame':''}${vis?'':' off'}${n.getAttr('isMask')?' lr-mask':''}" role="treeitem" draggable="true" data-id="${n.id()}" style="--d:${d}" aria-selected="${S.sel.includes(n)}" ${box?`aria-expanded="${on}"`:''}>
@@ -345,7 +349,7 @@ UI.openAssets=openAssets;
 const addList=$('addList'); let addQ='', addCat=null;
 $('addBack').innerHTML=IC.back; $('addBack').onclick=()=>{ addCat=null; paintAdd(); };
 $('addQ').addEventListener('input',e=>{ addQ=e.target.value.trim().toLowerCase(); paintAdd(); });
-const CATS=[['brand','Brand','brand'],['text','Text','text'],['photos','Photos & files','image'],['shapes','Shapes','shapes'],['lines','Lines','line'],['icons','Icons','icons'],['emoji','Emoji','emoji'],['codes','Barcode & QR','qr'],['frames','Frame sizes','frame'],['templates','Templates','tpl']];
+const CATS=[['brand','Brand','brand'],['text','Text','text'],['photos','Photos & files','image'],['shapes','Shapes','shapes'],['lines','Lines','line'],['icons','Icons','icons'],['stickers','Stickers','sticker'],['emoji','Emoji','emoji'],['codes','Barcode & QR','qr'],['frames','Frame sizes','frame'],['templates','Templates','tpl']];
 function shapeThumb(d,stroke){ return `<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" width="34" height="34" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`; }
 const nativeShape={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',
   star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};
@@ -355,15 +359,20 @@ function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); cons
   if(id==='brand'){ const as=L.brandAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
     return (as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
-  if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
+  if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)), sh=BD.tools.tStyles().filter(t=>m(t.name)||m('style')); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
     return `<div class="tadd">${base.map(([l,t])=>`<button type="button" class="ta ta-${t}" data-addtext="${t}" draggable="true">${l}</button>`).join('')}${m('curved')||m('text')?`<button type="button" class="ta ta-arc" data-arc="1">${IC.arc} Curved text</button>`:''}</div>`+
-      `<span class="lbl sub">Saved text styles</span>`+(st.length?`<div class="tstyles">${st.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tstyle="${t.id}" style="font-family:'${esc(t.attrs.fontFamily)}';font-weight:${(String(t.attrs.fontStyle||'').match(/\d{3}/)||['400'])[0]}">${esc(t.name)}</button><button type="button" class="ib" data-tsdel="${t.id}" aria-label="Remove ${esc(t.name)}">${IC.close}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel to keep it here.</p>'); }
+      `<span class="lbl sub">Text styles</span>`+(sh.length?`<div class="tstyles">${sh.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tshared="${esc(t.id)}" dir="auto" style="${(t.st.bf||t.st.font)?`font-family:'${esc(t.st.bf||t.st.font)}';`:''}font-weight:${esc(t.st.wt||'400')}">${t.st.color?`<i class="bts-dot" style="background:${esc(t.st.color)}" aria-hidden="true"></i>`:''}${esc(t.name)}</button><button type="button" class="ib" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}" title="Rename or remove">${IC.more}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel. Styles you save on the tool pages show here too.</p>')+
+      (st.length?`<span class="lbl sub">This board</span><div class="tstyles">${st.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tstyle="${t.id}" style="font-family:'${esc(t.attrs.fontFamily)}';font-weight:${(String(t.attrs.fontStyle||'').match(/\d{3}/)||['400'])[0]}">${esc(t.name)}</button><button type="button" class="ib" data-tsdel="${t.id}" aria-label="Remove ${esc(t.name)}">${IC.close}</button></div>`).join('')}</div>`:''); }
   if(id==='photos'){ const photos=[...new Set(BD.main.find('Image').filter(n=>kind(n)==='image'&&!n.getAttr('isBg')).map(n=>n.getAttr('imgId')))];
     return `<button type="button" class="mini wide" data-act2="upload">${IC.upload} Upload photos, SVG or PDF</button>${photos.length?`<div class="agrid ph">${photos.map(id=>`<button type="button" class="ag" data-photo="${id}" draggable="true" aria-label="Add this photo again"><canvas data-thumb="${id}" width="80" height="80"></canvas></button>`).join('')}</div>`:''}<p class="hint">You can also drop or paste files on the canvas. SVG files keep their layers; each PDF page becomes a frame.</p>`; }
   if(id==='shapes'){ const sh=BD.SHAPES.filter(s=>m(s.label)||m('shape')); return sh.length?`<div class="sgrid">${sh.map(s=>`<button type="button" class="sg" data-shape="${s.id}" draggable="true" title="${esc(s.label)}" aria-label="${esc(s.label)}">${shapeThumb(s.path||nativeShape[s.id]||nativeShape.rect)}</button>`).join('')}</div>`:''; }
   if(id==='lines'){ const st=BD.STROKES.filter(s=>m(s.label)||m('line')); return st.length?`<div class="sgrid">${st.map(s=>`<button type="button" class="sg" data-stroke="${s.id}" draggable="true" title="${esc(s.label)}" aria-label="${esc(s.label)}">${shapeThumb(s.path||nativeShape[s.id],true)}</button>`).join('')}</div>`:''; }
   if(id==='icons'){ const ic=BD.ICONS.filter(i=>m(i.id.replace(/-/g,' '))||m('icon')); return ic.length?`<div class="sgrid">${ic.map(i=>`<button type="button" class="sg" data-icon="${i.id}" draggable="true" title="${esc(i.id.replace(/-/g,' '))}" aria-label="${esc(i.id.replace(/-/g,' '))}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${i.d}"/></svg></button>`).join('')}</div>`:''; }
-  if(id==='emoji') return !q||m('emoji')?`<div class="egrid">${BD.EMOJI.map(e=>`<button type="button" class="eg" data-emoji="${e}" draggable="true" aria-label="${e}">${e}</button>`).join('')}</div>`:'';
+  /* stickers and sharp emoji (board-stickers.js): their shapes load the first time; the list paints again when they are in */
+  if(id==='stickers'||id==='emoji'){ const K=BD.stickers; if(!K.emojiReady()){ K.load(true).then(ok=>{ if(ok&&!$('addPane').hidden) paintAdd(); }); }
+    if(id==='stickers'){ const st=K.drawn(q); return st.length?K.tiles(st)+(q?'':'<p class="hint">Tap one to add it. Pick its colour in the Design panel.</p>'):(!K.ready()&&!q?'<p class="hint">Loading stickers…</p>':''); }
+    const em=K.emoji(q), kb=!q||m('emoji')||m('keyboard');
+    return (em.length?K.tiles(em):(!K.emojiReady()&&!q?'<p class="hint">Loading emoji…</p>':''))+(kb?`${em.length||!q?'<span class="lbl sub">Keyboard emoji</span><p class="hint">These use the device’s own emoji, so they can look different on other phones.</p>':''}<div class="egrid">${BD.EMOJI.map(e=>`<button type="button" class="eg" data-emoji="${e}" draggable="true" aria-label="${e}">${e}</button>`).join('')}</div>`:''); }
   if(id==='codes') return !q||m('barcode')||m('qr')||m('code')?`<div class="tadd"><button type="button" class="ta" data-code="barcode">${IC.barcode} Barcode (EAN-13 / UPC-A)</button><button type="button" class="ta" data-code="qr">${IC.qr} QR code</button></div><p class="hint">Made as sharp shapes, so they print crisp at any size.</p>`:'';
   if(id==='frames'){ const fr=BD.PRESETS.filter(p=>m(p.label)||m('frame')), pr=BD.PRINT.filter(p=>m(p.label)||m('print')||m('mm'));
     return (fr.length?`<div class="preset-list">${fr.map(p=>`<button type="button" class="pl" data-addframe="${p.id}"><span class="pv" style="${pv(p.w,p.h)}"></span><span>${esc(p.label)}</span><small>${p.w}×${p.h}</small></button>`).join('')}</div>`:'')+
@@ -374,6 +383,7 @@ function paintAdd(){ const q=addQ; $('addBack').hidden=!addCat||!!q;
   if(!addCat&&!q){ addList.innerHTML=`<div class="cats">${CATS.map(([id,l,ic])=>`<button type="button" class="cat" data-cat="${id}"><span class="cat-ic">${IC[ic]}</span><span>${l}</span></button>`).join('')}</div>`; return; }
   const ids=q?CATS.map(c=>c[0]):[addCat]; const out=ids.map(id=>{ const body=catBody(id,q); if(!body) return ''; const c=CATS.find(x=>x[0]===id); return `<section class="ps"><h3>${esc(c[1])}</h3>${body}</section>`; }).join('');
   addList.innerHTML=out||'<p class="ps-note">Nothing matches. Try another word.</p>';
+  BD.stickers.paint(addList);
   addList.querySelectorAll('canvas[data-thumb]').forEach(c=>{ const im=BD.IMGS.get(c.dataset.thumb); if(!im) return; const x=c.getContext('2d'), k=Math.max(80/im.w,80/im.h); x.drawImage(im.el,(80-im.w*k)/2,(80-im.h*k)/2,im.w*k,im.h*k); }); }
 UI.paintAdd=paintAdd;
 BD.on('photos',()=>{ if(!$('addPane').hidden) paintAdd(); });
@@ -384,24 +394,38 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
     BD.ensureFont(n.fontFamily(),n.fontStyle()).then(()=>{ BD.place(n,{frame:f,at}); BD.startEdit(n,true); }); return; }
   if(d.arc){ BD.tools.makeArc(); return; }
   if(d.tstyle){ const st=S.styles.text.find(x=>x.id===d.tstyle); if(st) BD.tools.applyTextStyle(st); return; }
+  if(d.tshared){ const t=BD.tools.tStyles().find(x=>x.id===d.tshared); if(t) BD.tools.applyShared(t.st).then(()=>UI.paintProps&&UI.paintProps()); return; }
   if(d.phrase){ const f=tf(), fw=f?fsize(f).w:1080; BD.place(BD.make.text(d.phrase,{fontSize:Math.round(fw*.09)}),{frame:f,at}); return; }
   if(d.asset){ const a=L.brandAssets().find(x=>x.id===d.asset); if(a) BD.addAsset(a,at); return; }
   if(d.photo){ const im=BD.IMGS.get(d.photo); if(!im) return; const f=tf(), box=f?fsize(f):{w:1080,h:1080}, k=Math.min(1,box.w*.8/im.w,box.h*.8/im.h); BD.place(BD.make.image(d.photo,Math.round(im.w*k),Math.round(im.h*k)),{frame:f,at}); return; }
   if(d.shape){ const s=BD.SHAPES.find(x=>x.id===d.shape), f=tf(); BD.place(BD.make.shape(s,f?Math.round(fsize(f).w*.4):300,c.accent),{frame:f,at}); return; }
   if(d.stroke){ const s=BD.STROKES.find(x=>x.id===d.stroke), f=tf(); BD.place(BD.make.shape(Object.assign({stroke:!s.make},s),f?Math.round(fsize(f).w*.4):300,c.ink),{frame:f,at}); return; }
   if(d.icon){ const s=BD.ICONS.find(x=>x.id===d.icon), f=tf(); BD.place(BD.make.icon(s,f?Math.round(fsize(f).w*.18):160,c.ink),{frame:f,at}); return; }
+  if(d.sticker){ BD.stickers.add(d.sticker,at); return; }
   if(d.emoji){ const f=tf(); BD.place(BD.make.text(d.emoji,{fontSize:f?Math.round(fsize(f).w*.16):160,fontFamily:'system-ui'}),{frame:f,at}); return; }
   if(d.code==='barcode'){ UI.barcodeDialog(); return; } if(d.code==='qr'){ UI.qrDialog(); return; }
 }
 UI.addItem=addItem;
+/* a shared text style's menu: rename it or remove it (from this device: the tool pages and Create lose it too) */
+function tsMenu(id){ const T=BD.tools, t=T.tStyles().find(x=>x.id===id); if(!t) return;
+  const d=L.dialog(`<form method="dialog" class="dlg-body ts-dlg"><h3>Text style</h3><label class="lbl" for="tsName">Name</label><input type="text" id="tsName" dir="auto" maxlength="24" autocomplete="off">
+    <div class="act-list"><button type="button" class="act-row danger" data-tsact="del">${IC.trash}<span>Remove</span></button></div>
+    <p class="hint">Text styles are kept on this device and shared with the tool pages and Create.</p>
+    <div class="dlg-actions"><button type="button" class="mini" id="tsX">Cancel</button><button type="submit" class="btn">Done</button></div></form>`,'ts-menu');
+  const inp=d.querySelector('#tsName'); inp.value=t.name; d.tabIndex=-1; d.focus();
+  d.querySelector('#tsX').onclick=()=>d.close();
+  d.querySelector('form').onsubmit=e=>{ e.preventDefault(); T.renameShared(id,inp.value); d.close(); paintAdd(); UI.paintProps&&UI.paintProps(); };
+  d.querySelector('[data-tsact="del"]').onclick=()=>{ d.close(); T.removeShared(id); paintAdd(); UI.paintProps&&UI.paintProps(); toast('“'+t.name+'” removed.'); }; }
+UI.tsMenu=tsMenu;
 addList.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]'); if(cat){ addCat=cat.dataset.cat; paintAdd(); $('addPane').scrollTop=0; return; }
   const a2=e.target.closest('[data-act2]'); if(a2){ if(a2.dataset.act2==='upload') $('pickImg').click(); if(a2.dataset.act2==='printDialog') UI.printFrameDialog(); return; }
   const fr=e.target.closest('[data-addframe]'); if(fr){ UI.addFrame(BD.PRESETS.find(p=>p.id===fr.dataset.addframe)); return; }
   const pr=e.target.closest('[data-addprint]'); if(pr){ const p=BD.PRINT.find(x=>x.id===pr.dataset.addprint); UI.addPrintFrame(p.w,p.h,p.label); return; }
   const tp=e.target.closest('[data-tpl]'); if(tp){ await BD.buildTemplate(tp.dataset.tpl,true); return; }
+  const tm=e.target.closest('[data-tsmore]'); if(tm){ tsMenu(tm.dataset.tsmore); return; }
   const del=e.target.closest('[data-tsdel]'); if(del){ S.styles.text=S.styles.text.filter(x=>x.id!==del.dataset.tsdel); BD.scheduleSave(); paintAdd(); return; }
-  const it=e.target.closest('[data-addtext],[data-arc],[data-tstyle],[data-phrase],[data-asset],[data-photo],[data-shape],[data-stroke],[data-icon],[data-emoji],[data-code]'); if(it){ addItem(it); if(innerWidth<900) panel('L',false); } });
+  const it=e.target.closest('[data-addtext],[data-arc],[data-tstyle],[data-tshared],[data-phrase],[data-asset],[data-photo],[data-shape],[data-stroke],[data-icon],[data-sticker],[data-emoji],[data-code]'); if(it){ addItem(it); if(innerWidth<900) panel('L',false); } });
 addList.addEventListener('dragstart',e=>{ const it=e.target.closest('[draggable]'); if(!it) return; e.dataTransfer.setData('application/x-board-add',JSON.stringify(Object.assign({},it.dataset))); e.dataTransfer.effectAllowed='copy'; });
 
 /* ---------- opening files: photos, SVG (layers), PDF (pages), board files ---------- */
@@ -513,7 +537,7 @@ function commands(){ const c=[], sel=S.sel, has=sel.length>0, objs=sel.filter(n=
   [['Move','select','V'],['Hand','hand','H'],['Frame','frame','F'],['Rectangle','rect','R'],['Ellipse circle','ellipse','O'],['Triangle polygon','poly','Y'],['Star','star','S'],['Line','line','L'],['Arrow','arrow','Shift+L'],['Pen draw','pen','P'],['Eraser','eraser','E'],['Text','text','T']].forEach(([l,t,k])=>add(l+' tool',()=>{ if(t==='pen') S.pen.mode='pen'; BD.setTool(t); },{key:k,group:'Tools'}));
   add('Highlighter',()=>{ S.pen.mode='marker'; BD.setTool('pen'); },{key:'Shift+P',group:'Tools'});
   add('Upload photos, SVG or PDF',()=>$('pickImg').click(),{key:'I',group:'Add'}); add('Curved text',()=>BD.tools.makeArc(),{group:'Add'}); add('Barcode EAN UPC',()=>UI.barcodeDialog(),{group:'Add'}); add('QR code',()=>UI.qrDialog(),{group:'Add'});
-  ['brand','text','photos','shapes','lines','icons','emoji','templates'].forEach(k=>add('Open '+k+' assets',()=>openAssets(k),{group:'Add'}));
+  ['brand','text','photos','shapes','lines','icons','stickers','emoji','templates'].forEach(k=>add('Open '+k+' assets',()=>openAssets(k),{group:'Add'}));
   BD.PRESETS.forEach(p=>add('New frame '+p.label+' '+p.w+'×'+p.h,()=>UI.addFrame(p),{group:'Frames'})); BD.PRINT.forEach(p=>add('New print frame '+p.label+' '+p.w+'×'+p.h+' mm',()=>UI.addPrintFrame(p.w,p.h,p.label),{group:'Frames'}));
   add('Custom print size: mm, label, bleed…',()=>UI.printFrameDialog(),{group:'Frames'});
   add('Export…',()=>UI.exportDialog(),{key:mod+'+E',group:'Export'}); ['PNG','JPG','WebP','PDF','SVG'].forEach(f=>add('Export '+f,()=>UI.exportDialog(null,f.toLowerCase()),{group:'Export'})); if(has) add('Export selection as PNG',()=>UI.exportSel(),{group:'Export'});
