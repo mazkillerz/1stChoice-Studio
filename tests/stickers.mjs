@@ -163,8 +163,9 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     S.layers.asset91={dx:30,dy:-20,k:1.2,color:null,hidden:false,rot:15}; const r=Studio.debug.recipe(); r.photoPaths=[];
     const db=JSON.parse(localStorage.getItem('fakecloud')||'{"designs":{},"files":{},"cols":{}}'); db.designs.old1={id:'old1',brand:'1stchoice',tool:'restock',name:'Old design',kind:'design',recipe:r,thumb_path:null,cols:[],updated_at:new Date().toISOString()};
     localStorage.setItem('fakecloud',JSON.stringify(db)); return 'old1'; });
-  const snap=async()=>{ await pg.goto(BASE+'tools/restock.html?design='+id); await pg.waitForTimeout(3000); return pg.evaluate(()=>({px:document.getElementById('view').toDataURL(),extras:JSON.stringify(Studio.debug.S.extras),btn:!!document.getElementById('addSticker')})); };
-  const withS=await snap(); block=true; const without=await snap();
+  const snap=async()=>{ await pg.goto(BASE+'tools/restock.html?design='+id); await pg.waitForTimeout(3000); await pg.evaluate(()=>document.fonts&&document.fonts.ready); await pg.waitForTimeout(400); return pg.evaluate(()=>({px:document.getElementById('view').toDataURL(),extras:JSON.stringify(Studio.debug.S.extras),btn:!!document.getElementById('addSticker')})); };
+  let withS=await snap(); block=true; let without=await snap();
+  if(withS.px!==without.px){ block=false; withS=await snap(); block=true; without=await snap(); }   // one retry: a late font swap made this flaky (1.35.0 sweep; red on main once, green the next run)
   ok('an older design opens with the same layers and draws pixel for pixel the same with or without stickers.js',withS.extras===without.extras&&withS.px===without.px&&withS.extras.includes('shape:sparkle'));
   ok('if stickers.js cannot load, there is no Sticker button and the tool still works',withS.btn&&!without.btn&&await pg.evaluate(()=>!!document.getElementById('addAsset')));
   if(savedRecipe){ await pg.evaluate(r=>{ r.photoPaths=[]; const db=JSON.parse(localStorage.getItem('fakecloud')); db.designs.stk1={id:'stk1',brand:'1stchoice',tool:'photo-story',name:'With a sticker',kind:'design',recipe:r,thumb_path:null,cols:[],updated_at:new Date().toISOString()}; localStorage.setItem('fakecloud',JSON.stringify(db)); },savedRecipe);

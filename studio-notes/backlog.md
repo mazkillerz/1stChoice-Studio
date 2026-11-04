@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** session 45, 1.34.0 (team, 4 Nov 2026): stars on team templates in Create's picker (#36 done), templates opened from hub search count as Recently used, one wording for Skip (the 1.8.0 idea). Session 46 is 1.35.0, a **Simplify** session. The session after it, 1.36.0, is a **Mazoon** session.
-**Simplify session:** every 5th minor version. The next one is 1.35.0.
+**Last session:** sessions 45–46 (4 Nov 2026): 1.34.0 team (stars on team templates in Create, search → Recently used, one word for Skip) and 1.35.0 Simplify (Save this style beside Copy style, Home list/grid switch hidden with one tool, full sweep, pattern review). The next session, 1.36.0, is a **Mazoon** session.
+**Simplify session:** every 5th minor version. The next one is 1.40.0.
 
 ## Next up
 _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
@@ -39,7 +39,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - 1.28.0: an emoji sticker in one colour (a picked colour) loses inner details such as the chat bubble's dots (same as Emoji covers). If the owner wants, draw the lighter parts as cut-outs instead.
 - 1.28.0: done in 1.33.0: `tools/highlight-emoji.js` loads only when Layers / Sticker opens or a design has an emoji sticker.
 - 1.13.0: done in 1.23.0: "phone" wording now comes from `devWord()` (phone on a touch screen ≤820px, device otherwise), incl. Create's draft messages and the Home footer (`#footDev`). Comments in code still say phone; harmless.
-- 1.19.0: the More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
+- 1.19.0: partly done in 1.35.0 (Save this style beside Copy style, no empty styles block: one row less). The More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
 - 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.
 - 1.15.0: the toast's Undo is now a pill: check it still reads on the dark toast on a real phone.
 - 1.17.0: Board's panel headings still use weight 800 (see #18).
@@ -75,6 +75,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - Check contrast of muted text (`--muted` #5f5b55 on #f5f4f1 ≈ 6:1, OK) on cream backgrounds in sheets.
 
 ## Done
+- 1.35.0 (Simplify): More tab one row shorter on text layers, Home list/grid switch only with 2+ pinned tools, full sweep (65 suites + contrast + tapscan), stickers pixel check de-flaked, lessons 16–31 archived.
 - 1.34.0 (team): stars on team templates in Create's picker (#36), templates opened from search count as Recently used, one word for Skip.
 - 1.13.0–1.19.0 (parallel round, 29 Oct 2026): 1.13.0 (team) unfinished stories kept when you leave at once (the `queue.mjs` flake root cause), "N waiting" tag on tool rows, "device" not "phone" on a computer; 1.14.0 (Mazoon) Flip (#25) and Emoji highlight covers (#10 emoji part); 1.15.0 (Simplify) computer Save dock, quiet Done in sheets, `.link` text buttons, Offer camera, shorter labels, two new taste checks; 1.16.0 (team) Favourites + Recently used templates (#6), New badge off the headline, Create template `sub` lines; 1.17.0 (Mazoon) Board flex layout as a preview (#15); 1.18.0 (team) Save pictures from Saved (#5 second half); 1.19.0 (Mazoon) Text styles (#8) and Paste on all text (#22).
 - 1.12.0 (Mazoon): Stickers pack (14 drawn stickers as asset layers `sticker:<id>`, Layers → Sticker, recolour/opacity/copy style/undo for free, old designs pixel-identical); fixed the empty Add an element card on a computer.
