@@ -5,7 +5,7 @@
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
    - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
      IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
-const VERSION='studio-v1-35-0';   // Studio 1.35.0
+const VERSION='studio-v1-36-0';   // Studio 1.36.0
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -17,7 +17,7 @@ const SHELL=[
   'tools/carousel.html','tools/carousel.js','tools/highlight.html','tools/highlight.js',
   'tools/create.html','tools/create.js','tools/create.css','tools/create-core.js','tools/create-lib.js','tools/create-templates.js','brands/1stchoice/brand.js',
   'tools/video.html','tools/video.js','tools/video.css','assets/reel.js','assets/reel-audio.js','assets/reel-export.js','assets/reel-project.js','tools/video-tl.js','tools/video-ui.js','assets/vendor/mp4-muxer.js',
-  'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-comp.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','lab/board-flex.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
+  'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-comp.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','lab/board-flex.js','lab/board-stickers.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js'
 ];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VERSION).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));

@@ -13,6 +13,24 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.36.0 · 4 Nov 2026
+
+### Stickers and sharp emoji in Board
+type: feature
+Board has the same stickers as the tool pages and Create: open Assets › Stickers for arrows, sparkles, a seal, a tick and more, or Assets › Emoji for 24 emoji that look the same on every phone and stay sharp in the saved picture. Tap one to add it, then pick its colour in the quick bar or the Design panel (an emoji goes back to its own colours with No colour). The keyboard emoji are still there, below. Old boards open as before.
+![before](assets/whatsnew/1.36.0-board-stickers-before.jpg)
+![after](assets/whatsnew/1.36.0-board-stickers-after.jpg)
+
+### Paste works for words in Board
+type: fix
+Copying words (or a sticker) in Board and pasting them stopped halfway, so nothing showed up. Paste now works for everything you copy.
+
+### Text styles in Board, shared with your tools
+type: feature
+Save as style in Board now keeps the look with the text styles of the tool pages and Create, so a look you save in one shows up in the other. Your styles are chips in the Design panel: one tap puts a look on your text (it was two), and Save as style no longer asks for a name (rename it in Assets › Text with ⋯). Styles a board saved before stay with that board.
+![before](assets/whatsnew/1.36.0-board-textstyles-before.jpg)
+![after](assets/whatsnew/1.36.0-board-textstyles-after.jpg)
+
 ## 1.35.0 · 4 Nov 2026
 
 ### More room for your story while you style words
