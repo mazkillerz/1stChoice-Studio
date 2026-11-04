@@ -1,4 +1,4 @@
-/* Studio 1.40.0 (Simplify): Carousel's Style sheet opens on "This slide" (Slide type, Words place) above the all-slides
+/* Studio 1.40.0 (Simplify): Carousel's (and Highlight covers') Style sheet opens on "This slide" (Slide type, Words place) above the all-slides
    settings, and Collage's Style sheet hides Border colour until a border is set (it shows while the slider moves).
    Engine parts: a style field with lead:true goes above the styles; when:{field,not} hides a field for some values.
    Phone 390 + 360, and a computer for Carousel. Old designs are untouched (the draw code did not change). */
@@ -35,6 +35,15 @@ for(const [w,h] of [[390,844],[360,740]]){ const N=w+': ';
     /* the styles still switch */
     await pg.tap('#styles [data-style="black"]'); await pg.waitForTimeout(300);
     ok(N+'Carousel: the styles still switch from below This slide',await pg.evaluate(()=>Studio.debug.S.style)==='black');
+    await ctx.close(); }
+  /* Highlight covers: This cover first too (lead flags since 1.40.0, after 1.38.0) */
+  { const {ctx,pg}=await mk(w,h); await pg.goto(BASE+'tools/highlight.html'); await pg.waitForTimeout(1500);
+    await pg.tap('#bar [data-open="style"]'); await pg.waitForTimeout(600);
+    const m=await pg.evaluate(()=>{ const s=document.getElementById('sh-style'), y=e=>e.getBoundingClientRect().top, body=s.querySelector('.sheet-body').getBoundingClientRect(), kind=s.querySelector('[data-seg="kind"]');
+      return {first:s.querySelector('[data-fields]').dataset.fields, heads:[...s.querySelectorAll('h3.fgroup')].map(x=>x.textContent.trim()), above:y(kind)<y(document.getElementById('styles')), inView:kind.getBoundingClientRect().bottom<=body.bottom+1}; });
+    ok(N+'Highlight: Style opens on This cover (Cover type in view), All covers below',m.first==='lead'&&m.heads[0]==='This cover'&&m.heads[1]==='All covers'&&m.above&&m.inView,m);
+    await pg.tap('#sh-style [data-seg="kind"] .seg[data-v="word"]'); await pg.waitForTimeout(300);
+    ok(N+'Highlight: Cover type still switches (Word)',await pg.evaluate(()=>Studio.debug.S.values.kind)==='word');
     await ctx.close(); }
   /* Collage */
   { const {ctx,pg}=await mk(w,h); await pg.goto(BASE+'tools/collage.html'); await pg.waitForTimeout(1500);
