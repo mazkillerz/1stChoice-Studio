@@ -33,3 +33,5 @@ One **lead** session coordinates five version sessions (owner: "Improve studio 5
 
 ## Session ids
 - Lead: `session_01Y65H7YqEgcneCKbnnyebNr` (branch `ccr-9c2f6ba7-pohcld`)
+- 1.36.0: `session_01Y65H7XBCvrXHPBG6PFa3qn` · 1.37.0: `session_01Y65H7XdfPQPmeD2VmuBQSp` · 1.38.0: `session_01Y65H7YewZMtbti16h3zwpN` · 1.39.0: `session_01Y65H7ZtiKkzRrPZ4sjYtn2` (all started 10:35 UTC)
+- 1.40.0: started by the lead when the first wave-1 session reports done
