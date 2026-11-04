@@ -11,10 +11,10 @@
       thumbnails; a tap applies the team template and moves it first; search hides the row, clearing shows it; only team ids
       -> the row appears once loaded; signed out -> brand ones only, no empty row.
    6. No page errors.
-   Run: server on :8082 (BASE=... to change), then node tests/create-render.mjs. Exit 1 on any FAIL. */
+   Run: server on :8080 (BASE=... to change), then node tests/create-render.mjs. Exit 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
-const BASE=process.env.BASE||'http://127.0.0.1:8082/';
+const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const REC='studio:tplRecent:1stchoice';
 let fails=0, n=0; const errs=[];
