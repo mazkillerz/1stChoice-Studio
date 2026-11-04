@@ -23,8 +23,9 @@ const near=(a,b,t)=>Math.abs(a-b)<=t;
 /* ---------- phone ---------- */
 { const {ctx,pg}=await mk(); await start(pg,'[data-size="story"]');
   /* 1 on-demand loading */
-  const pre=await pg.evaluate(()=>({s:typeof window.STUDIO_STICKERS,h:typeof window.HL_EMOJI,tags:[...document.scripts].map(s=>s.getAttribute('src')||'').filter(x=>/(^|\/)(stickers|highlight-emoji)\.js/.test(x))}));
-  ok('1a before Add: stickers + emoji data not loaded, no script tag',pre.s==='undefined'&&pre.h==='undefined'&&pre.tags.length===0,pre);
+  const pre=await pg.evaluate(()=>({s:typeof window.STUDIO_STICKERS,h:typeof window.HL_EMOJI,emoTpl:(((BD.B||{}).create||{}).templates||[]).some(d=>d.emoji),tags:[...document.scripts].map(s=>s.getAttribute('src')||'').filter(x=>/(^|\/)(stickers|highlight-emoji)\.js/.test(x))}));
+  /* 1.38.0: a brand template with an emoji (a highlight cover) needs them for its preview in the start sheet, so they may load early then */
+  ok('1a before Add: stickers + emoji data not loaded (unless a brand template has an emoji), no script tag',pre.emoTpl||(pre.s==='undefined'&&pre.h==='undefined'&&pre.tags.length===0),pre);
   const html=await (await ctx.request.get(BASE+'tools/create.html')).text();
   ok('1b create.html has no <script> for stickers.js / highlight-emoji.js',!/<script[^>]+[\/\"'](stickers|highlight-emoji)\.js/.test(html));
   await openAdd(pg); await pg.waitForFunction(()=>window.STUDIO_STICKERS&&window.HL_EMOJI,null,{timeout:8000}).catch(()=>{});
@@ -114,6 +115,24 @@ const near=(a,b,t)=>Math.abs(a-b)<=t;
   ok('9 add sticker, undo removes it, redo brings it back',n2===n1+1&&n3===n1&&n4===n2,[n1,n2,n3,n4]);
   await ctx.close(); }
 
+/* 1e/1f (1.38.0) emoji templates: the sticker + emoji scripts load at most once for the start sheet's previews, and a second visit
+   (previews kept in IndexedDB) does not load them before Add */
+{ const {ctx,pg}=await mk(); const hits=[]; ctx.on('request',r=>{ const m=r.url().match(/\/(assets\/stickers|highlight-emoji)\.js/); if(m) hits.push(m[1].replace('assets/','')); });
+  const emo=await (async()=>{ await pg.goto(BASE+'tools/create.html'); await ready(pg); return pg.evaluate(()=>(((BD.B||{}).create||{}).templates||[]).filter(d=>d.emoji).map(d=>d.id)); })();
+  if(emo.length){
+    const sel=emo.map(id=>`[data-tpl="${id}"] .th img`).join(',');
+    await pg.waitForFunction(n=>document.querySelectorAll(n).length>0,sel,{timeout:30000}).catch(()=>{});
+    const shown=await pg.$$eval(sel,els=>els.length).catch(()=>0);
+    const first={stickers:hits.filter(h=>h==='stickers').length,emoji:hits.filter(h=>h==='highlight-emoji').length};
+    ok('1e first visit: emoji template previews drawn, each script loaded at most once',shown===emo.length&&first.stickers<=1&&first.emoji<=1,{shown,of:emo.length,...first});
+    await pg.waitForTimeout(2500);   // the last previews are written to IndexedDB
+    hits.length=0; const p2=await ctx.newPage(); watch(p2,'2nd');
+    await p2.goto(BASE+'tools/create.html'); await ready(p2);
+    await p2.waitForFunction(n=>document.querySelectorAll(n).length>0,sel,{timeout:30000}).catch(()=>{}); await p2.waitForTimeout(800);
+    const again=await p2.evaluate(()=>({s:typeof window.STUDIO_STICKERS,h:typeof window.HL_EMOJI}));
+    ok('1f second visit: previews come from the cache, sticker + emoji scripts not loaded before Add',hits.length===0&&again.s==='undefined'&&again.h==='undefined',{hits:hits.join(','),...again});
+  } else console.log('SKIP 1e/1f (no brand template with an emoji)');
+  await ctx.close(); }
 /* 10 highlight cover swap, 11 layout */
 { const {ctx,pg}=await mk(); await start(pg,'[data-tpl="highlight-places"]',1800);
   await pg.evaluate(()=>{ const n=BD.activeFrame().getChildren(c=>BD.util.isObj(c)).slice(-1)[0]; BD.select([n]); }); await pg.waitForTimeout(400);
