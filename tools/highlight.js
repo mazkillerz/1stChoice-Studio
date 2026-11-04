@@ -37,6 +37,7 @@ const hlIc=id=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stro
 const hsw=(bg,disc)=>`<span class="swatch" style="background:${bg}"><i style="left:6px;right:6px;top:9px;bottom:9px;border-radius:50%;background:${disc}"></i></span>`;
 /* Product cover: a brand asset (picture files of the brand kit, not the tinted logo) inside the circle. No assets in the kit = no Product type. */
 const hlProducts=b=>((b&&b.assets)||[]).filter(a=>a.file&&!a.tint);
+const HL_POS={up:-140,mid:0,down:140};   // Position of a Product cover: px above / below the middle of the circle
 const HL_DIMS=new Map();   // asset id -> width/height of its picture, so it can be fitted to the circle
 function hlDims(b,a){
   if(HL_DIMS.has(a.id)) return HL_DIMS.get(a.id);
@@ -82,6 +83,9 @@ Studio.tool({
     {id:'guide',type:'toggle',in:'style',label:'Show the circle Instagram crops to (preview only)',default:true,global:true},
     {id:'gThis',type:'note',in:'style',label:'This cover'},
     {id:'kind',type:'seg',in:'style',label:'Cover type',options:b=>[{v:'icon',l:'Icon'},{v:'word',l:'Word'},{v:'photo',l:'Photo'},...(hlProducts(b).length?[{v:'product',l:'Product'}]:[]),...(HL_EMO.length?[{v:'emoji',l:'Emoji'}]:[])],default:'icon'},
+    /* 1.38.0: size and height of the product in the circle; 100 % and Middle draw it exactly as before */
+    {id:'psize',type:'range',in:'style',label:'Size',min:60,max:130,step:5,default:100,unit:'%',when:{field:'kind',is:'product'}},
+    {id:'ppos',type:'seg',in:'style',label:'Position',options:[{v:'up',l:'Higher'},{v:'mid',l:'Middle'},{v:'down',l:'Lower'}],default:'mid',when:{field:'kind',is:'product'}},
     {id:'product',type:'seg',in:'style',label:'Product',cols:3,options:b=>{ const l=hlProducts(b); return l.length?l.map(a=>({v:a.id,l:a.label,ic:`<img alt="" src="${b.base+(a.prev||a.file)}" style="width:44px;height:44px;object-fit:contain">`})):[{v:'',l:''}]; },default:b=>(hlProducts(b)[0]||{}).id||'',when:{field:'kind',is:'product'}},
     {id:'icon',type:'seg',in:'style',label:'Icon',cols:4,options:HL_ICONS.map(([v,l])=>({v,l,ic:hlIc(v)})),pageDefault:pg=>HL_ICONS[pg%HL_ICONS.length][0],when:{field:'kind',is:'icon'}},
     {id:'emoji',type:'seg',in:'style',label:'Emoji',cols:4,options:HL_EMO.length?HL_EMO.map(e=>({v:e[0],l:e[2],ic:hlEmoSvg(e)})):[{v:'',l:''}],pageDefault:pg=>(HL_EMO[pg%Math.max(1,HL_EMO.length)]||[''])[0],when:{field:'kind',is:'emoji'}},
@@ -112,9 +116,10 @@ Studio.tool({
       } else if(kind==='product'){
         const a=hlProducts(h.brand).find(x=>x.id===o.value('product'));
         if(a){
-          const ar=hlDims(h.brand,a)||.8, bw=Math.min(620,740*ar), bh=bw/ar;
-          h.asset({id:'product',ref:a.id,label:a.label,x:cx,y:cy,w:Math.round(bw)});
-          h.block('product',a.label,cx-bw/2,cy-bh/2,bw,bh,()=>{},'asset');   // keeps the layer steady while the picture loads
+          const k=(+o.value('psize')||100)/100, dy=HL_POS[o.value('ppos')]||0;
+          const ar=hlDims(h.brand,a)||.8, bw=Math.min(620,740*ar)*k, bh=bw/ar, py=cy+dy;
+          h.asset({id:'product',ref:a.id,label:a.label,x:cx,y:py,w:Math.round(bw)});
+          h.block('product',a.label,cx-bw/2,py-bh/2,bw,bh,()=>{},'asset');   // keeps the layer steady while the picture loads
         }
         h.text('word','Word','',0,0); h.text('sub','Small word','',0,0);
       } else {

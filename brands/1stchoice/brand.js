@@ -171,7 +171,10 @@ Studio.registerBrand({
       {id:'highlight-chat',label:'Highlight: chat',sub:'Cover · one icon',layout:'highlight',size:'square',icon:'chat',words:{}},
       {id:'highlight-reviews',label:'Highlight: reviews',sub:'Cover · one icon',layout:'highlight',size:'square',icon:'star',words:{}},
       {id:'highlight-order',label:'Highlight: order',sub:'Cover · one icon',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'cart',words:{}},
-      {id:'highlight-new',label:'Highlight: new',sub:'Cover · one icon',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'sparkles',words:{}}
+      {id:'highlight-new',label:'Highlight: new',sub:'Cover · one icon',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'sparkles',words:{}},
+      /* emoji covers (1.38.0): the same round layout with one emoji from tools/highlight-emoji.js (no words) */
+      {id:'highlight-places-emoji',label:'Highlight: places emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'places',keys:'emoji pin location',words:{}},
+      {id:'highlight-order-emoji',label:'Highlight: order emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'cart',keys:'emoji cart shop',words:{}}
     ]
   },
   /* Example photos each tool opens with (files in samples/). */
