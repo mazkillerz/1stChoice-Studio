@@ -779,8 +779,8 @@ async function tool(cfg){
             <div class="insp-row" id="inspRRow"><label class="lbl" for="inspR">Corners</label><input type="range" id="inspR" min="0" max="300" step="2" value="0"></div></div>
           <div class="insp-row"><label class="lbl" for="inspOp">Opacity</label><input type="range" id="inspOp" min="0.05" max="1" step="0.05" value="1"></div></div>
         <div class="insp-part insp-col" data-part="more"><div class="insp-row btns"><button type="button" class="mini" id="inspReset">Reset</button><button type="button" class="mini" id="inspHide">Hide</button><button type="button" class="mini" id="inspDup" hidden>Duplicate</button><button type="button" class="mini danger" id="inspDelete" hidden>Delete</button></div>
-          <div class="insp-row btns" id="inspStyleRow"><button type="button" class="mini" id="inspCopyStyle">${ICON.copy}<span>Copy style</span></button><button type="button" class="mini" id="inspPasteStyle" hidden>${ICON.paint}<span>Paste style</span></button><button type="button" class="mini" id="inspPasteAll" hidden>${ICON.paint}<span>Paste on all text</span></button></div>
-          <div class="tstyles" id="inspTStyles"><div class="ts-wrap" id="tsWrap" hidden><span class="lbl" id="tsLbl">Text styles</span><div class="ts-list" id="tsList" role="group" aria-labelledby="tsLbl"></div></div><div class="insp-row btns"><button type="button" class="mini" id="inspSaveStyle">${ICON.bookmark}<span>Save this style</span></button></div></div>
+          <div class="insp-row btns" id="inspStyleRow"><button type="button" class="mini" id="inspCopyStyle">${ICON.copy}<span>Copy style</span></button><button type="button" class="mini" id="inspSaveStyle">${ICON.bookmark}<span>Save this style</span></button><button type="button" class="mini" id="inspPasteStyle" hidden>${ICON.paint}<span>Paste style</span></button><button type="button" class="mini" id="inspPasteAll" hidden>${ICON.paint}<span>Paste on all text</span></button></div>
+          <div class="tstyles" id="inspTStyles"><div class="ts-wrap" id="tsWrap" hidden><span class="lbl" id="tsLbl">Text styles</span><div class="ts-list" id="tsList" role="group" aria-labelledby="tsLbl"></div></div></div>
           <div class="insp-row btns" id="inspOrder" hidden><button type="button" class="mini" id="inspBack">Send back</button><button type="button" class="mini" id="inspFwd">Bring forward</button></div></div>
       </div>
     </section>
@@ -1428,7 +1428,7 @@ async function tool(cfg){
       if($('inspPillPal').dataset.for!==id||!$('inspPillPal').firstChild){ $('inspPillPal').innerHTML=palettePicker('pill',l.bg||C.ink); $('inspPillPal').dataset.for=id; } else syncPalette($('inspPillPal').firstChild,l.bg||C.ink);
       $('inspPillPal').hidden=!pill; }
     $('inspPasteStyle').hidden=!copiedStyle(); $('inspPasteAll').hidden=!copiedStyle()||allText().length<2;
-    $('inspTStyles').hidden=!textish; if(textish) paintStyles(id);
+    $('inspTStyles').hidden=!textish; $('inspSaveStyle').hidden=!textish; if(textish) paintStyles(id);   // Save this style sits beside Copy style (1.35.0: one row less)
     $('inspTextHint').hidden=!(t!==null&&!oneLine(id));
     const has={text:t!==null,size:true,move:true,color:true,font:textish,more:true};
     const fb=$('inspFlip'); fb.hidden=!canFlip(b); fb.setAttribute('aria-pressed',String(!!l.flip&&canFlip(b)));
@@ -1527,7 +1527,7 @@ async function tool(cfg){
   const styleKey=st=>JSON.stringify(Object.keys(st||{}).sort().map(k=>[k,st[k]]));
   function paintStyles(id){
     const list=tStyles(), cur=id?styleKey(styleOf(id)):'';
-    $('tsWrap').hidden=!list.length;
+    $('tsWrap').hidden=!list.length; $('inspTStyles').hidden=!list.length;   // nothing saved yet: no empty block (Save this style is on the Copy style row)
     $('tsList').innerHTML=list.map(t=>{ const f=t.st.font&&fontInfo(t.st.font), on=styleKey(t.st)===cur;
       return `<span class="ts-chip${on?' on':''}"><button type="button" class="ts-use" data-ts="${esc(t.id)}" aria-pressed="${on}" dir="auto"><i class="ts-dot" style="background:${esc(t.st.color||'currentColor')}" aria-hidden="true"></i><span class="ts-name"${f?` style="font-family:'${esc(f.family)}'"`:''}>${esc(t.name)}</span></button><button type="button" class="ts-more" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}">${ICON.more}</button></span>`; }).join('');
   }
@@ -2152,6 +2152,7 @@ async function home(){
   function paintTools(){
     const pins=getPins(), n=Object.keys(TOOLS).length;
     $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
+    document.querySelectorAll('.vswitch[data-view="tools"]').forEach(v=>{ v.hidden=pins.length<2; });   // list or grid only matters for 2+ tools (1.35.0); Settings and search still switch it
     $('allToolsSub').textContent=pins.length>=n?'All '+n+' tools are pinned':n+' tools · tap a star to pin one here';
   }
   paintTools();

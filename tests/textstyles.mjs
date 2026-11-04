@@ -40,8 +40,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   // empty state
   ok(N+'tap the headline selects it',(await pick(src))===src);
   await look(src,{...A,dx:40,k:1.3}); await more();
-  ok(N+'More shows the Text styles area on a text',await vis('#inspTStyles'));
-  ok(N+'with no saved styles only Save this style shows',!(await vis('#tsWrap'))&&await vis('#inspSaveStyle'));
+  ok(N+'More shows Save this style on a text, on the Copy style row (1.35.0)',await vis('#inspSaveStyle')&&await pg.evaluate(()=>document.getElementById('inspSaveStyle').parentElement.id==='inspStyleRow'));
+  ok(N+'with no saved styles only Save this style shows (no empty block)',!(await vis('#tsWrap'))&&!(await vis('#inspTStyles'))&&await vis('#inspSaveStyle'));
   // save
   await save();
   let st=await store();
@@ -124,13 +124,13 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   // button shows the area, shape hides it
   await tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(150);
   ok(N+'tap the button',(await pick(ids.pill))===ids.pill); await more();
-  ok(N+'a button also shows Text styles',await vis('#inspTStyles'));
+  ok(N+'a button also shows Text styles',await vis('#inspTStyles')&&await vis('#inspSaveStyle'));
   await tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(150);
   if(vp.touch){ await tap('#bar [data-open="layers"]'); await pg.waitForTimeout(250); }
   await pg.evaluate(()=>document.getElementById('addAsset').scrollIntoView({block:'center'}));
   await tap('#addAsset'); await pg.waitForTimeout(300); await tap('#assetList [data-asset="shape:rect"]'); await pg.waitForTimeout(300);
   await more();
-  ok(N+'a shape hides Text styles',!(await vis('#inspTStyles')));
+  ok(N+'a shape hides Text styles and Save this style',!(await vis('#inspTStyles'))&&!(await vis('#inspSaveStyle')));
   // remove
   await tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(150);
   ok(N+'tap the headline for remove test',(await pick(src))===src); await more();
