@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.35.0';
+const VERSION='1.39.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -2387,12 +2387,12 @@ async function home(){
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont();
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
-     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create designs have their
-     own editor and no renderer, so they are listed as skipped. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
+     ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create drafts too (1.37.0):
+     Create has its own render=1 mode with the same Studio.renderer hook. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
      whose pictures were saved (#41): one confirm, never by itself, never the skipped ones, and not one edited since it was drawn. */
   $('contSave').onclick=async()=>{ haptic('tick');
     const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
-      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json?'':'is a Create design: open it to save its picture'}));
+      skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json||x.d.board?'':'could not be opened'}));
     if(!list.length) return;
     try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
     const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
@@ -2642,9 +2642,9 @@ async function home(){
   /* Select (Saved page): tick several designs, then put them in a collection, take them out of the one you're looking at,
      or delete them, in one go. The bottom bar swaps for the actions; ✕, Escape, Back or leaving the page stops selecting. */
   const plural=(n,w)=>n+' '+w+(n===1?'':'s');
-  function startSelect(id){ sel=new Set(id?[id]:[]); document.body.classList.add('selecting'); $('selBar').hidden=false; haptic('tick');
+  function startSelect(id,keep){ sel=new Set(id?[id]:[]); document.body.classList.add('selecting'); $('selBar').hidden=false; haptic('tick');
     try{ history.pushState({sp:1,sel:1},'',location.hash||'#saved'); }catch(_){}
-    paintPage(); }
+    if(keep) paintSel(); else paintPage(); }   // keep: the grid stays as it is (a finger is still on one of its cards)
   function endSelect(quiet){ if(!sel) return; sel=null; document.body.classList.remove('selecting'); $('selBar').hidden=true;
     if(history.state&&history.state.sel) history.back();   // drop the select step from history, so Back goes home next
     if(quiet) paintSel(); else paintPage(); }
@@ -2730,6 +2730,42 @@ async function home(){
     if(a&&sel){ e.preventDefault(); e.stopPropagation(); const c=a.closest('.sv-card'); if(c) toggleSel(c.dataset.id); return; }
     const m=e.target.closest('[data-dmore]'); if(m){ const d=all.find(x=>x.id===m.dataset.dmore); if(d) designSheet(d); } },true);
   document.addEventListener('contextmenu',e=>{ const a=e.target.closest('.sv-open'); if(!a) return; e.preventDefault(); if(lp&&lp.fired||sel) return; cancelLp(); const d=designOf(a); if(d&&!document.querySelector('dialog[open]')) designSheet(d); });
+
+  /* Swipe to select (1.39.0), like Photos: drag across designs to tick (or untick) every design between the first one and the
+     one under the finger or mouse; going back unticks again. In select mode: a mouse drag, or a finger that starts sideways (a
+     finger that starts up or down still scrolls). Outside it: press and hold a design, then drag. While a swipe runs the page
+     never scrolls by itself, except slowly near the top or bottom edge so a long run can go on. */
+  let sw0=null, sw=null, swEat=false, swRaf=0;
+  const cardAt=(x,y)=>{ for(const el of document.elementsFromPoint(x,y)){ const c=el.closest&&el.closest('#savedGrid .sv-card'); if(c) return c; }
+    /* in a gap between designs: the nearest one, so a finger between two columns or rows keeps the run going */
+    const g=$('savedGrid').getBoundingClientRect(); if(x<g.left||x>g.right||y<g.top-12||y>g.bottom+12) return null; let best=null, bd=1e9;
+    for(const c of $('savedGrid').children){ const r=c.getBoundingClientRect(), d=Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom)); if(d<bd){ bd=d; best=c; } }
+    return bd<=24?best:null; };
+  function swPaint(){ if(!sw||!sel) return; const c=cardAt(sw.x,sw.y), i=c?shown.findIndex(d=>d.id===c.dataset.id):-1; if(i>=0) sw.cur=i;
+    const lo=Math.min(sw.from,sw.cur), hi=Math.max(sw.from,sw.cur); let n=0;
+    shown.forEach((d,j)=>{ const want=j>=lo&&j<=hi?sw.add:sw.before.has(d.id); if(want!==sel.has(d.id)){ want?sel.add(d.id):sel.delete(d.id); n++; } });
+    if(n){ haptic('tick'); paintSel(); } }
+  function swEdge(){ swRaf=0; if(!sw) return; const top=64, bot=Math.min(innerHeight,($('selBar').hidden?innerHeight:$('selBar').getBoundingClientRect().top))-24;
+    const v=sw.y<top?-Math.ceil((top-sw.y)/4):sw.y>bot?Math.ceil((sw.y-bot)/4):0;
+    if(v){ scrollBy(0,Math.max(-16,Math.min(16,v))); swPaint(); swRaf=requestAnimationFrame(swEdge); } }
+  function swBegin(id){ const i=shown.findIndex(d=>d.id===id); if(i<0||!sel) return; cancelLp();
+    sw={from:i,cur:i,add:sw0.hold||!sel.has(id),before:new Set(sel),x:sw0.x,y:sw0.y,pid:sw0.pid}; sw0=null; document.body.classList.add('swiping'); swPaint(); }
+  function swEnd(){ sw0=null; if(!sw) return; sw=null; cancelAnimationFrame(swRaf); swRaf=0; document.body.classList.remove('swiping'); swEat=true; setTimeout(()=>{ swEat=false; },400); }
+  document.addEventListener('pointerdown',e=>{ swEnd(); swEat=false; const a=e.target.closest('#savedGrid .sv-open'); if(!a||e.button>0||!e.isPrimary) return;
+    sw0={x:e.clientX,y:e.clientY,id:a.closest('.sv-card').dataset.id,touch:e.pointerType!=='mouse',pid:e.pointerId,hold:false}; });
+  document.addEventListener('pointermove',e=>{
+    if(sw){ if(e.pointerId!==sw.pid) return; sw.x=e.clientX; sw.y=e.clientY; swPaint(); if(!swRaf) swRaf=requestAnimationFrame(swEdge); return; }
+    if(!sw0||e.pointerId!==sw0.pid) return; const dx=e.clientX-sw0.x, dy=e.clientY-sw0.y, far=Math.hypot(dx,dy);
+    if(!sel){   // press and hold, then drag: close the design's menu and start selecting from that design
+      if(lp&&lp.fired&&sw0.touch&&far>12){ const dl=document.querySelector('dialog[open]'); if(dl) dl.close(); sw0.hold=true; startSelect(sw0.id,true); swBegin(sw0.id); }
+      else if(far>12&&!(lp&&lp.fired)) sw0=null;
+      return; }
+    if(!sw0.touch){ if(far>6) swBegin(sw0.id); return; }
+    if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)) swBegin(sw0.id); else if(Math.abs(dy)>8) sw0=null; },{passive:true});
+  document.addEventListener('pointerup',swEnd); document.addEventListener('pointercancel',swEnd);
+  /* a swipe in progress (or a held design about to become one) keeps the page still; a plain up-down finger scrolls as always */
+  document.addEventListener('touchmove',e=>{ if(sw||(sw0&&!sel&&lp&&lp.fired)) e.preventDefault(); },{passive:false});
+  addEventListener('click',e=>{ if(swEat&&e.target.closest&&e.target.closest('#savedGrid')){ swEat=false; e.preventDefault(); e.stopPropagation(); } },true);
   function designSheet(dsg){
     try{
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);

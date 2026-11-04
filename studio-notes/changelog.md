@@ -13,6 +13,64 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.39.0 · 4 Nov 2026
+
+### Swipe to pick several designs
+type: feature
+On Saved, tap Select, then swipe sideways across your designs: every design you pass is ticked, and going down a row ticks the whole run, like in Photos. Swipe back to untick. Up and down still scrolls, so the page never runs away. No need to tap Select first: press and hold a design, then drag. On a computer, drag with the mouse. Ticking a row of three is two taps instead of four.
+![before](assets/whatsnew/1.39.0-swipe-before.jpg)
+![after](assets/whatsnew/1.39.0-swipe-after.jpg)
+
+### The search shows its key
+type: design
+On a computer, the search on Home now shows a small / at its end: press / anywhere on Home to start searching. It hides while you type, and never shows on a phone.
+![before](assets/whatsnew/1.39.0-key-before.jpg)
+![after](assets/whatsnew/1.39.0-key-after.jpg)
+
+## 1.38.0 · 4 Nov 2026
+
+### Make the can bigger on a highlight cover
+type: feature
+On a Product highlight cover you can now set the can's Size (60 to 130 %) and its Position (Higher, Middle or Lower) right under Cover type, for each cover on its own. Covers you made before look exactly the same.
+![before](assets/whatsnew/1.38.0-product-before.jpg)
+![after](assets/whatsnew/1.38.0-product-after.jpg)
+
+### Emoji highlight covers in Create
+type: feature
+Templates → Highlights has two new round covers with one big emoji: a pin for places and a cart for orders. Tap one to open it in Create, ready to save, or swap the emoji for another.
+
+## 1.37.0 · 4 Nov 2026
+
+### Save pictures saves Create designs too
+type: feature
+Continue editing → Save pictures now saves your unfinished Create designs as well, every page at full quality (the same picture as opening it and tapping Save). Before, they were skipped. Your designs stay in Continue editing, and afterwards you can remove the saved ones in one step. Saved → Save pictures works for Create designs too.
+![before](assets/whatsnew/1.37.0-createpics-before.jpg)
+![after](assets/whatsnew/1.37.0-createpics-after.jpg)
+
+### Team templates in Recently used
+type: feature
+In Create's templates, Recently used now shows the team templates you used too, in the order you used them, next to the brand ones.
+![before](assets/whatsnew/1.37.0-recent-before.jpg)
+![after](assets/whatsnew/1.37.0-recent-after.jpg)
+
+## 1.36.0 · 4 Nov 2026
+
+### Stickers and sharp emoji in Board
+type: feature
+Board has the same stickers as the tool pages and Create: open Assets › Stickers for arrows, sparkles, a seal, a tick and more, or Assets › Emoji for 24 emoji that look the same on every phone and stay sharp in the saved picture. Tap one to add it, then pick its colour in the quick bar or the Design panel (an emoji goes back to its own colours with No colour). The keyboard emoji are still there, below. Old boards open as before.
+![before](assets/whatsnew/1.36.0-board-stickers-before.jpg)
+![after](assets/whatsnew/1.36.0-board-stickers-after.jpg)
+
+### Paste works for words in Board
+type: fix
+Copying words (or a sticker) in Board and pasting them stopped halfway, so nothing showed up. Paste now works for everything you copy.
+
+### Text styles in Board, shared with your tools
+type: feature
+Save as style in Board now keeps the look with the text styles of the tool pages and Create, so a look you save in one shows up in the other. Your styles are chips in the Design panel: one tap puts a look on your text (it was two), and Save as style no longer asks for a name (rename it in Assets › Text with ⋯). Styles a board saved before stay with that board.
+![before](assets/whatsnew/1.36.0-board-textstyles-before.jpg)
+![after](assets/whatsnew/1.36.0-board-textstyles-after.jpg)
+
 ## 1.35.0 · 4 Nov 2026
 
 ### More room for your story while you style words

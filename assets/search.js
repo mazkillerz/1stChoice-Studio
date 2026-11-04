@@ -28,6 +28,10 @@ function make(cfg){
   /* clear button: inside the field, right after the input; shown only while there is text */
   if(input.parentNode) input.parentNode.querySelectorAll(':scope>.us-x').forEach(x=>x.remove());
   const xb=document.createElement('button'); xb.type='button'; xb.className='us-x'; xb.hidden=true; xb.setAttribute('aria-label','Clear search'); xb.innerHTML=X_ICON; input.after(xb);
+  /* the "/" key, shown quietly at the end of the empty field on a computer (it jumps into this search); CSS hides it on touch, while typing and when focused */
+  if(input.parentNode) input.parentNode.querySelectorAll(':scope>.us-kbd').forEach(x=>x.remove());
+  const kbd=document.createElement('kbd'); kbd.className='us-kbd'; kbd.textContent='/'; kbd.title='Press / to search'; kbd.setAttribute('aria-hidden','true'); xb.after(kbd);
+  input.setAttribute('aria-keyshortcuts','/');
   const syncX=()=>{ xb.hidden=!input.value; };
   syncX();
 
