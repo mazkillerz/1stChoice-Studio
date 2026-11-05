@@ -76,6 +76,20 @@ const pal=()=>(B.palette&&B.palette.length?B.palette:[{name:'White',hex:'#FFFFFF
 const hex6=v=>{ const k=Konva.Util.colorToRGBA(v||'#000'); return k?'#'+[k.r,k.g,k.b].map(x=>x.toString(16).padStart(2,'0')).join(''):'#000000'; };
 function after(){ BD.main.batchDraw(); BD.tr.forceUpdate(); BD.paintUI(); }
 function relayout(n){ CR.relayoutAround(n); after(); }
+/* words stay on the page (1.47.0): words that sit right on a page keep their place while they change (centred words
+   grow from their centre, right-aligned from their right edge, left-aligned from their left), and words wider than the
+   page wrap at the page width (fitW = that width, so they un-wrap when they get shorter; a box someone sized keeps its width) */
+const textBox=t=>{ const f=t.getParent(); return f&&isFrame(f)?U.prect(t,f):null; };
+function fitText(t,r0){ const f=t.getParent(); if(!r0||!f||!isFrame(f)||t.rotation()||t.scaleX()!==1||t.scaleY()!==1) return;
+  const W=fsize(f).w, M=Math.round(W*.06), a=t.align(), fw=t.getAttr('fitW');
+  if(fw){ t.setAttr('fitW',undefined); if(Math.abs(t.width()-fw)<1){ t.width(undefined); t.setAttr('autoW',true); } }
+  if(!t.getAttr('autoW')) return;
+  /* the room it has without moving its anchor (the whole page width if that is too narrow) */
+  let max=a==='right'?r0.x+r0.width-M:a==='left'?W-M-r0.x:2*Math.min(r0.x+r0.width/2-M,W-M-(r0.x+r0.width/2));
+  if(max<W*.4) max=W-2*M; max=Math.round(max);
+  t.width(undefined); if(t.width()>max){ t.wrap('word'); t.width(max); t.setAttr('autoW',false); t.setAttr('fitW',max); }
+  const r=U.prect(t,f), dx=a==='right'?(r0.x+r0.width)-(r.x+r.width):a==='left'?r0.x-r.x:(r0.x+r0.width/2)-(r.x+r.width/2);
+  const x=Math.max(0,Math.min(r.x+dx,W-r.width)); t.x(Math.round(t.x()+x-r.x)); }
 
 /* the edit bar */
 function cx(act,icon,label,o){ o=o||{}; return `<button type="button" class="cx${o.cls?' '+o.cls:''}" data-x="${act}"${o.pressed!=null?` aria-pressed="${!!o.pressed}"`:''} aria-label="${esc(o.aria||label)}">${icon}${label?`<span>${esc(label)}</span>`:''}</button>`; }
@@ -124,7 +138,7 @@ function selSheet(name,title,html,fn){ reopen=fn; return openSheet(name,title,ht
 function openWords(){ const list=sel(); if(!list.length) return; const texts=list.flatMap(textsIn); if(!texts.length) return;
   const body=selSheet('words','Words',texts.map((t,i)=>`<label class="lbl" for="crW${i}">${esc(texts.length>1?(t.getAttr('label')||'Words '+(i+1)):'Words')}</label><textarea class="cr-words" id="crW${i}" data-i="${i}" dir="auto" rows="${Math.min(4,Math.max(1,(t.text()||'').split('\n').length))}">${esc(t.text())}</textarea>`).join('')+'<p class="small">New line: Enter. Close with Done.</p>',openWords);
   body.querySelectorAll('textarea').forEach(ta=>{ const t=texts[+ta.dataset.i];
-    ta.addEventListener('input',()=>{ t.text(ta.value||' '); BD.prepText(t); if(t.getAttr('autoW')) t.width(undefined); relayout(t); });
+    ta.addEventListener('input',()=>{ const r0=textBox(t); t.text(ta.value||' '); BD.prepText(t); if(t.getAttr('autoW')) t.width(undefined); fitText(t,r0); relayout(t); });
     ta.addEventListener('change',()=>BD.changed()); });
   const first=body.querySelector('textarea'); if(first){ setTimeout(()=>{ first.focus({preventScroll:true}); if(first.value===CR.write()) first.select(); },60); } }
 
@@ -173,7 +187,7 @@ function openFont(){ const list=sel(); const texts=list.flatMap(textsIn); if(!te
     <span class="lbl">Text styles</span><div class="cr-ts" id="fTS"></div>`,openFont);
   paintTS(body,texts);
   const base=texts.map(x=>x.fontSize()), k0=t.fontSize();
-  const each=fn=>{ texts.forEach(fn); texts.forEach(x=>{ BD.prepText(x); if(x.getAttr('autoW')) x.width(undefined); CR.relayoutAround(x); }); after(); };
+  const each=fn=>{ const r0=texts.map(textBox); texts.forEach(fn); texts.forEach((x,i)=>{ BD.prepText(x); if(x.getAttr('autoW')) x.width(undefined); fitText(x,r0[i]); CR.relayoutAround(x); }); after(); };
   body.querySelector('#fFam').onchange=async e=>{ const fam=e.target.value; await Promise.all(texts.map(x=>BD.ensureFont(fam,x.fontStyle()))); each(x=>x.fontFamily(fam)); BD.changed(); };
   body.querySelector('#fSize').oninput=e=>{ const v=+e.target.value; body.querySelector('#fSizeO').textContent=v; each((x,i)=>x.fontSize(Math.max(6,base[i]*v/k0))); };
   body.querySelector('#fSize').onchange=()=>BD.changed();
