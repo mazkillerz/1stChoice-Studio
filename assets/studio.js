@@ -163,8 +163,9 @@ async function ensureFont(fam){
   if(!fam||FONT_READY.has(fam)) return; const f=MORE_FONTS.find(x=>x.family===fam);
   if(f&&!document.querySelector(`link[data-font="${fam}"]`)) fontLink('https://fonts.googleapis.com/css2?family='+encodeURIComponent(fam).replace(/%20/g,'+')+':wght@'+f.w+'&display=swap','font',fam);
   const info=fontInfo(fam)||{wt:''}, sample=BRAND&&BRAND.lang==='ar'?'نص عربي':'Text';
-  await sheetIn(document.querySelector(`link[data-font="${fam}"]`)||document.querySelector('link[data-brand-fonts]'),5000);
-  try{ await Promise.race([document.fonts.load((info.wt?info.wt+' ':'')+'64px "'+fam+'"',sample),new Promise(r=>setTimeout(r,5000))]); }catch(_){}
+  const loads=async()=>{ await sheetIn(document.querySelector(`link[data-font="${fam}"]`)||document.querySelector('link[data-brand-fonts]'),5000);   // the stylesheet first
+    await document.fonts.load((info.wt?info.wt+' ':'')+'64px "'+fam+'"',sample); };
+  try{ await Promise.race([loads(),new Promise(r=>setTimeout(r,5000))]); }catch(_){}
   FONT_READY.add(fam);
 }
 
