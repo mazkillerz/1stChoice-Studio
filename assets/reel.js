@@ -26,12 +26,19 @@ function field(seed,freq,amount,w,h,px){       // displacement at quarter resolu
     dx[j*gw+i]=Math.round(k*(noise(X,Y,seed*2)+noise(X*2,Y*2,seed*2+7)/2));
     dy[j*gw+i]=Math.round(k*(noise(X+31.4,Y+17.2,seed*2+1)+noise(X*2+31.4,Y*2+17.2,seed*2+9)/2));
   }
-  if(fields.size>48) fields.delete(fields.keys().next().value);
+  if(fields.size>16) fields.delete(fields.keys().next().value);
   fields.set(key,F={gw,dx,dy}); return F;
 }
-const tmps=new Map();                           // per size: scratch canvas + output pixels
-function tmp(w,h){ const k=w+'x'+h; let t=tmps.get(k); if(!t){ const c=document.createElement('canvas'); c.width=w; c.height=h;
-  const x=c.getContext('2d'); t={c,x,img:x.createImageData(w,h)}; t.o32=new Uint32Array(t.img.data.buffer); tmps.set(k,t); } return t; }
+/* Canvas memory: phones cap the total (iPhone Safari ~ 200-400 MB); past it new canvases draw nothing and the preview turns blank white.
+   Every draw size (sharp preview, playing, thumbnails, saving, each resize) needs full-size canvases, so only the last KEEP sizes are kept
+   and older ones are freed at once (width 0), not left for the garbage collector. */
+const KEEP=3, free=c=>{ try{ c.width=0; c.height=0; }catch(_){} };
+const tmps=new Map();                           // per size: scratch canvas + output pixels (most recent last)
+function tmp(w,h){ const k=w+'x'+h; let t=tmps.get(k);
+  if(t){ tmps.delete(k); tmps.set(k,t); return t; }
+  while(tmps.size>=KEEP){ const [ok,ov]=tmps.entries().next().value; free(ov.c); tmps.delete(ok); }
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d'); t={c,x,img:x.createImageData(w,h)}; t.o32=new Uint32Array(t.img.data.buffer); tmps.set(k,t); return t; }
 function wobble(src,dst,o,px,on){
   const w=src.canvas.width, h=src.canvas.height;
   dst.save(); dst.setTransform(1,0,0,1,0,0);
@@ -70,7 +77,11 @@ async function load(base,opt){
 }
 
 function make(M,base,imgs,def){
-  const W=M.size[0], H=M.size[1], layers=new Map(); let lastKey='', lastInfo=null;
+  const W=M.size[0], H=M.size[1], layers=new Map(), sizes=[]; let lastKey='', lastInfo=null;   // layers: 'name|wxh' -> ctx; sizes: most recent last
+  function useSize(sz){   // keep the layers of the last KEEP sizes, free the rest
+    const i=sizes.indexOf(sz); if(i===sizes.length-1&&i>=0) return; if(i>=0) sizes.splice(i,1); sizes.push(sz);
+    while(sizes.length>KEEP){ const old=sizes.shift(); for(const [k,c] of layers) if(k.endsWith('|'+old)){ free(c.canvas); layers.delete(k); } }
+  }
   function widthOf(slot,value,dir){
     meas.font=slot.font; meas.direction=dir; meas.textAlign='left';
     return def.measure?def.measure(slot.id,value,meas):meas.measureText(value).width;
@@ -86,7 +97,9 @@ function make(M,base,imgs,def){
   function makeR(px,w,h,on,text){
     const R={W,H,M,img:imgs,text,px,base,
       layer(name){ const k=name+'|'+w+'x'+h; let c=layers.get(k);
-        if(!c){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; c=cv.getContext('2d',{willReadFrequently:true}); c.imageSmoothingQuality='high'; layers.set(k,c); }
+        if(!c){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; c=cv.getContext('2d',{willReadFrequently:true});
+          if(c){ c.fillRect(0,0,1,1); if(c.getImageData(0,0,1,1).data[3]===0){ free(cv); c=null; } }   // past the memory cap a canvas stays see-through
+          if(!c) throw new Error('out of canvas memory'); c.imageSmoothingQuality='high'; layers.set(k,c); }
         c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,w,h); c.setTransform(px,0,0,px,0,0); return c; },
       wobble(s,d,o){ wobble(s,d,o,px,on); } };
     return R;
@@ -94,8 +107,9 @@ function make(M,base,imgs,def){
   const Rs=new Map();                           // one R per size, reused while the words are the same (no object or closures per frame)
   const getR=(px,w,h,on,text)=>{ const k=w+'x'+h+(on?'w':''); let R=Rs.get(k); if(R&&R.text===text&&R.px===px) return R; if(Rs.size>8) Rs.clear(); R=makeR(px,w,h,on,text); Rs.set(k,R); return R; };
   const reel={M,base,W,H,fps:M.fps,duration:M.duration,cuts:M.cuts||[],scene:def,textInfo,
+    mem:()=>sizes.join(' ')+' · '+layers.size+' layers',
     draw(ctx,t,opt){
-      opt=opt||{}; const cw=ctx.canvas.width, ch=ctx.canvas.height, px=cw/W;
+      opt=opt||{}; const cw=ctx.canvas.width, ch=ctx.canvas.height, px=cw/W; useSize(cw+'x'+ch);
       ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
       ctx.fillStyle=M.background||'#fff'; ctx.fillRect(0,0,cw,ch); ctx.setTransform(px,0,0,px,0,0);
       try{ def.draw(ctx,t,getR(px,cw,ch,opt.wobble!==false,textInfo(opt.texts))); } finally{ ctx.restore(); }
