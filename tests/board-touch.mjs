@@ -130,6 +130,21 @@ for(const [W,dark] of [[390,false],[360,true]]){
   ok('with no text in the frame there is no "Use on all text"',await pg.locator('dialog[open] [data-tsact="all"]').count()===0&&await pg.locator('dialog[open] [data-tsact="del"]').count()===1);
   await ctx.close(); }
 
+/* a still tap on the empty canvas lets go of the selection (as a click does); a one-finger drag there pans and keeps it */
+{ const {pg,ctx}=await page({vp:{width:390,height:844},touch:true}); const cdp=await ctx.newCDPSession(pg);
+  const st=await pg.locator('#stage').boundingBox(); const pick=()=>pg.evaluate(()=>{ BD.select([window._t]); });
+  await pg.evaluate(()=>{ window._t=BD.make.text('Hi',{fontSize:90}); BD.place(window._t); }); await T(300);
+  const x=st.x+15, y=st.y+st.height-130;   /* low on the left: clear of the frame and of the quick bar after the pan */
+  const s0=await pg.evaluate(()=>[BD.stage.x(),BD.stage.y()]);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]}); for(let i=1;i<=8;i++){ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+i*8,y:y+i*10}]}); await T(16); } await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await T(300);
+  const s1=await pg.evaluate(()=>[BD.stage.x(),BD.stage.y()]);
+  ok('phone: a drag on the empty canvas pans and keeps the selection',s1[0]-s0[0]>40&&await pg.evaluate(()=>BD.S.sel.length===1),{s0,s1});
+  await pg.touchscreen.tap(x,y); await T(300);
+  ok('phone: a tap on the empty canvas lets go of the selection',await pg.evaluate(()=>BD.S.sel.length===0&&document.getElementById('qbar').hidden),await pg.evaluate(()=>[BD.S.sel.length,document.getElementById('qbar').hidden]));
+  await pick(); await T(200); await pg.evaluate(()=>BD.startEdit(window._t)); await T(300); await pg.touchscreen.tap(x,y); await T(300);
+  ok('phone: a tap outside while typing ends the typing and lets go',await pg.evaluate(()=>!BD.editing()&&BD.S.sel.length===0&&window._t.getParent()));
+  await ctx.close(); }
+
 /* Export on a story frame: one 2× choice, not "2× (sharp)" and "2×" side by side; a print frame keeps Print size + 1× 2× 3× */
 { const {pg,ctx}=await page({vp:{width:390,height:844},touch:true});
   await pg.click('#exportB'); await pg.waitForSelector('dialog[open] [data-seg="scale"]');
