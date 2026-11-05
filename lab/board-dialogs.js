@@ -48,7 +48,9 @@ UI.exportDialog=function(list,fmt0){ const fs=frames(); if(!fs.length){ toast('A
   const chosen=()=>[...d.querySelectorAll('.exp-list input:checked')].map(i=>BD.main.findOne('#'+i.value)).filter(Boolean);
   const NOTES={png:'Lossless, sharpest. See-through background possible.',jpg:'Smaller files, no see-through background.',webp:'Small files for the web.',pdf:'Each frame is a page at its exact size. Print frames keep their mm size and DPI.',svg:'Keeps layers, so it opens again in Board, Figma, Illustrator or Canva.'};
   function opts(){ const fr=chosen(), anyPrint=fr.some(f=>f.getAttr('print')), anyBleed=fr.some(f=>U.bleedOf(f)>0); let h='';
-    if(fmt!=='svg'&&fmt!=='pdf') h+=`<span class="lbl">Size</span>${seg('scale',scale,[['auto',anyPrint?'Print size':'2× (sharp)'],['1','1×'],['2','2×'],['3','3×']])}`;
+    /* screen frames only: "2× (sharp)" already is 2×, so no second 2× button (1.42.0) */
+    if(!anyPrint&&scale==='2') scale='auto';
+    if(fmt!=='svg'&&fmt!=='pdf') h+=`<span class="lbl">Size</span>${seg('scale',scale,anyPrint?[['auto','Print size'],['1','1×'],['2','2×'],['3','3×']]:[['auto','2× (sharp)'],['1','1×'],['3','3×']])}`;
     if(fmt==='pdf'&&fr.some(f=>!f.getAttr('print'))) h+=`<span class="lbl">Screen frames</span>${seg('scale',scale,[['auto','2× (sharp)'],['1','1×'],['3','3×']])}`;
     if(anyBleed) h+=`<label class="tg"><input type="checkbox" id="exBleed" ${bleed?'checked':''}><span>Include the bleed</span></label>`;
     if(fmt==='pdf'&&anyPrint) h+=`<label class="tg"><input type="checkbox" id="exMarks" ${marks?'checked':''}><span>Crop marks</span></label>`;

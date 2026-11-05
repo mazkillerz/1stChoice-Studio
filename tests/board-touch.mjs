@@ -130,5 +130,20 @@ for(const [W,dark] of [[390,false],[360,true]]){
   ok('with no text in the frame there is no "Use on all text"',await pg.locator('dialog[open] [data-tsact="all"]').count()===0&&await pg.locator('dialog[open] [data-tsact="del"]').count()===1);
   await ctx.close(); }
 
+/* Export on a story frame: one 2× choice, not "2× (sharp)" and "2×" side by side; a print frame keeps Print size + 1× 2× 3× */
+{ const {pg,ctx}=await page({vp:{width:390,height:844},touch:true});
+  await pg.click('#exportB'); await pg.waitForSelector('dialog[open] [data-seg="scale"]');
+  const sizes=await pg.$$eval('dialog[open] [data-seg="scale"]',bs=>bs.map(b=>b.textContent.trim()));
+  ok('Export: Size offers each scale once (2× (sharp), 1×, 3×)',JSON.stringify(sizes)==='["2× (sharp)","1×","3×"]',sizes);
+  ok('Export: 2× (sharp) is chosen and makes 2160 × 3840',await pg.evaluate(()=>document.querySelector('dialog[open] [data-seg="scale"][data-v="auto"]').getAttribute('aria-pressed')==='true'&&/2160 × 3840/.test(document.getElementById('exInfo').textContent)));
+  await pg.waitForTimeout(600); const box=await pg.evaluate(()=>{ const r=document.querySelector('dialog[open]').getBoundingClientRect(); return {t:r.top,b:r.bottom,l:r.left,r:r.right}; });
+  ok('Export dialog fits the phone screen',box.t>=0&&box.b<=844&&box.l>=0&&box.r<=390,box);
+  await pg.evaluate(()=>document.querySelector('dialog[open]').close());
+  await pg.evaluate(()=>BD.UI.addPrintFrame(100,150,'Label')); await pg.waitForTimeout(300);
+  await pg.click('#exportB'); await pg.waitForSelector('dialog[open] [data-seg="scale"]');
+  const ps=await pg.$$eval('dialog[open] [data-seg="scale"]',bs=>bs.map(b=>b.textContent.trim()));
+  ok('Export of a print frame: Print size, 1×, 2×, 3×',JSON.stringify(ps)==='["Print size","1×","2×","3×"]',ps);
+  await ctx.close(); }
+
 ok('no page errors',!errs.length,errs.slice(0,4));
 await b.close(); console.log(fails?`\n${fails} FAILED`:'\nALL PASS'); process.exit(fails?1:0);
