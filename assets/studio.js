@@ -2202,16 +2202,22 @@ async function home(){
     list.addEventListener('pointerdown',e=>{ const h=e.target.closest('[data-drag]'); if(!h||e.button>0) return; e.preventDefault();
       const row=h.closest('.lib-row'), rows=[...list.querySelectorAll('.lib-pins .lib-row')], from=rows.indexOf(row);
       const tops=rows.map(r=>r.getBoundingClientRect().top), step=rows.length>1?tops[1]-tops[0]:row.offsetHeight;
-      drag={id:h.dataset.drag,row,rows,from,to:from,y:e.clientY,step,pid:e.pointerId,moved:false};
+      drag={id:h.dataset.drag,row,rows,from,to:from,y:e.clientY,cy:e.clientY,s0:d.scrollTop,step,pid:e.pointerId,moved:false};
       try{ h.setPointerCapture(e.pointerId); }catch(_){}
-      row.classList.add('dragging'); list.classList.add('sorting'); haptic('tick'); });
-    list.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.pid) return;
-      const dy=e.clientY-drag.y; if(Math.abs(dy)>3) drag.moved=true;
+      row.classList.add('dragging'); list.classList.add('sorting'); haptic('tick'); edgeScroll(); });
+    /* 1.46.0: with many pinned tools the list is taller than the sheet: holding a row near the sheet's top or bottom edge scrolls it */
+    function edgeScroll(){ if(!drag) return; const r=d.getBoundingClientRect(), E=64, y=drag.cy;
+      const v=y<r.top+E?-Math.ceil((r.top+E-y)/5):y>r.bottom-E?Math.ceil((y-(r.bottom-E))/5):0;
+      if(v){ const was=d.scrollTop; d.scrollTop+=Math.max(-16,Math.min(16,v)); if(d.scrollTop!==was) place(); }
+      requestAnimationFrame(edgeScroll); }
+    list.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.pid) return; drag.cy=e.clientY; place(); });
+    function place(){ if(!drag) return;
+      const dy=drag.cy-drag.y+(d.scrollTop-drag.s0); if(Math.abs(dy)>3) drag.moved=true;
       const n=drag.rows.length, min=-drag.from*drag.step, max=(n-1-drag.from)*drag.step, y=Math.max(min-12,Math.min(max+12,dy));
       drag.row.style.transform=`translateY(${y}px)`;
       const to=Math.max(0,Math.min(n-1,drag.from+Math.round(y/drag.step)));
       if(to!==drag.to){ drag.to=to; haptic('tick');
-        drag.rows.forEach((r,i)=>{ if(r===drag.row) return; const shift=drag.from<to&&i>drag.from&&i<=to?-drag.step:drag.from>to&&i<drag.from&&i>=to?drag.step:0; r.style.transform=shift?`translateY(${shift}px)`:''; }); } });
+        drag.rows.forEach((r,i)=>{ if(r===drag.row) return; const shift=drag.from<to&&i>drag.from&&i<=to?-drag.step:drag.from>to&&i<drag.from&&i>=to?drag.step:0; r.style.transform=shift?`translateY(${shift}px)`:''; }); } }
     const drop=e=>{ if(!drag||e.pointerId!==drag.pid) return; const g=drag; drag=null; list.classList.remove('sorting');
       if(g.to!==g.from){ movePin(g.id,g.to); pinsChanged(); paintLib(null,null); }
       else { g.rows.forEach(r=>{ r.style.transform=''; }); g.row.classList.remove('dragging'); } };
@@ -2571,8 +2577,9 @@ async function home(){
     $('colChips').hidden=!has||!cols.length;
     $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
       return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
-    { const box=$('colChips'), on=box.querySelector('.col-sel'); if(on&&!box.hidden){ const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
-      if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; } }
+    { const box=$('colChips'), keep=()=>{ const on=box.querySelector('.col-sel'); if(!on||box.hidden) return; const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
+      if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; };
+      keep(); clearTimeout(box._keep); box._keep=setTimeout(keep,450); }   // 1.46.0: again once the chip has grown (its ⋯ slid under the end fade)
     const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&findHit(d));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='oldest'?(a,b)=>lastUse(a)-lastUse(b):(a,b)=>lastUse(b)-lastUse(a));
     $('findBtn').hidden=!has||!!sel||!$('findRow').hidden;
