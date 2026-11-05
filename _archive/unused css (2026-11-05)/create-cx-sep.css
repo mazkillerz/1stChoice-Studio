@@ -1,0 +1,2 @@
+/* Removed from tools/create.css in 1.47.0 (5 Nov 2026): no element uses .cx-sep (found by the 1.45.0 Simplify session). */
+.cx-sep{flex:none;width:1px;height:26px;background:var(--line);margin:0 2px}

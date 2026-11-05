@@ -47,7 +47,6 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 .cx.done{background:var(--accent);color:var(--on-accent);padding:0 14px}
 .cx.danger{color:var(--danger)}
 .cx-info{flex:none;font:600 13px var(--sans);color:var(--muted);padding:0 6px;white-space:nowrap}
-.cx-sep{flex:none;width:1px;height:26px;background:var(--line);margin:0 2px}
 @media (hover:hover){.cx:hover{background:var(--chip)}.cx.done:hover{background:var(--accent);filter:brightness(1.15)}}
 
 /* bottom bar */
