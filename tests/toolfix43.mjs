@@ -71,6 +71,9 @@ for(const scheme of ['light','dark']) for(const [w,h] of [[360,740],[390,844]]){
   ok(N+'the text styles row scrolls sideways when they do not fit',m.scrolls,m);
   ok(N+'no sideways page scroll',m.sw);
   ok(N+'the preview keeps a usable size (>= 230px tall)',m.phH>=230,m.phH);
+  /* the row shows that it scrolls: a chip is cut off at the screen edge, so no style looks missing */
+  const edge=await pg.evaluate(()=>{ const l=document.getElementById('tsList'); l.scrollLeft=0; const cut=[...l.querySelectorAll('.ts-chip')].some(c=>{ const r=c.getBoundingClientRect(); return r.left<innerWidth-8&&r.right>innerWidth+8; }); return {cut}; });
+  ok(N+'a style is cut off at the edge, so the row reads as one that scrolls',edge.cut,edge);
   /* the last style can be reached by scrolling the row */
   const last=await pg.evaluate(()=>{ const l=document.getElementById('tsList'); l.scrollLeft=l.scrollWidth; const c=[...l.querySelectorAll('.ts-chip')].pop().getBoundingClientRect(); return {r:Math.round(c.right),l:Math.round(c.left),w:innerWidth}; });
   ok(N+'the last saved style scrolls fully into view',last.l>=0&&last.r<=last.w,last);

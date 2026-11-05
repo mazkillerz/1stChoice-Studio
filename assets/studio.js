@@ -1907,7 +1907,6 @@ async function tool(cfg){
   $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
   $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
     status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
-  function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   /* Save on the bar (phone) opens the small Save sheet, ready to go; Save in it (or Save on the bar again) saves */
