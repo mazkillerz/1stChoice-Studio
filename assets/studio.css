@@ -756,6 +756,20 @@ body.selecting #savedGrid .sv-open{touch-action:pan-y}
 body.swiping,body.swiping *{-webkit-user-select:none;user-select:none}
 body.swiping #savedGrid .sv-open{cursor:default}
 
+/* Tool pages (1.43.0). On a short phone (iPhone SE 375×667, 360×740) the Save sheet pushed the preview up under the top bar:
+   it now always leaves ~100px of preview. On a computer the Photo card's tile is the one Add photo (the blue button under the
+   preview was a second one, below the fold). The More tab stays short: style buttons two to a row on one line, saved text
+   styles in one row that scrolls sideways (like the Save sheet's collections). */
+@media (max-width:820px){
+  body.tool-page .sheet.save-sheet{max-height:min(76dvh,640px,calc(100dvh - var(--top-h) - var(--safe-t) - var(--bar-h) - var(--safe-b) - 112px))}
+  #inspStyleRow{gap:var(--sp-2)}
+  #inspStyleRow .mini,#inspStyleRow #inspPasteAll{flex:1 1 calc(50% - var(--sp-1));min-width:0;padding:0 var(--sp-2);gap:var(--sp-1);white-space:nowrap}
+  .ts-list{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-14px;padding-inline:14px;scroll-padding-inline:14px}
+  .ts-list::-webkit-scrollbar{display:none}
+  .ts-list .ts-chip{flex:none}
+}
+@media (min-width:821px){ .stage>.cta-photo{display:none} }
+
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */
 :root{
