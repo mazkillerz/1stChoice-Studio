@@ -102,7 +102,9 @@ function layTile(g){ const bg=role(g,'bg'), a=role(g,'small'), b=role(g,'text');
   const as=a&&a.visible()&&a.text().trim()?tsize(a):{w:0,h:0}, bs=tsize(b), gap=as.h?10:0, w=Math.round(Math.max(minW,as.w+pad*2,bs.w+pad*2)), h=Math.round(pad*1.2+as.h+gap+bs.h+pad*.9);
   bg.setAttrs({width:w,height:h}); if(a) a.setAttrs({x:Math.round((w-as.w)/2),y:Math.round(pad*1.1)}); b.setAttrs({x:Math.round((w-bs.w)/2),y:Math.round(pad*1.1+as.h+gap)}); }
 const LAY={pill:layPill,line:layLine,row:layRow,bubble:layBubble,num:layNum,badge:layBadge,tile:layTile};
-function layout(g,inner){ const f=g&&LAY[g.getAttr('el')]; if(!f) return; if(inner) f(g); else keepCentre(g,()=>f(g)); }
+/* every smart group keeps its centre when its words change, except a chat bubble (1.47.0): it stays pinned to its
+   side of the screen and its top (layBubble does that), so a long message never runs off the page */
+function layout(g,inner){ const f=g&&LAY[g.getAttr('el')]; if(!f) return; if(inner||g.getAttr('el')==='bubble') f(g); else keepCentre(g,()=>f(g)); }
 CR.layout=layout;
 /* after any change, re-fit the smart groups (and the smart groups they sit in) */
 function relayoutAll(root){ (root||BD.main).find(n=>!!n.getAttr('el')&&!!LAY[n.getAttr('el')]).reverse().forEach(g=>layout(g)); }

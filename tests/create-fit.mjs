@@ -56,5 +56,16 @@ await words('Title',LONG+' '+LONG);
 const t1=await box('Title');
 ok('right-aligned words keep their right edge and stay on the page',Math.abs(t1.r-t0.r)<=2&&inside(t1),[t0,t1]);
 
+/* chat bubbles stay pinned to their side (and their top) when the message gets long */
+await pg.goto(BASE+'tools/create.html?tpl=chat'); await ready();
+const bub=()=>pg.evaluate(()=>{ const f=BD.activeFrame(), W=BD.util.fsize(f).w; return BD.util.items(f).filter(n=>n.getAttr('el')==='bubble').slice(0,2).map(g=>{ const r=BD.util.prect(g,f); return {x:Math.round(r.x),r:Math.round(r.x+r.width),y:Math.round(r.y),W}; }); });
+const b0=await bub();
+for(const i of [0,1]){ await pg.evaluate(i=>{ const f=BD.activeFrame(); BD.select([BD.util.items(f).filter(n=>n.getAttr('el')==='bubble')[i]]); },i); await pg.waitForTimeout(150);
+  await pg.tap('#crCtx [data-x="words"]'); await pg.waitForTimeout(300); await pg.fill('#crW0',LONG+' '+LONG); await pg.waitForTimeout(150); await pg.tap('#crSheetX'); await pg.waitForTimeout(250); }
+const b1=await bub();
+const edge=(a,c)=>Math.abs(a.x-c.x)<=2||Math.abs(a.r-c.r)<=2;
+ok('chat bubbles with a long message keep their side of the screen and their top',b1.every((x,i)=>edge(x,b0[i])&&Math.abs(x.y-b0[i].y)<=2&&(Math.abs(x.x-b0[i].x)<=2)===(Math.abs(b0[i].x-64)<=2)),[b0,b1]);
+ok('… and stay on the page',b1.every(x=>x.x>=0&&x.r<=x.W),b1);
+
 console.log(errs.length?'ERRORS:\n'+errs.join('\n'):'no console errors');
 await b.close(); process.exit(fails||errs.length?1:0);
