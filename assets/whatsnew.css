@@ -116,7 +116,6 @@ body.wn .top{max-width:720px}
 .wn-msban::after{content:"";position:absolute;z-index:-1;inset:auto -60px -90px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(closest-side,rgba(214,176,120,.55),transparent)}
 .wn-msnum{display:block;font:600 76px/1 var(--title);letter-spacing:-.04em;background:linear-gradient(180deg,#fff 30%,#f3dfb8);-webkit-background-clip:text;background-clip:text;color:#fff;-webkit-text-fill-color:transparent;animation:ms-in .7s var(--spring,ease) .1s backwards}
 .wn-mst{margin:var(--sp-3) 0 0;font:600 var(--fs-2xl)/1.2 var(--title);letter-spacing:-.01em;color:#fff}
-.wn-msmeta{margin:var(--sp-1) 0 0;font:500 var(--fs-s) var(--sans);color:rgba(255,255,255,.86)}
 .wn-msintro{margin:var(--sp-3) 0 0;font:400 var(--fs-m)/1.5 var(--sans);color:#fff;max-width:46ch}
 .wn-msspark{position:absolute;inset:0;z-index:-1;pointer-events:none}
 .wn-msspark i{position:absolute;width:8px;height:8px;border-radius:2px;background:#f3dfb8;opacity:.9;transform:rotate(45deg);animation:ms-tw 2.8s ease-in-out infinite}

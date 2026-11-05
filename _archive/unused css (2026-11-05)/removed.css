@@ -1,0 +1,23 @@
+/* Rules removed from assets/studio.css and assets/whatsnew.css at 1.45.0 (Simplify): no page, tool or script uses these classes any more (checked by tests/simplify45.mjs). Kept here in case one comes back. */
+/* studio.css:227 */ .pager .pg-dots{display:flex;gap:6px;align-items:center;justify-content:safe center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:6px 2px}
+/* studio.css:228 */ .pager .pg-dots::-webkit-scrollbar{display:none}
+/* studio.css:230 */ .pg-dot{flex:none;min-width:36px;height:36px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);font:600 var(--fs-s) var(--sans);cursor:pointer;position:relative}
+/* studio.css:231 */ .pg-dot::after{content:"";position:absolute;inset:-7px -3px}
+/* studio.css:232 */ .pg-dot[aria-current="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* studio.css:337 */   .saved-tools{position:sticky;top:0;z-index:5;background:var(--bg);padding:var(--sp-2) 0;margin:-8px 0 0;display:flex;flex-direction:column;gap:var(--sp-2)}
+/* studio.css:354 */ .ds-main{display:flex;flex-direction:column;gap:var(--sp-2)}
+/* studio.css:355 */ .ds-more{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+/* studio.css:356 */ .ds-more .mini{flex:1 1 90px}
+/* studio.css:494 */ .sec-tools{display:flex;align-items:center;gap:var(--sp-2)}
+/* studio.css:523 */ .chip-tool{border-style:dashed}
+/* studio.css:527 */   .grid.view-compact{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* studio.css:529 */   .saved-tools{position:static;margin:0}
+/* studio.css:540 */ .opt-always{font:600 var(--fs-xs) var(--sans);color:var(--muted)}
+/* studio.css:595 */ .sec-tools .sort{max-width:118px;text-overflow:ellipsis}
+/* studio.css:596 */ @media (max-width:420px){ .sec-tools{gap:6px} .sec-tools .sort{max-width:92px;padding-inline:8px;font-size:13px} }
+/* studio.css:1052 */ .dlg-body>.grab-line{display:none}
+/* whatsnew.css:119 */ .wn-msmeta{margin:var(--sp-1) 0 0;font:500 var(--fs-s) var(--sans);color:rgba(255,255,255,.86)}
+/* studio.css:581-584 (after the first cut) */ @media (max-width:420px){
+/* studio.css:581-584 (after the first cut) */   #saved .sec-tools{width:100%}
+/* studio.css:581-584 (after the first cut) */   #saved .sec-tools .sort{flex:1 1 0;max-width:none;font-size:14px}
+/* studio.css:581-584 (after the first cut) */ }
