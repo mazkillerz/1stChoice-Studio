@@ -8,6 +8,11 @@ const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i?' ('+i+')':'')); };
 const b=await chromium.launch(); const errs=[];
+/* wait for the state, not a fixed time: under 4-way load the hub can take seconds to start (1.41.0: fixed 900 ms waits flaked) */
+const until=(pg,fn,arg,ms=20000)=>pg.waitForFunction(fn,arg,{timeout:ms}).catch(()=>{});
+const hubUp=pg=>until(pg,()=>!!(window.Studio&&document.getElementById('fab')&&document.getElementById('fab').onclick));
+const shareDone=pg=>until(pg,()=>!/shared=/.test(location.search)&&(!!document.querySelector('dialog[open] #shareH')||/did not come through/.test((document.getElementById('hubToast')||{}).textContent||'')));
+const photosIn=(pg,n)=>until(pg,n=>!!(window.Studio&&Studio.debug)&&Studio.debug.S.photos.filter(p=>p&&p.img&&!p.sample).length>=n,n);
 const man=JSON.parse(fs.readFileSync(new URL('../manifest.webmanifest',import.meta.url),'utf8'));
 const st=man.share_target||{};
 ok('manifest: share target posts photos to ./share-target',st.action==='./share-target'&&st.method==='POST'&&st.enctype==='multipart/form-data'&&st.params.files[0].name==='photos');
@@ -16,10 +21,10 @@ for(const scheme of ['light','dark']){
   await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(scheme+': '+e));
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear());
-  await pg.evaluate(()=>navigator.serviceWorker.ready); await pg.reload(); await pg.waitForTimeout(600);
+  await pg.evaluate(()=>navigator.serviceWorker.ready); await pg.reload(); await until(pg,()=>!!navigator.serviceWorker.controller); await hubUp(pg);
   ok(scheme+': the service worker controls the hub',await pg.evaluate(()=>!!navigator.serviceWorker.controller));
   /* + menu: no tag on a new device */
-  await pg.tap('#fab'); await pg.waitForTimeout(500);
+  await pg.tap('#fab'); await pg.waitForSelector('dialog[open] .fab-item').catch(()=>{}); await pg.waitForTimeout(300);
   ok(scheme+': + shows no "Last time" tag on a new device',(await pg.$$('dialog[open] .fi-tag')).length===0);
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
   /* share: post photos the way Android does (a form POST navigation) */
@@ -28,7 +33,7 @@ for(const scheme of ['light','dark']){
       const inp=document.createElement('input'); inp.type='file'; inp.name='photos'; inp.multiple=true;
       const dt=new DataTransfer(); for(let i=0;i<n;i++) dt.items.add(new File([blob],'IMG_'+i+'.jpg',{type:'image/jpeg'})); inp.files=dt.files;
       f.appendChild(inp); document.body.appendChild(f); f.submit(); },n);
-    await pg.waitForURL(/index\.html/); await pg.waitForTimeout(900); };
+    await pg.waitForURL(/index\.html/); await shareDone(pg); await pg.waitForTimeout(300); };
   await share(1);
   ok(scheme+': the address is clean after a share',!/shared=/.test(pg.url()),pg.url());
   ok(scheme+': the pick-a-tool sheet opens',await pg.$eval('dialog[open] #shareH',e=>e.textContent).catch(()=>'')==='Your photo is in');
@@ -37,26 +42,26 @@ for(const scheme of ['light','dark']){
   ok(scheme+': the photo tools in the + order',items.map(x=>x.id).join()==='restock,photo-story,collage,carousel,highlight',items.map(x=>x.id).join());
   ok(scheme+': every choice is at least 48px tall',items.every(x=>x.h>=48),items.map(x=>x.h).join());
   await pg.tap('dialog[open] [data-share="restock"]');
-  await pg.waitForURL(/restock\.html/); await pg.waitForTimeout(2500);
+  await pg.waitForURL(/restock\.html/); await photosIn(pg,1);
   const ph=await pg.evaluate(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img&&!p.sample; });
   ok(scheme+': Restock opens with the shared photo in',ph);
   ok(scheme+': the shared photo is used up',await pg.evaluate(()=>new Promise(r=>{ const q=indexedDB.open('studio',1); q.onsuccess=()=>{ const g=q.result.transaction('files').objectStore('files').get('studio:shared'); g.onsuccess=()=>r(g.result===undefined); }; })));
   /* several photos: Collage takes them all */
-  await pg.goto(BASE+'index.html'); await pg.waitForTimeout(600);
+  await pg.goto(BASE+'index.html'); await hubUp(pg); await pg.waitForTimeout(300);
   await share(3);
   ok(scheme+': three photos: the title counts them',await pg.$eval('dialog[open] #shareH',e=>e.textContent).catch(()=>'')==='3 photos are in');
   ok(scheme+': Collage says it uses all 3',/Uses all 3 photos/.test(await pg.$eval('dialog[open] [data-share="collage"]',e=>e.textContent)));
   ok(scheme+': Restock last time is tagged',/Last time/.test(await pg.$eval('dialog[open] [data-share="restock"]',e=>e.textContent)));
-  await pg.tap('dialog[open] [data-share="collage"]'); await pg.waitForURL(/collage\.html/); await pg.waitForTimeout(2500);
+  await pg.tap('dialog[open] [data-share="collage"]'); await pg.waitForURL(/collage\.html/); await photosIn(pg,3);
   const n=await pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p&&p.img&&!p.sample).length);
   ok(scheme+': Collage opens with the 3 photos',n===3,n);
   /* + menu now tags Collage, order unchanged */
-  await pg.goto(BASE+'index.html'); await pg.waitForTimeout(600); await pg.tap('#fab'); await pg.waitForTimeout(500);
+  await pg.goto(BASE+'index.html'); await hubUp(pg); await pg.waitForTimeout(300); await pg.tap('#fab'); await pg.waitForSelector('dialog[open] .fab-item').catch(()=>{}); await pg.waitForTimeout(300);
   const tags=await pg.$$eval('dialog[open] .fab-item',l=>l.map(x=>(x.querySelector('b')||{}).textContent));
   ok(scheme+': + tags the tool used last, order unchanged',tags[0]==='Restock'&&tags[2]==='Collage Last time'&&tags.filter(t=>/Last time/.test(t)).length===1,tags.join('|'));
   await pg.keyboard.press('Escape');
   /* nothing came through: a friendly message, no sheet */
-  await pg.goto(BASE+'index.html?shared=0'); await pg.waitForTimeout(900);
+  await pg.goto(BASE+'index.html?shared=0'); await shareDone(pg);
   ok(scheme+': nothing shared: a message instead of an empty sheet',!(await pg.$('dialog[open] #shareH'))&&/did not come through/.test(await pg.$eval('#hubToast',e=>e.textContent).catch(()=>'')));
   await ctx.close();
 }

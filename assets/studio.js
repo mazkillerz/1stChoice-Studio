@@ -141,11 +141,29 @@ const MORE_FONTS=[
 ];
 function brandFonts(){ const f=BRAND.fonts; return f.choices||[{family:f.display,wt:''},{family:f.body,wt:'800'}]; }
 function fontInfo(fam){ return brandFonts().find(x=>x.family===fam)||MORE_FONTS.find(x=>x.family===fam)||null; }
+/* A Google Fonts <link> must be in before document.fonts.load() can find its font: until then load() finds no font face,
+   resolves at once with nothing, and the drawing quietly uses a fallback font (1.41.0: a Save on a busy device came out with
+   the headline in the system font). fontLink() marks the link when it has loaded or failed; sheetIn() waits for that. */
+function fontLink(href,key,val){ const l=document.createElement('link'); l.rel='stylesheet'; l.dataset[key]=val; l.href=href;
+  const end=()=>{ l.dataset.in='1'; }; l.addEventListener('load',end,{once:true}); l.addEventListener('error',end,{once:true}); document.head.appendChild(l); return l; }
+function sheetIn(link,ms){ return new Promise(r=>{ if(!link||link.dataset.in) return r(); try{ if(link.sheet) return r(); }catch(_){ return r(); }
+  const t=setTimeout(r,ms); const end=()=>{ clearTimeout(t); r(); }; link.addEventListener('load',end,{once:true}); link.addEventListener('error',end,{once:true}); }); }
+/* before a picture is drawn for keeps (Save, Save pictures): every font stylesheet in, then every face of the families it uses
+   loaded, then nothing still loading. Capped, so an offline device still saves (with whatever fonts it has). */
+async function fontsReady(fams,ms){ ms=ms||10000; const cap=p=>Promise.race([p,new Promise(r=>setTimeout(r,ms))]), bare=f=>String(f||'').replace(/["']/g,'').trim();
+  try{
+    await cap(Promise.all([...document.querySelectorAll('link[data-brand-fonts],link[data-font]')].map(l=>sheetIn(l,ms))));
+    const want=new Set([...fams].map(bare).filter(Boolean));
+    await cap(Promise.all([...document.fonts].filter(f=>want.has(bare(f.family))&&f.status!=='loaded').map(f=>f.load().catch(()=>{}))));
+    if(document.fonts.ready) await cap(document.fonts.ready);
+  }catch(_){}
+}
 const FONT_READY=new Set();
 async function ensureFont(fam){
   if(!fam||FONT_READY.has(fam)) return; const f=MORE_FONTS.find(x=>x.family===fam);
-  if(f&&!document.querySelector(`link[data-font="${fam}"]`)){ const l=document.createElement('link'); l.rel='stylesheet'; l.dataset.font=fam; l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(fam).replace(/%20/g,'+')+':wght@'+f.w+'&display=swap'; document.head.appendChild(l); }
+  if(f&&!document.querySelector(`link[data-font="${fam}"]`)) fontLink('https://fonts.googleapis.com/css2?family='+encodeURIComponent(fam).replace(/%20/g,'+')+':wght@'+f.w+'&display=swap','font',fam);
   const info=fontInfo(fam)||{wt:''}, sample=BRAND&&BRAND.lang==='ar'?'نص عربي':'Text';
+  await sheetIn(document.querySelector(`link[data-font="${fam}"]`)||document.querySelector('link[data-brand-fonts]'),5000);
   try{ await Promise.race([document.fonts.load((info.wt?info.wt+' ':'')+'64px "'+fam+'"',sample),new Promise(r=>setTimeout(r,5000))]); }catch(_){}
   FONT_READY.add(fam);
 }
@@ -365,7 +383,7 @@ async function useBrand(id){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
   if(BRAND.fonts&&BRAND.fonts.google&&!document.querySelector('link[data-brand-fonts]')){
-    const l=document.createElement('link'); l.rel='stylesheet'; l.dataset.brandFonts='1'; l.href='https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap'; document.head.appendChild(l);
+    fontLink('https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
   }
   document.documentElement.style.setProperty('--display','"'+BRAND.fonts.display+'",system-ui,sans-serif');
   Object.entries(BRAND.colors||{}).forEach(([k,v])=>document.documentElement.style.setProperty('--b-'+k,v));   // brand colours for style swatches
@@ -377,7 +395,9 @@ async function useBrand(id){
   const c=document.createElement('canvas'); c.width=LOGO.width; c.height=LOGO.height; const x=c.getContext('2d');
   x.drawImage(LOGO,0,0); x.globalCompositeOperation='source-in'; x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); LOGO_LIGHT=c;
   const D=BRAND.fonts.display, B=BRAND.fonts.body, sample=BRAND.lang==='ar'?'نص عربي':'Sample';
-  try{ await Promise.race([Promise.all([document.fonts.load('120px "'+D+'"',sample),document.fonts.load('800 40px "'+B+'"',sample),document.fonts.load('600 40px "'+B+'"',sample)]),new Promise(r=>setTimeout(r,4000))]); }catch(_){}
+  const brandLoads=async()=>{ await sheetIn(document.querySelector('link[data-brand-fonts]'),4000);   // the stylesheet first (see sheetIn)
+    await Promise.all([document.fonts.load('120px "'+D+'"',sample),document.fonts.load('800 40px "'+B+'"',sample),document.fonts.load('600 40px "'+B+'"',sample)]); };
+  try{ await Promise.race([brandLoads(),new Promise(r=>setTimeout(r,4000))]); }catch(_){}
   return BRAND;
 }
 
@@ -1183,7 +1203,10 @@ async function tool(cfg){
     (r.photos||[]).forEach((rp,i)=>{ if(!S.photos[i]||!rp) return; if(slots&&slots[i]) S.photos[i]={...slots[i]}; Object.assign(S.photos[i],{zoom:rp.zoom||1,ox:rp.ox||0,oy:rp.oy||0}); if(hasFx(rp.fx)) S.photos[i].fx={...rp.fx}; else delete S.photos[i].fx; if(rp.flip) S.photos[i].flip=true; else delete S.photos[i].flip; });
     S.sel=null;
   }
-  async function fontsOf(r){ const fams=new Set(), pages=r.pages||[r]; pages.forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); }));
+  function famsOf(r){ const fams=new Set(); (r.pages||[r]).forEach(pp=>Object.values(pp.layers||{}).forEach(l=>{ if(l&&l.font) fams.add(l.font); })); return fams; }
+  /* Save and the render frame wait for every font the design draws with (see fontsReady), so the picture never uses a fallback */
+  const saveFonts=()=>fontsReady([B.fonts&&B.fonts.display,B.fonts&&B.fonts.body,...famsOf(recipe())]);
+  async function fontsOf(r){ const fams=famsOf(r), pages=r.pages||[r];
     await Promise.all([...fams].map(ensureFont)); await Promise.all(pages.flatMap(pp=>(pp.extras||[]).filter(x=>x.type==='asset').map(x=>loadAsset(x.ref)))); }
 
   /* ---- undo / redo: a snapshot after every pause in editing ---- */
@@ -1812,6 +1835,7 @@ async function tool(cfg){
     openSheet('save'); $('result').hidden=true; $('shareAgain').hidden=true; done(null); status('');
     $('save').disabled=true; $('barSave').disabled=true;
     progress(.02,'Getting the HD pictures…'); await assetsHD();   // saving uses the HD can cut-outs, never the light preview copies
+    await saveFonts();   // and the real fonts, never a fallback that is still standing in for one
     const type='image/png', ext='png', list=only!=null?[only]:[...Array(pageCount()).keys()], pages=list.length, files=[], stamp=new Date(); let used=EXPORT_SCALE;
     const base=PG?batchBase(stamp):'', z2=n=>String(n).padStart(2,'0');
     $('saveCancel').hidden=pages<2; $('saveCancel').disabled=false;
@@ -2103,7 +2127,7 @@ async function tool(cfg){
   /* Save pictures from Saved (1.18.0): assets/render.js opens this page in a hidden frame with ?design=…&render=1 and takes
      each page's picture from here, drawn by the same renderPage() as Save, so the pixels are the same as opening it and saving */
   if(q.get('render')==='1') Studio.renderer={ok:design?design.kind!=='template':!!draftId,missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
-    async page(pg,max){ await assetsHD(); if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    async page(pg,max){ await assetsHD(); await saveFonts();   // the same waits as Save
       for(const K of [EXPORT_SCALE,1.5,1]){ if(max&&K>max) continue; const blob=await renderPage(pg,K,true); if(blob) return {blob,K}; } return null; }};   // the same steps down as Save
   Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
