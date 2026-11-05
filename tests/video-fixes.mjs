@@ -47,10 +47,27 @@ const rowsSeen=pg=>pg.evaluate(()=>{ const s=document.getElementById('vdShB').ge
     for(const w of [180,360,540,720,900,1080,540]){ const c=document.createElement('canvas'); c.width=w; c.height=Math.round(w*16/9); r.draw(c.getContext('2d'),2,{}); out.push(r.mem()); c.width=c.height=0; }
     return out; });
   const last=m[m.length-1], n=+(/(\d+) layers/.exec(last)||[])[1], sizes=last.split(' · ')[0].split(' ');
-  ok('reel layers: 7 draws at 6 sizes keep 3 sizes',sizes.length===3&&sizes[2]==='540x960',last);
-  ok('reel layers: at most 3 sizes × 3 layers kept',n>0&&n<=9,last);
+  ok('reel layers: after 6 sizes only the newest that fit the budget are kept',sizes.length===3&&sizes[2]==='540x960',last);
+  ok('reel layers: the older big sizes were freed',n>0&&n<=9,last);
+  const keep=await pg.evaluate(()=>{ const r=VD.st.reels['winter-cat'].reel; for(const [w,h] of [[1080,1920],[540,960],[36,64],[180,320],[360,640]]){ const c=document.createElement('canvas'); c.width=w; c.height=h; r.draw(c.getContext('2d'),2,{}); c.width=c.height=0; } return r.mem(); });
+  ok('small sizes (timeline and draft pictures) do not push out the sharp preview size',/1080x1920/.test(keep)&&/540x960/.test(keep),keep);
   ok('the preview still draws after the old sizes were freed',await pg.evaluate(()=>{ VD.drawNow(); const c=document.getElementById('vdCv'); return c.getContext('2d').getImageData(c.width>>1,c.height>>1,1,1).data[3]===255; }));
   ok('no page errors (memory)',!errs.length,errs.slice(0,2));
+  await ctx.close();
+}
+
+/* a recording whose length reads Infinity until its end is read (WebM from MediaRecorder) */
+{
+  const {ctx,pg,errs}=await newPage({width:390,height:844},'light',true);
+  await pg.goto(BASE+'tools/video.html'); await ready(pg);
+  const r=await pg.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=180; c.height=320; const x=c.getContext('2d'), s=c.captureStream(30), rec=new MediaRecorder(s,{mimeType:'video/webm'}), parts=[];
+    rec.ondataavailable=e=>e.data.size&&parts.push(e.data); let n=0; const tm=setInterval(()=>{ x.fillStyle=n++%2?'#c33':'#33c'; x.fillRect(0,0,180,320); },50);
+    rec.start(100); await new Promise(r=>setTimeout(r,1500)); rec.stop(); await new Promise(r=>rec.onstop=r); clearInterval(tm);
+    const f=new File(parts,'rec.webm',{type:'video/webm'}), u=URL.createObjectURL(f), v=document.createElement('video'); v.muted=true; v.src=u;
+    await new Promise(r=>{ v.onloadedmetadata=r; setTimeout(r,3000); }); const raw=v.duration; URL.revokeObjectURL(u);
+    const m=await StudioMedia.put(f); return {raw:String(raw),dur:m.dur}; });
+  ok('a recording that says Infinity gets its real length when added',isFinite(r.dur)&&r.dur>0.8&&r.dur<3,r);
+  ok('no page errors (recording)',!errs.length,errs.slice(0,2));
   await ctx.close();
 }
 

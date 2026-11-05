@@ -69,7 +69,8 @@ async function runWebcodecs(o,sup,t0){
       while(aenc.encodeQueueSize>8){ await tick(); if(err) throw err; }
     }
   };
-  const closeAll=()=>{ for(const e of [venc,aenc]) if(e&&e.state!=='closed'){ try{ e.close(); }catch(x){} } };
+  const closeAll=()=>{ for(const e of [venc,aenc]) if(e&&e.state!=='closed'){ try{ e.close(); }catch(x){} }
+    for(const c of [cv,acc]) if(c){ try{ c.width=0; c.height=0; }catch(x){} } };   // free the two full-size frames now (phones cap canvas memory)
   try{
     for(let i=0;i<frames;i++){
       if(sig&&sig.aborted) throw abortErr(); if(err) throw err;
@@ -109,7 +110,7 @@ async function runRecorder(o,sup,t0){
   rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
   const stopped=new Promise(r=>{ rec.onstop=r; });
   const draw=t=>{ cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.clearRect(0,0,W,H); R.draw(cx,Math.min(T-1e-3,Math.max(0,t)),{texts:o.texts}); };
-  const cleanup=()=>{ try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} if(ac) try{ ac.close(); }catch(e){} };
+  const cleanup=()=>{ try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} if(ac) try{ ac.close(); }catch(e){} cv.width=cv.height=0; };
   draw(0); rec.start(250);
   const start=ac?ac.currentTime+0.05:performance.now()/1000+0.05; if(src) src.start(start);
   const now=()=>(ac?ac.currentTime:performance.now()/1000)-start;

@@ -30,13 +30,16 @@ function field(seed,freq,amount,w,h,px){       // displacement at quarter resolu
   fields.set(key,F={gw,dx,dy}); return F;
 }
 /* Canvas memory: phones cap the total (iPhone Safari ~ 200-400 MB); past it new canvases draw nothing and the preview turns blank white.
-   Every draw size (sharp preview, playing, thumbnails, saving, each resize) needs full-size canvases, so only the last KEEP sizes are kept
-   and older ones are freed at once (width 0), not left for the garbage collector. */
-const KEEP=3, free=c=>{ try{ c.width=0; c.height=0; }catch(_){} };
+   Every draw size (sharp preview, playing, thumbnails, saving, each resize) needs full-size canvases, so only the most recent sizes are
+   kept, up to BUDGET pixels in all (about two full-size frames; tiny timeline thumbnails hardly count) and at most KEEP sizes; older
+   ones are freed at once (width 0), not left for the garbage collector. The newest size is always kept. */
+const KEEP=6, BUDGET=4.2e6, free=c=>{ try{ c.width=0; c.height=0; }catch(_){} };
+const pxOf=k=>{ const m=/(\d+)x(\d+)/.exec(k); return m?m[1]*m[2]:0; };
+const over=keys=>keys.length>KEEP||(keys.length>1&&keys.reduce((n,k)=>n+pxOf(k),0)>BUDGET);
 const tmps=new Map();                           // per size: scratch canvas + output pixels (most recent last)
 function tmp(w,h){ const k=w+'x'+h; let t=tmps.get(k);
   if(t){ tmps.delete(k); tmps.set(k,t); return t; }
-  while(tmps.size>=KEEP){ const [ok,ov]=tmps.entries().next().value; free(ov.c); tmps.delete(ok); }
+  while(tmps.size&&over([...tmps.keys(),k])){ const [ok,ov]=tmps.entries().next().value; free(ov.c); tmps.delete(ok); }
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const x=c.getContext('2d'); t={c,x,img:x.createImageData(w,h)}; t.o32=new Uint32Array(t.img.data.buffer); tmps.set(k,t); return t; }
 function wobble(src,dst,o,px,on){
@@ -78,9 +81,9 @@ async function load(base,opt){
 
 function make(M,base,imgs,def){
   const W=M.size[0], H=M.size[1], layers=new Map(), sizes=[]; let lastKey='', lastInfo=null;   // layers: 'name|wxh' -> ctx; sizes: most recent last
-  function useSize(sz){   // keep the layers of the last KEEP sizes, free the rest
+  function useSize(sz){   // keep the layers of the most recent sizes (see BUDGET), free the rest
     const i=sizes.indexOf(sz); if(i===sizes.length-1&&i>=0) return; if(i>=0) sizes.splice(i,1); sizes.push(sz);
-    while(sizes.length>KEEP){ const old=sizes.shift(); for(const [k,c] of layers) if(k.endsWith('|'+old)){ free(c.canvas); layers.delete(k); } }
+    while(over(sizes)){ const old=sizes.shift(); for(const [k,c] of layers) if(k.endsWith('|'+old)){ free(c.canvas); layers.delete(k); } }
   }
   function widthOf(slot,value,dir){
     meas.font=slot.font; meas.direction=dir; meas.textAlign='left';
