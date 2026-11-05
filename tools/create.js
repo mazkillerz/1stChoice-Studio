@@ -426,11 +426,12 @@ async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.s
      <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>tplCard(d,{favs,focus:opt.focus})).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
-  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team],[data-rteam]'), si=e.target.closest('#crTeamSign'), sr=e.target.closest('[data-star],[data-tstar]');
+  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team],[data-rteam]'), si=e.target.closest('#crTeamSign'), rt=e.target.closest('#crTeamRetry'), sr=e.target.closest('[data-star],[data-tstar]');
     if(sr){ const id=sr.dataset.tstar?'team:'+sr.dataset.tstar:'t:'+sr.dataset.star, on=sr.getAttribute('aria-pressed')!=='true'; idMark(favKey(),id,on); sr.setAttribute('aria-pressed',String(on)); sr.title=on?'Remove from favourites':'Add to favourites'; return; }   // order changes the next time the sheet opens, nothing jumps now
     if(sz){ closeSheet(true); if(start||isBlank()) startBlank(sz.dataset.size); else addBlank(sz.dataset.size); }
     if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl||tp.dataset.rtpl,mode));
     if(tt) chooseMode(mode=>applyTeam(tt.dataset.team||tt.dataset.rteam,mode));
+    if(rt){ $('crTeamT').innerHTML='<div class="cr-empty">Looking…</div>'; paintTeam(byId); return; }
     if(si){ if(await L.ensureMember('Team templates are shared with the team. Sign in to see them.')) paintTeam(byId); } });
   tplSearch(body,list); if(opt.focus){ const f=body.querySelector(`[data-tpl="${CSS.escape(opt.focus)}"]`); if(f) setTimeout(()=>f.scrollIntoView({block:'center'}),60); }
   paintTeam(byId);
@@ -451,15 +452,21 @@ function paintRecent(byId,team,urls){ if(!byId) return; const row=recentRow(byId
   box.querySelector('.cr-recent').innerHTML=row.map(r=>{ if(r.d){ const u=TH.get(r.d.id); return tplCard(r.d,{recent:true}).replace(' loading">',u?'"><img alt="" src="'+u+'">':' loading">'); }
     const t=r.t, u=urls[t.thumb_path]; return `<button type="button" class="cr-rec" data-rteam="${esc(t.id)}" aria-label="${esc(t.name)}"><span class="th">${u?`<img alt="" src="${u}">`:''}</span><span class="nm" dir="auto">${esc(t.name)}</span></button>`; }).join('');
   const q=$('crTplQ'); box.hidden=!!(q&&q.value.trim()); }
+/* the team's list never leaves "Looking…" up for good (1.47.0): a slow or lost connection shows a message and Try again */
+const TEAM_WAIT=12000;
+const inTime=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(new Error('slow')),ms))]);
 async function paintTeam(byId){ const box=$('crTeamT'); if(!box) return;
-  try{ const C=await L.cloud(); if(!(await C.session())||!(await C.isMember())){ box.innerHTML='<div class="cr-empty">Templates the team saves show here. <button type="button" class="link" id="crTeamSign">Sign in</button></div>'; return; }
+  try{ await inTime(paintTeamList(byId,box),TEAM_WAIT); }
+  catch(err){ if(!$('crTeamT')) return; box.innerHTML=`<div class="cr-empty">${err&&err.message==='slow'?'Team templates are taking too long.':'Team templates could not load.'} Check the connection. <button type="button" class="link" id="crTeamRetry">Try again</button></div>`; } }
+async function paintTeamList(byId,box){
+  { const C=await L.cloud(); if(!(await C.session())||!(await C.isMember())){ box.innerHTML='<div class="cr-empty">Templates the team saves show here. <button type="button" class="link" id="crTeamSign">Sign in</button></div>'; return; }
     const all=(await C.designs(B.id)).filter(d=>d.tool===TOOL&&d.kind==='template'); if(!$('crTeamT')) return;
     if(!all.length){ box.innerHTML='<div class="cr-empty">No team templates yet. Make a design, then in Save choose “Save as a team template”.</div>'; return; }
     const urls=await C.fileUrls(all.map(d=>d.thumb_path)).catch(()=>({}));
     const favs=new Set(idList(favKey())), on=d=>favs.has('team:'+d.id), list=all.filter(on).concat(all.filter(d=>!on(d)));   // starred first, like the brand's templates
     paintRecent(byId,new Map(all.map(d=>[d.id,d])),urls);
     box.innerHTML=`<div class="cr-tpls">${list.map(d=>`<div class="cr-tw"><button type="button" class="cr-tpl" data-team="${esc(d.id)}"><span class="th">${urls[d.thumb_path]?`<img alt="" src="${urls[d.thumb_path]}">`:''}</span><span class="nm" dir="auto">${esc(d.name)}</span></button><button type="button" class="cr-star" data-tstar="${esc(d.id)}" aria-pressed="${on(d)}" aria-label="${esc('Favourite: '+d.name)}" title="${on(d)?'Remove from favourites':'Add to favourites'}">${STAR}</button></div>`).join('')}</div>`;
-  }catch(_){ box.innerHTML='<div class="cr-empty">Team templates could not load. Check the connection.</div>'; } }
+  } }
 const isBlank=()=>frames().length<=1&&frames().every(f=>items(f).filter(n=>!n.hasName('frame-bg')).length===0);
 function chooseMode(run){ if(isBlank()){ closeSheet(true); run('replace'); return; }
   const d=L.dialog(`<div class="dlg-body"><h3>Use this template</h3><p class="small">Add it as new pages after what you have, or start over with it.</p>
