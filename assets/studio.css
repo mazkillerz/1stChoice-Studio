@@ -765,6 +765,7 @@ body.swiping #savedGrid .sv-open{cursor:default}
   body.tool-page .sheet.save-sheet{max-height:min(76dvh,640px,calc(100dvh - var(--top-h) - var(--safe-t) - var(--bar-h) - var(--safe-b) - 112px))}
   #inspStyleRow{gap:var(--sp-2)}
   #inspStyleRow .mini,#inspStyleRow #inspPasteAll{flex:1 1 calc(50% - var(--sp-1));min-width:0;padding:0 var(--sp-2);gap:var(--sp-1);white-space:nowrap}
+  #inspStyleRow #inspPasteStyle{order:1}#inspStyleRow #inspSaveStyle{order:2}#inspStyleRow #inspPasteAll{order:3}   /* Copy · Paste side by side once copied */
   .ts-list{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-14px;padding-inline:14px;scroll-padding-inline:14px}
   .ts-list::-webkit-scrollbar{display:none}
   .ts-list .ts-chip{flex:none}
