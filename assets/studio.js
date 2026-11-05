@@ -1364,10 +1364,13 @@ async function tool(cfg){
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
   function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:design&&$('teamAsNew').checked,collections:[...teamPicked]}; }
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
+  /* a team save that failed: our own messages as they are; a dropped connection in words, never the browser's "Failed to fetch" */
+  const teamErr=err=>{ const m=String(err&&err.message||''); return !m||err instanceof TypeError||/fetch|network|load failed|timed? ?out/i.test(m)?'Not saved to the team: no connection. Check it and try again.':m; };
+  /* true when it saved; on a failure the switch stays on, so the next tap of the button tries the team again (1.41.0) */
   async function runTeamSave(afterPicture){
-    teamLine('Saving to the team…');
-    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); }
-    catch(err){ teamLine(''); status(err.message||'Could not save to the team.'); }
+    teamLine('Saving to the team…'); status('');   // an earlier failure's message goes
+    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); return true; }
+    catch(err){ teamLine(''); status(teamErr(err)); return false; }
   }
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
 
@@ -1383,7 +1386,7 @@ async function tool(cfg){
     d.querySelector('#lvKeep').onclick=()=>d.close();
     d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-      try{ await teamSave({name:design.name}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+      try{ await teamSave({name:design.name}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
   }
   let leaving=false;
   document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(a.href); } }));
@@ -1948,14 +1951,13 @@ async function tool(cfg){
     }
     let team=$('teamOn').checked;
     /* the picture is already in Photos: the switch is on, so this tap only adds it to the team */
-    if(imgDone&&team&&only==null){ $('save').disabled=true; await runTeamSave(); $('save').disabled=false; $('teamOn').checked=false; $('teamOnly').dataset.off='1'; syncSaveOpts(); return; }
+    if(imgDone&&team&&only==null){ $('save').disabled=true; const ok=await runTeamSave(); $('save').disabled=false; if(ok){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; } syncSaveOpts(); return; }
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
     const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
     if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
     if(!team&&asked&&await checkTeam()) team=true;
-    if(team){ await runTeamSave(imgDone); $('teamOn').checked=false; }
-    if(team) $('teamOnly').dataset.off='1';
+    if(team&&await runTeamSave(imgDone)){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; }
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue();
   }
   $('save').addEventListener('click',()=>doSave());
