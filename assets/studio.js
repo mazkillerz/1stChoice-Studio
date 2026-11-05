@@ -2554,7 +2554,7 @@ async function home(){
   const cardName=d=>{ const m=/^(.+) – (\d{1,2} [A-Z][a-z]{2})$/.exec(d.name||''); return m&&m[1]===toolName(d.tool)&&m[2]===dayTag(lastUse(d)).replace(/ \d{4}$/,'')?m[1]:d.name; };
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" draggable="false" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
-    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
+    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
     return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
@@ -2645,8 +2645,10 @@ async function home(){
     d.querySelector('#crName').value=c.name; d.querySelector('#crX').onclick=()=>d.close();
     d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(true); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
   function deleteCol(){ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
-    const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
-    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }; };
+    const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="status" id="cdSt" role="status"></div><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
+    /* 1.46.0: a failed delete (no signal) says so; the dialog used to stay open with no word */
+    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async ev=>{ const b=ev.currentTarget; b.disabled=true; d.querySelector('#cdSt').textContent='';
+      try{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }catch(err){ d.querySelector('#cdSt').textContent=err.message||String(err); b.disabled=false; } }; };
   /* a small menu under a button: arrow keys move, Escape / a tap outside / scrolling closes it, focus goes back to the button */
   function popMenu(btn,items){
     const old=document.querySelector('.pop-menu'); if(old) old.remove();
@@ -2882,7 +2884,7 @@ async function home(){
     d.querySelector('#acClose').onclick=()=>d.close();
     d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(true); };
     if(owner){ const box=d.querySelector('#teamBox');
-      const drawTeam=async()=>{ const m=await C.members(); box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
+      const drawTeam=async()=>{ let m; try{ m=await C.members(); }catch(err){ box.innerHTML=`<div class="status" role="status">${esc(err.message||String(err))}</div>`; return; } box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
         <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
         box.querySelector('#addForm').onsubmit=async e=>{ e.preventDefault(); try{ await C.addMember(box.querySelector('#addEmail').value); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } };
         box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await C.removeMember(b.dataset.rm); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } }); };
