@@ -909,9 +909,14 @@ async function tool(cfg){
     let bottom=kb>0?innerHeight-kb:bar.top;
     if(openName){ const el=sheetEl(openName); bottom=Math.min(bottom,bottom-el.offsetHeight); }
     const top=(document.querySelector('nav.top')?.getBoundingClientRect().bottom||0);
-    const pager=($('pager').hidden?0:$('pager').offsetHeight+6)+(($('ctaPhoto').hidden||openName)?0:$('ctaPhoto').offsetHeight+6);
+    stage.classList.remove('tight');
+    const pagerH=$('pager').hidden?0:$('pager').offsetHeight+6, ctaH=($('ctaPhoto').hidden||openName)?0:$('ctaPhoto').offsetHeight+6;
     stage.style.setProperty('--stage-top',top+'px'); stage.style.setProperty('--stage-bottom',Math.max(0,innerHeight-bottom)+'px');
-    const availH=Math.max(72,bottom-top-16-pager)   /* 1.43.0: was 120, which pushed the preview under the top bar on short phones */, availW=innerWidth-24;
+    /* 1.43.0: a tall sheet on a short phone left no room for the slide strip and the preview, which slid under the top bar:
+       the strip steps aside until the sheet closes, and the preview never asks for more room than there is */
+    let room=bottom-top-16-ctaH-pagerH;
+    if(openName&&pagerH&&room<96){ stage.classList.add('tight'); room+=pagerH; }
+    const availH=Math.max(72,room), availW=innerWidth-24;
     let h=availH, w=h*W/H; if(w>availW){ w=availW; h=w*H/W; }
     ph.style.width=Math.floor(w)+'px'; ph.style.height=Math.floor(h)+'px';
   }
