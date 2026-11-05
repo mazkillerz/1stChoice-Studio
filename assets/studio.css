@@ -755,6 +755,8 @@ label.opt-row{cursor:pointer}
 body.selecting #savedGrid .sv-open{touch-action:pan-y}
 body.swiping,body.swiping *{-webkit-user-select:none;user-select:none}
 body.swiping #savedGrid .sv-open{cursor:default}
+/* 1.46.0: on a 360px phone the top bar was 3px too wide while the button says "Sign in" (sideways scroll); a little less padding fits it */
+@media (max-width:374px){ body.hub nav.top .acct{padding-inline:var(--sp-3)} }
 
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */

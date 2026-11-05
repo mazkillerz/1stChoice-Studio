@@ -2126,7 +2126,7 @@ async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(); const $=id=>document.getElementById(id);
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
-  let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
+  let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null, cloudNote='', loadRun=0, slowT=0;   // cloudNote: the offline / slow note on show (1.46.0)
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
   let sortBy=SORTS[store('studio:savedSort')]?store('studio:savedSort'):'recent', loaded=false;
   let sel=null, shown=[];   // sel: the designs ticked in select mode (null = not selecting); shown: the Saved page's list right now
@@ -2489,10 +2489,15 @@ async function home(){
 
   /* ---------- Saved designs: the latest in a row on the home page (See all), and the Saved page: a picture grid with quick
      filters by type and collection. Tap a design to open it; press and hold (or ⋯, or right-click) for Duplicate, Rename, Delete… ---------- */
-  C=await cloud(); await C.client();
+  /* the cloud's code ships with the app (sw.js), but a first visit with no signal may not have it: Home still works, Saved says so */
+  async function getCloud(){ if(C) return C; try{ const c=await cloud(); await c.client(); C=c; }catch(_){ throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true}); }
+    C.onAuth(authChanged); return C; }
+  try{ await getCloud(); }catch(_){}
   async function refreshAccount(){
-    const s=await C.session(); me=s&&s.user; member=!!(me&&await C.isMember());
+    const st=C.sessionState?await C.sessionState():{session:await C.session()}; me=st.session&&st.session.user;
+    if(!me&&st.offline) throw Object.assign(new Error(st.slow?'The connection is too slow right now. Try again in a moment.':'No connection. Check your internet and try again.'),{offline:true});   // the sign-in is kept; it only could not be refreshed
     $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
+    member=!!(me&&await (C.checkMember||C.isMember)());   // checkMember throws when offline, so no signal never reads as "not on the team"
     owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
     return member;
   }
@@ -2501,18 +2506,40 @@ async function home(){
   function skel(n){ return Array.from({length:n},()=>'<div class="sv-card sv-skel" aria-hidden="true"><span class="sv-open"><span class="sv-thumb"></span><span class="sv-txt"><span class="sv-line"></span><span class="sv-line short"></span></span></span></div>').join(''); }
   /* a friendly note for empty, signed-out and error states: icon, title, one line, an optional button */
   const note=(ic,title,text,btn)=>`<div class="sv-note"><span class="sn-ic" aria-hidden="true">${ic}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
+  /* no signal or a slow cloud (1.46.0): a calm note with Try again on Home and Saved, never a blank row or a skeleton that never ends.
+     A list already on screen stays (a toast says it could not refresh); when the phone is back online it loads again by itself. */
+  const OFF_IC=svg('<path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/>');
+  const SLOW_MS=8000, againBtn='<button type="button" class="btn slim" data-reload>Try again</button>';
+  const netDown=e=>!!e&&(!!e.offline||navigator.onLine===false||!!(C&&C.netErr&&C.netErr(e)));
+  const offNote=()=>note(OFF_IC,'You’re offline','You can still make and save pictures. Your team’s designs come back when you’re online.',againBtn);
+  const slowNote=()=>note(ICON.clock,'Still loading…','The connection is slow. Your team’s designs show as soon as they arrive.',againBtn);
+  function showNote(h){ cloudNote=h; endSelect(true); closeFind(true);
+    $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
+    $('colChips').hidden=$('sortBtn').hidden=$('findBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h; }
+  const showing=()=>loaded&&member&&all.length>0;   // a list of designs is on screen
   async function doLoad(){
-    const member=await refreshAccount(); loadedFor=me?me.id:null;
-    if(!member){ all=[]; cols=[]; loaded=true; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
-    if(!all.length){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
-    try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }
-    catch(err){ const m=note(ICON.rotate,'Could not load the saved designs',esc(err.message),'<button type="button" class="btn slim" data-reload>Try again</button>'); $('savedRowList').innerHTML=m; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=m; return; }
-    loaded=true; paint();
+    const run=++loadRun; clearTimeout(slowT);
+    let signedIn=true; try{ signedIn=!C||!C.signedInHere||C.signedInHere(); }catch(_){}
+    if(!showing()&&signedIn){ cloudNote=''; $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
+    slowT=setTimeout(()=>{ if(run===loadRun&&!showing()) showNote(slowNote()); },SLOW_MS);
+    try{
+      if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
+      await getCloud();
+      const member=await refreshAccount(); if(run!==loadRun) return; loadedFor=me?me.id:null;
+      if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
+      if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
+      const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
+      [all,cols]=got; cloudNote=''; loaded=true; paint();
+    }catch(err){ if(run!==loadRun) return;
+      const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
+      if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
+      loaded=false; showNote(net?(slow?slowNote():offNote()):note(ICON.rotate,'Could not load the saved designs',esc(err.message||String(err)),againBtn));
+    }finally{ if(run===loadRun) clearTimeout(slowT); }
   }
+  addEventListener('online',()=>{ if(cloudNote) loadSaved(true); });   // back online: load again without a tap
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
-    $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    endSelect(true); closeFind(true); $('colChips').hidden=$('sortBtn').hidden=$('findBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    showNote(h); cloudNote='';
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -2536,7 +2563,7 @@ async function home(){
   }
   /* the Saved page: one row of collection chips (All first), the sort button, a grid of pictures */
   function paintPage(){
-    if(!loaded){ if(member||!me) $('savedGrid').innerHTML=skel(6); return; }
+    if(!loaded){ if(!cloudNote&&(member||!me)) $('savedGrid').innerHTML=skel(6); return; }   // a note (offline, slow) stays
     if(!member) return;
     const has=!!all.length;
     if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
@@ -2854,7 +2881,7 @@ async function home(){
         box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await C.removeMember(b.dataset.rm); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } }); };
       drawTeam(); }
   });
-  C.onAuth((ev,sess)=>{ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); });
+  function authChanged(ev,sess){ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); }
   /* Experimental area (lab/): hidden behind a passcode so unfinished experiments stay out of the way.
      The code only hides the area; it is not security. Unlocking is remembered on this device. */
   const LAB_CODE='6790';
