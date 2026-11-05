@@ -46,3 +46,4 @@ Each version session builds on its own branch; only the lead merges to `main` an
 - 1.45.0: `session_01Y65H7ZD84jGKKctLkzZxZy` (started 20:48 after 1.42.0 reported done at 20:48)
 - 1.46.0: `session_01Y65H7WQmUZs5qBnp3qy1f6` (started 20:49 after 1.44.0 reported done)
 - 1.47.0: `session_01Y65H7WtiEquro15H42k9Ww` (started 20:58 after 1.45.0's cleanup reported done; 1.45 waits for the sweep)
+- 1.49.0: `session_01Y65H7ZpZYD9ntgPqbqmJLT` (started 20:58 after 1.43.0 reported done; 1.48.0 waits for 1.41.0, both touch share/save tests)
