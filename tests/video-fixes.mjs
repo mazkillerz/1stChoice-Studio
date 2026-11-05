@@ -52,6 +52,12 @@ const rowsSeen=pg=>pg.evaluate(()=>{ const s=document.getElementById('vdShB').ge
   const keep=await pg.evaluate(()=>{ const r=VD.st.reels['winter-cat'].reel; for(const [w,h] of [[1080,1920],[540,960],[36,64],[180,320],[360,640]]){ const c=document.createElement('canvas'); c.width=w; c.height=h; r.draw(c.getContext('2d'),2,{}); c.width=c.height=0; } return r.mem(); });
   ok('small sizes (timeline and draft pictures) do not push out the sharp preview size',/1080x1920/.test(keep)&&/540x960/.test(keep),keep);
   ok('the preview still draws after the old sizes were freed',await pg.evaluate(()=>{ VD.drawNow(); const c=document.getElementById('vdCv'); return c.getContext('2d').getImageData(c.width>>1,c.height>>1,1,1).data[3]===255; }));
+  /* real resizes: the window changes size 8 times and sheets open and close; the reel keeps a bounded set and frees the rest */
+  for(const [w,h] of [[360,740],[414,896],[375,667],[390,700],[430,932],[390,844],[360,640],[390,844]]){ await pg.setViewportSize({width:w,height:h}); await pg.waitForTimeout(250); }
+  for(const n of ['text','sound','add']){ await pg.tap(`#bar [data-open="${n}"]`); await pg.waitForTimeout(250); await pg.tap('#vdShX'); await pg.waitForTimeout(250); }
+  const rz=await pg.evaluate(()=>{ const m=VD.st.reels['winter-cat'].reel.mem(), sizes=m.split(' · ')[0].split(' ').filter(Boolean), px=sizes.reduce((n,k)=>{ const [a,b]=k.split('x'); return n+a*b; },0), cv=document.getElementById('vdCv');
+    return {m,n:sizes.length,px,cur:sizes.includes(cv.width+'x'+cv.height)}; });
+  ok('after 8 window sizes and 3 sheets: at most 6 sizes, within the pixel budget, the current one kept',rz.n<=6&&rz.px<=4.2e6+2.1e6&&rz.cur,rz);
   ok('no page errors (memory)',!errs.length,errs.slice(0,2));
   await ctx.close();
 }
