@@ -44,3 +44,4 @@ Each version session builds on its own branch; only the lead merges to `main` an
 - Lead: `session_01Y65H7ac7hnqYNUVqbydksT` (branch `ccr-a1e90015-i7vnsq`)
 - 1.41.0: `session_01Y65H7YCpSk3kAvVxNkPUHR` · 1.42.0: `session_01Y65H7X5DG3UeovTN7ARQQm` · 1.43.0: `session_01Y65H7WP9zYRrERVhiuaJhj` · 1.44.0: `session_01Y65H7Yqzpu6Btz6a7vCMvb` (all started 20:25 UTC)
 - 1.45.0: `session_01Y65H7ZD84jGKKctLkzZxZy` (started 20:48 after 1.42.0 reported done at 20:48)
+- 1.46.0: `session_01Y65H7WQmUZs5qBnp3qy1f6` (started 20:49 after 1.44.0 reported done)
