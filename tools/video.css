@@ -150,7 +150,7 @@ span.vt-th{background:transparent}
 .vd-sheet{display:flex;flex-direction:column;min-height:0;height:clamp(210px,32dvh,320px);background:var(--raised);border-top:1px solid var(--line);box-shadow:var(--shadow-up);animation:vdup .25s var(--ease)}
 .vd-sheet[hidden]{display:none}
 .vd-sheet{position:relative}
-.vd-grab{position:absolute;top:0;left:50%;transform:translateX(-50%);width:96px;height:20px;z-index:1;display:flex;justify-content:center;padding-top:6px;touch-action:none;cursor:ns-resize}
+.vd-grab{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:44px;z-index:1;display:flex;justify-content:center;padding-top:6px;touch-action:none;cursor:ns-resize}
 .vd-grab i{width:36px;height:4px;border-radius:2px;background:var(--muted);opacity:.45}
 .vd-grab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:var(--r-s)}
 .vd-sheet .vd-sh-h{touch-action:none;padding-top:var(--sp-2)}
@@ -267,7 +267,9 @@ span.vt-th{background:transparent}
 @media (hover:hover){.vd-phr button:hover{background:var(--chip)}}
 
 /* debug panel */
-.vd-dbg{position:fixed;left:8px;bottom:8px;z-index:90;max-width:min(360px,calc(100vw - 16px));max-height:46dvh;overflow:auto;padding:var(--sp-2);border-radius:var(--r-m);background:rgba(20,16,12,.92);color:#fff;font:11px/1.35 ui-monospace,monospace;pointer-events:auto}
+/* over the preview, not the bar: taps go through it (only Close is live), so the editor still works while the owner screenshots it */
+.vd-dbg{position:fixed;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:90;max-width:min(360px,calc(100vw - 16px));max-height:44dvh;overflow:hidden;padding:var(--sp-2);border-radius:var(--r-m);background:rgba(20,16,12,.86);color:#fff;font:11px/1.35 ui-monospace,monospace;pointer-events:none}
+.vd-dbg .mini{pointer-events:auto}
 .vd-dbg[hidden]{display:none}
 .vd-dbg .dbg-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .vd-dbg th{text-align:start;color:#c8c8c8;font-weight:400;padding-inline-end:8px;vertical-align:top;white-space:nowrap}

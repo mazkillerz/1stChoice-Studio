@@ -56,6 +56,20 @@ const rowsSeen=pg=>pg.evaluate(()=>{ const s=document.getElementById('vdShB').ge
   await ctx.close();
 }
 
+/* ?debug=1 on a phone: the panel never blocks the bar, and it lists the reel's canvases */
+{
+  const {ctx,pg,errs}=await newPage({width:390,height:844},'dark',true);
+  await pg.goto(BASE+'tools/video.html?debug=1'); await ready(pg); await pg.waitForTimeout(1700);
+  const d=await pg.evaluate(()=>{ const p=document.getElementById('vdDbg'), r=p.getBoundingClientRect(), bar=document.getElementById('bar').getBoundingClientRect();
+    return {shown:!p.hidden,overBar:r.bottom>bar.top,pe:getComputedStyle(p).pointerEvents,mem:/canvases winter-cat/.test(p.textContent)}; });
+  ok('debug panel: shown, above the bar, taps go through it, lists the canvases',d.shown&&!d.overBar&&d.pe==='none'&&d.mem,d);
+  await pg.tap('#bar [data-open="sound"]'); await pg.waitForTimeout(300);
+  ok('debug panel: the bar still works under it',(await V(pg)).sheet==='sound');
+  await pg.tap('#dbgX'); ok('debug panel: Close works',await pg.evaluate(()=>document.getElementById('vdDbg').hidden));
+  ok('no page errors (debug)',!errs.length,errs.slice(0,2));
+  await ctx.close();
+}
+
 /* a recording whose length reads Infinity until its end is read (WebM from MediaRecorder) */
 {
   const {ctx,pg,errs}=await newPage({width:390,height:844},'light',true);
@@ -122,7 +136,7 @@ for(const [scheme,vp] of [['light',{width:390,height:844}],['dark',{width:390,he
   const {ctx,pg,errs}=await newPage(vp,scheme,true);
   await pg.goto(BASE+'tools/video.html'); await ready(pg); await openMix(pg);
   const h0=(await box(pg,'#vdSheet')).h, r0=await rowsSeen(pg), g=await box(pg,'#vdGrab'), hd=await box(pg,'#vdSheet .vd-sh-h');
-  ok(N+'the sheet has a drag handle on a phone',g&&g.w>0&&g.h>0,g);
+  ok(N+'the sheet has a drag handle on a phone, at least 44 px',g&&g.w>=44&&g.h>=44,g);
   const cdp=await ctx.newCDPSession(pg);
   await dragTouch(cdp,g.cx,g.cy,g.cy-300);
   const h1=(await box(pg,'#vdSheet')).h, r1=await rowsSeen(pg), pv=(await box(pg,'#vdPv')).h, v1=await V(pg);
