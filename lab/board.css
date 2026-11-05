@@ -327,7 +327,7 @@
   .bt-panel{display:inline-flex}
   .bt-saved,#presentB,.bt-unit,.bt-sep{display:none}
   .bt-file{flex:0 1 160px}
-  .bp{position:absolute;top:0;bottom:0;box-shadow:var(--fl);max-width:88vw}
+  .bp{position:absolute;top:0;bottom:0;box-shadow:var(--fl);max-width:88vw;z-index:7}   /* above the quick bar, dock and zoom (1.42.0) */
   .bp.open{animation:pin .2s var(--ease2)}
   .bp-left{left:0}.bp-right{right:0}
   .b-mini{display:none}
@@ -441,6 +441,8 @@
   .ruler-c::after{content:"";position:absolute;left:0;top:0;width:44px;height:44px}
   .b-toast .link{min-height:44px}
 }
+/* a phone has no keyboard: menus leave out the shortcut keys */
+@media (pointer:coarse) and (max-width:620px){ .b-menu kbd{display:none} }
 /* a narrow phone: the dock keeps 7 tools at 44px; Frame moves into More tools (there is no room for 8) */
 @media (pointer:coarse) and (max-width:420px){
   .dock{gap:0}

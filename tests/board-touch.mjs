@@ -42,12 +42,16 @@ for(const [W,dark] of [[390,false],[360,true]]){
   await panel(pg,'R',true); await T(250);
   for(const t of ['design','effects','export']){ await pg.click(`[data-rtab="${t}"]`); await T(250); await scan('text '+t); }
   await pg.click('[data-rtab="design"]'); await T(150);
+  const wt=await pg.evaluate(()=>{ const s=document.querySelector('#props select[data-k="weight"]'); const out=[]; for(const o of s.options){ s.value=o.value; const c=document.createElement('canvas').getContext('2d'); c.font=getComputedStyle(s).font; out.push([o.text,Math.ceil(c.measureText(o.text).width)+22,s.clientWidth]); } return out.filter(([t,need,have])=>need>have); });
+  ok(`${tag}: every Weight name fits its box`,!wt.length,wt);
   // colour pop-over from the Design panel
   const sw=pg.locator('#props .swb').first(); if(await sw.count()){ await sw.click(); await T(300); await scan('colour pop'); await closeAll(pg); }
   await panel(pg,'R',false);
   // Layers with a text chosen: its Lock / Hide show; on another row they can't be tapped
   await panel(pg,'L',true); await pg.evaluate(()=>BD.UI.openAssets&&document.getElementById('tabLayers').click()); await T(250);
   await scan('layers, text chosen');
+  const top=await pg.evaluate(()=>{ const q=document.getElementById('qbar'); if(q.hidden) return 'qbar hidden'; const r=q.getBoundingClientRect(), p=document.getElementById('left').getBoundingClientRect(); const x=Math.min(r.right,p.right)-8, y=r.top+r.height/2; const e=document.elementFromPoint(x,y); return e&&e.closest('#left')?'panel':e&&e.closest('#qbar')?'qbar':String(e&&e.className); });
+  ok(`${tag}: an open Layers panel sits above the quick bar`,top==='panel'||top==='qbar hidden',top);
   const lr=await pg.evaluate(()=>{ const rows=[...document.querySelectorAll('#layers .lr')]; const on=rows.find(r=>r.getAttribute('aria-selected')==='true'), off=rows.find(r=>r.getAttribute('aria-selected')!=='true'&&!r.querySelector('.lr-b.on'));
     const st=r=>r&&[...r.querySelectorAll('.lr-b')].map(x=>getComputedStyle(x).pointerEvents+'/'+getComputedStyle(x).opacity); return {on:st(on),off:st(off)}; });
   ok(`${tag}: Lock / Hide on the chosen row can be tapped, on other rows they can't`,lr.on&&lr.on.every(v=>v==='auto/1')&&lr.off&&lr.off.every(v=>v.startsWith('none/')),lr);
@@ -64,6 +68,7 @@ for(const [W,dark] of [[390,false],[360,true]]){
   // menus
   await pg.click('#fileMenu'); await T(250); await scan('Board menu'); await closeAll(pg);
   await pg.click('#dock [data-dk="more"]'); await T(250); await scan('More tools');
+  ok(`${tag}: menus leave out keyboard shortcuts on a phone`,await pg.evaluate(()=>[...document.querySelectorAll('#menu kbd')].every(k=>!k.offsetParent)));
   const more=await pg.evaluate(()=>[...document.querySelectorAll('#menu .m-l')].map(x=>x.textContent));
   const dockFrame=await pg.evaluate(()=>{ const f=document.querySelector('#dock [data-dk="frame"]'); return f?f.getBoundingClientRect().width:0; });
   ok(`${tag}: Frame is in More tools, not in the dock`,more[0]==='Frame'&&more.includes('Frame sizes…')&&dockFrame===0,{more:more.slice(0,3),dockFrame});
