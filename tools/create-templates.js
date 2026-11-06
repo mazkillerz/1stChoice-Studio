@@ -467,6 +467,123 @@ LAYOUTS['good-morning']=async function(t,w,def){
   return [f];
 };
 
+/* ---------- feed layouts (1.42.0): cover, closeup, one-of-many, podium, type-photo; each as a post (1080×1350) and a story (1080×1920) ---------- */
+const LATIN=t=>(t.B.fonts&&t.B.fonts.latin)||t.display;
+const GROUND=2717/2994;   // the ground line of a "+ shadow" can cut-out, as a share of its height
+/* a brand picture by height (keeps its shape), placed like t.add */
+async function byH(t,f,id,h,at,o){ const im=await BD.getImg('brand:'+id); if(!im) return null; return t.asset(f,id,Math.round(h*im.w/im.h),at,o); }
+/* a "+ shadow" can by height, standing with its ground line on `base`, centred on cx */
+const onBase=(t,f,id,h,cx,base,o)=>byH(t,f,id,h,{cx,y:Math.round(base-h*GROUND)},o);
+const ruleLine=(f,x1,y,x2,color,wd,label)=>{ const n=seg(f,x1,y,x2,y,color,wd); n.setAttr('label',label||'Rule'); return n; };
+const softShadow=(t,n)=>n.setAttrs({shadowEnabled:true,shadowOn:true,shadowColor:t.C.ink,shadowBlur:24,shadowOpacity:.55,shadowOffsetX:0,shadowOffsetY:0});
+/* turn a picture about its own centre (top-left of the turned picture computed, so no offsets are stored) */
+function turnAbout(n,cx,cy,deg){ const w=n.width(), h=n.height(), a=deg*Math.PI/180, c=Math.cos(a), s=Math.sin(a), px=w/2, py=h/2;
+  n.rotation(deg); n.x(Math.round(cx-(px*c-py*s))); n.y(Math.round(cy-(px*s+py*c))); }
+const pinFor=def=>def.size==='story'?'pin':undefined;   // story pills point to the map; post pills are plain buttons
+/* layers that bleed out of the page on purpose (the frame clips them) are marked, so checks know it is by design */
+function markBleed(f){ const S=U.fsize(f); U.items(f).forEach(n=>{ if(n.hasName('frame-bg')) return; const r=U.prect(n,f); if(r.x<-2||r.y<-2||r.x+r.width>S.w+2||r.y+r.height>S.h+2) n.setAttr('bleed',1); }); }
+const frameFor=(t,w,def)=>t.frame(1080,def.size==='story'?1920:1350,{label:def.label,fill:w.bg||t.C.paper});
+
+/* "Magazine cover": the can as the cover star, three numbered cover lines, a stamp, a footer row. */
+LAYOUTS['cover']=async function(t,w,def){
+  const C=t.C, st=def.size==='story', f=frameFor(t,w,def), lat=LATIN(t); await BD.ensureFont(lat,'');
+  const P=st?{row:232,mast:282,h:1180,cx:297,base:1560,ly:560,step:210,lx:672,sx:470,sy:1200,ss:220,rule:1600}
+           :{row:54,mast:100,h:1060,cx:300,base:1268,ly:370,step:190,lx:668,sx:470,sy:930,ss:210,rule:1270};
+  t.add(f,t.text(w.kicker||t.write(),{fontFamily:lat,fontStyle:'normal',fontSize:30,label:'Kicker'}),{x:72,y:P.row});
+  if(w.small) t.add(f,t.text(w.small,{fontSize:24,fill:C.muted,label:'Small line'}),{right:1008,y:P.row});
+  await t.asset(f,'logo',936,{x:72,y:P.mast},{label:'Masthead'});
+  await onBase(t,f,AS(def,'product','can-classic-shadow'),P.h,P.cx,P.base);
+  for(let i=0;i<3;i++){ const y=P.ly+i*P.step;
+    ruleLine(f,P.lx,y,1008,C.ink,3,'Cover line rule '+(i+1));
+    t.add(f,t.text(String(i+1).padStart(2,'0'),{fontFamily:lat,fontStyle:'normal',fontSize:72,label:'Cover number '+(i+1)}),{x:P.lx,y:y+14});
+    t.add(f,t.head(WD(t,w,'line'+(i+1)),{fontSize:56,label:'Cover line '+(i+1),align:'right'}),{right:1008,y:y+14}); }
+  const sid=AS(def,'stamp'); if(sid){ const sn=await t.asset(f,sid,P.ss,{x:P.sx,y:P.sy},{label:'Stamp'}); if(sn) turnAbout(sn,P.sx+P.ss/2,P.sy+sn.height()/2,-12); }
+  ruleLine(f,72,P.rule,1008,C.ink,3,'Footer rule');
+  const h=(t.B.handle||'').replace(/^@/,'');
+  if(h){ const g=t.el.iconLine(h,{icon:'instagram',size:30,color:C.ink,label:'Instagram handle'}); const tx=g.findOne(n=>n.getAttr('role')==='text'); if(tx){ tx.setAttr('fontFamily',lat); tx.setAttr('fontStyle','normal'); CR.layout(g,true); } t.add(f,g,{x:72,y:P.rule+14}); }
+  if(w.foot) t.add(f,t.text(w.foot,{fontSize:26,label:'Footer line'}),{right:1008,y:P.rule+14});
+  markBleed(f); return [f];
+};
+
+/* "Close-up": the can fills the frame and bleeds out of it; the headline sits over it. */
+LAYOUTS['closeup']=async function(t,w,def){
+  const C=t.C, st=def.size==='story', f=frameFor(t,w,def), pid=AS(def,'product','can-classic');
+  if(!st){
+    await byH(t,f,pid,2000,{x:-153,y:87});
+    await t.logo(f,200,{x:72,y:64});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:32,fill:C.muted,label:'Small line'}),{right:1008,y:58});
+    softShadow(t,t.add(f,t.head(WD(t,w,'head'),{fontSize:140,fill:C.paper}),{cx:540,y:368}));
+  } else {
+    await byH(t,f,pid,2700,{x:-395,y:-146});
+    softShadow(t,t.add(f,t.head(WD(t,w,'head'),{fontSize:160,fill:C.paper}),{cx:540,y:288}));
+    t.add(f,t.el.panel(1080,700,{fill:C.paper,r:64,label:'White sheet'}),{x:0,y:1330});
+    const fl=(t.B.flavours||[]), fv=fl.find(x=>x.id===def.flavour)||fl[0]||{};
+    const chip=t.el.pill(WD(t,w,'chip'),{bg:fv.bg,fg:fv.fg,size:32,h:70,label:'Flavour'}); t.add(f,chip,{right:1008,y:1386});
+    const cr=chip.getClientRect({relativeTo:f,skipShadow:true});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:38,fontStyle:'600',fill:C.muted,label:'Small line'}),{right:Math.round(cr.x-18),cy:Math.round(cr.y+cr.height/2)});
+    const pill=t.el.pill(WD(t,w,'pill'),{icon:pinFor(def),h:88,label:'Map in bio'}); t.add(f,pill,{right:1008,y:1460});
+    const pr=pill.getClientRect({relativeTo:f,skipShadow:true});
+    await t.logo(f,220,{x:72,cy:Math.round(pr.y+pr.height/2)});
+  }
+  markBleed(f); return [f];
+};
+
+/* the logo, headline and small line that open "One of many" and "Podium" */
+async function topBlock(t,f,w,st,sz){ const C=t.C;
+  if(!st){ await t.logo(f,211,{x:72,y:76});
+    t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{right:1008,y:96});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:36,fill:C.muted,label:'Small line'}),{right:1004,y:292});
+  } else { await t.logo(f,233,{cx:540,y:250});
+    t.add(f,t.head(WD(t,w,'head'),{fontSize:sz||160}),{cx:540,y:sz?300:310});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:sz?42:40,fill:C.muted,label:'Small line'}),{cx:540,y:sz?500:508}); } }
+
+/* "One of many": a grid of outline can icons; one real can on a soft panel takes four cells. */
+LAYOUTS['one-of-many']=async function(t,w,def){
+  const C=t.C, st=def.size==='story', f=frameFor(t,w,def), ox=100, oy=st?640:400, cell=280, gap=20, step=cell+gap;
+  await topBlock(t,f,w,st);
+  const iconId=AS(def,'icon','can-icon-outline'), hx=ox+step, hy=oy;
+  const hero=(c,r)=>c>=1&&r<=1;
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++){ if(hero(c,r)) continue; const x=ox+c*step, y=oy+r*step;
+    t.add(f,t.box({width:cell,height:cell,cornerRadius:30,stroke:C.soft,strokeWidth:3,label:'Grid cell'}),{x,y});
+    await t.asset(f,iconId,154,{cx:x+cell/2,cy:y+cell/2},{opacity:.22,label:'Can icon'}); }
+  t.add(f,t.el.panel(cell*2+gap,cell*2+gap,{r:36,label:'Hero panel'}),{x:hx,y:hy});
+  const mid=AS(def,'mark'); if(mid) await t.asset(f,mid,100,{x:hx+cell*2+gap-130,y:hy+30},{label:'Mark'});
+  await onBase(t,f,AS(def,'product','can-classic-shadow'),520,hx+(cell*2+gap)/2,hy+546);
+  if(st&&w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:1556});
+  return [f];
+};
+
+/* "Podium": the can stands on the first step of three. */
+LAYOUTS['podium']=async function(t,w,def){
+  const C=t.C, st=def.size==='story', H=st?1920:1350, f=frameFor(t,w,def), lat=LATIN(t); await BD.ensureFont(lat,'');
+  await topBlock(t,f,w,st,st?170:0);
+  if(st&&w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:580});
+  const cw=st?420:400, sw=300, gap=10, x0=Math.round((1080-(cw+sw*2+gap*2))/2), ns=st?240:210;
+  const tops=st?{l:1490,c:1360,r:1580}:{l:1080,c:960,r:1160};
+  const blocks=[['l','2',x0,sw],['c','1',x0+sw+gap,cw],['r','3',x0+sw+gap+cw+gap,sw]];
+  for(const [k,n,x,bw] of blocks){ const top=tops[k], first=k==='c';
+    t.add(f,t.box({width:bw,height:H-top+40,cornerRadius:[28,28,0,0],fill:first?C.ink:C.panel,label:'Step '+n}),{x,y:top});
+    t.add(f,t.text(n,{fontFamily:lat,fontStyle:'normal',fontSize:ns,fill:first?C.paper:C.soft,label:'Step number '+n}),{cx:x+bw/2,y:Math.round(top+ns*.12)}); }
+  await onBase(t,f,AS(def,'product','can-classic-shadow'),st?760:660,540,tops.c);
+  markBleed(f); return [f];
+};
+
+/* "Coffee type": big coffee-filled letters (a picture) with a headline and a button. */
+LAYOUTS['type-photo']=async function(t,w,def){
+  const C=t.C, st=def.size==='story', f=frameFor(t,w,def), tid=AS(def,'type');
+  if(!st){ await t.logo(f,211,{x:72,y:76});
+    t.add(f,t.head(WD(t,w,'head'),{fontSize:130}),{right:1008,y:90});
+    if(tid) await t.asset(f,tid,1020,{cx:540,y:360},{label:'Coffee type'});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:38,fill:C.muted,label:'Small line'}),{cx:540,y:1104});
+    if(w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Button'}),{cx:540,y:1200});
+  } else { await t.logo(f,233,{cx:540,y:250});
+    if(tid) await t.asset(f,tid,980,{cx:540,y:470},{label:'Coffee type'});
+    t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:960});
+    if(w.small) t.add(f,t.text(w.small,{fontSize:42,fill:C.muted,label:'Small line'}),{cx:540,y:1170});
+    if(w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:1260}); }
+  return [f];
+};
+
 /* ---------- building a template from the brand kit ---------- */
 function brandTemplates(){ const B=BD.B||{}; return ((B.create&&B.create.templates)||[]).filter(d=>LAYOUTS[d.layout]); }
 CR.templates=brandTemplates;

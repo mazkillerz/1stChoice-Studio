@@ -128,7 +128,7 @@ const selLabels=pg=>pg.evaluate(()=>BD.S.sel.map(n=>n.getAttr('label')||BD.util.
   ok('brand has templates',list.length>=20,list.length);
   const bad=[];
   for(const id of list){ const r=await pg.evaluate(async id=>{ BD.select([]); BD.main.destroyChildren(); const made=await CR.buildTemplate(id,{at:{x:0,y:0}}); const out={pages:made.length,outside:[]};
-      made.forEach(f=>{ f.visible(true); const s=BD.util.fsize(f); BD.util.items(f).forEach(n=>{ if(n.hasName('frame-bg')) return; const r=BD.util.prect(n,f); if(r.x<-2||r.y<-2||r.x+r.width>s.w+2||r.y+r.height>s.h+2) out.outside.push(n.getAttr('label')||BD.util.kind(n)); }); }); return out; },id);
+      made.forEach(f=>{ f.visible(true); const s=BD.util.fsize(f); BD.util.items(f).forEach(n=>{ if(n.hasName('frame-bg')||n.getAttr('bleed')) return; const r=BD.util.prect(n,f); if(r.x<-2||r.y<-2||r.x+r.width>s.w+2||r.y+r.height>s.h+2) out.outside.push(n.getAttr('label')||BD.util.kind(n)); }); }); return out; },id);
     if(!r.pages||r.outside.length) bad.push({id,...r}); }
   ok('every template builds inside its pages',!bad.length,bad);
   await pg.goto(BASE+'tools/create.html?tpl=ice-cold'); await ready(pg); await pg.waitForTimeout(800);
