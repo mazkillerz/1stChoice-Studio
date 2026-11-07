@@ -11,6 +11,13 @@ function panoInfo(p,kindOf){
   const q=r+Math.floor((p-r)/3)*3;
   return {q,part:p-q,n:Math.min(3,e-q+1)};
 }
+/* the height a text really takes: h.measure reads one line, but people can type a new line (Enter). One line measures
+   exactly as before, so old designs keep their layout */
+const mLines=(h,str,o)=>{ const L=String(str||'').split('\n'); if(L.length<2) return h.measure(str,o);
+  const size=Math.min(...L.map(t=>h.measure(t||' ',o).size)), ms=L.map(t=>h.measure(t||' ',{...o,size}));
+  return {w:Math.max(...ms.map(m=>m.w)),h:Math.round(Math.max(...ms.map(m=>m.h))+(L.length-1)*size*1.2),size}; };
+/* the old measure where it fits, the true one where the old layout would push words off the slide */
+const mFit=(h,str,o,fits)=>{ const a=h.measure(str,o); if(!String(str||'').includes('\n')) return a; const b=mLines(h,str,o); return fits(a,b)?a:b; };
 Studio.tool({
   id:'carousel', title:'Carousel', fileName:'carousel',
   size:{w:1080,h:1350}, safe:{top:0,bottom:0},
@@ -61,12 +68,16 @@ Studio.tool({
     const photoWords=(big,withLogo)=>{
       let [vp,hp]=String(o.value('place')||'bottom-start').split('-'); hp=hp||'start';
       const center=hp==='center', tx=center?W/2:(hp==='start')!==rtl?M:W-M, al=center?'center':hp;
-      const hm=head?h.measure(head,{font:'display',size:big,maxW:920}):{h:0}, sm=small?h.measure(small,{weight:'800',size:40,maxW:900}):{h:0}, blockH=hm.h+(small?sm.h+22:0);
+      const hO=head?h.measure(head,{font:'display',size:big,maxW:920}):{h:0}, sO=small?h.measure(small,{weight:'800',size:40,maxW:900}):{h:0};
+      const hR=head?mLines(h,head,{font:'display',size:big,maxW:920}):{h:0}, sR=small?mLines(h,small,{weight:'800',size:40,maxW:900}):{h:0};
+      const startAt=bh=>vp==='top'?(withLogo||everyLogo?100:110):vp==='middle'?Math.round((H-bh)/2):H-150-bh;
+      const oldOk=startAt(hO.h+(small?sO.h+22:0))+hR.h+(small?sR.h+22:0)<=H-60;   // old layout kept while the words stay on the slide
+      const hm=oldOk?hO:hR, sm=oldOk?sO:sR, blockH=hm.h+(small?sm.h+22:0);
       if(head||small){ if(vp==='top') h.shade(0,760,.72,0); else if(vp==='middle'){ h.shade(H/2-520,H/2,0,.5); h.shade(H/2+520,H/2,0,.5); } else h.shade(H,H-760,.75,0); }
       else h.shade(H,H-260,.4,0);
       const lw=withLogo?210:170;
       if(withLogo||everyLogo){ const ly=vp==='top'?H-120-h.logoH(lw):80, lx=center?(W-lw)/2:((hp==='start')!==rtl?W-M-lw:M); if(vp!=='top') h.shade(0,300,.3,0); h.logo(lx,ly,lw,'light'); }
-      let y=vp==='top'?(withLogo||everyLogo?100:110):vp==='middle'?Math.round((H-blockH)/2):H-150-blockH;
+      let y=startAt(blockH);
       y+=h.text('head','Headline',head,tx,y,{font:'display',size:big,color:C.paper,align:al,shadow:true,maxW:920})+(head?22:0);
       h.text('small','Small line',small,tx,y,{weight:'800',size:40,color:'rgba(255,255,255,.92)',align:al,shadow:true,maxW:900});
     };
@@ -82,7 +93,9 @@ Studio.tool({
     const topLogo=(force)=>{ if(force||everyLogo){ const lw=180; h.logo((W-lw)/2,cTop&&counter!=='none'?104:72,lw,dark?'light':'dark'); return 72+h.logoH(lw)+40; } return 0; };
     if(kind==='words'){
       topLogo(!o.page);
-      const hm=h.measure(head||' ',{font:'display',size:170,maxW:900}), sm=small?h.measure(small,{weight:'800',size:46,maxW:880}):{h:0};
+      const fitsW=(a,b)=>(H-a.h)/2+b.h<=H-60;
+      const hm=mFit(h,head||' ',{font:'display',size:170,maxW:900},(a,b)=>fitsW({h:a.h+(small?h.measure(small,{weight:'800',size:46,maxW:880}).h+34:0)},{h:b.h+(small?mLines(h,small,{weight:'800',size:46,maxW:880}).h+34:0)}));
+      const sm=small?mFit(h,small,{weight:'800',size:46,maxW:880},(a,b)=>fitsW({h:hm.h+a.h+34},{h:hm.h+b.h+34})):{h:0};
       let y=(H-hm.h-(small?sm.h+34:0))/2;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:170,color:ink,maxW:900})+34;
       h.text('small','Small line',small,W/2,y,{weight:'800',size:46,color:muted,maxW:880});
@@ -91,7 +104,7 @@ Studio.tool({
     if(kind==='number'){
       let n=String(o.value('num')||'').trim(); if(!n){ let c=0; for(let i=0;i<=o.page;i++) if(o.pageValue(i,'kind')==='number') c++; n=String(c); }
       const t0=topLogo(false);
-      const big=h.digits(n), nm=h.measure(big,{font:'display',size:460,maxW:900}), hm=head?h.measure(head,{font:'display',size:120,maxW:900}):{h:0}, sm=small?h.measure(small,{weight:'800',size:44,maxW:880}):{h:0};
+      const big=h.digits(n), nm=h.measure(big,{font:'display',size:460,maxW:900}), hm=head?mFit(h,head,{font:'display',size:120,maxW:900},(a,b)=>(H-nm.h-a.h)/2+nm.h+b.h+40<=H-60):{h:0}, sm=small?mFit(h,small,{weight:'800',size:44,maxW:880},(a,b)=>(H-nm.h-hm.h-a.h)/2+nm.h+hm.h+b.h+66<=H-60):{h:0};
       const blockH=nm.h+(head?40+hm.h:0)+(small?26+sm.h:0); let y=Math.max(t0+20,(H-blockH)/2-20);
       y+=h.text('num','Big number',big,W/2,y,{font:'display',size:460,color:dark?C.accent:ink,maxW:900})+(head?40:0);
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:120,color:ink,maxW:900})+(small?26:0);
@@ -99,16 +112,19 @@ Studio.tool({
       drawCounter(false); gridGuide(); return;
     }
     if(kind==='end'){
-      const lw=460, lh=h.logoH(lw), pill=o.value('pill'), sm=small?h.measure(small,{weight:'800',size:44,maxW:880}):{h:0};
+      const lw=460, lh=h.logoH(lw), pill=o.value('pill'), sm=small?mFit(h,small,{weight:'800',size:44,maxW:880},(a,b)=>(H-lh-a.h-190)/2+lh+b.h+190<=H-60):{h:0};
       const blockH=lh+(small?50+sm.h:0)+(pill?60+80:0); let y=(H-blockH)/2-20;
       y+=h.logo((W-lw)/2,y,lw,dark?'light':'dark')+(small?50:0);
       y+=h.text('small','Small line',small,W/2,y,{weight:'800',size:44,color:muted,maxW:880})+(pill?60:0);
       h.text('head','Headline','',0,0);
-      h.pill('pill','Button',pill,W/2,y,{bg:dark?C.paper:C.ink,fg:dark?C.ink:C.paper,size:40,h:84});
+      h.pill('pill','Button',pill,W/2,y,{bg:dark?C.paper:C.ink,fg:dark?C.ink:C.paper,size:pill?h.measure(String(pill).replace(/\n/g,' '),{weight:'800',size:40,maxW:860}).size:40,h:84});
       drawCounter(false); gridGuide(); return;
     }
     /* Photo + words, Two photos: photos on the ground, words underneath */
-    const pw=W-2*M, textH=(head?130:0)+(small?60:0), avail=Math.round(H-80-(textH?textH+70:0)-150);
+    const pw=W-2*M; let textH=(head?130:0)+(small?60:0), avail=Math.round(H-80-(textH?textH+70:0)-150);
+    /* words on 2-3 lines need more room than the fixed 130 + 60: the photos give it up (only when the old room would push words off) */
+    const needH=(head?mLines(h,head,{font:'display',size:110,maxW:900}).h+16:0)+(small?mLines(h,small,{weight:'800',size:40,maxW:900}).h:0);
+    if(80+avail+(textH?52:0)+needH>H-40){ textH=needH+10; avail=Math.round(H-80-(textH+70)-150); }
     if(kind==='two'){
       const g=24, side=o.value('two')==='side';
       if(side){ const w=(pw-g)/2; h.photo(0,M,80,w,avail,{r:36,mode:'cover'}); h.photo(1,M+w+g,80,w,avail,{r:36,mode:'cover'}); }
