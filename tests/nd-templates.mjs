@@ -31,7 +31,7 @@ async function check(pg,d,tag){
   ok(tag+' '+d.id+': '+want.t+' texts ('+want.tex+' crayon), Arabic rtl, nothing locked, tpl attr',r.texts===want.t&&r.tex===want.tex&&r.rtl&&r.locked===0&&r.tpl===d.id,{r,want});
   if(/^lr-(r1|c1|c2|c3|c4|c5|r3|r4|t2|t4)/.test(d.id)) ok(tag+' '+d.id+': photos are real photo layers (replaceable)',r.photos>0,r);
   /* a tap on the biggest picture selects that picture on its own (layers are separate) */
-  const pt=await pg.evaluate(()=>{ const f=BD.activeFrame(), im=f.find('Image').filter(n=>!n.getAttr('fill')); if(!im.length) return null;
+  const pt=await pg.evaluate(()=>{ const f=BD.activeFrame(), fw=BD.util.fsize(f).w, im=f.find('Image').filter(n=>n.width()*Math.abs(n.scaleX())<fw*0.95); if(!im.length) return null;
     const n=im.reduce((a,b)=>a.width()*a.height()>b.width()*b.height()?a:b), rc=n.getClientRect(), st=BD.stage.container().getBoundingClientRect();
     const top=BD.stage.getIntersection({x:rc.x+rc.width/2,y:rc.y+rc.height/2}); return {x:st.left+rc.x+rc.width/2,y:st.top+rc.y+rc.height/2,id:n.id(),hit:top&&top.id()}; });
   if(pt&&pt.hit===pt.id){ if(tag==='phone') await pg.touchscreen.tap(pt.x,pt.y); else await pg.mouse.click(pt.x,pt.y); await pg.waitForTimeout(250);
