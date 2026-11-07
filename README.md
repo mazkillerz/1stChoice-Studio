@@ -23,6 +23,8 @@ The tool that can make anything: its own simple editor made for phones (one page
 
 The bottom bar has **Add, Text, Photo, Templates, Layers, Save** on phone and computer. Sheets open from the bottom on a phone and as a panel on the right on a computer; the page moves so a sheet never covers it. Layers lists the page's layers (top first) with hide and lock.
 
+- **Long words** (1.47.0): words keep their place while you type (centred words grow from the middle) and wrap at the page edge; shorter words go back to one line. If team templates cannot load, the picker says so with **Try again**.
+
 ### Video editor
 Makes a video from your own clips and photos, text and sound, or from a reel template of the brand kit (`brands/<brand>/reels/<id>/`, formats in `docs/reels.md`), and saves an MP4 (1080×1920, with sound). It opens the first reel template ready to edit. Phone first: a big 9:16 preview, play/pause, and a timeline with a fixed playhead in the middle; scroll the timeline to scrub (pinch or the zoom buttons change the scale). Three lanes: **Clips**, **Text** and **Audio**.
 - **Add:** clips and photos from this phone (they go after the clip under the playhead), a reel template, or music and sound (placed at the playhead). In an empty video (**New video** in the name menu) one button starts you off.

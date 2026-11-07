@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.47.0 · 7 Nov 2026
+
+### Long words stay on the page
+type: fix
+In Create, words you type now keep their place: a centred headline grows from its middle, and when it gets wider than the page it wraps onto a second line instead of running off the edge. Chat bubbles stay on their side of the screen too. Shorter words go back to one line by themselves. Fixing a long headline is 3 taps instead of about 7.
+![before](assets/whatsnew/1.47.0-words-fit-before.jpg)
+![after](assets/whatsnew/1.47.0-words-fit-after.jpg)
+
+### Create: small fixes
+type: fix
+On a small phone all five sizes fit in the start sheet (Highlight was cut off at the edge). Team templates that cannot load now say so with Try again, instead of "Looking…" for ever. Bigger targets for the Add sheet's section chips, Layers' Hide and Lock and the colour swatches, and no empty gap in the Save sheet.
+![before](assets/whatsnew/1.47.0-small-fixes-before.jpg)
+![after](assets/whatsnew/1.47.0-small-fixes-after.jpg)
+
 ## 1.46.0 · 7 Nov 2026
 
 ### No signal? Studio says so
