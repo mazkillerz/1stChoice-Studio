@@ -13,6 +13,20 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.49.0 · 7 Nov 2026
+
+### Words stay inside your story
+type: fix
+A headline or small line you type on two or three lines (Enter) no longer pushes the flavours, small line or button past the bottom of the story, off the design, or on top of the logo, in Restock, Photo story, Offer and Carousel. The photo makes room instead. A long button now shrinks to fit instead of running off both sides, and words on several lines are centred on a Highlight cover. Designs that already looked right are drawn exactly as before.
+![before](assets/whatsnew/1.49.0-lines-before.jpg)
+![after](assets/whatsnew/1.49.0-lines-after.jpg)
+
+### Small fixes
+type: fix
+Offer: with a small line and a button (or three tiles and dates) the button sat below the line Instagram covers; the photo now gives up a little room so everything shows. Collage: "Big + small" with a wide photo first and a tall one second no longer puts the small photo above the top of the story. Carousel: words on several lines no longer sit on the slide dots.
+![before](assets/whatsnew/1.49.0-offer-before.jpg)
+![after](assets/whatsnew/1.49.0-offer-after.jpg)
+
 ## 1.48.0 · 7 Nov 2026
 
 ### Photos still waiting join your new story
