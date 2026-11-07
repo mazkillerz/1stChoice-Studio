@@ -405,6 +405,26 @@ async function useBrand(id,opt){
   return BRAND;
 }
 
+/* tokens (mega w1) — Studio.tokens(format): the brand's design tokens (brand.tokens) merged over neutral engine defaults.
+   format: 'story'|'post'|'square'|'highlight' (default 'story'). Returns {format,w,h,type:{headline,sub,body,small},space,radius,shadow,safe}.
+   Studio.tokens.raw() = the brand's tokens block as written. Read-only copies: change a brand's look in its brand.js. */
+const TOK_DEFAULT={
+  formats:{story:[1080,1920],post:[1080,1350],square:[1080,1080],highlight:[1080,1920]},
+  type:{headline:{size:120,lh:1.2,font:'display',wt:''},sub:{size:46,lh:1.2,font:'body',wt:''},body:{size:40,lh:1.2,font:'body',wt:''},small:{size:34,lh:1.2,font:'body',wt:''}},
+  space:[8,16,24,32,48,64,80],
+  radius:{sm:16,md:32,lg:48,pill:999},
+  shadow:{soft:{blur:24,y:2,color:'rgba(0,0,0,.45)'},lift:{blur:48,y:16,color:'rgba(0,0,0,.3)'}},
+  safe:{story:{top:250,bottom:300,side:72},post:{top:0,bottom:0,side:72},square:{top:0,bottom:0,side:72},highlight:{top:0,bottom:0,side:0}}
+};
+const tokMerge=(a,b)=>{ if(Array.isArray(b)) return b.slice(); if(!b||typeof b!=='object') return b===undefined?a:b; const o={...(a&&typeof a==='object'&&!Array.isArray(a)?a:{})}; Object.keys(b).forEach(k=>{ o[k]=tokMerge(o[k],b[k]); }); return o; };
+function tokens(format){
+  const raw=(BRAND&&BRAND.tokens)||{}, f=format&&(TOK_DEFAULT.formats[format]||(raw.formats||{})[format])?format:'story', all=tokMerge(TOK_DEFAULT,raw), size=all.formats[f];
+  const typ=raw.type&&raw.type[f]?tokMerge(TOK_DEFAULT.type,raw.type[f]):TOK_DEFAULT.type, safe=all.safe[f]||all.safe.story;
+  return JSON.parse(JSON.stringify({format:f,w:size[0],h:size[1],type:typ,space:all.space,radius:all.radius,shadow:all.shadow,safe}));
+}
+tokens.raw=()=>JSON.parse(JSON.stringify((BRAND&&BRAND.tokens)||{}));
+const tokFormat=(w,h)=>h>=1900?'story':h>=1300?'post':'square';   // the format a canvas belongs to (a highlight cover is drawn on the story canvas)
+
 /* Halve a big photo step by step down to the size it is drawn at, so saved stories stay sharp. */
 /* Only used while saving; emptied right after so phones get their memory back. */
 let SHARP=new Map();
@@ -505,6 +525,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
   const h={W,H,ctx,rr,brand:B,C,dir,isLight,
+    get tok(){ return tokens(tokFormat(W,H)); },   // tokens (mega w1): the brand's design tokens for this canvas, read-only
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
     /* fill the whole story with a ground colour and its Background finish (groundFx); kind 'plain' = just the colour */
     ground(color,kind){ ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H); },
@@ -2976,5 +2997,5 @@ async function home(){
 const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
