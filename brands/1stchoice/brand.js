@@ -13,7 +13,8 @@ Studio.registerBrand({
     display:'Lalezar',         // big headlines
     body:'Cairo',              // small lines, buttons, place names
     latin:'Modak',             // the brand's Latin display face (numbers, kicker, handle)
-    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',
+    css:'fonts/fonts.css',     // self-hosted copies (woff2 + OFL licences in fonts/), loaded first
+    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',   // fallback only
     /* fonts offered first in the Font menu; new text always starts in display/body above */
     choices:[
       {family:'Lalezar',label:'Lalezar (headlines)',wt:''},
