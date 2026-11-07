@@ -22,7 +22,10 @@ async function readMeta(blob,type,id){
   if(type==='image'){ el=new Image(); el.src=url; try{ await el.decode(); }catch(e){ URL.revokeObjectURL(url); throw new Error('This photo cannot be opened here.'); } meta.w=el.naturalWidth; meta.h=el.naturalHeight; }
   else if(type==='video'){ el=videoEl(url); const ok=await Promise.race([once(el,'loadeddata',8000),once(el,'error',8000).then(()=>false)]);
     if(!ok&&!el.videoWidth){ URL.revokeObjectURL(url); throw new Error('This video cannot be opened here.'); }
-    meta.dur=el.duration||0; meta.w=el.videoWidth; meta.h=el.videoHeight; }
+    if(!isFinite(el.duration)){   // recordings (WebM from a screen or phone recorder) often say Infinity until the end is read: seek far to learn it
+      const got=once(el,'durationchange',4000); try{ el.currentTime=1e7; }catch(e){} await got;
+      if(isFinite(el.duration)){ const back=once(el,'seeked',2000); el.currentTime=0; await back; } }
+    meta.dur=isFinite(el.duration)?el.duration||0:0; meta.w=el.videoWidth; meta.h=el.videoHeight; }
   else { const a=new Audio(); a.preload='metadata'; a.src=url; await Promise.race([once(a,'loadedmetadata',8000),once(a,'error',8000)]); meta.dur=a.duration;
     if(!isFinite(meta.dur)){ const d=await decodeBlob(blob); meta.dur=d?d.L.length/SR:0; } }
   return {url,el,meta};

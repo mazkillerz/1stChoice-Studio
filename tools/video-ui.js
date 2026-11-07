@@ -143,6 +143,30 @@ V.closeSheet=function(quiet){
 function idle(){ sheetEl.hidden=false; sheetEl.classList.add('idle'); shT.textContent='Edit'; $('vdShX').hidden=true; cur=null;
   shB.innerHTML='<p class="small vd-idle">Tap a clip, text or sound on the timeline to edit it. Use Add, Text and Sound below the timeline to put something new in.</p>'; }
 $('vdShX').addEventListener('click',()=>{ V.closeSheet(); });
+
+/* phone: drag the sheet's top edge (or its title row) up for more room, down for a bigger preview; the height is remembered on this device.
+   While dragging the preview only scales (the canvas is resized once, on release). Arrow keys on the handle do the same. */
+(function(){
+  const KEY='studio:video:sheetH', grab=$('vdGrab'), head=sheetEl.querySelector('.vd-sh-h');
+  const base=()=>Math.min(320,Math.max(210,Math.round(innerHeight*0.32)));   // the CSS default: clamp(210px,32dvh,320px)
+  const maxH=()=>{ const m=main.clientHeight, other=$('vdTrans').offsetHeight+bar.offsetHeight; return Math.max(base(),m-other-200); };   // the preview keeps 200 px
+  const apply=h=>{ if(desk()||!h){ sheetEl.style.height=''; return; } h=Math.round(clamp(h,210,maxH())); sheetEl.style.height=h+'px'; grab.setAttribute('aria-valuenow',String(h)); };
+  V.sheetH=()=>sheetEl.getBoundingClientRect().height;
+  const saved=+L.store(KEY)||0; if(saved) apply(saved);
+  let g=null;
+  const down=e=>{ if(desk()||(e.button&&e.button>0)||e.target.closest('button,input,a,label')) return;
+    g={id:e.pointerId,y0:e.clientY,h0:sheetEl.getBoundingClientRect().height,moved:false}; e.currentTarget.setPointerCapture(e.pointerId); };
+  const move=e=>{ if(!g||g.id!==e.pointerId) return; const dy=g.y0-e.clientY; if(!g.moved&&Math.abs(dy)<6) return;
+    if(!g.moved){ g.moved=true; st.resizing=true; sheetEl.classList.add('resizing'); }
+    e.preventDefault(); apply(g.h0+dy); V.stageLayout(); };
+  const up=e=>{ if(!g||g.id!==e.pointerId) return; const was=g; g=null; try{ e.currentTarget.releasePointerCapture(e.pointerId); }catch(_){} if(!was.moved) return;
+    st.resizing=false; sheetEl.classList.remove('resizing'); const h=Math.round(V.sheetH()); L.store(KEY,h); V.stageLayout(); if(V.scrollTo) V.scrollTo(st.t); };
+  [grab,head].forEach(el=>{ el.addEventListener('pointerdown',down); el.addEventListener('pointermove',move); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); });
+  grab.addEventListener('keydown',e=>{ const k=e.key; if(k!=='ArrowUp'&&k!=='ArrowDown') return; e.preventDefault();
+    apply(V.sheetH()+(k==='ArrowUp'?40:-40)); L.store(KEY,Math.round(V.sheetH())); V.stageLayout(); });
+  addEventListener('resize',()=>{ const h=+L.store(KEY)||0; if(h) apply(h); });
+  matchMedia('(min-width:900px)').addEventListener('change',()=>apply(+L.store(KEY)||0));
+})();
 ['input','change','click','focusin','keydown'].forEach(ev=>shB.addEventListener(ev,e=>{ if(cur&&cur[ev]) cur[ev](e); }));
 matchMedia('(min-width:900px)').addEventListener('change',()=>{ if(!st.sheet) V.closeSheet(true); });
 

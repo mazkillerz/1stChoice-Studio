@@ -8,7 +8,7 @@ const L=Studio.lab, esc=L.esc, $=id=>document.getElementById(id);
 const TOOL='video', SAFE_KEY='studio:video:safe';
 const q=new URLSearchParams(location.search);
 const V=window.VD={L,esc,$,q,TOOL};
-const st=V.st={B:null,P:null,R:null,reels:{},reelP:{},mixP:{},sel:null,t:0,playing:false,h:null,p0:0,t0:0,raf:0,pps:100,pad:195,
+const st=V.st={cap:0,check:true,B:null,P:null,R:null,reels:{},reelP:{},mixP:{},sel:null,t:0,playing:false,h:null,p0:0,t0:0,raf:0,pps:100,pad:195,
   design:null,base:'',clean:'',ready:false,busy:false,leaving:false,sup:null,safe:false,last:0,sheet:null,drawMs:0,skip:0,cssW:0,draftId:null,drawErr:'',loadErr:'',audioErr:'',log:[],solo:null};
 const clone=V.clone=o=>JSON.parse(JSON.stringify(o));
 const svg=(d,s,x)=>`<svg width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${x||''}>${d}</svg>`;
@@ -84,6 +84,7 @@ function stageLayout(){
   if(aw<=0||ah<=0) return;
   const w=Math.max(60,Math.floor(Math.min(aw,ah*asp))), h=Math.round(w/asp), pv=$('vdPv');
   pv.style.width=w+'px'; pv.style.height=h+'px';
+  if(st.resizing){ placeSel(); return; }   // the sheet is being dragged: the picture just scales; sized again on release
   st.cssW=w; sizeCv(); drawNow(); placeSel();
 }
 /* the preview's pixel size: full device sharpness when paused or scrubbing, at most 540 px wide while playing (phones can't keep up at 1080).
@@ -92,24 +93,42 @@ const PLAY_W=540;
 function sizeCv(){
   const W=(st.P&&st.P.W)||1080, H=(st.P&&st.P.H)||1920, asp=W/H, w=st.cssW||$('vdPv').clientWidth||216;
   const cv=$('vdCv'), dpr=Math.min(3,window.devicePixelRatio||1); let cw=Math.min(W,Math.round(w*dpr)); if(st.playing) cw=Math.min(cw,PLAY_W);
-  const ch=Math.round(cw/asp); if(cv.width===cw&&cv.height===ch) return false; cv.width=cw; cv.height=ch; return true;
+  if(st.cap) cw=Math.min(cw,st.cap);   // the phone ran out of canvas memory at a bigger size (see checkBlank)
+  const ch=Math.round(cw/asp); if(cv.width===cw&&cv.height===ch) return false; cv.width=cw; cv.height=ch; st.check=true; return true;
 }
 V.stageLayout=stageLayout;
 function showErr(msg){ $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErrTxt').textContent=msg; $('vdErr').dataset.kind=''; }
+const MEM_RE=/canvas memory|null is not an object|reading 'setTransform'/i;
 function showDrawErr(err){
   const m=String(err&&err.message||err); st.drawErr=m; V.log('draw',m);
   if(!st.warned){ st.warned=true; console.error('draw failed',err); }
   $('vdLoad').hidden=true; $('vdErr').hidden=false; $('vdErr').dataset.kind='draw';
-  $('vdErrTxt').textContent='The video could not be drawn on this '+L.devWord()+'. ('+m+')';
+  $('vdErrTxt').textContent=MEM_RE.test(m)?'This '+L.devWord()+' ran out of memory for the preview. Close other tabs and apps, then tap Retry.'
+    :'The video could not be drawn on this '+L.devWord()+'. ('+m+')';
+}
+/* A canvas past the phone's memory cap draws nothing and stays see-through: the preview looks blank white. Every draw paints the whole
+   frame opaque, so after a new canvas size one pixel tells: see-through = dead. Then try half the size (down to MIN_W), else say so. */
+const MIN_W=270;
+function checkBlank(cv,cx){
+  if(!st.check) return true; st.check=false;
+  let a=255; try{ a=cx.getImageData(cv.width>>1,cv.height>>1,1,1).data[3]; }catch(_){ return true; }   // can't read back (another site's pictures): trust it
+  if(a>0) return true;
+  V.log('blank',cv.width+'×'+cv.height);
+  if(cv.width>MIN_W){ st.cap=Math.max(MIN_W,Math.floor(cv.width/2)); if(sizeCv()) drawNow(); return false; }
+  showDrawErr(new Error('out of canvas memory')); st.check=true; return false;   // keep checking: the message goes once a draw works
 }
 V.fail=(err,what)=>{ const m=String(err&&err.message||err); console.error(what||'error',err); V.log(what||'error',m); return m; };
 function drawNow(){
   const cv=$('vdCv'), cx=cv.getContext('2d');
+  if(!cx){ if(st.P&&!V.empty()) showDrawErr(new Error('out of canvas memory')); return; }
   if(!st.P||V.empty()){ cx.setTransform(1,0,0,1,0,0); cx.clearRect(0,0,cv.width,cv.height); return; }
   const t0=performance.now();
   try{ st.P.draw(cx,Math.min(st.t,Math.max(0,dur()-0.5/fps())),{preview:true}); st.drawMs=performance.now()-t0;
+    if(!checkBlank(cv,cx)) return;
     if(st.drawErr){ st.drawErr=''; const e=$('vdErr'); if(e.dataset.kind==='draw') e.hidden=true; } }
-  catch(err){ showDrawErr(err); }
+  catch(err){
+    if(MEM_RE.test(String(err&&err.message))&&cv.width>MIN_W){ V.log('memory',cv.width+'×'+cv.height); st.cap=Math.max(MIN_W,Math.floor(cv.width/2)); if(sizeCv()){ drawNow(); return; } }
+    showDrawErr(err); if(MEM_RE.test(String(err&&err.message))) st.check=true; }
 }
 V.drawNow=drawNow;
 let prepTok=0;
@@ -523,7 +542,8 @@ function debugPanel(){
     const out=[]; const add=(k,v)=>out.push(`<tr><th>${esc(k)}</th><td dir="ltr">${esc(String(v))}</td></tr>`);
     add('brand',st.B?st.B.id+' · base '+st.B.base:'—'); add('page',location.pathname.split('/').slice(-2).join('/'));
     const cv=$('vdCv'); add('canvas',cv.width+'×'+cv.height+' · dpr '+(window.devicePixelRatio||1));
-    add('last draw',st.drawMs.toFixed(1)+' ms'); add('draw error',st.drawErr||'none'); add('load error',st.loadErr||'none');
+    add('last draw',st.drawMs.toFixed(1)+' ms'); add('preview cap',st.cap?st.cap+' px wide (memory)':'none');
+    for(const id of Object.keys(st.reels)){ const m=st.reels[id].reel&&st.reels[id].reel.mem; if(m) add('canvases '+id,m()); } add('draw error',st.drawErr||'none'); add('load error',st.loadErr||'none');
     for(const id of Object.keys(st.reels)){ const r=st.reels[id]; add('reel '+id,r.base);
       for(const [k,p] of Object.entries((r.M&&r.M.images)||{})){ let s=st.imgStat&&st.imgStat[r.base+p]; add('  image '+k,s||'…'); } }
     for(const [id,m] of Object.entries((st.R&&st.R.media)||{})){ let s='…'; try{ const g=await StudioMedia.get(id); s=g?'ok '+(m.type||'')+' '+(m.dur?m.dur.toFixed(1)+' s':''):'MISSING'; }catch(e){ s='error '+e.message; } add('  media '+id+' '+(m.name||''),s); }
@@ -589,10 +609,12 @@ async function start(){
   }catch(err){ st.loadErr=String(err&&err.message||err); V.log('load',st.loadErr); console.error(err); showErr('The video could not be opened. Check your connection and try again. ('+st.loadErr+')'); if(q.get('debug')==='1'&&$('vdDbg').hidden) debugPanel(); }
 }
 V.start=start;
-$('vdRetry').addEventListener('click',start);
+$('vdRetry').addEventListener('click',()=>{
+  if($('vdErr').dataset.kind==='draw'&&st.ready){ st.cap=0; st.warned=false; $('vdErr').hidden=true; const cv=$('vdCv'); cv.width=cv.height=0; st.check=true; stageLayout(); return; }
+  start(); });
 $('vdName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
 new ResizeObserver(stageLayout).observe($('vdWrap'));
-window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,duration:dur(),clips:st.R?st.R.clips.length:0,recipe:st.R?clone(st.R):null,sel:st.sel,pps:st.pps,h:!!st.h,sheet:st.sheet&&st.sheet.name,drawErr:st.drawErr,hist:{i:H.i,n:H.stack.length},draftId:st.draftId,cvw:$('vdCv').width});
+window.__video=()=>({t:st.t,playing:st.playing,ready:st.ready,design:st.design&&st.design.id,duration:dur(),clips:st.R?st.R.clips.length:0,recipe:st.R?clone(st.R):null,sel:st.sel,pps:st.pps,h:!!st.h,sheet:st.sheet&&st.sheet.name,drawErr:st.drawErr,hist:{i:H.i,n:H.stack.length},draftId:st.draftId,cvw:$('vdCv').width,cap:st.cap,err:$('vdErr').hidden?'':$('vdErrTxt').textContent});
 if(RENDER){ $('vdLoad').hidden=true; }   // Saved's hidden renderer never opens videos; nothing heavy here
 else document.addEventListener('DOMContentLoaded',()=>start());
 stageLayout();
