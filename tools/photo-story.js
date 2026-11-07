@@ -110,8 +110,7 @@ Studio.tool({
         const px=Math.round((W-pw)/2), py=Math.round(Math.max(r0,Math.min(r1-ph,(H-ph)/2)));
         h.backdrop(0,0,0,W,H,{blur:28,dim:.3});
         psShade(h,vp,fa);
-        const sc=(ctx.getTransform&&ctx.getTransform().a)||1;   // canvas shadows ignore the save scale: keep them in proportion
-        ctx.save(); ctx.shadowColor='rgba(0,0,0,.42)'; ctx.shadowBlur=64*sc; ctx.shadowOffsetY=22*sc; ctx.fillStyle='#000'; rr(px,py,pw,ph,36); ctx.fill(); ctx.restore();
+        Studio.comp.panel(h,{x:px,y:py,w:pw,h:ph,r:36,fill:'#000',shadow:'lift'});   // the card's lift shadow (token shadow.lift, scaled with the save)
         h.photo(0,px,py,pw,ph,{mode:'contain',r:36});
         if(ww.top<py+ph&&ww.bottom>py){ ctx.save(); rr(px,py,pw,ph,36); ctx.clip(); psShade(h,vp,fa); ctx.restore(); }   // words that sit on the photo get the same shade
       } else if(st!=='full'){
@@ -140,8 +139,7 @@ Studio.tool({
       const psz=Math.round(190*k), hm=mLines(h,head,{font:'display',size:psz,maxW:936});
       const ft=psWords(h,{small,hp:'start',vp:'bottom',noHead:true,color:ink,sub:soft,shadow:false,tone,logo});
       const top=290+hm.h+48, bottom=1580-(ft.rowH?ft.rowH+52:0), ph=bottom-top;
-      const sc=(ctx.getTransform&&ctx.getTransform().a)||1;
-      if(!dark){ ctx.save(); ctx.shadowColor='rgba(0,0,0,.2)'; ctx.shadowBlur=56*sc; ctx.shadowOffsetY=20*sc; ctx.fillStyle=ground; rr(72,top,W-144,ph,40); ctx.fill(); ctx.restore(); }
+      if(!dark) Studio.comp.panel(h,{x:72,y:top,w:W-144,h:ph,r:40,fill:ground,shadow:{blur:56,y:20,color:'rgba(0,0,0,.2)'}});
       h.photo(0,72,top,W-144,ph,{mode:'cover',r:40});
       h.text('head','Headline',head,W/2,290,{font:'display',size:psz,color:ink,align:'center',maxW:936});
       ft.paint(1580-ft.rowH);

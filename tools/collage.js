@@ -80,7 +80,7 @@ Studio.tool({
        with no border, only the "Big + small" print keeps its old built-in frame (paper in the dark look) */
     const bw=Math.max(0,V('border',0)), bc=o.value('bcol')||(bw>0?(o.style==='cream'?(C.blob||'#fff'):'#fff'):dk?C.paper:'#fff');   // Cream look: a warm frame, never white (looks never mix)
     /* a frame filled in the border colour; the photo then goes inside it with the matching smaller corner radius */
-    const frame=(x,y,w,hh,r)=>{ ctx.fillStyle=bc; ctx.beginPath(); h.rr(ctx,x,y,w,hh,r); ctx.fill(); };
+    const frame=(x,y,w,hh,r)=>{ Studio.comp.panel(h,{x,y,w,h:hh,r,fill:bc}); };
     let L=o.value('lay'+n); if(L==='polaroid') L='scatter';   // old designs
     const grid=(GR[n]||[]).find(x=>x.v===L), isScatter=L==='scatter'&&SC[n];
     /* logo centred between a given y and the canvas bottom */
@@ -105,7 +105,7 @@ Studio.tool({
       const fit=slots=>slots.map(([fx,fy,fw,fh,tilt],i)=>{ const sw=fw*aw, sh=fh*ah, w=Math.min(sw,(sh-2*bw)*a(i)+2*bw); return {cx:ax+fx*aw,cy:ay+fy*ah,w,hh:(w-2*bw)/a(i)+2*bw,tilt}; });
       const area=P=>P.reduce((s,p)=>s+p.w*p.hh,0), A=fit(SC[n]), B2=fit(col), P=area(B2)>area(A)*1.15?B2:A;
       P.forEach((p,i)=>{ ctx.save(); ctx.translate(p.cx,p.cy); ctx.rotate(p.tilt*Math.PI/180);
-        ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=34; ctx.shadowOffsetY=12; ctx.fillStyle=bw?bc:'#000'; ctx.beginPath(); h.rr(ctx,-p.w/2,-p.hh/2,p.w,p.hh,rad); ctx.fill(); ctx.restore();
+        Studio.comp.panel(h,{x:-p.w/2,y:-p.hh/2,w:p.w,h:p.hh,r:rad,fill:bw?bc:'#000',shadow:{blur:34,y:12,color:'rgba(0,0,0,.3)'},scale:false}); ctx.restore();
         h.photo(i,p.cx-p.w/2+bw,p.cy-p.hh/2+bw,p.w-2*bw,p.hh-2*bw,{mode:'contain',r:Math.max(0,rad-bw),rot:p.tilt,pad:bw}); });
       logoBelow(ay+ah); return;
     }
