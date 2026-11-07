@@ -1,0 +1,41 @@
+peak_s,start_s,file,peak_dbfs,what
+0.22,0.119,whoosh_simple.wav,-17,cat drops in
+0.37,0.349,pop_soft.wav,-17,cat lands
+0.88,0.807,pop_up.wav,-23,flag pops
+1.58,1.526,swoosh_fast.wav,-17,scribble 1
+1.84,1.505,swoosh_06.wav,-17,scribble 2
+2.12,1.824,swish.flac,-17,scribble 3
+2.61,1.531,whip_whoosh.flac,-12,cut to printer
+2.912,2.904,click_mouse_2.wav,-23,stop-motion frame
+3.214,3.204,click_mouse.wav,-23,stop-motion frame
+3.516,3.507,click_mouse_2.wav,-23,stop-motion frame
+3.818,3.808,click_mouse.wav,-23,stop-motion frame
+4.12,4.111,click_mouse_2.wav,-23,stop-motion frame
+2.95,2.875,pop_subtle.wav,-17,text: printed
+4.44,4.169,whoosh_velocity.wav,-17,label roll slides in
+5.93,5.843,low_thump.flac,-12,cut to the dark can
+6.3,6.29,pop_d.wav,-17,text: guess
+7.5,7.092,swish_double.wav,-17,kumma rubs out
+7.92,7.622,swoosh_010.wav,-17,scribble rubs off
+8.06,7.778,shine_6.wav,-12,REVEAL
+8.04,7.953,low_thump.flac,-12,reveal hit
+8.12,8.035,pop_multi.wav,-17,firework red
+8.4,8.315,pop_multi.wav,-20,firework green
+8.66,8.647,pop_sharp.wav,-17,jadeed sticker
+8.66,8.573,low_thump.flac,-17,sticker thump
+9.85,9.64,swoosh_014.wav,-17,cut 1
+10.05,10.042,pop_c.wav,-23,text: kumma
+10.45,10.185,swoosh_015.wav,-17,cut 2
+11.06,10.698,swoosh_2.wav,-17,cut 3
+11.66,11.301,swoosh_023.wav,-17,cut 4
+12.32,12.219,whoosh_simple.wav,-17,Classic slides in
+12.62,12.566,swoosh_fast.wav,-19,Passion slides in
+12.97,12.956,pop_b.wav,-17,text: flavours
+14.08,13.67,whoosh_long_end.wav,-17,to the end card
+14.14,14.016,shine_1.wav,-12,logo
+14.1,14.013,low_thump.flac,-17,logo thump
+14.33,14.312,pop_a.wav,-23,text: national edition
+14.76,14.739,pop_soft.wav,-23,photo card
+15.06,14.987,pop_up.wav,-26,flag
+15.36,15.336,tap_confirm.wav,-17,button
+15.65,15.565,pop_multi.wav,-23,firework

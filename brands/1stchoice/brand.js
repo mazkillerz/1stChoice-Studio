@@ -109,7 +109,8 @@ Studio.registerBrand({
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
   reels:[
-    {id:'winter-cat'}
+    {id:'winter-cat'},
+    {id:'label-reveal'}
   ],
   /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
      cat: restock | story | post | highlight. Previews: assets/thumbs/<brand>/tpl/<id>.jpg (node tests/tplthumbs.mjs makes them).
