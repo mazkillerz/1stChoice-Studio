@@ -24,6 +24,7 @@ const mk=async(fonts,seed)=>{
   if(fonts==='slow'){ await ctx.route(/fonts\.googleapis\.com/,async r=>{ await sleep(3000); r.continue().catch(()=>{}); });
     await ctx.route(/fonts\.gstatic\.com/,async r=>{ await sleep(8000); r.continue().catch(()=>{}); }); }
   if(fonts==='off') await ctx.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+  if(fonts==='hang') await ctx.route(/fonts\.gstatic\.com/,()=>{});   // font files never answer (a hanging stylesheet would block the page itself)
   if(seed) await ctx.addInitScript(s=>{ try{ if(!localStorage.getItem('fakecloud')) localStorage.setItem('fakecloud',s); localStorage.setItem('studio:welcome','1'); }catch(e){} },seed);
   await ctx.addInitScript(SHARE);
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(fonts+': '+e)); return {ctx,pg}; };
@@ -71,6 +72,10 @@ ok('slow fonts: the PNG is byte for byte the one saved with the fonts in',slow.h
 /* 3. fonts unreachable: Save still finishes */
 const off=await saveRestock('off');
 ok('fonts unreachable: Save still finishes with a full-size PNG (no hang)',off.hash.length===1&&off.wh==='2160x3840'&&off.ms<30000,{wh:off.wh,ms:off.ms});
+
+/* 4. fonts hang (never answer): Save waits at most the one 12 s cap, then saves */
+const hang=await saveRestock('hang');
+ok('fonts hang: Save still finishes with a full-size PNG within ~15 s',hang.hash.length===1&&hang.wh==='2160x3840'&&hang.ms<16000,{wh:hang.wh,ms:hang.ms});
 
 await b.close();
 ok('no page errors',errs.length===0,errs.slice(0,3));

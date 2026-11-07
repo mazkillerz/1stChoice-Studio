@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.42.0';
+const VERSION='1.43.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -149,10 +149,10 @@ function fontLink(href,key,val){ const l=document.createElement('link'); l.rel='
 function sheetIn(link,ms){ return new Promise(r=>{ if(!link||link.dataset.in) return r(); try{ if(link.sheet) return r(); }catch(_){ return r(); }
   const t=setTimeout(r,ms); const end=()=>{ clearTimeout(t); r(); }; link.addEventListener('load',end,{once:true}); link.addEventListener('error',end,{once:true}); }); }
 /* before a picture is drawn for keeps (Save, Save pictures): every font stylesheet in, then every face of the families it uses
-   loaded, then nothing still loading. Capped, so an offline device still saves (with whatever fonts it has). */
-async function fontsReady(fams,ms){ ms=ms||10000; const cap=p=>Promise.race([p,new Promise(r=>setTimeout(r,ms))]), bare=f=>String(f||'').replace(/["']/g,'').trim();
+   loaded, then nothing still loading. One 12 s cap for all three steps, so an offline device still saves (with whatever fonts it has). */
+async function fontsReady(fams,ms){ const end=Date.now()+(ms||12000), left=()=>Math.max(0,end-Date.now()), cap=p=>Promise.race([p,new Promise(r=>setTimeout(r,left()))]), bare=f=>String(f||'').replace(/["']/g,'').trim();
   try{
-    await cap(Promise.all([...document.querySelectorAll('link[data-brand-fonts],link[data-font]')].map(l=>sheetIn(l,ms))));
+    await cap(Promise.all([...document.querySelectorAll('link[data-brand-fonts],link[data-font]')].map(l=>sheetIn(l,left()))));
     const want=new Set([...fams].map(bare).filter(Boolean));
     await cap(Promise.all([...document.fonts].filter(f=>want.has(bare(f.family))&&f.status!=='loaded').map(f=>f.load().catch(()=>{}))));
     if(document.fonts.ready) await cap(document.fonts.ready);
@@ -380,7 +380,7 @@ async function canvasBlob(c,type,q){ return await new Promise(r=>c.toBlob(r,type
 /* ---------- brands ---------- */
 function registerBrand(b){ BRANDS[b.id]=b; }
 function brandId(){ const list=Studio.brandList||[]; const saved=store('studio:brand'); return list.includes(saved)?saved:(list[0]||null); }
-async function useBrand(id){
+async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
   if(BRAND.fonts&&BRAND.fonts.google&&!document.querySelector('link[data-brand-fonts]')){
@@ -398,7 +398,8 @@ async function useBrand(id){
   const D=BRAND.fonts.display, B=BRAND.fonts.body, sample=BRAND.lang==='ar'?'نص عربي':'Sample';
   const brandLoads=async()=>{ await sheetIn(document.querySelector('link[data-brand-fonts]'),4000);   // the stylesheet first (see sheetIn)
     await Promise.all([document.fonts.load('120px "'+D+'"',sample),document.fonts.load('800 40px "'+B+'"',sample),document.fonts.load('600 40px "'+B+'"',sample)]); };
-  try{ await Promise.race([brandLoads(),new Promise(r=>setTimeout(r,4000))]); }catch(_){}
+  /* the hub draws no brand-font canvases: it never waits (1.43.0: waiting held Home and Saved up to 4 s on a slow connection) */
+  if(!(opt&&opt.noFontWait)){ try{ await Promise.race([brandLoads(),new Promise(r=>setTimeout(r,4000))]); }catch(_){} }
   return BRAND;
 }
 
@@ -2151,7 +2152,7 @@ function dayTag(t){ const d=new Date(t); return d.getDate()+' '+d.toLocaleString
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return dayTag(t); }
 async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
-  const B=await useBrand(); const $=id=>document.getElementById(id);
+  const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};

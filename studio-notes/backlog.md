@@ -26,6 +26,9 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
 
 ## UX audit findings (open)
+- 1.43.0: a Google Fonts stylesheet that hangs (not fails) blocks the whole page from showing: `studio.css` starts with an `@import` of the interface font and pages link brand fonts in `<head>`. Offline it fails fast and is fine. If it matters, load the font CSS without blocking (`media="print" onload`) and keep the 12 s cap in `fontsReady()`.
+- 1.43.0: `run.mjs` maps `studio.js` lines outside `tool()` / `home()` (e.g. `useBrand()`, `ensureFont()`, `fontsReady()`) to hub suites only; tool pages use them too, so it should add `TOOL_SUITES`.
+- 1.43.0: `batch-saved` "desktop: ZIP pictures match the phone batch bytes" failed once in 12 runs under 4× load after the font fix, then 0 in 32; `font-ready` failed one unknown check once in 4 runs (Google Fonts through the sandbox proxy). Dump both files if either repeats.
 - 1.40.0: on a computer the photo tools show Add photo twice (the Photo card tile and "Add your photo" under the preview). Only if the owner finds it confusing.
 - 1.40.0 pattern review: lessons sessions 32–39 (1.21–1.28) can move to `_archive/` like 16–31; their rules are in the skill.
 - 1.37.0 + 1.40.0 releases: `batch-saved` "pixel identity: <tool> Save == batch" failed under 4-way load twice (Restock, then Photo story) and passed 36/0 alone each time (3 of 3). Next session: find the cause (likely a font or photo not yet decoded in one of the two renders under load) and make the suite wait for it; a pixel suite that flakes hides real failures.
