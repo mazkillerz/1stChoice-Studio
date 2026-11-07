@@ -141,6 +141,9 @@ Studio.tool({
         else if(L==='film'){ const fw=760, x=(W-fw)/2, fg=26; let y=40; R=[0,1,2,3].map(i=>{ const r={i,x,y,w:fw,h:fh(i,fw)}; y+=r.h+fg; return r; }); film={x:x-70,w:fw+140,h:y-fg+40}; }
         else { const t=fh(0,W), p=pair(t+g,g,1,2); R=[{i:0,x:0,y:0,w:W,h:t},...p.rows,{i:3,x:0,y:t+g+p.h+g,w:W,h:fh(3,W)}]; }
       }
+      /* a print that pokes above the first photo (Big + small with a wide photo, then a tall one) moves the whole set down, so it
+         stays on the story (poking above); every other layout starts at 0 and is unchanged */
+      const top=Math.min(0,...R.map(r=>r.y-(r.border||0))); if(top<0) R.forEach(r=>{ r.y-=top; });
       const gh=Math.max(...R.map(r=>r.y+r.h))+(film?80:0), gwid=Math.max(...R.map(r=>r.x+r.w));
       return {R,film,gh,k:Math.min(1,room/gh,W/Math.max(W,gwid))};
     };

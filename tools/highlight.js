@@ -63,6 +63,11 @@ function hlIcon(c,id,cx,cy,s,color,weight){
   const k=s/24; c.translate(cx-12*k,cy-12*k); c.scale(k,k);
   c.strokeStyle=color; c.lineWidth=weight; c.lineCap='round'; c.lineJoin='round'; c.stroke(new Path2D(HL_PATHS[id]||HL_PATHS.star)); c.restore();
 }
+/* the height a text really takes: h.measure reads one line, but people can type a new line (Enter). One line measures
+   exactly as before, so old covers keep their layout; several lines are now centred in the circle */
+const mLines=(h,str,o)=>{ const L=String(str||'').split('\n'); if(L.length<2) return h.measure(str,o);
+  const size=Math.min(...L.map(t=>h.measure(t||' ',o).size)), ms=L.map(t=>h.measure(t||' ',{...o,size}));
+  return {w:Math.max(...ms.map(m=>m.w)),h:Math.round(Math.max(...ms.map(m=>m.h))+(L.length-1)*size*1.2),size}; };
 Studio.tool({
   id:'highlight', title:'Highlight covers', fileName:'highlight',
   safe:{top:0,bottom:0},
@@ -105,7 +110,7 @@ Studio.tool({
       if(shape==='disc'){ ctx.fillStyle=disc; ctx.beginPath(); ctx.arc(cx,cy,R*.86,0,Math.PI*2); ctx.fill(); }
       else if(shape==='ring'){ ctx.strokeStyle=ink; ctx.lineWidth=16; ctx.beginPath(); ctx.arc(cx,cy,R*.82,0,Math.PI*2); ctx.stroke(); }
       if(kind==='word'){
-        const word=o.value('word'), m=h.measure(word||' ',{font:'display',size:230,maxW:700});
+        const word=o.value('word'), m=mLines(h,word||' ',{font:'display',size:230,maxW:700});
         h.text('word','Word',word,cx,cy-m.h/2,{font:'display',size:230,color:ink,maxW:700});
         if(!word&&o.preview){ ctx.save(); ctx.fillStyle=dark?'rgba(255,255,255,.35)':'rgba(0,0,0,.25)'; ctx.font='800 54px "'+h.brand.fonts.body+'"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Type a word in Words',cx,cy); ctx.restore(); }
         h.text('sub','Small word','',0,0);
@@ -124,7 +129,7 @@ Studio.tool({
         h.text('word','Word','',0,0); h.text('sub','Small word','',0,0);
       } else {
         const id=o.value('icon'), sub=o.value('sub'), wt=+o.value('weight')||1.8;
-        const s=sub?360:460, sm=sub?h.measure(sub,{weight:'800',size:84,maxW:620}):{h:0}, gap=sub?36:0, top=cy-(s+gap+sm.h)/2;
+        const s=sub?360:460, sm=sub?mLines(h,sub,{weight:'800',size:84,maxW:620}):{h:0}, gap=sub?36:0, top=cy-(s+gap+sm.h)/2;
         h.block('icon','Icon',cx-s/2,top,s,s,(c,color)=>hlIcon(c,id,s/2,s/2,s,color||ink,wt),'shape');
         h.text('sub','Small word',sub,cx,top+s+gap,{weight:'800',size:84,color:ink,maxW:620});
         h.text('word','Word','',0,0);
