@@ -71,7 +71,7 @@ if(names[0]==='--changed'||names[0]==='--quick'){
       if(parts.includes('home')||parts.includes('other')) add(set,HUB_SUITES,'studio.js: hub');
       if(parts.includes('version')) add(set,['whatsnew'],'studio.js: VERSION'); }
     for(const [re,s2] of MAP) if(re.test(f)&&!(f==='assets/studio.js'&&re.source.includes('studio'))) add(set,s2,f); }
-  names=[...set];
+  names=[...set].filter(n=>fs.existsSync(new URL(n+'.mjs',import.meta.url))||(console.log('  (skipped '+n+': no tests/'+n+'.mjs in this tree)'),false));   // a suite from a branch not merged yet
   console.log('Compared with '+base+': '+files.length+' file(s) changed');
 }
 if(dry){ names.forEach(n=>console.log('  '+n.padEnd(18)+(why[n]||'named'))); process.exit(0); }
