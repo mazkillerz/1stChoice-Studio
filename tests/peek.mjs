@@ -26,7 +26,11 @@ const mk=async(vp,scheme='light')=>{
   await ctx.addInitScript({content:seedScript(SEED)});
   await ctx.addInitScript(()=>{ try{ localStorage.setItem('studio:welcome','1'); }catch(_){} });
   return ctx; };
-const peekState=pg=>pg.evaluate(()=>{ const d=document.querySelector('dialog.peek-dlg[open]'); if(!d) return null; const r=d.getBoundingClientRect(), q=s=>d.querySelector(s);
+/* measure only once Peek's open animation has ended: on a computer it pops in with a spring that overshoots, and under load
+   it starts late, so a fixed wait measured it mid-pop, bigger than the screen (1.41.0: "Peek fits the screen" flaked) */
+const peekState=pg=>pg.evaluate(async()=>{ let d=document.querySelector('dialog.peek-dlg[open]'); if(!d) return null;
+  await Promise.race([Promise.all(d.getAnimations({subtree:true}).filter(a=>a.effect&&a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))),new Promise(r=>setTimeout(r,3000))]);
+  d=document.querySelector('dialog.peek-dlg[open]'); if(!d) return null; const r=d.getBoundingClientRect(), q=s=>d.querySelector(s);
   const vis=e=>!!e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).opacity!=='0'&&!e.disabled;
   return {name:q('.pk-name').textContent,sub:q('.pk-sub').textContent,href:q('[data-pk="open"]').getAttribute('href'),src:!!q('.pk-img').getAttribute('src'),
     fits:r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,imgIn:(()=>{ const i=q('.pk-img').getBoundingClientRect(); return i.top>=r.top-1&&i.bottom<=q('.pk-info').getBoundingClientRect().top+1&&i.height>200; })(),
@@ -42,7 +46,7 @@ const swipe=async(pg,dx)=>{ const box=await pg.$eval('dialog.peek-dlg .pk-stage'
 for(const [vp,scheme] of [[PHONE,'light'],[PHONE,'dark'],[DESK,'light']]){
   const N=vp.name+'/'+scheme+': ', tap=(pg,s)=>vp.touch?pg.tap(s):pg.click(s);
   const ctx=await mk(vp,scheme); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(N+e));
-  await pg.goto(BASE+'index.html#saved'); await pg.waitForTimeout(1400);
+  await pg.goto(BASE+'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:20000}).catch(()=>{}); await pg.waitForTimeout(500);
   const ids=await order(pg); ok(N+'Saved shows the seeded designs',ids.length>=3,ids.length);
   const y0=await pg.evaluate(()=>scrollY);
   /* the design's menu → its picture */
