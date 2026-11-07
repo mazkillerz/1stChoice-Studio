@@ -735,6 +735,8 @@ label.opt-row{cursor:pointer}
 body.selecting #savedGrid .sv-open{touch-action:pan-y}
 body.swiping,body.swiping *{-webkit-user-select:none;user-select:none}
 body.swiping #savedGrid .sv-open{cursor:default}
+/* 1.46.0: on a 360px phone the top bar was 3px too wide while the button says "Sign in" (sideways scroll); a little less padding fits it */
+@media (max-width:374px){ body.hub nav.top .acct{padding-inline:var(--sp-3)} }
 
 /* Tool pages (1.43.0). On a short phone (iPhone SE 375×667, 360×740) the Save sheet pushed the preview up under the top bar:
    it now always leaves ~100px of preview. On a computer the Photo card's tile is the one Add photo (the blue button under the

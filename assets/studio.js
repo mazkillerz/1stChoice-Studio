@@ -2158,7 +2158,7 @@ async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
-  let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null;
+  let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null, cloudNote='', loadRun=0, slowT=0;   // cloudNote: the offline / slow note on show (1.46.0)
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
   let sortBy=SORTS[store('studio:savedSort')]?store('studio:savedSort'):'recent', loaded=false;
   let sel=null, shown=[];   // sel: the designs ticked in select mode (null = not selecting); shown: the Saved page's list right now
@@ -2234,16 +2234,22 @@ async function home(){
     list.addEventListener('pointerdown',e=>{ const h=e.target.closest('[data-drag]'); if(!h||e.button>0) return; e.preventDefault();
       const row=h.closest('.lib-row'), rows=[...list.querySelectorAll('.lib-pins .lib-row')], from=rows.indexOf(row);
       const tops=rows.map(r=>r.getBoundingClientRect().top), step=rows.length>1?tops[1]-tops[0]:row.offsetHeight;
-      drag={id:h.dataset.drag,row,rows,from,to:from,y:e.clientY,step,pid:e.pointerId,moved:false};
+      drag={id:h.dataset.drag,row,rows,from,to:from,y:e.clientY,cy:e.clientY,s0:d.scrollTop,step,pid:e.pointerId,moved:false};
       try{ h.setPointerCapture(e.pointerId); }catch(_){}
-      row.classList.add('dragging'); list.classList.add('sorting'); haptic('tick'); });
-    list.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.pid) return;
-      const dy=e.clientY-drag.y; if(Math.abs(dy)>3) drag.moved=true;
+      row.classList.add('dragging'); list.classList.add('sorting'); haptic('tick'); edgeScroll(); });
+    /* 1.46.0: with many pinned tools the list is taller than the sheet: holding a row near the sheet's top or bottom edge scrolls it */
+    function edgeScroll(){ if(!drag) return; const r=d.getBoundingClientRect(), E=64, y=drag.cy;
+      const v=y<r.top+E?-Math.ceil((r.top+E-y)/5):y>r.bottom-E?Math.ceil((y-(r.bottom-E))/5):0;
+      if(v){ const was=d.scrollTop; d.scrollTop+=Math.max(-16,Math.min(16,v)); if(d.scrollTop!==was) place(); }
+      requestAnimationFrame(edgeScroll); }
+    list.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.pid) return; drag.cy=e.clientY; place(); });
+    function place(){ if(!drag) return;
+      const dy=drag.cy-drag.y+(d.scrollTop-drag.s0); if(Math.abs(dy)>3) drag.moved=true;
       const n=drag.rows.length, min=-drag.from*drag.step, max=(n-1-drag.from)*drag.step, y=Math.max(min-12,Math.min(max+12,dy));
       drag.row.style.transform=`translateY(${y}px)`;
       const to=Math.max(0,Math.min(n-1,drag.from+Math.round(y/drag.step)));
       if(to!==drag.to){ drag.to=to; haptic('tick');
-        drag.rows.forEach((r,i)=>{ if(r===drag.row) return; const shift=drag.from<to&&i>drag.from&&i<=to?-drag.step:drag.from>to&&i<drag.from&&i>=to?drag.step:0; r.style.transform=shift?`translateY(${shift}px)`:''; }); } });
+        drag.rows.forEach((r,i)=>{ if(r===drag.row) return; const shift=drag.from<to&&i>drag.from&&i<=to?-drag.step:drag.from>to&&i<drag.from&&i>=to?drag.step:0; r.style.transform=shift?`translateY(${shift}px)`:''; }); } }
     const drop=e=>{ if(!drag||e.pointerId!==drag.pid) return; const g=drag; drag=null; list.classList.remove('sorting');
       if(g.to!==g.from){ movePin(g.id,g.to); pinsChanged(); paintLib(null,null); }
       else { g.rows.forEach(r=>{ r.style.transform=''; }); g.row.classList.remove('dragging'); } };
@@ -2521,10 +2527,15 @@ async function home(){
 
   /* ---------- Saved designs: the latest in a row on the home page (See all), and the Saved page: a picture grid with quick
      filters by type and collection. Tap a design to open it; press and hold (or ⋯, or right-click) for Duplicate, Rename, Delete… ---------- */
-  C=await cloud(); await C.client();
+  /* the cloud's code ships with the app (sw.js), but a first visit with no signal may not have it: Home still works, Saved says so */
+  async function getCloud(){ if(C) return C; try{ const c=await cloud(); await c.client(); C=c; }catch(_){ throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true}); }
+    C.onAuth(authChanged); return C; }
+  try{ await getCloud(); }catch(_){}
   async function refreshAccount(){
-    const s=await C.session(); me=s&&s.user; member=!!(me&&await C.isMember());
+    const st=C.sessionState?await C.sessionState():{session:await C.session()}; me=st.session&&st.session.user;
+    if(!me&&st.offline) throw Object.assign(new Error(st.slow?'The connection is too slow right now. Try again in a moment.':'No connection. Check your internet and try again.'),{offline:true});   // the sign-in is kept; it only could not be refreshed
     $('acct').textContent=me?(me.email===C.teamEmail?'Team':(me.email||'Account')):'Sign in'; $('acct').classList.toggle('on',!!me);
+    member=!!(me&&await (C.checkMember||C.isMember)());   // checkMember throws when offline, so no signal never reads as "not on the team"
     owner=false; if(member){ try{ const m=await C.members(); owner=m.some(x=>x.email===(me.email||'').toLowerCase()&&x.role==='owner'); }catch(_){} }
     return member;
   }
@@ -2533,18 +2544,40 @@ async function home(){
   function skel(n){ return Array.from({length:n},()=>'<div class="sv-card sv-skel" aria-hidden="true"><span class="sv-open"><span class="sv-thumb"></span><span class="sv-txt"><span class="sv-line"></span><span class="sv-line short"></span></span></span></div>').join(''); }
   /* a friendly note for empty, signed-out and error states: icon, title, one line, an optional button */
   const note=(ic,title,text,btn)=>`<div class="sv-note"><span class="sn-ic" aria-hidden="true">${ic}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
+  /* no signal or a slow cloud (1.46.0): a calm note with Try again on Home and Saved, never a blank row or a skeleton that never ends.
+     A list already on screen stays (a toast says it could not refresh); when the phone is back online it loads again by itself. */
+  const OFF_IC=svg('<path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/>');
+  const SLOW_MS=8000, againBtn='<button type="button" class="btn slim" data-reload>Try again</button>';
+  const netDown=e=>!!e&&(!!e.offline||navigator.onLine===false||!!(C&&C.netErr&&C.netErr(e)));
+  const offNote=()=>note(OFF_IC,'You’re offline','You can still make and save pictures. Your team’s designs come back when you’re online.',againBtn);
+  const slowNote=()=>note(ICON.clock,'Still loading…','The connection is slow. Your team’s designs show as soon as they arrive.',againBtn);
+  function showNote(h){ cloudNote=h; endSelect(true); closeFind(true);
+    $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
+    $('colChips').hidden=$('sortBtn').hidden=$('findBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h; }
+  const showing=()=>loaded&&member&&all.length>0;   // a list of designs is on screen
   async function doLoad(){
-    const member=await refreshAccount(); loadedFor=me?me.id:null;
-    if(!member){ all=[]; cols=[]; loaded=true; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
-    if(!all.length){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
-    try{ [all,cols]=await Promise.all([C.designs(B.id),C.collections(B.id)]); }
-    catch(err){ const m=note(ICON.rotate,'Could not load the saved designs',esc(err.message),'<button type="button" class="btn slim" data-reload>Try again</button>'); $('savedRowList').innerHTML=m; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=m; return; }
-    loaded=true; paint();
+    const run=++loadRun; clearTimeout(slowT);
+    let signedIn=true; try{ signedIn=!C||!C.signedInHere||C.signedInHere(); }catch(_){}
+    if(!showing()&&signedIn){ cloudNote=''; $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
+    slowT=setTimeout(()=>{ if(run===loadRun&&!showing()) showNote(slowNote()); },SLOW_MS);
+    try{
+      if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
+      await getCloud();
+      const member=await refreshAccount(); if(run!==loadRun) return; loadedFor=me?me.id:null;
+      if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
+      if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
+      const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
+      [all,cols]=got; cloudNote=''; loaded=true; paint();
+    }catch(err){ if(run!==loadRun) return;
+      const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
+      if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
+      loaded=false; showNote(net?(slow?slowNote():offNote()):note(ICON.rotate,'Could not load the saved designs',esc(err.message||String(err)),againBtn));
+    }finally{ if(run===loadRun) clearTimeout(slowT); }
   }
+  addEventListener('online',()=>{ if(cloudNote) loadSaved(true); });   // back online: load again without a tap
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
-    $('savedRowList').innerHTML=h; $('savedCount').textContent=''; $('spCount').textContent='';
-    endSelect(true); closeFind(true); $('colChips').hidden=$('sortBtn').hidden=$('findBtn').hidden=$('savedTip').hidden=$('selBtn').hidden=true; $('savedGrid').innerHTML=''; $('savedEmpty').hidden=false; $('savedEmpty').innerHTML=h;
+    showNote(h); cloudNote='';
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -2553,7 +2586,7 @@ async function home(){
   const cardName=d=>{ const m=/^(.+) – (\d{1,2} [A-Z][a-z]{2})$/.exec(d.name||''); return m&&m[1]===toolName(d.tool)&&m[2]===dayTag(lastUse(d)).replace(/ \d{4}$/,'')?m[1]:d.name; };
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" draggable="false" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
-    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }); }
+    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
     return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
@@ -2568,7 +2601,7 @@ async function home(){
   }
   /* the Saved page: one row of collection chips (All first), the sort button, a grid of pictures */
   function paintPage(){
-    if(!loaded){ if(member||!me) $('savedGrid').innerHTML=skel(6); return; }
+    if(!loaded){ if(!cloudNote&&(member||!me)) $('savedGrid').innerHTML=skel(6); return; }   // a note (offline, slow) stays
     if(!member) return;
     const has=!!all.length;
     if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
@@ -2576,8 +2609,9 @@ async function home(){
     $('colChips').hidden=!has||!cols.length;
     $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
       return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
-    { const box=$('colChips'), on=box.querySelector('.col-sel'); if(on&&!box.hidden){ const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
-      if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; } }
+    { const box=$('colChips'), keep=()=>{ const on=box.querySelector('.col-sel'); if(!on||box.hidden) return; const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
+      if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; };
+      keep(); clearTimeout(box._keep); box._keep=setTimeout(keep,450); }   // 1.46.0: again once the chip has grown (its ⋯ slid under the end fade)
     const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&findHit(d));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='oldest'?(a,b)=>lastUse(a)-lastUse(b):(a,b)=>lastUse(b)-lastUse(a));
     $('findBtn').hidden=!has||!!sel||!$('findRow').hidden;
@@ -2643,8 +2677,10 @@ async function home(){
     d.querySelector('#crName').value=c.name; d.querySelector('#crX').onclick=()=>d.close();
     d.querySelector('form').onsubmit=async e=>{ e.preventDefault(); try{ await C.renameCollection(c.id,d.querySelector('#crName').value); d.close(); loadSaved(true); }catch(err){ d.querySelector('#crSt').textContent=err.message; } }; };
   function deleteCol(){ const c=cols.find(x=>'c:'+x.id===filter); if(!c) return;
-    const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
-    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async()=>{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }; };
+    const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="status" id="cdSt" role="status"></div><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
+    /* 1.46.0: a failed delete (no signal) says so; the dialog used to stay open with no word */
+    d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async ev=>{ const b=ev.currentTarget; b.disabled=true; d.querySelector('#cdSt').textContent='';
+      try{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }catch(err){ d.querySelector('#cdSt').textContent=err.message||String(err); b.disabled=false; } }; };
   /* a small menu under a button: arrow keys move, Escape / a tap outside / scrolling closes it, focus goes back to the button */
   function popMenu(btn,items){
     const old=document.querySelector('.pop-menu'); if(old) old.remove();
@@ -2880,13 +2916,13 @@ async function home(){
     d.querySelector('#acClose').onclick=()=>d.close();
     d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); d.close(); loadSaved(true); };
     if(owner){ const box=d.querySelector('#teamBox');
-      const drawTeam=async()=>{ const m=await C.members(); box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
+      const drawTeam=async()=>{ let m; try{ m=await C.members(); }catch(err){ box.innerHTML=`<div class="status" role="status">${esc(err.message||String(err))}</div>`; return; } box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
         <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
         box.querySelector('#addForm').onsubmit=async e=>{ e.preventDefault(); try{ await C.addMember(box.querySelector('#addEmail').value); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } };
         box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await C.removeMember(b.dataset.rm); drawTeam(); }catch(err){ box.querySelector('#tmSt').textContent=err.message; } }); };
       drawTeam(); }
   });
-  C.onAuth((ev,sess)=>{ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); });
+  function authChanged(ev,sess){ const uid=sess&&sess.user?sess.user.id:null; if(ev==='SIGNED_OUT'||(ev==='SIGNED_IN'&&loadedFor!==undefined&&uid!==loadedFor)) loadSaved(true); }
   /* Experimental area (lab/): hidden behind a passcode so unfinished experiments stay out of the way.
      The code only hides the area; it is not security. Unlocking is remembered on this device. */
   const LAB_CODE='6790';

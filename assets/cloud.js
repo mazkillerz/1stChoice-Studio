@@ -11,22 +11,51 @@ async function client(){
   if(!window.supabase) await loadScript(ROOT+'assets/vendor/supabase.js');
   /* Stay signed in: the session is kept in this browser and refreshed automatically, with no expiry on our side.
      It only ends on "Sign out" or if the phone clears the site's data. */
-  sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'studio-auth',storage:window.localStorage}});
+  sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'studio-auth',storage:window.localStorage},global:{fetch:timedFetch}});
   sb.auth.onAuthStateChange(()=>{memberCache=null;});
   // when the app comes back to the front (phones pause background tabs), refresh the session right away
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sb.auth.startAutoRefresh(); else sb.auth.stopAutoRefresh(); });
   return sb;
 }
-function fail(error,what){ if(error){ const e=new Error((what?what+': ':'')+(error.message||String(error))); e.cause=error; throw e; } }
+/* a slow or missing connection (1.46.0): a request that hangs is stopped after a while, so the page can say so and offer
+   Try again instead of a spinner that never ends. Photo uploads have no limit (a big photo on slow data takes time). */
+function timedFetch(input,init){ init=init||{}; const url=String(input&&input.url||input), m=String(init.method||'GET').toUpperCase();
+  if(init.signal||(m!=='GET'&&m!=='HEAD'&&url.includes('/storage/v1/object/'+CFG.bucket+'/'))) return fetch(input,init);
+  const ac=new AbortController(), t=setTimeout(()=>ac.abort(),url.includes('/storage/v1/')?90000:20000);
+  return fetch(input,{...init,signal:ac.signal}).finally(()=>clearTimeout(t)); }
+/* is this error the connection (offline, or too slow), not the cloud saying no? */
+const NET=/failed to fetch|networkerror|network request failed|load failed|err_internet|err_network|err_connection|err_name|abort|timed? ?out|fetch failed/i;
+function netErr(e){ if(!e) return false; if(e.offline) return true; if(typeof navigator!=='undefined'&&navigator.onLine===false) return true;
+  return e.name==='AuthRetryableFetchError'||NET.test(String(e.message||'')+' '+String(e.name||'')+' '+String(e.details||'')); }
+const slowErr=e=>/abort|timed? ?out/i.test(String(e&&e.message||'')+' '+String(e&&e.name||''))&&!(typeof navigator!=='undefined'&&navigator.onLine===false);
+/* errors read as plain words: "No connection…" instead of "Upload: TypeError: Failed to fetch" */
+function fail(error,what){ if(!error) return;
+  if(netErr(error)){ const e=new Error(slowErr(error)?'The connection is too slow right now. Try again in a moment.':'No connection. Check your internet and try again.'); e.offline=true; e.cause=error; throw e; }
+  const e=new Error((what?what+': ':'')+(error.message||String(error))); e.cause=error; throw e; }
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'x'+Date.now().toString(36)+Math.random().toString(36).slice(2));
 
 /* ---------- account ---------- */
 async function session(){ const c=await client(); const {data}=await c.auth.getSession(); return data.session||null; }
+/* the session and why there is none: a sign-in that could not be refreshed because the phone is offline is not "signed out" */
+/* an old sign-in that cannot be refreshed with no signal makes getSession wait a long time (45 s+): stop waiting after 12 s */
+async function sessionState(){ const c=await client(); let late=0;
+  const r=await Promise.race([c.auth.getSession(),new Promise(res=>{ late=setTimeout(()=>res({timedOut:true}),12000); })]); clearTimeout(late);
+  if(r.timedOut) return {session:null,error:null,offline:true,slow:navigator.onLine!==false};
+  const {data,error}=r; return {session:data&&data.session||null,error:error||null,offline:!!(error&&netErr(error)),slow:!!(error&&slowErr(error))}; }
+/* a sign-in is kept in this browser (it may still need the network to refresh) */
+function signedInHere(){ try{ return !!localStorage.getItem('studio-auth'); }catch(_){ return false; } }
 async function user(){ const s=await session(); return s?s.user:null; }
 async function isMember(){
   if(memberCache!==null) return memberCache;
   const c=await client(); if(!(await session())) return memberCache=false;
   const {data,error}=await c.rpc('am_i_team_member'); if(error) return false;
+  return memberCache=!!data;
+}
+/* like isMember, but a failed check (offline, slow) throws instead of reading as "not on the team" */
+async function checkMember(){
+  if(memberCache!==null) return memberCache;
+  const c=await client(); if(!(await session())) return memberCache=false;
+  const {data,error}=await c.rpc('am_i_team_member'); fail(error,'Team');
   return memberCache=!!data;
 }
 async function sendCode(email){
@@ -43,7 +72,7 @@ async function verifyCode(email,code){
 async function signInTeam(password){
   const c=await client();
   const {error}=await c.auth.signInWithPassword({email:CFG.teamEmail,password});
-  if(error) throw new Error(/invalid/i.test(error.message)?'Wrong password. Try again.':error.message);
+  if(error){ if(netErr(error)) fail(error); throw new Error(/invalid/i.test(error.message)?'Wrong password. Try again.':error.message); }
   memberCache=null;
 }
 async function signOut(){ const c=await client(); await c.auth.signOut({scope:'local'}); memberCache=null; }
@@ -149,7 +178,7 @@ async function duplicateDesign(id,newName){
   fail(error,'Duplicate'); if(d.collectionNames.length) await setDesignCollections(d.brand,nid,d.collectionNames); return nid;
 }
 
-window.StudioCloud={client,session,user,isMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
+window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download};
 })();
