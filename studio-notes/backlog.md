@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 47–51 (4 Nov 2026, parallel round led by one lead session): 1.36.0 Mazoon (Board stickers, sharp emoji, shared text styles, Board paste fix), 1.37.0 team (Save pictures for Create drafts, team templates in Recently used), 1.38.0 Mazoon (Product highlight Size + Position, two emoji highlight templates), 1.39.0 team (swipe to select in Saved, / key hint), 1.40.0 Simplify (Carousel and Highlight Style sheets open on this slide/cover, Collage Border colour only with a border, full sweep, `contrast.mjs` reads BASE). The next session, 1.41.0, is a **Mazoon** session.
-**Simplify session:** every 5th minor version. The next one is 1.45.0.
+**Last session:** sessions 52–61 (5–7 Nov 2026, owner-directed round of bug fixes led by one lead session): 1.43.0 fonts before Save + team retry, 1.44.0 Board touch + video blank preview, 1.45.0 Simplify + tool page fixes, 1.46.0 offline/slow cloud states, 1.47.0 Create long words, 1.48.0 drafts + queue, 1.49.0 tool drawing edge cases, 1.50.0 Simplify (pattern review + full sweep). The next session, 1.51.0, is a **Mazoon** session.
+**Simplify session:** every 5th minor version. The next one is 1.55.0.
 
 ## Next up
 _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
