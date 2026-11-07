@@ -348,7 +348,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   ok(N+'...also when the sheet opens: on, button Update “name”, Save as new under it',await pg.isChecked('#teamOn')&&/^Update “/.test((await pg.textContent('#saveTxt')).trim())&&(await pg.textContent('#saveAlt')).trim()==='Save as new',await pg.textContent('#saveTxt'));
   ok(N+'...with the design\'s own name in the name field',await pg.inputValue('#teamName')===nm,await pg.inputValue('#teamName'));
   await pg.waitForTimeout(300);
-  ok(N+'the team row reads Update “name” in the team',/^Update “/.test((await pg.textContent('#teamLbl')).trim()),await pg.textContent('#teamLbl'));
+  ok(N+'the team row reads Update in the team',/^Update in the team/.test((await pg.textContent('#teamLbl')).trim()),await pg.textContent('#teamLbl'));
   ok(N+'the design\'s own collections are preselected',JSON.stringify(await pg.$$eval('#teamCols .chip[data-col][aria-pressed="true"]',l=>l.map(c=>c.dataset.col).sort()))==='["Restocks","Spring"]');
   const nBefore=Object.keys((await fdb(pg)).designs).length; dls.length=0;
   await pg.tap('#save'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);

@@ -59,7 +59,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   ok(N+'the first save makes one design with a real cover',ids.length===1&&c1.length===1&&c1[0].id===null&&(await flatOf(pg,id))===false,{n:ids.length,calls:c1});
   const upd0=db.designs[id].updated_at;
   await tool('tools/restock.html?design='+id); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
-  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, team switch on',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&/^Update “/.test(L.lbl),L);
+  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, team switch on',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&/^Update in the team/.test(L.lbl),L);
   const filled=await pg.evaluate(()=>[...document.querySelectorAll('#sh-save .btn:not(.ghost)')].filter(x=>x.offsetParent&&!x.hidden).length); ok(N+'at most two filled buttons in the Save sheet',filled<=2,filled);
   await tap('#save'); await waitCalls(pg,2); await pg.waitForTimeout(800);
   db=await dbOf(pg); let cc=await calls(pg);
@@ -160,7 +160,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await tap('#crTeamOnly'); await waitCalls(pg,1); await pg.waitForTimeout(800);
     const cd=Object.keys((await dbOf(pg)).designs)[0]; db=await dbOf(pg); ok(N+'Create saved a design (with the photo)',db.designs[cd].kind==='design'&&(await flatOf(pg,cd))===false,db.designs[cd]&&db.designs[cd].kind);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); C=await clab();
-    ok(N+'Create, opened design: Update “name”, Save as new, switch on, label says Update',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on&&/^Update “/.test(C.lbl),C);
+    ok(N+'Create, opened design: Update “name”, Save as new, switch on, label says Update',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on&&/^Update in the team/.test(C.lbl),C);
     await tap('#crTeamOnly'); await waitCalls(pg,2); await pg.waitForTimeout(800); cc=await calls(pg);
     ok(N+'Create: Update keeps the same design',cc[1].id===cd&&Object.keys((await dbOf(pg)).designs).length===1,cc[1]);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); await tap('#crAlt'); await waitCalls(pg,3); await pg.waitForTimeout(1200); cc=await calls(pg);

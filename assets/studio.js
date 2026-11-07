@@ -1411,7 +1411,7 @@ async function tool(cfg){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
     const upd=!!design&&!wantsNew(), nm=short(design&&design.name);
-    $('teamLbl').textContent=upd?'Update “'+design.name+'” in the team':design?'Save to the team as a new design':'Save to the team';
+    $('teamLbl').textContent=upd?'Update in the team':design?'Save to the team as a new design':'Save to the team';
     $('teamSub').textContent=teamMember===false&&!on?'Sign in to share it with your team':upd?'Saved designs keep your latest changes':design&&isTpl()?'The template stays as it is':'Your team finds it in Saved';
     $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
     const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';

@@ -605,7 +605,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   const checked=()=>many?[...body.querySelectorAll('#crPP input:checked')].map(i=>BD.main.findOne('#'+i.dataset.f)).filter(Boolean):fs;
   const short=n=>{ n=String(n||''); return n.length>22?n.slice(0,21)+'…':n; };
   const syncT=()=>{ const on=$('crTeamOn').checked, d=st.design, nw=wantsNew(), upd=!!d&&!nw; $('crTeamBox').hidden=!on;
-    $('crTeamLbl').textContent=upd?'Update “'+d.name+'” in the team':d?'Save to the team as a new design':'Also save to the team';
+    $('crTeamLbl').textContent=upd?'Update in the team':d?'Save to the team as a new design':'Also save to the team';
     $('crTeamSub').textContent=upd?'Saved designs keep your latest changes':d&&isTplOpen()?'The template stays as it is':'Find and reuse it in Saved';
     if($('crAsNew')) $('crAsNew').checked=nw;
     if($('crAlt')) $('crAlt').textContent=nw?(isTplOpen()?'Update the template':'Update “'+short(d.name)+'”'):'Save as new';
