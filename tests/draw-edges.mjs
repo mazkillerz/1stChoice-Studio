@@ -100,8 +100,9 @@ for(const [tool,c] of Object.entries(T)){
     const box=await a.pg.evaluate(k=>{ const R=Studio.debug.reg().filter(q=>!q.empty&&(k==='word'?q.id==='word':['icon','sub'].includes(q.id))); const y0=Math.min(...R.map(q=>q.y)), y1=Math.max(...R.map(q=>q.y+q.h)); return Math.round((y0+y1)/2); },k);
     ok('highlight · '+k+' on 3 lines: centred in the circle (middle within 40px of 960)',Math.abs(box-960)<=40,box); } }
   if(o) for(const [n,sc] of Object.entries(c.same)){ let x=await run(a.pg,sc), y=await run(o.pg,sc);
-    for(let t=0;t<3&&x.h!==y.h;t++){ await a.pg.waitForTimeout(800); x=await run(a.pg,sc); y=await run(o.pg,sc); }   // a late font or picture: draw once more
-    ok(tool+' · '+n+': same pixels as before 1.49.0',x.h===y.h); }
+    for(let t=0;t<6&&x.h!==y.h;t++){ await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>document.fonts.ready))); await a.pg.waitForTimeout(1500); x=await run(a.pg,sc); y=await run(o.pg,sc); }   // a late font or picture (slow font proxy under load): wait for fonts, draw again
+    let why=''; if(x.h!==y.h) why=JSON.stringify(await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>[...document.fonts].filter(f=>f.status!=='unloaded').map(f=>f.family.replace(/["']/g,'')+':'+f.weight+':'+f.status+':'+(f.unicodeRange||'').slice(0,12)).sort().join(' ')))));
+    ok(tool+' · '+n+': same pixels as before 1.49.0',x.h===y.h,why.slice(0,900)); }
   await a.ctx.close(); if(o) await o.ctx.close();
 }
 ok('no page errors',!errs.length,errs.slice(0,3));
