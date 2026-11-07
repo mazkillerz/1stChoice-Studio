@@ -1308,14 +1308,18 @@ async function tool(cfg){
   let teamCols=null; const teamPicked=new Set(), typedCols=new Set();   // typedCols: new collections typed on this page
   const hasPhotosNow=()=>S.photos.some((p,i)=>photoUsed(i)&&p.img&&!p.sample);
   function defaultName(){ const d=new Date(); return cfg.title+' – '+d.getDate()+' '+d.toLocaleString('en',{month:'short'}); }
+  /* who (mega): the name for the design's author; the first save on a device asks once (never in automated browsers) */
+  const whoName=()=>{ try{ return (JSON.parse(localStorage.getItem('studio:who'))||{}).name||null; }catch(_){ return null; } };
+  async function whoOnce(){ try{ if(whoName()||store('studio:who:asked')||navigator.webdriver) return; store('studio:who:asked','1'); const W=await (window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)); await W.ask({brand:B.id}); }catch(_){} }
   async function teamSave(o){
     o=o||{}; const C=await cloud();
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
+    await whoOnce();
     const asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName());
     const keep=(o.keep!=null?o.keep:(design?design.kind!=='template':true))&&hasPhotosNow(), r=recipe();
     const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:cols});
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:cols,author:whoName()});
     const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     design={id,name,kind:keep?'design':'template',collections:cols}; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
     history.replaceState(null,'',location.pathname+'?design='+id);
@@ -2486,11 +2490,17 @@ async function home(){
     else if(!firstRun&&!store(WKEY)) store(WKEY,'old'); }
 
   /* ---------- Settings (the gear at the top): the few things you can change, in one short list ---------- */
+  /* who (mega): the name on saved designs (assets/who.js, loaded the first time it is needed) */
+  const whoRead=()=>{ try{ return JSON.parse(localStorage.getItem('studio:who'))||{}; }catch(_){ return {}; } };
+  const whoLib=async()=>{ if(!window.StudioWho) await loadScript(ROOT+'assets/who.js'); return window.StudioWho; };
   function openSettings(){
+    const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
     const acc=me?row('account',ICON.user,'Account',esc((C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out')):row('account',ICON.user,'Sign in','See and save your team’s designs');
     const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini" data-x>Done</button></div>
       <div class="act-list set-list">${acc}
+      ${row('who',ICON.user,'Who’s using Studio',who.name?esc(who.name):'Not set yet · your name goes on saved designs','Change')}
+      <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button>
       ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
@@ -2501,6 +2511,8 @@ async function home(){
     d.querySelector('[data-x]').onclick=()=>d.close();
     d.querySelector('.set-list').addEventListener('click',e=>{ const b=e.target.closest('[data-set]'); if(!b) return; const a=b.dataset.set; haptic('tick');
       if(a==='view'){ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); b.querySelector('.set-end').textContent=toolsView==='list'?'List':'Grid'; b.firstElementChild.outerHTML=toolsView==='list'?ICON.list:ICON.grid; return; }
+      if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · your name goes on saved designs'; }); return; }
+      if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
       d.close();
       if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab();
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
