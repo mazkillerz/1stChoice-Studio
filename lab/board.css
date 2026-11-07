@@ -266,7 +266,7 @@
 .tadd{display:flex;flex-direction:column;gap:4px}
 .ta{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:var(--ui-2);text-align:start;padding:9px 11px;cursor:grab;color:var(--fg);font:600 13px var(--sans)}
 .ta:hover{border-color:#2f7bff}
-.ta-h1{font:400 22px var(--display)}.ta-h2{font:800 16px var(--sans)}.ta-body{font:600 13px var(--sans)}
+.ta-h1{font:400 22px var(--display)}.ta-h2{font:600 16px var(--sans)}.ta-body{font:600 13px var(--sans)}
 .tstyles{display:flex;flex-direction:column;gap:3px}
 .tst{display:flex;align-items:center;gap:4px}
 .tst-b{flex:1;text-align:start;border:1px solid var(--line);border-radius:9px;background:var(--ui-2);padding:8px 10px;font-size:14px;cursor:pointer;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
