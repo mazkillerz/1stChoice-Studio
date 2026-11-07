@@ -21,3 +21,10 @@ No new shipped files (tests/ is not in the shell).
 - video-timeline flake: Start from a reel template tap + `waitClips` 30 s timeout under load; now waits for the control and the ready state, re-taps once after 20 s, 90 s cap.
 - shallow clones: run.mjs and photostory-styles/draw-edges print `git fetch --unshallow`.
 - Fixed sleeps: 1565 `waitForTimeout` calls (~977 s of sleeping across suites) are shortened by _quiet.mjs instead of edited one by one.
+
+## Also (merge with integration)
+- run.mjs rows added for the other builders' suites: fixes54 (lab css), fonts-local (assets/fonts, studio.css, brand kit fonts/brand.js, board.html), who, cloud-api, saved-versions (create.js, tool() of studio.js), tokens (brands, tool() of studio.js), flags and who (hub part of studio.js).
+- hub-offline flake: part 7 clicked `[data-dmore]` before the Saved grid repainted; now waits for it.
+- welcome keeps real time (run.mjs REAL_TIME): its sleeps wait for timed slide choreography, not timers.
+- collage-grids is now run as collage-grids-compat + collage-grids-grids (PART).
+- Still over ~120 s alone under load, not split: video-timeline, video, full, backgrounds, video-polish.

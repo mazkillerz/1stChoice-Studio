@@ -21,6 +21,12 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
+  [/^lab\/(board|lab)\.css$/,['fixes54']],
+  [/^assets\/fonts\/|^assets\/studio\.css$|^brands\/[\w-]+\/fonts\/|^brands\/[\w-]+\/brand\.js$|^lab\/board\.html$/,['fonts-local']],
+  [/^assets\/who\./,['who']],
+  [/^assets\/cloud\.js$|^tests\/fakecloud\.js$/,['cloud-api']],
+  [/^tools\/create\.js$|^assets\/cloud\.js$/,['saved-versions']],
+  [/^brands\/|^tests\/fixtures\/brands\//,['tokens']],
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers','nd-templates','text-fill','goldens']],
   [/^tools\/(?!video)|assets\/studio\.js/,['goldens','simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry','toolfix43','drafts-queue']],
   [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers','board-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear','create-render','font-ready']],
@@ -57,8 +63,8 @@ const TWINS=['home7','polish71','collage-grids'];   // the whole-file versions o
 if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens'],
-      HUB_SUITES=['hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe'];
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','tokens'],
+      HUB_SUITES=['hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
