@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<title>1st Choice — new label reveal reel</title>
+<style>
+@font-face{font-family:Lalezar;src:url(fonts/lalezar-arabic-400-normal.woff);unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Cairo;font-weight:800;src:url(fonts/cairo-arabic-800-normal.woff);unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Cairo;font-weight:800;src:url(fonts/cairo-latin-800-normal.woff)}
+html,body{margin:0;background:#222}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#fff}
+.sc{position:absolute;inset:0;overflow:hidden;visibility:hidden}
+.abs{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform,opacity}
+.full{position:absolute;left:0;top:0;width:1080px;height:1920px;object-fit:cover}
+.head{position:absolute;left:60px;right:60px;text-align:center;font-family:Lalezar,Cairo,sans-serif;line-height:1.12;direction:rtl}
+.w{color:#fff}.k{color:#161210}
+.mask{display:inline-block;overflow:hidden;padding:0 6px 16px;vertical-align:top}
+.word{display:inline-block;will-change:transform}
+.crw{position:relative;display:inline-block}.crw .u{color:#fff}.crw .o{position:absolute;left:0;top:0}
+.cr{background:url(assets/crayon-red.png) center/cover;-webkit-background-clip:text;background-clip:text;color:transparent}
+.shadeT{position:absolute;left:0;top:0;width:1080px;height:760px;background:linear-gradient(to bottom,rgba(12,9,7,.7),rgba(12,9,7,0))}
+.shadeB{position:absolute;left:0;bottom:0;width:1080px;height:700px;background:linear-gradient(to top,rgba(12,9,7,.72),rgba(12,9,7,0))}
+#pill{position:absolute;left:240px;top:1300px;width:600px;height:96px;border-radius:48px;background:#161210;color:#fff;font:800 38px Cairo,sans-serif;display:flex;align-items:center;justify-content:center;direction:rtl}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="rag" x="-30%" y="-30%" width="160%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="4" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="70" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+<div id="stage">
+
+  <!-- A · the crayon cat drops in -->
+  <div class="sc" id="sA" style="background:#fff">
+    <img class="abs" src="assets/sweep-band.png" style="top:1290px;width:1080px">
+    <img class="abs" id="aLogo" src="assets/logo-c3.svg" style="left:160px;top:788px;width:760px">
+    <img class="abs" id="aFlag" src="assets/crayon-flag.png" style="left:735px;top:1480px;width:230px;transform-origin:4% 20%">
+    <div class="abs" id="aCatWrap" style="left:330px;top:-30px;width:420px;height:494px;transform-origin:50% 0%">
+      <img src="assets/cat-head.png" style="width:420px;transform:scaleY(-1)">
+    </div>
+  </div>
+
+  <!-- B · black scribble wipe (draws over A) -->
+  <div class="sc" id="sB" style="visibility:hidden">
+    <img class="abs" id="b1" src="assets/scribble-black.png" style="left:-500px;top:-300px;width:2100px;transform:rotate(-18deg)">
+    <img class="abs" id="b2" src="assets/scribble-black.png" style="left:-520px;top:520px;width:2100px;transform:rotate(14deg)">
+    <img class="abs" id="b3" src="assets/scribble-black.png" style="left:-480px;top:1150px;width:2100px;transform:rotate(-8deg)">
+    <div class="abs" id="bDark" style="width:1080px;height:1920px;background:#120d0a;opacity:0"></div>
+  </div>
+
+  <!-- C · the printer, stop-motion -->
+  <div class="sc" id="sC" style="background:#000">
+    <div class="abs" id="cCam" style="width:1080px;height:1920px;transform-origin:540px 700px">
+      <img class="full" id="c0" src="assets/s_print_1051.jpg">
+      <img class="full" id="c1" src="assets/sb_print2_1052.jpg">
+      <img class="full" id="c2" src="assets/sb_print3_1053.jpg">
+    </div>
+    <div class="shadeT"></div>
+    <div class="head w" id="tC" style="top:300px;font-size:116px"><span class="mask"><span class="word">طبعناها</span></span> <span class="mask"><span class="word">وحدة</span></span> <span class="mask"><span class="word">وحدة...</span></span></div>
+  </div>
+
+  <!-- D · the label roll -->
+  <div class="sc" id="sD" style="background:#ddd">
+    <img class="abs" id="dRoll" src="assets/sb_roll_1050.jpg" style="width:1080px;height:1920px;object-fit:cover">
+  </div>
+
+  <!-- E/F · guess, then the reveal (one continuous camera) -->
+  <div class="sc" id="sE" style="background:#000">
+    <div class="abs" id="eCam" style="width:1080px;height:1920px;transform-origin:540px 1150px">
+      <img class="full" src="assets/s_dark_1117.jpg">
+      <svg width="1080" height="1920" viewBox="0 0 1080 1920" style="position:absolute;left:0;top:0">
+        <defs><mask id="scrMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1920">
+          <rect width="1080" height="1920" fill="white"/>
+          <circle id="hole" cx="452" cy="1132" r="0" fill="black" filter="url(#rag)"/>
+        </mask></defs>
+        <image href="assets/scribble-black.png" x="80" y="930" width="920" height="777" mask="url(#scrMask)"/>
+      </svg>
+      <img class="abs" id="fw1" src="assets/fw-red.png" style="left:20px;top:590px;width:280px">
+      <img class="abs" id="fw2" src="assets/fw-green.png" style="left:790px;top:560px;width:250px">
+      <div class="abs" id="badge" style="left:650px;top:1270px;width:240px;height:240px">
+        <img src="assets/badge-red.png" style="width:240px;position:absolute;left:0;top:0">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:88px Lalezar,Cairo;color:#fff;padding-top:12px">جديد</div>
+      </div>
+    </div>
+    <div class="shadeT"></div>
+    <div class="head w" id="tE1" style="top:300px;font-size:120px"><span class="mask"><span class="word">خمن</span></span> <span class="mask"><span class="word">شو</span></span> <span class="mask"><span class="word">تحت</span></span><br><span class="mask"><span class="word">الشخابيط...</span></span></div>
+    <div class="head w" id="tE2" style="top:300px;font-size:120px"><span class="mask"><span class="word">ربيعنا</span></span> <span class="mask"><span class="word">صار</span></span><br><span class="mask"><span class="word">على</span></span> <span class="mask"><span class="word"><span class="crw"><span class="u">العلبة</span><span class="o cr">العلبة</span></span>...</span></span></div>
+  </div>
+
+  <!-- G · beat cuts -->
+  <div class="sc" id="sG" style="background:#000">
+    <img class="full abs g" id="g0" src="assets/sb_close_1099.jpg">
+    <img class="full abs g" id="g1" src="assets/sb_dark_1092.jpg">
+    <img class="full abs g" id="g2" src="assets/sb_cap_1101.jpg">
+    <img class="full abs g" id="g3" src="assets/sb_classic_1110.jpg">
+    <div class="shadeB" id="gShade"></div>
+    <div class="head w" id="tG" style="top:1330px;font-size:104px"><span class="mask"><span class="word">بالكمة</span></span> <span class="mask"><span class="word">والدشداشة...</span></span></div>
+  </div>
+
+  <!-- H · two flavours -->
+  <div class="sc" id="sH" style="background:#fff">
+    <div class="abs" id="hTop" style="width:1080px;height:910px;overflow:hidden"><img src="assets/sb_classic_1064.jpg" style="width:1080px;height:1920px;object-fit:cover;margin-top:-420px"></div>
+    <div class="abs" id="hBot" style="top:1010px;width:1080px;height:910px;overflow:hidden"><img src="assets/sb_passion_1059.jpg" style="width:1080px;height:1920px;object-fit:cover;margin-top:-420px"></div>
+    <div class="head k" id="tH" style="top:896px;font-size:98px"><span class="mask"><span class="word">كلاسيك</span></span> <span class="mask"><span class="word">/</span></span> <span class="mask"><span class="word"><span class="cr">باشن فروت</span></span></span></div>
+  </div>
+
+  <!-- I · end card -->
+  <div class="sc" id="sI" style="background:#fff">
+    <div class="abs" id="iCam" style="width:1080px;height:1920px;transform-origin:540px 900px">
+      <img class="abs" src="assets/sweep-band.png" style="top:1290px;width:1080px">
+      <img class="abs" id="iFw" src="assets/fw-red.png" style="left:820px;top:1470px;width:210px">
+      <img class="abs" id="iFlag" src="assets/crayon-flag.png" style="left:110px;top:1500px;width:205px;transform-origin:4% 20%">
+      <img class="abs" id="iLogo" src="assets/logo-c3.svg" style="left:420px;top:228px;width:240px">
+      <div class="head k" id="tI" style="top:330px;font-size:132px"><span class="mask"><span class="word">النسخة</span></span> <span class="mask"><span class="word">الوطنية...</span></span></div>
+      <img class="abs" id="iCard" src="assets/r_life_1080.jpg" style="left:70px;top:600px;width:940px;height:627px;object-fit:cover;border-radius:28px;box-shadow:0 22px 50px rgba(22,18,16,.2)">
+      <div id="pill">شوف أقرب نقطة بيع لك</div>
+    </div>
+  </div>
+
+</div>
+<script>
+window.REEL={duration:16.6,fps:30,cuts:[2.61,4.42,5.93,9.85,10.45,11.06,11.66,12.27,14.08]};
+const $=id=>document.getElementById(id);
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const seg=(t,a,b)=>cl((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3), eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2, eo5=x=>1-Math.pow(1-x,5);
+function spring(t,z=0.72,w=16){ if(t<=0) return 0; const wd=w*Math.sqrt(1-z*z); return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+z*w/wd*Math.sin(wd*t)); }
+function rnd(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function show(id,on){ $(id).style.visibility=on?'visible':'hidden'; }
+function words(id,t0,t,step=0.055,dur=0.42,out=null){
+  const ws=$(id).querySelectorAll('.word');
+  ws.forEach((w,i)=>{ let p=eo5(seg(t,t0+i*step,t0+i*step+dur)); let y=(1-p)*110;
+    if(out!==null){ const q=eio(seg(t,out,out+0.22)); y-=q*110; }
+    w.style.transform=`translateY(${y}%)`; });
+}
+function tf(id,s){ $(id).style.transform=s; }
+function op(id,v){ $(id).style.opacity=v; }
+function burst(id,t0,t){ const p=seg(t,t0,t0+0.55); const s=0.35+0.7*eo(p); const o=cl(p*4); const r=t>t0? (t-t0)*6:0;
+  tf(id,`scale(${s}) rotate(${r}deg)`); op(id,o); $(id).style.clipPath=`circle(${8+92*eo(p)}% at 50% 50%)`; }
+
+window.seek=function(t){
+  // ---------- A ----------
+  show('sA',t<2.61);
+  if(t<2.61){
+    const d=spring(t-0.08,0.72,13); const sw=t>0.7?3.2*Math.sin((t-0.7)*4.2)*Math.exp(-(t-0.7)*0.6):0; tf('aCatWrap',`translateY(${(1-d)*-560}px) rotate(${sw}deg)`);
+    tf('aLogo',`scale(${1+0.02*Math.sin(t*2)})`);
+    const f=spring(t-0.75,0.6,18); tf('aFlag',`scale(${f}) rotate(${-4+4*Math.sin(t*5)}deg)`);
+  }
+  // ---------- B ----------
+  show('sB',t>=1.4&&t<2.61);
+  if(t>=1.4&&t<2.61){
+    const p1=eio(seg(t,1.43,1.73)), p2=eio(seg(t,1.69,1.99)), p3=eio(seg(t,1.95,2.29));
+    const m=(id,p,dir)=>{ const a=-12+124*p; const g=`linear-gradient(${dir}, #000 ${a}%, transparent ${a+12}%)`; $(id).style.webkitMaskImage=g; $(id).style.maskImage=g; };
+    m('b1',p1,'to right'); m('b2',p2,'to left'); m('b3',p3,'to right');
+    op('bDark',0.92*eio(seg(t,2.23,2.59)));
+  }
+  // ---------- C ----------
+  show('sC',t>=2.61&&t<4.42);
+  if(t>=2.61&&t<4.42){
+    const k=Math.floor((t-2.61)/0.3019), fi=[0,1,2,1][k%4];
+    ['c0','c1','c2'].forEach((id,i)=>op(id,i===fi?1:0));
+    const jx=(rnd(k)-.5)*12, jy=(rnd(k+50)-.5)*12, jr=(rnd(k+99)-.5)*0.8;
+    const z=Math.exp(Math.log(1.04)+(Math.log(1.13)-Math.log(1.04))*seg(t,2.61,4.42));
+    tf('cCam',`translate(${jx}px,${jy}px) rotate(${jr}deg) scale(${z})`);
+    words('tC',2.85,t,0.07,0.42,4.18);
+  }
+  // ---------- D ----------
+  show('sD',t>=4.42&&t<5.93);
+  if(t>=4.42&&t<5.93){
+    const p=seg(t,4.42,5.93), e=eo(seg(t,4.42,4.77));
+    tf('dRoll',`translate(${(1-e)*260-70*p}px,${30-60*p}px) scale(${1.14+0.05*p}) rotate(${(1-e)*3}deg)`);
+  }
+  // ---------- E/F ----------
+  show('sE',t>=5.93&&t<9.85);
+  if(t>=5.93&&t<9.85){
+    const z=Math.exp(Math.log(1.0)+(Math.log(1.14))*eio(seg(t,5.93,9.85)));
+    const punch=t>=8.04? 0.035*Math.exp(-(t-8.04)*6)*Math.cos((t-8.04)*18):0;
+    tf('eCam',`scale(${z+punch})`);
+    let r=0; if(t>=7.44) r=150*eo(seg(t,7.44,7.62)); if(t>=7.74) r=150+760*eio(seg(t,7.74,8.06));
+    $('hole').setAttribute('r',r.toFixed(1));
+    if(t<8.05){ op('fw1',0); op('fw2',0); } else { burst('fw1',8.05,t); if(t>=8.34) burst('fw2',8.34,t); else op('fw2',0); }
+    const b=spring(t-8.64,0.55,20); tf('badge',`scale(${t<8.64?0:1+0.6*(1-b)}) rotate(${12-8*(1-b)}deg)`); op('badge',t<8.64?0:cl((t-8.64)*10));
+    show('tE1',t<8.03); show('tE2',t>=8.0);
+    words('tE1',6.2,t,0.06,0.45,7.72);
+    words('tE2',8.06,t,0.07,0.45,9.64);
+  }
+  // ---------- G ----------
+  show('sG',t>=9.85&&t<12.27);
+  if(t>=9.85&&t<12.27){
+    const cuts=[9.85,10.45,11.06,11.66,12.27];
+    let gi=0; for(let i=0;i<4;i++) if(t>=cuts[i]) gi=i;
+    ['g0','g1','g2','g3'].forEach((id,i)=>{ op(id,i===gi?1:0); });
+    const lt=t-cuts[gi]; const s=1.0+0.09*Math.exp(-lt*9)+0.04*seg(t,cuts[gi],cuts[gi+1]);
+    tf('g'+gi,`scale(${s})`);
+    show('tG',gi<2); op('gShade',gi<2?1:0);
+    words('tG',9.95,t,0.07,0.38,10.84);
+  }
+  // ---------- H ----------
+  show('sH',t>=12.27&&t<14.08);
+  if(t>=12.27&&t<14.08){
+    const a=eo5(seg(t,12.27,12.63)), b=eo5(seg(t,12.57,12.93)), p=seg(t,12.27,14.08);
+    tf('hTop',`translateX(${(1-a)*-1080}px) scale(${1+0.03*p})`);
+    tf('hBot',`translateX(${(1-b)*1080}px) scale(${1+0.03*p})`);
+    words('tH',12.87,t,0.06,0.38);
+  }
+  // ---------- I ----------
+  show('sI',t>=14.08);
+  if(t>=14.08){
+    const p=seg(t,14.08,16.6);
+    tf('iCam',`scale(${1.0+0.02*p})`);
+    const l=spring(t-14.08,0.6,16); tf('iLogo',`scale(${0.4+0.6*l})`); op('iLogo',cl((t-14.08)*10));
+    words('tI',14.22,t,0.07,0.45);
+    const c=eo5(seg(t,14.69,15.14)); tf('iCard',`translateY(${(1-c)*120}px) scale(${0.94+0.06*c})`); op('iCard',cl((t-14.69)*6));
+    const q=spring(t-15.29,0.55,18); tf('pill',`scale(${t<15.29?0:0.6+0.4*q})`); op('pill',t<15.29?0:1);
+    const f=spring(t-14.99,0.6,18); tf('iFlag',`scale(${f}) rotate(${-4+4*Math.sin(t*5)}deg)`);
+    if(t<15.59){ op('iFw',0); } else burst('iFw',15.59,t);
+  }
+};
+Promise.all([document.fonts.ready,...[...document.images].map(i=>i.decode().catch(()=>{}))]).then(()=>{window.seek(0);window.ready=true;});
+</script>
+</body>
+</html>

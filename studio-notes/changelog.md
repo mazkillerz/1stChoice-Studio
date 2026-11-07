@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.51.0 · 7 Nov 2026
+
+### New reel template: New label reveal
+type: feature
+New label reveal is a 16.6 s reel in Video editor and Templates (Reels): the cat drops in, the printer makes the new label, the scribbles are rubbed off the can, then the two flavours and the end card. Every line is editable (ten text lines, with the last word of the reveal and the part after the slash in the crayon red), and it has its own sound mix with the music.
+
 ## 1.50.0 · 7 Nov 2026
 
 ### A round of fixes, checked on every screen
@@ -138,6 +144,7 @@ type: fix
 If the connection drops while saving to the team, Studio now says “Not saved to the team: no connection” instead of “Failed to fetch”. Your picture is still saved, Save to the team stays on, and one tap on Add to the team tries again without saving the picture twice.
 ![before](assets/whatsnew/1.43.0-team-retry-before.jpg)
 ![after](assets/whatsnew/1.43.0-team-retry-after.jpg)
+
 ## 1.42.0 · 6 Nov 2026
 
 ### Five new feed layouts

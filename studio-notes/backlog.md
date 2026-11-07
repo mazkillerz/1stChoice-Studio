@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 52–61 (5–7 Nov 2026, owner-directed round of bug fixes led by one lead session): 1.43.0 fonts before Save + team retry, 1.44.0 Board touch + video blank preview, 1.45.0 Simplify + tool page fixes, 1.46.0 offline/slow cloud states, 1.47.0 Create long words, 1.48.0 drafts + queue, 1.49.0 tool drawing edge cases, 1.50.0 Simplify (pattern review + full sweep). The next session, 1.51.0, is a **Mazoon** session.
+**Last session:** sessions 52–61 (5–7 Nov 2026, owner-directed round of bug fixes led by one lead session): 1.43.0 fonts before Save + team retry, 1.44.0 Board touch + video blank preview, 1.45.0 Simplify + tool page fixes, 1.46.0 offline/slow cloud states, 1.47.0 Create long words, 1.48.0 drafts + queue, 1.49.0 tool drawing edge cases, 1.50.0 Simplify (pattern review + full sweep), 1.51.0 new reel template New label reveal (ported from the finished HTML reel; tests `reel-label-reveal`, `reel-audio-label-reveal`). The next session, 1.52.0, is a **Mazoon** session.
 **Simplify session:** every 5th minor version. The next one is 1.55.0.
 
 ## Next up

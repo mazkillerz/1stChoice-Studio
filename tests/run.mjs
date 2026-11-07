@@ -37,7 +37,9 @@ const MAP=[
   [/tools\/video/,['video','video-timeline','video-polish','video-fixes']],
   [/assets\/reel-project\.js/,['video-project','video','video-timeline','video-polish','video-fixes']],
   [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene','video-fixes']],
-  [/assets\/reel-audio\.js/,['video','reel-audio']],
+  [/assets\/reel\.js/,['reel-label-reveal']],
+  [/brands\/[\w-]+\/reels\/label-reveal\//,['reel-label-reveal','reel-audio-label-reveal']],
+  [/assets\/reel-audio\.js/,['video','reel-audio','reel-audio-label-reveal']],
   [/assets\/reel-export\.js/,['video','reel-export','video-fixes']],
 ];
 let names=process.argv.slice(2);
