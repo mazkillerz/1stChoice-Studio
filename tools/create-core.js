@@ -69,7 +69,7 @@ async function getImg(id,opt){ opt=Object.assign({preview:!!BD.previewOnly},type
       const v={el,w:el.width,h:el.height,asset:a,hd:false}; IMGS.set(id,v); if(!opt.preview) loadHD(id,a,v); return v; }
     const blob=await L.idb.get('bimg:'+id); if(!blob) return null; const el=await L.loadFile(blob); const v={el,w:el.width,h:el.height}; IMGS.set(id,v); return v; }catch(_){ return null; } }
 /* before saving: every brand picture on the pages is the HD file */
-async function hdReady(){ const ids=new Set(); main.find('Image').forEach(n=>{ const id=n.getAttr('imgId'); if(id) ids.add(id); });
+async function hdReady(){ await Promise.all(main.find('Text').map(t=>{ if(t.getAttr('fillTex')&&!t.fillPatternImage()) texApply(t); return t._texP; }).filter(Boolean)); const ids=new Set(); main.find('Image').forEach(n=>{ const id=n.getAttr('imgId'); if(id) ids.add(id); });
   await Promise.all([...ids].map(id=>{ const v=IMGS.get(id); return v&&v.asset&&!v.hd?loadHD(id,v.asset,v):null; })); }
 BD.hdReady=hdReady;
 async function addPhotoFile(file){ const id=uid(); const el=await L.loadFile(file); IMGS.set(id,{el,w:el.width,h:el.height}); S.imgs.add(id); await L.idb.put('bimg:'+id,file); return id; }
@@ -87,8 +87,17 @@ BD.applyCrop=applyCrop; BD.applyFx=applyFx;
 /* ---------- text: right-to-left for Arabic, and an optional coloured box behind the words ---------- */
 function textScene(ctx,shape){ const bg=shape.getAttr('tbg');
   if(bg){ const r=shape.getAttr('tbgR')||0, w=shape.width(), h=shape.height(); ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(0,0,w,h,Math.min(r,w/2,h/2)); else ctx.rect(0,0,w,h); ctx.fillStyle=bg; ctx.fill(); }
+  if(shape.getAttr('fillTex')) texScale(shape);
   Konva.Text.prototype._sceneFunc.call(shape,ctx); }
-function prepText(n){ n.sceneFunc(textScene); n.direction(AR.test(n.text()||'')?'rtl':'inherit'); }
+/* picture-filled text: the letters are filled with a brand picture (attr fillTex:'brand:<id>'); the plain fill colour stays as the fallback */
+const texScale=n=>{ const k=Math.min(1,Math.max(.15,(n.fontSize()||96)/300)); n.fillPatternScale({x:k,y:k}); };
+function texSet(n,v){ n.fillPatternImage(v.el); n.fillPatternRepeat('repeat'); n.fillPriority('pattern'); texScale(n); n.getLayer&&n.getLayer()&&n.getLayer().batchDraw(); }
+function texApply(n){ const id=n.getAttr('fillTex'); n._texP=null;
+  if(!id){ if(n.fillPatternImage()) n.fillPatternImage(null); return; }
+  const have=IMGS.get(id); if(have&&have.el){ texSet(n,have); return; }
+  n._texP=getImg(id).then(v=>{ if(v&&v.el&&n.getAttr('fillTex')===id) texSet(n,v); }).catch(()=>{}); }
+BD.texApply=texApply;
+function prepText(n){ n.sceneFunc(textScene); n.direction(AR.test(n.text()||'')?'rtl':'inherit'); texApply(n); }
 BD.prepText=prepText;
 BD.applyFill=()=>{};
 
@@ -329,7 +338,7 @@ BD.cropZoom=z=>{ if(!crop) return; crop.n.setAttr('cropZ',clamp(z,1,5)); applyCr
 const SKIP=new Set(['image','filters','sceneFunc','dragBoundFunc','container']);
 function toObj(n){ const a={}; Object.entries(n.attrs).forEach(([k,v])=>{ if(SKIP.has(k)||typeof v==='function'||v==null) return; if(typeof v==='object'&&!Array.isArray(v)&&v.constructor!==Object) return; a[k]=v; });
   if(isFrame(n)) delete a.visible; const o={c:n.getClassName(),a}; if(n.getChildren) o.k=n.getChildren().map(toObj); return o; }
-function collectImgs(o,set){ if(o.a&&o.a.imgId) set.add(o.a.imgId); (o.k||[]).forEach(k=>collectImgs(k,set)); return set; }
+function collectImgs(o,set){ if(o.a&&o.a.imgId) set.add(o.a.imgId); if(o.a&&o.a.fillTex) set.add(o.a.fillTex); (o.k||[]).forEach(k=>collectImgs(k,set)); return set; }
 function rebuild(o,fresh){ const a=Object.assign({},o.a); if(fresh&&a.id) a.id=uid(); if(a.kind==='frame') delete a.visible;
   const n=new Konva[o.c](a); (o.k||[]).forEach(k=>n.add(rebuild(k,fresh)));
   if(o.c==='Image'){ const im=IMGS.get(a.imgId); if(im) n.image(im.el); if(a.kind!=='asset') applyCrop(n); }

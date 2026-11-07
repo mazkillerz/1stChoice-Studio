@@ -44,9 +44,10 @@ CR.LAYOUTS=LAYOUTS;
    Each frame in it is placed like t.frame does; pictures load by id, fonts are waited for. Works off-screen for previews. */
 LAYOUTS['doc']=async function(t,w,def){
   const res=await fetch(L.assetUrl({file:def.doc})); if(!res.ok) throw new Error('template file '+def.doc);
-  const doc=await res.json(), nodes=(doc.nodes||[]).map(o=>BD.rebuild(o,true)), made=[];
-  const ids=new Set(); nodes.forEach(n=>{ (n.find?n.find('Image'):[]).forEach(im=>{ const id=im.getAttr('imgId'); if(id) ids.add(id); }); });
+  const doc=await res.json(), ids=new Set(), made=[];
+  (doc.nodes||[]).forEach(o=>BD.collectImgs(o,ids));   // pictures (and text textures) first, so every layer is built with its picture
   await Promise.all([...ids].map(id=>BD.getImg(id)));
+  const nodes=(doc.nodes||[]).map(o=>BD.rebuild(o,true));
   for(const f of nodes){
     let x=0,y=0; const last=t.frames[t.frames.length-1], fs=U.frames();
     if(last){ x=Math.round(last.x()+U.fsize(last).w+120); y=last.y(); }

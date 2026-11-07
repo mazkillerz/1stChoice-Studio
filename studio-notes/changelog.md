@@ -13,6 +13,16 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.53.0 · 8 Nov 2026
+
+### National Day templates: every piece is its own layer
+type: feature
+The 29 National Day and new label templates are rebuilt so the cat, flag, fireworks, sweep, logo, stickers and photos are separate layers you can move, resize, delete or copy. Photos can be replaced with your own, buttons and panels are shapes with editable colours, the dark photo shades can be turned up or down, and the tilted stickers keep editable words. The look is unchanged.
+
+### Crayon text
+type: feature
+Text can now be filled with crayon: the red and green crayon words in the National Day templates stay crayon and stay editable, and the Words colour sheet has Crayon red and Crayon green for any text.
+
 ## 1.52.1 · 7 Nov 2026
 
 ### The profile look, also as a story

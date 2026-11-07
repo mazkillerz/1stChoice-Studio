@@ -140,7 +140,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Copy / Paste style, text styles, Paste on all text, the inspector's More tab | `copystyle`, `textstyles` , `simplify35`, `toolfix43` |
 | Stickers (`assets/stickers.js`, the Sticker sheet in `tool()`, emoji stickers) | `stickers`, `emoji-stickers`, `copystyle`, `full`, `board-stickers`, `create-stickers` |
 | Highlight covers (incl. Emoji covers), paged tools, Quick start for paged tools (`quickPages`, `quickKind`) | `highlight`, `highlight-product`, `highlight-emoji`, `quickpages`, `batch`, `draw-edges` |
-| Create (`tools/create*`, incl. team template stars, stickers and emoji in Create) | `create`, `create-search`, `tplteam`, `create-stickers`, `create-render`, `create-fit`, `create-fixes` |
+| Create (`tools/create*`, incl. team template stars, stickers and emoji in Create) | `create`, `text-fill`, `create-search`, `tplteam`, `create-stickers`, `create-render`, `create-fit`, `create-fixes` |
 | National Day / label reveal templates (brand `layout:'doc'` templates, `templateCats`, hidden assets) | `nd-templates` (previews: `node tests/tplthumbs.mjs <ids>`) |
 | What's New, changelog | `whatsnew` |
 | Share target, `sw.js`, manifest, the + menu, the shared-photo row on Home | `share` (runs with the service worker on), `peek`, `drafts-queue` |

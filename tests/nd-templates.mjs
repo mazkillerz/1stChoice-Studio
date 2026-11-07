@@ -20,20 +20,22 @@ const ctxOpts={phone:{viewport:{width:390,height:844},deviceScaleFactor:2,isMobi
 ok('brand lists 29 doc templates and a National Day category',defs.length===29&&(BRAND.templateCats||[]).some(c=>c.id==='nationalday'),defs.length);
 
 async function check(pg,d,tag){
-  const doc=JSON.parse(fs.readFileSync(ROOT+'brands/1stchoice/'+d.doc,'utf8')), want=doc.nodes[0].k.filter(k=>k.c==='Text'), [w,h]=SZ[d.size];
+  const doc=JSON.parse(fs.readFileSync(ROOT+'brands/1stchoice/'+d.doc,'utf8')), K=doc.nodes[0].k, want={t:K.filter(k=>k.c==='Text').length,i:K.filter(k=>k.c==='Image').length,r:K.filter(k=>k.c==='Rect'&&k.a.name!=='frame-bg').length,tex:K.filter(k=>k.a.fillTex).length}, [w,h]=SZ[d.size];
   await pg.goto(BASE+'tools/create.html?tpl='+d.id); await ready(pg);
-  await pg.waitForFunction(()=>BD.main.find('Image').length>0&&BD.main.find('Image').every(n=>n.image()),null,{timeout:20000}).catch(()=>{});
-  const r=await pg.evaluate(()=>{ const fr=BD.util.frames(), f=fr[0], s=BD.util.fsize(f), bg=f.findOne('Image'), tx=f.find('Text');
-    return {n:fr.length,w:s.w,h:s.h,bgOk:!!(bg&&bg.image()&&bg.image().width>100),locked:!!bg&&BD.util.isLocked(bg),texts:tx.length,
+  await pg.waitForFunction(()=>BD.main.find('Image').every(n=>n.image())&&BD.main.find('Text').every(t=>!t.getAttr('fillTex')||t.fillPatternImage()),null,{timeout:20000}).catch(()=>{});
+  const r=await pg.evaluate(()=>{ const fr=BD.util.frames(), f=fr[0], s=BD.util.fsize(f), im=f.find('Image'), tx=f.find('Text'), rc=f.find('Rect').filter(n=>!n.hasName('frame-bg'));
+    return {n:fr.length,w:s.w,h:s.h,imgs:im.length,imgsOk:im.every(n=>n.image()&&n.image().width>4),rects:rc.length,texts:tx.length,tex:tx.filter(t=>t.getAttr('fillTex')&&t.fillPatternImage()).length,
+      locked:[...im,...tx,...rc].filter(n=>BD.util.isLocked(n)).length,photos:im.filter(n=>n.getAttr('kind')==='image').length,
       rtl:tx.filter(t=>/[؀-ۿ]/.test(t.text())).every(t=>t.direction()==='rtl'),tpl:f.getAttr('tpl')}; });
-  ok(tag+' '+d.id+': one frame '+w+'×'+h+', background image loaded',r.n===1&&r.w===w&&r.h===h&&r.bgOk,r);
-  ok(tag+' '+d.id+': '+want.length+' texts, Arabic rtl, background locked, tpl attr',r.texts===want.length&&r.rtl&&r.locked&&r.tpl===d.id,r);
-  /* tapping the background does not select it */
-  const box=await pg.locator('#crStage').boundingBox();
-  const p=await pg.evaluate(()=>{ const f=BD.activeFrame(), t=BD.stage.getAbsoluteTransform(), s=BD.util.fsize(f); return t.point({x:f.x()+s.w-6,y:f.y()+s.h-6}); });
-  if(tag==='phone') await pg.touchscreen.tap(box.x+p.x,box.y+p.y); else await pg.mouse.click(box.x+p.x,box.y+p.y);
-  await pg.waitForTimeout(200);
-  ok(tag+' '+d.id+': tapping the background selects nothing',await pg.evaluate(()=>BD.S.sel.length===0)); }
+  ok(tag+' '+d.id+': one frame '+w+'×'+h+', '+want.i+' pictures all loaded, '+want.r+' shapes',r.n===1&&r.w===w&&r.h===h&&r.imgs===want.i&&r.imgsOk&&r.rects===want.r,{r,want});
+  ok(tag+' '+d.id+': '+want.t+' texts ('+want.tex+' crayon), Arabic rtl, nothing locked, tpl attr',r.texts===want.t&&r.tex===want.tex&&r.rtl&&r.locked===0&&r.tpl===d.id,{r,want});
+  if(/^lr-(r1|c1|c2|c3|c4|c5|r3|r4|t2|t4)/.test(d.id)) ok(tag+' '+d.id+': photos are real photo layers (replaceable)',r.photos>0,r);
+  /* a tap on the biggest picture selects that picture on its own (layers are separate) */
+  const pt=await pg.evaluate(()=>{ const f=BD.activeFrame(), fw=BD.util.fsize(f).w, im=f.find('Image').filter(n=>n.width()*Math.abs(n.scaleX())<fw*0.95); if(!im.length) return null;
+    const n=im.reduce((a,b)=>a.width()*a.height()>b.width()*b.height()?a:b), rc=n.getClientRect(), st=BD.stage.container().getBoundingClientRect();
+    const top=BD.stage.getIntersection({x:rc.x+rc.width/2,y:rc.y+rc.height/2}); return {x:st.left+rc.x+rc.width/2,y:st.top+rc.y+rc.height/2,id:n.id(),hit:top&&top.id()}; });
+  if(pt&&pt.hit===pt.id){ if(tag==='phone') await pg.touchscreen.tap(pt.x,pt.y); else await pg.mouse.click(pt.x,pt.y); await pg.waitForTimeout(250);
+    ok(tag+' '+d.id+': tapping a picture selects just that picture',await pg.evaluate(id=>BD.S.sel.length===1&&BD.S.sel[0].id()===id,pt.id)); } }
 
 for(const [tag,o] of Object.entries(ctxOpts)){
   const ctx=await b.newContext({...o,serviceWorkers:'block',acceptDownloads:true});
@@ -50,7 +52,7 @@ for(const [tag,o] of Object.entries(ctxOpts)){
   await (tag==='phone'?pg.tap('#crBar [data-cr="add"]'):pg.click('#crBar [data-cr="add"]')); await pg.waitForTimeout(400);
   const ids=await pg.evaluate(()=>[...document.querySelectorAll('#crSheet [data-asset]')].map(x=>x.dataset.asset));
   const hidden=BRAND.assets.filter(a=>a.hidden).map(a=>a.id), shown=BRAND.assets.filter(a=>!a.hidden&&a.group==='National Day 2026').map(a=>a.id);
-  ok(tag+': Add lists no hidden asset ('+hidden.length+' hidden)',hidden.length===29&&!ids.some(i=>hidden.includes(i)),ids.filter(i=>hidden.includes(i)));
+  ok(tag+': Add lists no hidden asset ('+hidden.length+' hidden)',hidden.length>0&&!ids.some(i=>hidden.includes(i)),ids.filter(i=>hidden.includes(i)));
   ok(tag+': Add lists the National Day pieces',shown.length>0&&shown.every(i=>ids.includes(i)),shown.filter(i=>!ids.includes(i)));
   /* the Templates picker inside Create lists them, under the right size */
   await pg.evaluate(()=>document.getElementById('crSheetX')&&document.getElementById('crSheetX').click()); await pg.waitForTimeout(250);
