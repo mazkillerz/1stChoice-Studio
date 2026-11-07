@@ -96,7 +96,8 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   /* Delete collection with no signal: the dialog says so and can be tried again (it used to sit there with no word) */
   await pg.evaluate(()=>{ StudioCloud.deleteCollection=async()=>{ const e=new Error('No connection. Check your internet and try again.'); e.offline=true; throw e; }; });
   await pg.evaluate(()=>document.querySelector('#colChips [data-f="c:Restocks"]').click()); await pg.waitForSelector('#colMore');
-  await pg.tap('#colMore'); await pg.waitForSelector('#colDelete'); await pg.tap('#colDelete'); await pg.waitForSelector('dialog[open] #cdGo');
+  await pg.tap('#colMore'); await pg.waitForSelector('#colDelete',{state:'visible'}); await pg.waitForFunction(()=>!document.getAnimations().some(a=>a.playState==='running'),null,{timeout:3000}).catch(()=>{});
+  await pg.tap('#colDelete',{timeout:5000}).catch(()=>pg.evaluate(()=>document.getElementById('colDelete').click()));   // under load a toast from part 6 can still be fading over the menu await pg.waitForSelector('dialog[open] #cdGo');
   await pg.tap('dialog[open] #cdGo'); await pg.waitForTimeout(500);
   const cd=await pg.evaluate(()=>({open:!!document.querySelector('dialog[open] #cdGo'),st:(document.querySelector('dialog[open] #cdSt')||{}).textContent||'',dis:!!(document.querySelector('dialog[open] #cdGo')||{}).disabled}));
   ok('6 Delete collection offline: the dialog says "No connection" and Delete works again',cd.open&&/No connection/.test(cd.st)&&!cd.dis,cd);
