@@ -11,40 +11,28 @@
       hidden when the cloud has no versions.
    7. Create: Update "name" / Save as new for an opened design, a template defaults to a new design, "Update the template" updates it.
    8. Two tabs editing the same design stay one design.
-   The cloud has no versions/setThumb until the 4.0 schema branch is merged: they are stubbed below (STUB) on top of fakecloud.
+   fakecloud has versions / restoreVersion / setThumb (4.0 schema); STUB below only counts the calls and can hide versions.
    Run: server on :8080 (or BASE=...), then node tests/saved-versions.mjs. Exit 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const PHOTO=new URL('../brands/1stchoice/samples/pair.jpg',import.meta.url).pathname;
-const hasVer=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8').includes('versions');
-const STUB=hasVer?'':`
-;(()=>{ const K='fakecloud', V='fakever', C=StudioCloud, sd=C.saveDesign;
-  const vs=()=>JSON.parse(localStorage.getItem(V)||'{}'), raw=()=>JSON.parse(localStorage.getItem(K));
-  const toData=b=>new Promise(r=>{ const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b); });
-  C.saveDesign=async o=>{ if(window.__slow) await new Promise(r=>setTimeout(r,window.__slow)); const old=o.id&&raw().designs[o.id]; const id=await sd(o);
-    window.__calls=JSON.parse(localStorage.getItem('__calls')||'[]').concat([{id:o.id||null,author:o.author||null,kind:o.kind}]); localStorage.setItem('__calls',JSON.stringify(window.__calls));
-    if(old){ const d=raw(), v=vs(), vid='v'+Date.now()+Math.random().toString(36).slice(2,6), tp=old.brand+'/'+id+'/'+vid+'.jpg'; d.files[tp]=d.files[old.thumb_path]; localStorage.setItem(K,JSON.stringify(d));
-      (v[id]=v[id]||[]).unshift({id:vid,design_id:id,name:old.name,recipe:old.recipe,thumb_path:tp,author:o.author||'Sara',created_at:new Date().toISOString()}); localStorage.setItem(V,JSON.stringify(v)); }
-    return id; };
-  if(!window.__noVer){
-    C.versions=async id=>vs()[id]||[];
-    C.restoreVersion=async(id,vid,author)=>{ const d=raw(), v=vs(), x=(v[id]||[]).find(y=>y.id===vid); if(!x) throw new Error('not found'); const cur=d.designs[id];
-      v[id].unshift({id:'v'+Date.now(),design_id:id,name:cur.name,recipe:cur.recipe,thumb_path:cur.thumb_path,author:author||null,created_at:new Date().toISOString()});
-      d.designs[id]={...cur,name:x.name,recipe:x.recipe,updated_at:new Date().toISOString()}; localStorage.setItem(K,JSON.stringify(d)); localStorage.setItem(V,JSON.stringify(v));
-      localStorage.setItem('__restored',JSON.stringify({id,vid,author:author||null})); };
-  }
-  C.setThumb=async(id,blob)=>{ const d=raw(), x=d.designs[id]; if(!x) throw new Error('not found'); if(!x.thumb_path) x.thumb_path=x.brand+'/'+id+'/thumb.jpg'; d.files[x.thumb_path]=await toData(blob); localStorage.setItem(K,JSON.stringify(d)); localStorage.setItem('__setThumb',String(+(localStorage.getItem('__setThumb')||0)+1)); };
+const STUB=`
+;(()=>{ const C=StudioCloud, sd=C.saveDesign, st=C.setThumb, rv=C.restoreVersion;
+  C.saveDesign=async o=>{ if(window.__slow) await new Promise(r=>setTimeout(r,window.__slow)); const id=await sd(o);
+    localStorage.setItem('__calls',JSON.stringify(JSON.parse(localStorage.getItem('__calls')||'[]').concat([{id:o.id||null,author:o.author||null,kind:o.kind}]))); return id; };
+  if(C.setThumb) C.setThumb=async(id,blob)=>{ const r=await st.call(C,id,blob); localStorage.setItem('__setThumb',String(+(localStorage.getItem('__setThumb')||0)+1)); return r; };
+  if(rv) C.restoreVersion=async(id,vid,author)=>{ const r=await rv.call(C,id,vid,author); localStorage.setItem('__restored',JSON.stringify({id,vid,author:author||null})); return r; };
+  if(window.__noVer){ delete C.versions; delete C.restoreVersion; }
 })();`;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8')+STUB;
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&!c?' '+(typeof i==='string'?i:JSON.stringify(i)):'')); };
 const b=await chromium.launch(); const errs=[];
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n').slice(0,4).join(' | ')); process.exit(1); });
-if(!hasVer) console.log('NOTE: fakecloud has no versions yet: versions / restoreVersion / setThumb are stubbed in this test (STUB).');
 const CLOUD='fakecloud';
 const dbOf=pg=>pg.evaluate(()=>JSON.parse(localStorage.getItem('fakecloud')||'{"designs":{},"files":{}}'));
 const calls=pg=>pg.evaluate(()=>JSON.parse(localStorage.getItem('__calls')||'[]'));
-const flatOf=(pg,path)=>pg.evaluate(async p=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); const u=d.files[p]; if(!u) return 'missing'; const blob=await (await fetch(u)).blob(); return await Studio.lab.coverFlat(blob); },path);
+const flatOf=(pg,idOrPath)=>pg.evaluate(async p=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); if(d.designs[p]) p=d.designs[p].thumb_path; const u=d.files[p]; if(!u) return 'missing'; const blob=await (await fetch(u)).blob(); return await Studio.lab.coverFlat(blob); },idOrPath);
 const waitCalls=(pg,n)=>pg.waitForFunction(n=>JSON.parse(localStorage.getItem('__calls')||'[]').length>=n,n,{timeout:30000,polling:100}).catch(()=>{});
 
 for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,'light'],['phone/dark',{width:390,height:844},true,'dark'],['desktop',{width:1280,height:800},false,'light']]){
@@ -68,7 +56,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   let L=await lab(); ok(N+'new design: the button reads "Save & add to team", no Save as new yet',L.btn==='Save & add to team'&&L.alt==='',L);
   await tap('#save'); await waitCalls(pg,1); await pg.waitForTimeout(800);
   let db=await dbOf(pg), ids=Object.keys(db.designs); const id=ids[0], c1=await calls(pg);
-  ok(N+'the first save makes one design with a real cover',ids.length===1&&c1.length===1&&c1[0].id===null&&(await flatOf(pg,db.designs[id].thumb_path))===false,{n:ids.length,calls:c1});
+  ok(N+'the first save makes one design with a real cover',ids.length===1&&c1.length===1&&c1[0].id===null&&(await flatOf(pg,id))===false,{n:ids.length,calls:c1});
   const upd0=db.designs[id].updated_at;
   await tool('tools/restock.html?design='+id); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
   L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, team switch on',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&/^Update “/.test(L.lbl),L);
@@ -117,25 +105,25 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
 
   /* 5. a blank / missing cover is redrawn on open; Redraw cover in the menu */
   const blank=()=>pg.evaluate(async id=>{ const c=document.createElement('canvas'); c.width=360; c.height=640; const x=c.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,360,640); const u=c.toDataURL('image/jpeg',.8), d=JSON.parse(localStorage.getItem('fakecloud')); d.files[d.designs[id].thumb_path]=u; localStorage.setItem('fakecloud',JSON.stringify(d)); },cid);
-  await blank(); ok(N+'(the test cover is now black)',(await flatOf(pg,db.designs[cid].thumb_path))===true);
+  await blank(); ok(N+'(the test cover is now black)',(await flatOf(pg,cid))===true);
   await tool('tools/restock.html?design='+cid); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100});
   await pg.waitForFunction(()=>+(localStorage.getItem('__setThumb')||0)>=1,null,{timeout:15000,polling:200}).catch(()=>{});
-  ok(N+'a black cover is redrawn when the design is opened',(await flatOf(pg,db.designs[cid].thumb_path))===false&&+(await pg.evaluate(()=>localStorage.getItem('__setThumb')))>=1);
+  ok(N+'a black cover is redrawn when the design is opened',(await flatOf(pg,cid))===false&&+(await pg.evaluate(()=>localStorage.getItem('__setThumb')))>=1);
   await pg.evaluate(id=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); delete d.files[d.designs[id].thumb_path]; localStorage.setItem('fakecloud',JSON.stringify(d)); },cid);
   await tool('tools/restock.html?design='+cid); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100});
   await pg.waitForFunction(()=>+(localStorage.getItem('__setThumb')||0)>=2,null,{timeout:15000,polling:200}).catch(()=>{});
-  ok(N+'a missing cover is redrawn when the design is opened',(await flatOf(pg,db.designs[cid].thumb_path))===false);
+  ok(N+'a missing cover is redrawn when the design is opened',(await flatOf(pg,cid))===false);
   await pg.goto(BASE+'index.html#saved'); await moreOf(cid); await blank();
   await pg.evaluate(id=>{ [...document.querySelectorAll('.sv-more[data-dmore="'+id+'"]')].find(x=>x.offsetParent).click(); },cid); await pg.waitForSelector('dialog.design-dlg [data-act="cover"]');
   ok(N+'the design menu has Redraw cover and Versions',await pg.isVisible('dialog [data-act="cover"]')&&await pg.isVisible('dialog [data-act="ver"]'));
   await tap('dialog [data-act="cover"]'); await pg.waitForFunction(()=>+(localStorage.getItem('__setThumb')||0)>=3,null,{timeout:40000,polling:200}).catch(()=>{});
-  ok(N+'Redraw cover stores a real cover again',(await flatOf(pg,db.designs[cid].thumb_path))===false&&+(await pg.evaluate(()=>localStorage.getItem('__setThumb')))>=3);
+  ok(N+'Redraw cover stores a real cover again',(await flatOf(pg,cid))===false&&+(await pg.evaluate(()=>localStorage.getItem('__setThumb')))>=3);
 
   /* 6. versions: an update keeps the one before; list, Restore with a confirm */
   await tool('tools/restock.html?design='+cid); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
   const k1=(await calls(pg)).length; await tap('#save'); await waitCalls(pg,k1+1); await pg.waitForTimeout(800);
   ok(N+'the update passes an author field (when the Who is using name exists)',(await calls(pg)).slice(-1)[0].id===cid);
-  const nv=await pg.evaluate(id=>(JSON.parse(localStorage.getItem('fakever')||'{}')[id]||[]).length,cid); ok(N+'the update kept a version',nv>=1,nv);
+  const nv=await pg.evaluate(id=>StudioCloud.versions(id).then(v=>v.length),cid); ok(N+'the update kept a version',nv>=1,nv);
   await pg.goto(BASE+'index.html#saved'); await moreOf(cid);
   await pg.evaluate(id=>{ [...document.querySelectorAll('.sv-more[data-dmore="'+id+'"]')].find(x=>x.offsetParent).click(); },cid); await pg.waitForSelector('dialog.design-dlg [data-act="ver"]'); await tap('dialog [data-act="ver"]');
   await pg.waitForSelector('.ver-row',{timeout:8000}); await pg.waitForTimeout(700);   // the dialog finishes its entrance
@@ -170,7 +158,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await csave(); let C=await clab(); ok(N+'Create, new design: "Also save to the team" / "Save image"',C.lbl==='Also save to the team'&&C.go==='Save image'&&!C.alt,C);
     await tap('#crTeamOn'); await pg.waitForTimeout(200); ok(N+'Create, team on for a new design: "Save & add to team"',(await clab()).go==='Save & add to team');
     await tap('#crTeamOnly'); await waitCalls(pg,1); await pg.waitForTimeout(800);
-    const cd=Object.keys((await dbOf(pg)).designs)[0]; db=await dbOf(pg); ok(N+'Create saved a design (with the photo)',db.designs[cd].kind==='design'&&(await flatOf(pg,db.designs[cd].thumb_path))===false,db.designs[cd]&&db.designs[cd].kind);
+    const cd=Object.keys((await dbOf(pg)).designs)[0]; db=await dbOf(pg); ok(N+'Create saved a design (with the photo)',db.designs[cd].kind==='design'&&(await flatOf(pg,cd))===false,db.designs[cd]&&db.designs[cd].kind);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); C=await clab();
     ok(N+'Create, opened design: Update “name”, Save as new, switch on, label says Update',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on&&/^Update “/.test(C.lbl),C);
     await tap('#crTeamOnly'); await waitCalls(pg,2); await pg.waitForTimeout(800); cc=await calls(pg);
