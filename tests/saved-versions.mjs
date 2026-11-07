@@ -58,7 +58,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   const tool=async(url,photo)=>{ await pg.goto(BASE+url); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{polling:100});
     if(photo){ await pg.setInputFiles('#pick',PHOTO); await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img&&!p.sample; },null,{polling:100}); } else await pg.waitForTimeout(700); };
   const sheet=async()=>{ if(touch){ await tap('#barSave'); await pg.waitForTimeout(600); } await pg.waitForFunction(()=>document.getElementById('teamOn'),null,{polling:100}); await pg.waitForTimeout(1500); };
-  const lab=()=>pg.evaluate(()=>({btn:document.getElementById('saveTxt').textContent.trim(),alt:(a=>a.hidden?'':a.textContent.trim())(document.getElementById('saveAlt')),team:document.getElementById('teamOn').checked,lbl:document.getElementById('teamLbl').textContent.trim()}));
+  const lab=()=>pg.evaluate(()=>({btn:document.getElementById('saveTxt').textContent.trim(),alt:(a=>!a||a.hidden?'':a.textContent.trim())(document.getElementById('saveAlt')),team:document.getElementById('teamOn').checked,lbl:document.getElementById('teamLbl').textContent.trim()}));
   const moreOf=id=>pg.waitForFunction(id=>[...document.querySelectorAll('.sv-more[data-dmore="'+id+'"]')].some(x=>x.offsetParent),id,{timeout:15000,polling:100});
   const seedClear=()=>pg.evaluate(()=>{ localStorage.clear(); });
 
