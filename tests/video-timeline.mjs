@@ -85,7 +85,7 @@ for(const scheme of ['light','dark']){
   await dragTouch(cdp,tb.x+300,tb.cy,tb.x+100,tb.cy); await pg.waitForTimeout(400);
   const sc1=await pg.evaluate(()=>({t:window.__video().t,sl:document.getElementById('vtScroll').scrollLeft,pps:window.__video().pps,now:document.getElementById('vdNow').textContent}));
   ok(N+'scrolling the timeline changes the time (t = scrollLeft / px per s)',sc1.t>1.2&&Math.abs(sc1.t-sc1.sl/sc1.pps)<.05&&sc1.now!=='0:00.0',sc1);
-  await seek(pg,0); await pg.waitForTimeout(100);
+  await seek(pg,0); await pg.waitForFunction(()=>document.getElementById('vtScroll').scrollLeft<2,null,{timeout:5000}).catch(()=>{});   // the scroll follows the time a frame later
   ok(N+'time 0 puts the start under the playhead (scrollLeft 0)',(await pg.evaluate(()=>document.getElementById('vtScroll').scrollLeft))<2);
   await pg.evaluate(()=>VD.setT(VD.dur())); await pg.waitForTimeout(100);
   const endSl=await pg.evaluate(()=>({sl:document.getElementById('vtScroll').scrollLeft,max:document.getElementById('vtScroll').scrollWidth-document.getElementById('vtScroll').clientWidth,add:document.getElementById('vtAdd').getBoundingClientRect().right<=innerWidth+1}));
@@ -302,8 +302,10 @@ for(const scheme of ['light','dark']){
     const fl=await filledIn(pg,'body'); ok(N+'the empty state has exactly one filled button (Add clips or photos) and a Start-from-a-reel-template link',fl===1&&/link/.test(em.link),fl);
     ok(N+'the New video menu item is in the name menu',await (async()=>{ await pg.tap('#vdMenu'); const t=await pg.evaluate(()=>document.getElementById('vdMenuBox').innerText); await pg.keyboard.press('Escape'); return /New video/.test(t); })());
     await pg.waitForFunction(()=>{ const e=document.getElementById('vdEmptyReel'); return e&&e.getClientRects().length&&window.__video&&window.__video().ready; }); await pg.tap('#vdEmptyReel');
-    if(!await waitClips(pg,1,20000).then(()=>true,()=>false)){ await pg.tap('#vdEmptyReel').catch(()=>{}); await waitClips(pg,1); }   // the tap landed before the handler was wired: once more
-     await pg.waitForTimeout(300);
+    /* with several reel templates the link opens the Reel template sheet: pick the first one (with one it adds it straight away) */
+    await pg.waitForFunction(()=>document.querySelectorAll('#vtClips .vt-clip').length===1||document.querySelector('[data-reel]'),null,{timeout:60000});
+    if(await pg.$('[data-reel]')) await pg.tap('#vdReelList [data-reel]');
+    await waitClips(pg,1); await pg.waitForTimeout(300);
     const r=await recipe(pg); ok(N+'Start from a reel template adds the reel; the empty card goes and Save works',r.clips.length===1&&r.clips[0].kind==='reel'&&!(await pg.isVisible('#vdEmpty'))&&!(await pg.evaluate(()=>document.getElementById('vdSave').disabled)),r.clips.map(c=>c.kind));
     await selectClip(pg,true,r.clips[0].id); await pg.tap('#bar [data-do="del"]'); await pg.waitForTimeout(300);
     ok(N+'deleting the last clip brings the empty state back',await pg.isVisible('#vdEmpty')&&await pg.evaluate(()=>document.getElementById('vdSave').disabled));
