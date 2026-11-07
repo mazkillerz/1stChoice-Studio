@@ -141,6 +141,8 @@ Studio.registerBrand({
     {id:"nd26-crayon-green",label:"Crayon green (text fill)",file:"assets/nd26/tex/crayon-green.png",group:"National Day 2026",hidden:true}
   ],
   textFills:[{id:'crayon-red',label:'Crayon red',asset:'nd26-crayon-red',color:'#DA291C'},{id:'crayon-green',label:'Crayon green',asset:'nd26-crayon-green',color:'#007A33'}],
+  /* import (mega 3.1): the class names a Claude Design board uses for crayon-filled words -> the text fills above */
+  importMap:{texClasses:{cr:'crayon-red',cg:'crayon-green'}},
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
   reels:[
