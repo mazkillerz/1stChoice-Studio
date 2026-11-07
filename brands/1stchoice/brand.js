@@ -107,6 +107,9 @@ Studio.registerBrand({
     {id:'winter-star',label:'Star',file:'reels/winter-cat/img/star1.webp',prev:'assets/prev/winter_star.webp',group:'Cat · winter camp (only when asked)'},
     /* National Day 2026: pieces + hidden template backgrounds (hidden:true never shows in Add asset) */
     {id:"nd26-bg-nd-pfp",label:"Profile picture · background",file:"assets/nd26/bg/nd-pfp.webp",prev:"assets/prev/nd26/nd-pfp.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-pfp-wink",label:"Profile picture · wink · background",file:"assets/nd26/bg/nd-pfp-wink.webp",prev:"assets/prev/nd26/nd-pfp-wink.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-profile-story",label:"Profile look · story · background",file:"assets/nd26/bg/nd-profile-story.webp",prev:"assets/prev/nd26/nd-profile-story.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-profile-story-wink",label:"Profile look · wink · background",file:"assets/nd26/bg/nd-profile-story-wink.webp",prev:"assets/prev/nd26/nd-profile-story-wink.webp",group:"National Day 2026",hidden:true,noFlip:true},
     {id:"nd26-bg-nd-countdown-3",label:"Countdown · 3 · background",file:"assets/nd26/bg/nd-countdown-3.webp",prev:"assets/prev/nd26/nd-countdown-3.webp",group:"National Day 2026",hidden:true,noFlip:true},
     {id:"nd26-bg-nd-countdown-2",label:"Countdown · 2 · background",file:"assets/nd26/bg/nd-countdown-2.webp",prev:"assets/prev/nd26/nd-countdown-2.webp",group:"National Day 2026",hidden:true,noFlip:true},
     {id:"nd26-bg-nd-countdown-1",label:"Countdown · 1 · background",file:"assets/nd26/bg/nd-countdown-1.webp",prev:"assets/prev/nd26/nd-countdown-1.webp",group:"National Day 2026",hidden:true,noFlip:true},
@@ -237,6 +240,9 @@ Studio.registerBrand({
       {id:'highlight-order-emoji',label:'Highlight: order emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'cart',keys:'emoji cart shop',words:{}},
       /* National Day 2026 + new label reveal: each one is a saved Create document (doc = JSON in this folder), backgrounds are hidden assets */
       {id:"nd-pfp",label:"Profile picture",sub:"Profile picture · Square",layout:"doc",doc:"templates/nd26/nd-pfp.json",size:"square",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-pfp-wink",label:"Profile · wink",sub:"Profile picture, winking · Square",layout:"doc",doc:"templates/nd26/nd-pfp-wink.json",size:"square",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-profile-story",label:"Profile look · story",sub:"Profile look as a story, room for your words · Story",layout:"doc",doc:"templates/nd26/nd-profile-story.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-profile-story-wink",label:"Profile look · wink",sub:"Profile look as a story, winking, room for your words · Story",layout:"doc",doc:"templates/nd26/nd-profile-story-wink.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
       {id:"nd-countdown-3",label:"Countdown · 3",sub:"Countdown · 3 days · Story",layout:"doc",doc:"templates/nd26/nd-countdown-3.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
       {id:"nd-countdown-2",label:"Countdown · 2",sub:"Countdown · 2 days · Story",layout:"doc",doc:"templates/nd26/nd-countdown-2.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
       {id:"nd-countdown-1",label:"Countdown · 1",sub:"Countdown · 1 day · Story",layout:"doc",doc:"templates/nd26/nd-countdown-1.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
