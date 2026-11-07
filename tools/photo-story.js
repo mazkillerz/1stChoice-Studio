@@ -14,16 +14,33 @@ function psShade(h,vp,fa){
   else h.shade(H,H-980,.68*fa,0);
 }
 
+/* the height a text really takes: h.measure reads one line, but people can type a new line (Enter). One line measures
+   exactly as before, so old designs keep their layout */
+const mLines=(h,str,o)=>{ const L=String(str||'').split('\n'); if(L.length<2) return h.measure(str,o);
+  const size=Math.min(...L.map(t=>h.measure(t||' ',o).size)), ms=L.map(t=>h.measure(t||' ',{...o,size}));
+  return {w:Math.max(...ms.map(m=>m.w)),h:Math.round(Math.max(...ms.map(m=>m.h))+(L.length-1)*size*1.2),size}; };
+
 /* The words block: headline, then a small line and the logo (side by side, or stacked when centred).
    p: {head, small, hp:'start'|'center'|'end', vp:'top'|'middle'|'bottom', size, color, sub, shadow, tone, logo, noHead}
    Returns {top, bottom, blockH, paint(y)}; paint(y) draws it with its top at y (default: where vp puts it). */
 function psWords(h,p){
   const {W,H}=h, rtl=h.dir==='rtl', center=p.hp==='center', hp=p.hp;
-  const hm=p.noHead?{h:0}:h.measure(p.head,{font:'display',size:p.size,maxW:936});
-  const sm=p.small?h.measure(p.small,{weight:'800',size:38,maxW:center?900:700}):{h:0};
-  const lw=200, lh=p.logo?h.logoH(lw):0, rowH=center?(p.small?sm.h+22:0)+lh:Math.max(sm.h,lh), gap=p.noHead||!rowH?0:24, blockH=hm.h+gap+rowH;
-  // inside the story's safe zones: never above 250px from the top or below 300px from the bottom
-  const home=p.vp==='top'?290:p.vp==='middle'?Math.round((H-blockH)/2):Math.min(1580,H-300)-blockH;
+  const lw=200, lh=p.logo?h.logoH(lw):0;
+  /* the block measured the old way (h.measure: several lines read as one) and with the true heights */
+  const geo=real=>{ const m=real?(t,q)=>mLines(h,t,q):(t,q)=>h.measure(t,q);
+    const hm=p.noHead?{h:0}:m(p.head,{font:'display',size:p.size,maxW:936});
+    const sm=p.small?m(p.small,{weight:'800',size:38,maxW:center?900:700}):{h:0};
+    /* a small line too long for its side of the row (it stays wider than 700 even at the smallest size) goes on a row of its own */
+    const own=!center&&p.small&&sm.w>702, smOwn=own?m(p.small,{weight:'800',size:38,maxW:936}):sm;
+    const rowH=center?(p.small?sm.h+22:0)+lh:own?smOwn.h+(lh?16+lh:0):Math.max(sm.h,lh), gap=p.noHead||!rowH?0:24, blockH=hm.h+gap+rowH;
+    // inside the story's safe zones: never above 250px from the top or below 300px from the bottom
+    const home=p.vp==='top'?290:p.vp==='middle'?Math.round((H-blockH)/2):Math.min(1580,H-300)-blockH;
+    return {hm,sm:smOwn,own,rowH,gap,blockH,home}; };
+  /* the old way stays (pixel for pixel) unless it made words overlap or pass the safe line: a headline or small line on 2-3 lines */
+  const A=geo(false), Z=geo(true);
+  const oldOk=!(A.rowH&&Z.hm.h>A.hm.h+2)&&!(center&&p.logo&&p.small&&Z.sm.h>A.sm.h+2)
+    &&!A.own&&(p.at?p.at(A.blockH):A.home)+Math.max(Z.hm.h,A.hm.h+A.gap+(!A.rowH?0:center?(p.small?Z.sm.h+22:0)+lh:Math.max(Z.sm.h,lh)))<=1621;
+  const {hm,sm,own,rowH,gap,blockH,home}=oldOk?A:Z;
   const leftX=72, rightX=W-72, startX=rtl?rightX:leftX, endX=rtl?leftX:rightX;
   const tx=center?W/2:hp==='start'?startX:endX, al=center?'center':hp;
   const sub=p.sub||'rgba(255,255,255,.94)';
@@ -36,6 +53,7 @@ function psWords(h,p){
     } else {
       /* words on one side, the logo on the other side of the same row */
       const textOnRight=(hp==='start')===rtl, logoX=textOnRight?leftX:rightX-lw;
+      if(own){ h.text('small','Small line',p.small,tx,y,{weight:'800',size:38,color:sub,align:al,shadow:p.shadow,maxW:936}); if(p.logo) h.logo(logoX,y+sm.h+16,lw,p.tone); return; }
       if(p.logo) h.logo(logoX,y+(rowH-lh)/2,lw,p.tone);
       if(p.small) h.text('small','Small line',p.small,tx,y+(rowH-sm.h)/2,{weight:'800',size:38,color:sub,align:al,shadow:p.shadow,maxW:700});
       else h.text('small','Small line','',0,0);
@@ -111,7 +129,7 @@ Studio.tool({
     h.ground(ground,o.value('gfx'));
     if(st==='caption'){
       /* the photo fills the top, a calm band below holds the words (kept above the story's bottom safe zone) */
-      const ww=psWords(h,{head,small,hp:'start',vp:'bottom',size,color:ink,sub:soft,shadow:false,tone,logo});
+      const ww=psWords(h,{head,small,hp:'start',vp:'bottom',size,color:ink,sub:soft,shadow:false,tone,logo,at:bh=>Math.round(1620-bh-128)+64});
       const pad=64, ph=Math.round(1620-ww.blockH-pad*2);
       h.photo(0,0,0,W,ph,{mode:'cover'});
       ww.paint(ph+pad);
@@ -119,7 +137,7 @@ Studio.tool({
     }
     if(st==='poster'){
       /* big headline, the photo as a tall rounded card, a footer row with the small line and the logo */
-      const psz=Math.round(190*k), hm=h.measure(head,{font:'display',size:psz,maxW:936});
+      const psz=Math.round(190*k), hm=mLines(h,head,{font:'display',size:psz,maxW:936});
       const ft=psWords(h,{small,hp:'start',vp:'bottom',noHead:true,color:ink,sub:soft,shadow:false,tone,logo});
       const top=290+hm.h+48, bottom=1580-(ft.rowH?ft.rowH+52:0), ph=bottom-top;
       const sc=(ctx.getTransform&&ctx.getTransform().a)||1;

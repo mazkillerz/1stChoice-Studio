@@ -6,11 +6,23 @@ const swx=(bg,...parts)=>`<span class="swatch" style="background:${bg}">${parts.
 const same=(a,b)=>String(a||'').toLowerCase()===String(b||'').toLowerCase();
 /* a colour moved a little toward another one (hex only) */
 const mixHex=(a,b,t)=>{ const p=x=>{ const m=/^#?([0-9a-f]{6})$/i.exec(x||''); return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):null; }, A=p(a), B=p(b); if(!A||!B) return a; return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join(''); };
+/* the height a text really takes: h.measure reads one line, but people can type a new line (Enter). One line measures
+   exactly as before, so old designs keep their layout */
+const mLines=(h,str,o)=>{ const L=String(str||'').split('\n'); if(L.length<2) return h.measure(str,o);
+  const size=Math.min(...L.map(t=>h.measure(t||' ',o).size)), ms=L.map(t=>h.measure(t||' ',{...o,size}));
+  return {w:Math.max(...ms.map(m=>m.w)),h:Math.round(Math.max(...ms.map(m=>m.h))+(L.length-1)*size*1.2),size}; };
+/* Two plans for a layout: the old one (h.measure, which reads several lines as one) and one with the true heights. The old plan
+   is kept whenever the words really fit above the safe line, so every design that looked right before stays pixel-identical;
+   only a layout that would push words past it (a headline on 2-3 lines, many items) uses the true heights. */
+const choosePlan=(plan,OLD,REAL,limit)=>{ const a=plan(OLD); return a.end(REAL)<=(limit||1620)+1?a:plan(REAL); };
+/* a button never wider than the story: its words shrink until the pill fits (short words keep size 36 exactly) */
+const pillFit=(h,str,size,o)=>({...o,size:str?h.measure(String(str).replace(/\n/g,' '),{weight:'800',size:size||36,maxW:860}).size:size||36});
 /* the room one photo gets: a rounded card, a circle or an arch; room = the height the rest of the page leaves */
-const photoBox=(shape,pw,ph,room)=>{
-  if(shape==='circle'){ const d=Math.max(520,Math.min(780,pw,room)); return {w:d,h:d}; }
-  if(shape==='arch'){ const hh=Math.max(520,Math.min(820,room)); return {w:Math.min(pw,Math.round(hh*.92)),h:hh}; }
-  return {w:pw,h:Math.max(520,Math.min(ph,room))};
+const photoBox=(shape,pw,ph,room,real)=>{
+  const lo=real?Math.max(320,Math.min(520,room)):520;   // a plan with the true heights may go down to 320 when the words need the room
+  if(shape==='circle'){ const d=Math.max(lo,Math.min(780,pw,room)); return {w:d,h:d}; }
+  if(shape==='arch'){ const hh=Math.max(lo,Math.min(820,room)); return {w:Math.min(pw,Math.round(hh*.92)),h:hh}; }
+  return {w:pw,h:Math.max(lo,Math.min(ph,room))};
 };
 Studio.tool({
   id:'restock', title:'Restock', fileName:'restock',
@@ -63,15 +75,17 @@ Studio.tool({
     const hk={small:.8,large:1.22}[o.value('hsize')]||1, hsz=n=>Math.round(n*hk);
     const bt=o.value('btn'), btn=(bg,fg)=>bt?{bg:bt,fg:h.isLight(bt)?C.ink:C.paper}:{bg,fg};
     const shape=['circle','arch','square'].includes(o.value('shape'))?o.value('shape'):'rounded';
-    const smallH=small?h.measure(small,{weight:'800',size:38,maxW:900}).h:0;
+    /* OLD = how the layout measured before; REAL = the true heights (see choosePlan) */
+    const sets=real=>{ const m=real?(t,q)=>mLines(h,t,q):(t,q)=>h.measure(t,q), sH=small?m(small,{weight:'800',size:38,maxW:900}).h:0;
+      const r=[fl.length?72:0,sH,pill?76:0].filter(Boolean);
+      return {real,m,smallRoom:!small?0:real&&small.includes('\n')?sH+30:60,tailH:r.reduce((a,b)=>a+b,0)+30*Math.max(0,r.length-1)}; };
+    const OLD=sets(false), REAL=sets(true);
     /* flavours, small line and button, one under the other, centred */
     const tail=(y,sh,pillBtn)=>{
       const t=h.tags('flav','Flavours',fl,W/2,y,{size:36,h:72}); if(t) y+=t+30;
       const s=h.text('small','Small line',small,W/2,y,{weight:'800',size:38,color:muted,maxW:900,...(sh?{shadow:true}:{})}); if(s) y+=s+30;
-      h.pill('pill','Button',pill,W/2,y,pillBtn);
+      h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,pillBtn));
     };
-    /* the height of that tail, from what is really shown */
-    const tailH=()=>{ const r=[fl.length?72:0,smallH,pill?76:0].filter(Boolean); return r.reduce((a,b)=>a+b,0)+30*Math.max(0,r.length-1); };
     /* a photo outline: rounded (today's look), circle, arch (round top) or square; grow = extra pixels all round */
     const outline=(x,y,w,hh,g)=>{
       ctx.beginPath();
@@ -87,18 +101,18 @@ Studio.tool({
 
     /* ---- Full photo ---- */
     if(full){
-      const hm=h.measure(head,{font:'display',size:hsz(150),maxW:940});
       const vp=String(o.value('place')||'bottom').split('-')[0];
       h.photo(0,0,0,W,H,{mode:'cover'});
       if(vp==='top'){ h.shade(0,1300,.8,0); } else if(vp==='middle'){ h.shade(H/2-700,H/2,0,.62); h.shade(H/2+700,H/2,0,.62); h.shade(0,420,.4,0); } else { h.shade(H,H-1200,.8,0); h.shade(0,420,.45,0); }
       h.logo((W-240)/2,250,240,'light');
-      const blockH=hm.h+30+(fl.length?70+30:0)+(small?60:0)+(pill?76+30:0);
       const lgH=h.logoH(240);
-      let y=vp==='top'?250+lgH+60:vp==='middle'?Math.round((H-blockH)/2):Math.min(1560,H-300)-blockH;
+      const blk=M=>M.m(head,{font:'display',size:hsz(150),maxW:940}).h+30+(fl.length?70+30:0)+M.smallRoom+(pill?76+30:0);
+      const P=choosePlan(M=>{ const y0=vp==='top'?250+lgH+60:vp==='middle'?Math.round((H-blk(M))/2):Math.min(1560,H-300)-blk(M); return {y0,end:R=>y0+blk(R)-30}; },OLD,REAL);
+      let y=P.y0;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:hsz(150),color:ink,shadow:true,maxW:940})+30;
       const t=h.tags('flav','Flavours',fl,W/2,y,{size:36,h:72}); if(t) y+=t+30;
       const s=h.text('small','Small line',small,W/2,y,{weight:'800',size:38,color:muted,shadow:true,maxW:900}); if(s) y+=s+30;
-      h.pill('pill','Button',pill,W/2,y,btn(C.paper,C.ink));
+      h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,btn(C.paper,C.ink)));
       return;
     }
     h.ground(ground,o.value('gfx'));
@@ -106,11 +120,11 @@ Studio.tool({
 
     /* ---- Cans: the HD can cut-out(s) on a soft panel, no photo ---- */
     if(st==='cans'){
-      const hm=h.measure(head,{font:'display',size:hsz(150),maxW:940});
       const lw=230, lh=h.logoH(lw), pw=920;
-      const rest=lh+56+hm.h+44+44+tailH();
-      const ph=Math.max(460,Math.min(760,1330-rest)), total=rest+ph;
-      let y=Math.max(250,Math.round((H-total)/2-10));
+      const restOf=M=>lh+56+M.m(head,{font:'display',size:hsz(150),maxW:940}).h+44+44+M.tailH;
+      const {ph,y0}=choosePlan(M=>{ const rest=restOf(M), ph=Math.max(M.real?Math.max(300,Math.min(460,1330-rest)):460,Math.min(760,1330-rest)), y0=Math.max(250,Math.round((H-rest-ph)/2-10));
+        return {ph,y0,end:R=>y0+restOf(R)+ph}; },OLD,REAL);
+      let y=y0;
       y+=h.logo((W-lw)/2,y,lw,logoTone)+56;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:hsz(150),color:ink,maxW:940})+44;
       /* a soft panel: grey on a white ground, the warm blob tone on cream, a lighter tint on a dark ground */
@@ -133,9 +147,9 @@ Studio.tool({
 
     /* ---- Split: the photo fills the top, the words sit on the ground below ---- */
     if(st==='split'){
-      const hm=h.measure(head,{font:'display',size:hsz(150),maxW:940});
-      const lw=240, blockH=hm.h+(tailH()?28+tailH():0), top=Math.min(1570-blockH,1420);
-      const photoH=Math.max(880,Math.min(1250,top-50));
+      const lw=240, blk=M=>M.m(head,{font:'display',size:hsz(150),maxW:940}).h+(M.tailH?28+M.tailH:0);
+      const {photoH,top}=choosePlan(M=>{ const top=Math.min(1570-blk(M),1420), photoH=Math.max(M.real?Math.max(560,Math.min(880,top-50)):880,Math.min(1250,top-50));
+        return {photoH,top,end:R=>Math.max(photoH+50,top)+blk(R)}; },OLD,REAL);
       h.photo(0,0,0,W,photoH,{r:[0,0,56,56],mode:'cover'});
       h.shade(0,600,.5,0);
       h.logo((W-lw)/2,250,lw,'light');
@@ -147,11 +161,11 @@ Studio.tool({
 
     /* ---- Big words: a huge headline, then the photo as a big card ---- */
     if(st==='poster'){
-      const hm=h.measure(head,{font:'display',size:hsz(230),maxW:940});
       const lw=200, lh=h.logoH(lw), pw=940;
-      const rest=lh+40+hm.h+40+40+tailH();
-      const bx=photoBox(shape,pw,900,Math.min(900,1360-rest)), total=rest+bx.h;
-      let y=250+Math.max(0,Math.round((1360-total)/2));
+      const restOf=M=>lh+40+M.m(head,{font:'display',size:hsz(230),maxW:940}).h+40+40+M.tailH;
+      const {bx,y0}=choosePlan(M=>{ const rest=restOf(M), bx=photoBox(shape,pw,900,Math.min(900,1360-rest),M.real), y0=250+Math.max(0,Math.round((1360-rest-bx.h)/2));
+        return {bx,y0,end:R=>y0+restOf(R)+bx.h}; },OLD,REAL);
+      let y=y0;
       y+=h.logo((W-lw)/2,y,lw,logoTone)+40;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:hsz(230),color:ink,maxW:940})+40;
       putPhoto((W-bx.w)/2,y,bx.w,bx.h); y+=bx.h+40;
@@ -160,12 +174,12 @@ Studio.tool({
     }
 
     /* ---- White / Cream: the headline, then the photo on a card ---- */
-    const hm=h.measure(head,{font:'display',size:hsz(150),maxW:940});
     const ar=h.photoAspect(0), pw=920; let ph=Math.round(pw/ar); ph=Math.max(560,Math.min(820,ph));
     const lw=230, lh=h.logoH(lw);
-    const rest=lh+56+hm.h+44+44+(fl.length?72+30:0)+(small?60:0)+(pill?76+30:0);
-    const bx=photoBox(shape,pw,ph,1330-rest), total=rest+bx.h;
-    let y=Math.max(250,Math.round((H-total)/2-10));
+    const restOf=M=>lh+56+M.m(head,{font:'display',size:hsz(150),maxW:940}).h+44+44+(fl.length?72+30:0)+M.smallRoom+(pill?76+30:0);
+    const {bx,y0}=choosePlan(M=>{ const rest=restOf(M), bx=photoBox(shape,pw,ph,1330-rest,M.real), y0=Math.max(250,Math.round((H-rest-bx.h)/2-10));
+      return {bx,y0,end:R=>y0+lh+56+R.m(head,{font:'display',size:hsz(150),maxW:940}).h+44+bx.h+44+R.tailH}; },OLD,REAL);
+    let y=y0;
     y+=h.logo((W-lw)/2,y,lw,logoTone)+56;
     y+=h.text('head','Headline',head,W/2,y,{font:'display',size:hsz(150),color:ink,maxW:940})+44;
     // a soft shape behind the photo, then the photo

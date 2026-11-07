@@ -1,6 +1,13 @@
 /* Offer: a discount story. Offer tiles (e.g. ×3 / 20%), a dates line, a product photo and a button.
    Tiles are numbers you type; for an Arabic brand they're written in Arabic digits (٢٠٪). */
 const osw=(bg,photo)=>`<span class="swatch" style="background:${bg}"><i style="${photo}"></i></span>`;
+/* the height a text really takes: h.measure reads one line, but people can type a new line (Enter). One line measures
+   exactly as before, so old designs keep their layout */
+const mLines=(h,str,o)=>{ const L=String(str||'').split('\n'); if(L.length<2) return h.measure(str,o);
+  const size=Math.min(...L.map(t=>h.measure(t||' ',o).size)), ms=L.map(t=>h.measure(t||' ',{...o,size}));
+  return {w:Math.max(...ms.map(m=>m.w)),h:Math.round(Math.max(...ms.map(m=>m.h))+(L.length-1)*size*1.2),size}; };
+/* a button never wider than the story: its words shrink until the pill fits (short words keep size 36 exactly) */
+const pillFit=(h,str,size,o)=>({...o,size:str?h.measure(String(str).replace(/\n/g,' '),{weight:'800',size:size||36,maxW:860}).size:size||36});
 Studio.tool({
   id:'offer', title:'Offer', fileName:'offer',
   photos:{count:1}, sampleNote:'Example photo. Use a clear product photo (cans not touching).',
@@ -27,7 +34,9 @@ Studio.tool({
     const head=o.value('head')||h.brand.phrases.headlines[0], tiles=o.value('tiles'), dates=o.value('dates'), small=o.value('small'), pill=o.value('pill');
     const tileBg=full?C.paper:dark?C.accent:C.ink, tileSmall=full?C.ink:dark?C.ink:(C.cream||C.paper), tileBig=full?C.ink:dark?C.ink:C.accent;
     const n=tiles.length, tw=n===1?460:n===2?400:300, th=n?260:0, tg=24, rowW=n*tw+(n-1)*tg;
-    const hm=h.measure(head,{font:'display',size:140,maxW:940});
+    /* heights the old way (h.measure) and the true way (several lines); the old one stays while everything fits (old designs unchanged) */
+    const hmO=h.measure(head,{font:'display',size:140,maxW:940}), hmR=mLines(h,head,{font:'display',size:140,maxW:940});
+    const smallR=small?mLines(h,small,{weight:'800',size:38,maxW:900}).h+30:0, datesR=dates?h.measure(dates,{weight:'800',size:40,maxW:900}).h+26:0;
     const drawTiles=y=>h.block('tiles','Offer tiles',(W-rowW)/2,y,rowW,th,(c,color)=>{
       tiles.forEach((t,i)=>{ const k=h.dir==='rtl'?n-1-i:i, x=k*(tw+tg);
         c.fillStyle=color||tileBg; c.beginPath(); h.rr(c,x,0,tw,th,40); c.fill();
@@ -43,27 +52,33 @@ Studio.tool({
       h.photo(0,0,0,W,H,{mode:'cover'});
       if(vp==='top'){ h.shade(0,1300,.8,0); } else if(vp==='middle'){ h.shade(H/2-700,H/2,0,.62); h.shade(H/2+700,H/2,0,.62); h.shade(0,420,.4,0); } else { h.shade(H,H-1200,.8,0); h.shade(0,420,.45,0); }
       h.logo((W-230)/2,250,230,'light');
-      const blockH=hm.h+34+(n?th+36:0)+(dates?56:0)+(small?56:0)+(pill?76+30:0);
+      const blk=(hh,sr,dr)=>hh+34+(n?th+36:0)+dr+sr+(pill?76+30:0);
       const lgH=h.logoH(240);
-      let y=vp==='top'?250+lgH+60:vp==='middle'?Math.round((H-blockH)/2):Math.min(1580,H-300)-blockH;
+      const at=bh=>vp==='top'?250+lgH+60:vp==='middle'?Math.round((H-bh)/2):Math.min(1580,H-300)-bh;
+      const y0=at(blk(hmO.h,small?56:0,dates?56:0)), real=blk(hmR.h,smallR,datesR)-30;
+      let y=y0+real<=1621?y0:at(real+30);
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:140,color:ink,shadow:true,maxW:940})+34;
       if(n) y+=drawTiles(y)+36;
       const d=h.text('dates','Dates',dates,W/2,y,{weight:'800',size:40,color:muted,shadow:true,maxW:900}); if(d) y+=d+26;
       const s=h.text('small','Small line',small,W/2,y,{weight:'800',size:38,color:muted,shadow:true,maxW:900}); if(s) y+=s+30;
-      h.pill('pill','Button',pill,W/2,y,{bg:C.paper,fg:C.ink});
+      h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,{bg:C.paper,fg:C.ink}));
       return;
     }
     h.ground(ground,o.value('gfx'));
     const ar=h.photoAspect(0), pw=880; let ph=Math.round(pw/ar); ph=Math.max(480,Math.min(640,ph));
     const lw=220, lh=h.logoH(lw);
-    const total=lh+50+hm.h+40+ph+44+(n?th+40:0)+(dates?56:0)+(small?56:0)+(pill?76+30:0);
-    let y=Math.max(250,Math.round((H-total)/2-10));
+    const rest=(hh,sr,dr)=>lh+50+hh+40+44+(n?th+40:0)+dr+sr+(pill?76+30:0);
+    let total=rest(hmO.h,small?56:0,dates?56:0)+ph, y=Math.max(250,Math.round((H-total)/2-10));
+    /* the button would land past the safe line (3 tiles + dates + small line + button, or words on 2-3 lines): the photo gives up
+       the room it needs (down to 300) and the block is centred again */
+    const need=rest(hmR.h,smallR,datesR)-30;
+    if(y+need+ph>1621){ ph=Math.max(300,Math.min(ph,1370-need)); total=need+30+ph; y=Math.max(250,Math.round((H-total)/2-10)); }
     y+=h.logo((W-lw)/2,y,lw,dark?'light':'dark')+50;
     y+=h.text('head','Headline',head,W/2,y,{font:'display',size:140,color:ink,maxW:940})+40;
     h.photo(0,(W-pw)/2,y,pw,ph,{r:44,mode:'cover'}); y+=ph+44;
     if(n) y+=drawTiles(y)+40;
     const d=h.text('dates','Dates',dates,W/2,y,{weight:'800',size:40,color:muted,maxW:900}); if(d) y+=d+26;
     const s=h.text('small','Small line',small,W/2,y,{weight:'800',size:38,color:muted,maxW:900}); if(s) y+=s+30;
-    h.pill('pill','Button',pill,W/2,y,{bg:dark?C.paper:C.ink,fg:dark?C.ink:C.paper});
+    h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,{bg:dark?C.paper:C.ink,fg:dark?C.ink:C.paper}));
   }
 });
