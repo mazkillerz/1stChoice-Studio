@@ -32,6 +32,8 @@ const recipe=async pg=>(await V(pg)).recipe;
 const nClips=pg=>pg.evaluate(()=>document.querySelectorAll('#vtClips .vt-clip').length);
 const waitClips=(pg,n,ms=90000)=>pg.waitForFunction(n=>document.querySelectorAll('#vtClips .vt-clip').length===n,n,{timeout:ms});   // 90 s: adding a reel loads its scene files, slow under 4-way load
 const T=(pg,touch,s)=>touch?pg.tap(s):pg.click(s);
+/* a touch drag leaves a fling (momentum scroll) that keeps scrubbing after the finger is up, longer under load: wait until the scroll has stopped */
+const scrollStill=pg=>pg.evaluate(()=>new Promise(res=>{ const sc=document.getElementById('vtScroll'); let last=-1, n=0, f=0; const tick=()=>{ if(sc.scrollLeft===last) n++; else { n=0; last=sc.scrollLeft; } if(n>=12||++f>600) return res(true); requestAnimationFrame(tick); }; tick(); }));
 const seek=(pg,t)=>pg.evaluate(t=>{ VD.setT(t); },t);
 const filledIn=(pg,root)=>pg.evaluate(root=>{ const probe=document.createElement('i'); probe.style.background='var(--accent)'; document.body.appendChild(probe); const acc=getComputedStyle(probe).backgroundColor; probe.remove();
   return [...document.querySelectorAll(root+' button, '+root+' label.btn')].filter(b=>{ const r=b.getBoundingClientRect(); return r.width>0&&r.height>0&&getComputedStyle(b).backgroundColor===acc&&!b.hasAttribute('aria-pressed'); }).length; },root);
@@ -82,10 +84,10 @@ for(const scheme of ['light','dark']){
   /* scrolling scrubs */
   await seek(pg,0); await pg.waitForTimeout(100);
   const tb=await box(pg,'#vtTexts');
-  await dragTouch(cdp,tb.x+300,tb.cy,tb.x+100,tb.cy); await pg.waitForTimeout(400);
+  await dragTouch(cdp,tb.x+300,tb.cy,tb.x+100,tb.cy); await pg.waitForTimeout(400); await scrollStill(pg);
   const sc1=await pg.evaluate(()=>({t:window.__video().t,sl:document.getElementById('vtScroll').scrollLeft,pps:window.__video().pps,now:document.getElementById('vdNow').textContent}));
   ok(N+'scrolling the timeline changes the time (t = scrollLeft / px per s)',sc1.t>1.2&&Math.abs(sc1.t-sc1.sl/sc1.pps)<.05&&sc1.now!=='0:00.0',sc1);
-  await seek(pg,0); await pg.waitForFunction(()=>document.getElementById('vtScroll').scrollLeft<2,null,{timeout:5000}).catch(()=>{});   // the scroll follows the time a frame later
+  await seek(pg,0); await pg.waitForFunction(()=>document.getElementById('vtScroll').scrollLeft<2,null,{timeout:5000}).catch(()=>{}); await scrollStill(pg);   // the scroll follows the time a frame later
   ok(N+'time 0 puts the start under the playhead (scrollLeft 0)',(await pg.evaluate(()=>document.getElementById('vtScroll').scrollLeft))<2);
   await pg.evaluate(()=>VD.setT(VD.dur())); await pg.waitForTimeout(100);
   const endSl=await pg.evaluate(()=>({sl:document.getElementById('vtScroll').scrollLeft,max:document.getElementById('vtScroll').scrollWidth-document.getElementById('vtScroll').clientWidth,add:document.getElementById('vtAdd').getBoundingClientRect().right<=innerWidth+1}));
