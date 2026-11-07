@@ -178,7 +178,10 @@ function brandPop(anchor){ const as=L.brandAssets(), ph=(BD.B&&BD.B.phrases)||{}
     <span class="lbl">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" dir="auto">${esc(p)}</button>`).join('')}</div>
     <button type="button" class="link" id="bpAll">All brand assets and wording</button></div>`,{above:true,center:true,cls:'pop-wide'});
   pop.onclick=e=>{ const it=e.target.closest('[data-asset],[data-phrase]'); if(it){ addItem(it); closePop(); } if(e.target.id==='bpAll'){ closePop(); openAssets('brand'); } }; }
+/* a narrow touch screen hides Frame in the dock (board.css), so More tools offers it first */
+const dockNarrow=()=>matchMedia('(pointer:coarse) and (max-width:420px)').matches;
 function morePop(anchor){ const r=anchor.getBoundingClientRect(); openMenu(r.left-120,r.top,[
+  ...(dockNarrow()?[{label:'Frame',key:'F',icon:IC.frame,run:()=>BD.setTool('frame')},{label:'Frame sizes…',icon:IC.print,run:()=>dockFly('frame',anchor)},'-']:[]),
   {label:'Barcode (EAN / UPC)…',icon:IC.barcode,run:()=>UI.barcodeDialog()},{label:'QR code…',icon:IC.qr,run:()=>UI.qrDialog()},{label:'Curved text',icon:IC.arc,run:()=>BD.tools.makeArc()},'-',
   {label:'Mask (photo inside a shape)',icon:IC.mask,run:()=>BD.tools.mask(),disabled:!BD.tools.canMask(S.sel)},{label:'Combine shapes…',icon:IC.union,run:()=>boolMenu(r.left-120,r.top),disabled:!BD.bool.can(S.sel)},
   {label:'Make component',icon:IC.comp,run:()=>BD.comps.make(),disabled:!BD.comps.can(S.sel)},{label:'Components…',icon:IC.comp,run:()=>compMenu(r.left-120,r.top),disabled:!BD.comps.mains().length},'-',{label:'Repeat in a grid…',icon:IC.repeat,run:()=>UI.repeatDialog(),disabled:!S.sel.some(n=>!isFrame(n))},'-',
@@ -361,7 +364,7 @@ function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); cons
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
   if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)), sh=BD.tools.tStyles().filter(t=>m(t.name)||m('style')); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
     return `<div class="tadd">${base.map(([l,t])=>`<button type="button" class="ta ta-${t}" data-addtext="${t}" draggable="true">${l}</button>`).join('')}${m('curved')||m('text')?`<button type="button" class="ta ta-arc" data-arc="1">${IC.arc} Curved text</button>`:''}</div>`+
-      `<span class="lbl sub">Text styles</span>`+(sh.length?`<div class="tstyles">${sh.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tshared="${esc(t.id)}" dir="auto" style="${(t.st.bf||t.st.font)?`font-family:'${esc(t.st.bf||t.st.font)}';`:''}font-weight:${esc(t.st.wt||'400')}">${t.st.color?`<i class="bts-dot" style="background:${esc(t.st.color)}" aria-hidden="true"></i>`:''}${esc(t.name)}</button><button type="button" class="ib" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}" title="Rename or remove">${IC.more}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel. Styles you save on the tool pages show here too.</p>')+
+      `<span class="lbl sub">Text styles</span>`+(sh.length?`<div class="tstyles">${sh.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tshared="${esc(t.id)}" dir="auto" style="${(t.st.bf||t.st.font)?`font-family:'${esc(t.st.bf||t.st.font)}';`:''}font-weight:${esc(t.st.wt||'400')}">${t.st.color?`<i class="bts-dot" style="background:${esc(t.st.color)}" aria-hidden="true"></i>`:''}${esc(t.name)}</button><button type="button" class="ib" data-tsmore="${esc(t.id)}" aria-label="Options for ${esc(t.name)}" title="Use, rename or remove">${IC.more}</button></div>`).join('')}</div>`:'<p class="hint">Select some text and press “Save as style” in the Design panel. Styles you save on the tool pages show here too.</p>')+
       (st.length?`<span class="lbl sub">This board</span><div class="tstyles">${st.map(t=>`<div class="tst"><button type="button" class="tst-b" data-tstyle="${t.id}" style="font-family:'${esc(t.attrs.fontFamily)}';font-weight:${(String(t.attrs.fontStyle||'').match(/\d{3}/)||['400'])[0]}">${esc(t.name)}</button><button type="button" class="ib" data-tsdel="${t.id}" aria-label="Remove ${esc(t.name)}">${IC.close}</button></div>`).join('')}</div>`:''); }
   if(id==='photos'){ const photos=[...new Set(BD.main.find('Image').filter(n=>kind(n)==='image'&&!n.getAttr('isBg')).map(n=>n.getAttr('imgId')))];
     return `<button type="button" class="mini wide" data-act2="upload">${IC.upload} Upload photos, SVG or PDF</button>${photos.length?`<div class="agrid ph">${photos.map(id=>`<button type="button" class="ag" data-photo="${id}" draggable="true" aria-label="Add this photo again"><canvas data-thumb="${id}" width="80" height="80"></canvas></button>`).join('')}</div>`:''}<p class="hint">You can also drop or paste files on the canvas. SVG files keep their layers; each PDF page becomes a frame.</p>`; }
@@ -406,16 +409,21 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
   if(d.code==='barcode'){ UI.barcodeDialog(); return; } if(d.code==='qr'){ UI.qrDialog(); return; }
 }
 UI.addItem=addItem;
-/* a shared text style's menu: rename it or remove it (from this device: the tool pages and Create lose it too) */
-function tsMenu(id){ const T=BD.tools, t=T.tStyles().find(x=>x.id===id); if(!t) return;
+/* every text in the frame you're on that a style can go on (not locked, not hidden) */
+function frameTexts(){ const f=BD.targetFrame(); if(!f) return []; return [...f.find(n=>(kind(n)==='text'||kind(n)==='arc')&&!isLocked(n)&&n.isVisible())]; }
+UI.frameTexts=frameTexts;
+/* a shared text style's menu: use it on all text in the frame, rename it or remove it (from this device: the tool pages and Create lose it too) */
+function tsMenu(id){ const T=BD.tools, t=T.tStyles().find(x=>x.id===id); if(!t) return; const texts=frameTexts();
   const d=L.dialog(`<form method="dialog" class="dlg-body ts-dlg"><h3>Text style</h3><label class="lbl" for="tsName">Name</label><input type="text" id="tsName" dir="auto" maxlength="24" autocomplete="off">
-    <div class="act-list"><button type="button" class="act-row danger" data-tsact="del">${IC.trash}<span>Remove</span></button></div>
+    <div class="act-list">${texts.length?`<button type="button" class="act-row" data-tsact="all">${IC.palette}<span>Use on all text</span></button>`:''}<button type="button" class="act-row danger" data-tsact="del">${IC.trash}<span>Remove</span></button></div>
     <p class="hint">Text styles are kept on this device and shared with the tool pages and Create.</p>
     <div class="dlg-actions"><button type="button" class="mini" id="tsX">Cancel</button><button type="submit" class="btn">Done</button></div></form>`,'ts-menu');
   const inp=d.querySelector('#tsName'); inp.value=t.name; d.tabIndex=-1; d.focus();
   d.querySelector('#tsX').onclick=()=>d.close();
   d.querySelector('form').onsubmit=e=>{ e.preventDefault(); T.renameShared(id,inp.value); d.close(); paintAdd(); UI.paintProps&&UI.paintProps(); };
-  d.querySelector('[data-tsact="del"]').onclick=()=>{ d.close(); T.removeShared(id); paintAdd(); UI.paintProps&&UI.paintProps(); toast('“'+t.name+'” removed.'); }; }
+  d.querySelector('[data-tsact="del"]').onclick=()=>{ d.close(); T.removeShared(id); paintAdd(); UI.paintProps&&UI.paintProps(); toast('“'+t.name+'” removed.'); };
+  const all=d.querySelector('[data-tsact="all"]'); if(all) all.onclick=async()=>{ d.close(); const list=frameTexts(); if(!list.length) return;
+    await T.applyShared(t.st,list); paintAdd(); UI.paintProps&&UI.paintProps(); toast('“'+t.name+'” is on '+list.length+(list.length===1?' text':' texts')+' in this frame.',0,()=>BD.undo()); }; }
 UI.tsMenu=tsMenu;
 addList.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]'); if(cat){ addCat=cat.dataset.cat; paintAdd(); $('addPane').scrollTop=0; return; }

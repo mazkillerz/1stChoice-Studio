@@ -471,7 +471,7 @@ wrap.addEventListener('pointerdown',e=>{
   if(shape&&shape.hasName('guide')){ drag={type:'guide',axis:shape.getAttr('axis'),f:main.findOne('#'+shape.getAttr('guideOf')),idx:shape.getAttr('idx')}; return; }
   if(S.tool==='eraser'){ drag={type:'erase',hit:false}; eraseAt(w); return; }
   const touchPan=e.pointerType==='touch'&&S.tool==='select'&&!shape;
-  if(e.button===1||spaceDown||S.tool==='hand'||touchPan){ drag={type:'pan',p0:p,s0:stage.position()}; wrap.classList.add('panning'); e.preventDefault(); return; }
+  if(e.button===1||spaceDown||S.tool==='hand'||touchPan){ drag={type:'pan',p0:p,s0:stage.position(),tap:touchPan}; wrap.classList.add('panning'); e.preventDefault(); return; }
   if(DRAW_TOOLS.includes(S.tool)){ startDraw(w,p,e); return; }
   const prevSel=[...S.sel];
   const hit=pick(shape,e.ctrlKey||e.metaKey);
@@ -495,7 +495,7 @@ wrap.addEventListener('pointermove',e=>{ if(!drag&&e.target.closest(OVER)) retur
   if(drag.type==='pinch'){ if(ptrs.size<2) return; const [a,b]=[...ptrs.values()], d=Math.hypot(a.x-b.x,a.y-b.y), c={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
     const k=clamp(drag.k0*d/Math.max(1,drag.d0),.02,8), w0={x:(drag.c0.x-drag.s0.x)/drag.k0,y:(drag.c0.y-drag.s0.y)/drag.k0};
     setView(c.x-w0.x*k,c.y-w0.y*k,k); return; }
-  if(drag.type==='pan'){ stage.position({x:drag.s0.x+p.x-drag.p0.x,y:drag.s0.y+p.y-drag.p0.y}); viewChanged(); return; }
+  if(drag.type==='pan'){ if(Math.hypot(p.x-drag.p0.x,p.y-drag.p0.y)>=6) drag.tap=false; stage.position({x:drag.s0.x+p.x-drag.p0.x,y:drag.s0.y+p.y-drag.p0.y}); viewChanged(); return; }
   const w=toWorld(p);
   if(drag.type==='guide'){ const f=drag.f||frameAt(w)||activeFrame(); if(!f) return; drag.f=f; const v=Math.round(drag.axis==='v'?w.x-f.x():w.y-f.y()); drag.v=v; drag.out=S.rulers&&(drag.axis==='v'?p.x<20:p.y<20);
     guideG.destroyChildren(); if(!drag.out) guideG.add(guideLine(f,drag.axis,-1,v)); ui.batchDraw(); badgeEl.textContent=(drag.axis==='v'?'X ':'Y ')+fmtU(v,dpiOf(f))+(S.unit==='px'?'':' '+S.unit); badgeEl.hidden=false; placeBadge(p); return; }
@@ -512,7 +512,7 @@ function endPtr(e){
   if(!drag) return;
   if(drag.type==='pinch'){ if(ptrs.size<2){ drag=null; } return; }
   const d=drag; drag=null;
-  if(d.type==='pan'){ wrap.classList.remove('panning'); return; }
+  if(d.type==='pan'){ wrap.classList.remove('panning'); if(d.tap&&e.type==='pointerup'&&S.sel.length) select([]); return; }   // a still tap on the empty canvas lets go of the selection (1.42.0)
   if(d.type==='move'){ endMove(d.list); return; }
   if(d.type==='marquee'){ marquee.visible(false); ui.batchDraw(); emit('select',S.sel); return; }
   if(d.type==='draw'){ endDraw(d); return; }

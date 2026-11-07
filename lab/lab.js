@@ -17,7 +17,7 @@ async function paint(){ const all=boards(); $('bTools').hidden=all.length<4; con
 paint();
 $('newB').onclick=()=>{ const d=L.dialog(`<div class="dlg-body"><h3>New board</h3><p class="small">Start with one frame. You can add frames of any size later.</p>
   <div class="preset-grid">${BD.PRESETS.slice(0,8).map(p=>`<button type="button" class="preset" data-p="${p.id}"><span class="pv" style="${pv(p.w,p.h)}"></span><b>${esc(p.label)}</b><small>${p.w} × ${p.h}</small></button>`).join('')}</div>
-  <span class="lbl" style="font:800 11px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Or a template</span><div class="chips">${BD.TEMPLATES.map(t=>`<button type="button" class="chip" data-t="${t.id}">${esc(t.label)}</button>`).join('')}</div>
+  <span class="lbl" style="font:600 11px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Or a template</span><div class="chips">${BD.TEMPLATES.map(t=>`<button type="button" class="chip" data-t="${t.id}">${esc(t.label)}</button>`).join('')}</div>
   <div class="dlg-actions"><button type="button" class="mini" id="nbNo">Cancel</button></div></div>`,'wide');
   d.querySelector('#nbNo').onclick=()=>d.close();
   d.addEventListener('click',e=>{ const p=e.target.closest('[data-p]'), t=e.target.closest('[data-t]'); if(p) location.href='board.html?preset='+p.dataset.p; if(t) location.href='board.html?template='+t.dataset.t; }); };

@@ -1,19 +1,19 @@
 /* Lab home (experimental area) */
 .lab-main{max-width:1080px;margin:0 auto;padding:0 var(--gutter-r) calc(48px + var(--safe-b)) var(--gutter)}
 .lab-hero{padding:12px 0 8px}
-.lab-hero h1{font:800 var(--fs-3xl) var(--sans);margin:6px 0 4px;letter-spacing:-.01em}
+.lab-hero h1{font:600 var(--fs-3xl) var(--sans);margin:6px 0 4px;letter-spacing:-.01em}
 .lab-hero p{margin:0;color:var(--muted);max-width:60ch}
-.lab-tag{display:inline-flex;font:800 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px dashed var(--line);color:var(--muted)}
+.lab-tag{display:inline-flex;font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px dashed var(--line);color:var(--muted)}
 .lab-sec{margin-top:28px}
-.lab-sec h2{font:800 var(--fs-xl) var(--sans);margin:0 0 12px}
+.lab-sec h2{font:600 var(--fs-xl) var(--sans);margin:0 0 12px}
 .lab-sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
 .lab-sec-head h2{margin:0}
 .muted{color:var(--muted)}
 .xcard{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface)}
 .x-ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:#2f7bff;color:#fff}
-.x-txt h3{margin:0 0 2px;font:800 var(--fs-l) var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.x-txt h3{margin:0 0 2px;font:600 var(--fs-l) var(--sans);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .x-txt p{margin:0;color:var(--muted);font-size:var(--fs-s)}
-.x-badge{font:700 11px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.x-badge{font:600 11px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:12px}
 .bcard{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);overflow:hidden;text-decoration:none;color:inherit}
 .bcard:hover{border-color:var(--fg)}
@@ -38,3 +38,6 @@
 .b-tools .sel{width:auto;min-height:44px}
 .bcard{transition:border-color .15s,transform .15s}.bcard:hover{transform:translateY(-2px)}
 @media (prefers-reduced-motion:reduce){.bcard{transition:none}.bcard:hover{transform:none}}
+
+/* weights 400/500/600 only (1.42.0) */
+b,strong{font-weight:600}
