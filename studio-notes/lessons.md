@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 55–61 | 1.46.0–1.50.0 | 4 (each release `--changed` green or only known load flakes, rerun green alone; 1.50 full sweep 82 of 83 suites green, the one red = `draw-edges` load flake, tapscan clean; two app fixes by the lead: Home font wait, offline team check) | 4 (released seven versions in one lead pass after the limit reset; a Create font fix was tried, measured and reverted) | 0 | pass | Measure a suspected flake fix against the old code under the same load before keeping it (the Create font wait did not change the 1-in-8 rate) |
 | 53–54 | 1.44.0 + 1.45.0 | 5 (1.44: `--changed` all green; 1.45 full sweep: 77 suites all green in 18 min, tapscan clean; simplify45 + toolfix43 new) | 4 (lead ran the sweep itself instead of waking the Simplify session, saving usage) | 0 | pass | Combine small finished branches into one release when the numbering forces it; run the sweep from the lead |
 | 52 | 1.43.0 | 4 (font-ready 8/0 incl. a new hanging-fonts check; the pixel flake was an app bug: Save drew before the font stylesheet was in) | 3 (the shared usage limit stopped three sessions mid-round; main moved on meanwhile, so the round was renumbered) | 0 | pass | Run at most two helper sessions at once; one 12 s cap for a whole wait, not one per step |
 | 51 | 1.40.0 | 5 (full sweep 80 runs: 79 then 80 green after a test-side video fix; contrast + tapscan clean; simplify40 34/0 new; three cuts) | 4 (the 19-min sweep waited for wave 1) | 0 | pass | Open sheets with a real tap in shot scripts; take "before" shots from the base |
@@ -22,6 +23,12 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## Round 1.43.0–1.50.0 (5–7 Nov 2026, lead; owner: "Improve studio 10 sessions bug improvements please", then "Continue all sessions")
+- Ten version sessions planned as bug-fix rounds per area; eight helper sessions ran, the lead did the rest. Four or five at once used the shared 5-hour limit in ~55 min and three stopped mid-turn; two had pushed finished work, one had pushed nothing. Lesson: two at once, push every fix.
+- `main` moved during the wait (another session shipped 1.41.0/1.42.0). The round was renumbered at release: 1.43 save fixes, 1.44 Board + video, 1.45 Simplify + tool pages, 1.46 hub, 1.47 Create, 1.48 queue, 1.49 drawing, 1.50 Simplify.
+- Lead review caught two things the sessions' own suites missed: a per-step font cap that allowed 30 s, and Home waiting for brand fonts (found because `home7-saved` / `select-swipe` went red at release). Run the hub suites when module-level `studio.js` changes.
+- Open load flakes for the next session (backlog): `create-render` 3880 px (1 in 8), `draw-edges` old-vs-new pixels (about 1 in 4, fonts proven identical), `batch-saved` ZIP once.
 
 ## 1.36.0–1.39.0 (sessions 47–50, parallel round of five with a lead)
 - Worked: four sessions at once plus the Simplify one started when the first finished; all four reported within ~25 min, releases one after another in order with one `--changed` each (9, 42, 27, 38 suites).
