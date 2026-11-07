@@ -81,6 +81,19 @@ function normMap(s){
 const normText=s=>normMap(s).n;
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'null'); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); return true; }catch(_){ return null; }}
+/* preview flags (mega): new features that wait for the owner's OK ship off by default, per device.
+   FLAGS lists them (engine words only); Settings → Previews switches them; ?flag-<id>=1|0 sets one from a link.
+   Code asks Studio.flags.on(id). A feature the owner approves leaves FLAGS and stops asking. */
+const FLAGS=[
+  {id:'team',label:'Team workflow',sub:'Calendar, reviews and campaigns'},
+  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'}
+];
+const flags={
+  list:()=>FLAGS.map(f=>({...f,on:flags.on(f.id)})),
+  on(id){ try{ return localStorage.getItem('studio:flag:'+id)==='1'; }catch(_){ return false; } },
+  set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
+};
+try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
 
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
 /* the hub lists tools in this order, under their group's heading: the most used first */
@@ -2565,6 +2578,7 @@ async function home(){
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
+      ${row('previews',ICON.sparkle,'Previews','New features waiting for the owner’s OK',flags.list().filter(f=>f.on).length?flags.list().filter(f=>f.on).length+' on':'Off')}
       ${row('lab',ICON.lab,'Experimental','New things being tested (passcode)')}</div>
       <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this ${devWord()}.</p></div>`,'set-dlg');
     d.setAttribute('aria-labelledby','setH'); d.tabIndex=-1; d.focus();
@@ -2573,9 +2587,20 @@ async function home(){
       if(a==='view'){ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); b.querySelector('.set-end').textContent=toolsView==='list'?'List':'Grid'; b.firstElementChild.outerHTML=toolsView==='list'?ICON.list:ICON.grid; return; }
       if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · your name goes on saved designs'; }); return; }
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
+      if(a==='previews'){ openPreviews(b); return; }
       d.close();
       if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab();
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
+  }
+  /* Settings → Previews (mega): one switch per preview flag */
+  function openPreviews(from){
+    const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="prvH">Previews</h3><button type="button" class="mini" data-x>Done</button></div>
+      <p class="small">New features that wait for the owner’s OK. They are off until you switch them on, on this ${devWord()} only.</p>
+      <div class="act-list set-list">${flags.list().map(f=>`<button type="button" class="act-row set-row" data-flag="${f.id}" role="switch" aria-checked="${f.on}">${ICON.sparkle}<span class="set-txt"><b>${esc(f.label)}</b><small>${esc(f.sub)}</small></span><span class="set-switch" aria-hidden="true"></span></button>`).join('')}</div></div>`,'set-dlg');
+    d.setAttribute('aria-labelledby','prvH'); d.tabIndex=-1; d.focus();
+    d.querySelector('[data-x]').onclick=()=>d.close();
+    d.querySelector('.set-list').addEventListener('click',e=>{ const b=e.target.closest('[data-flag]'); if(!b) return; haptic('tick'); const on=b.getAttribute('aria-checked')!=='true'; flags.set(b.dataset.flag,on); b.setAttribute('aria-checked',String(on));
+      if(from&&from.isConnected){ const n=flags.list().filter(f=>f.on).length; from.querySelector('.set-end').textContent=n?n+' on':'Off'; } });
   }
   if($('setBtn')) $('setBtn').onclick=openSettings;
 
@@ -2602,6 +2627,7 @@ async function home(){
     return out.concat(searchActions());
   }
   function searchActions(){ const a=[];
+    flags.list().forEach(f=>a.push({kind:'action',id:'act:flag-'+f.id,title:(f.on?'Turn off preview: ':'Try preview: ')+f.label,sub:f.sub,keys:'preview try beta new feature '+f.label+' '+f.sub,icon:ICON.sparkle,run:()=>{ flags.set(f.id,!f.on); location.reload(); }}));
     a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
     a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
@@ -3078,5 +3104,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
