@@ -17,7 +17,7 @@ const ok=(n,c,i)=>{ if(!c) fails++; console.log((c?'PASS ':'FAIL ')+n+(i!==undef
 const watch=(pg,tag)=>{ pg.on('pageerror',e=>errs.push(tag+' '+e.stack)); pg.on('console',m=>{ if(m.type()==='error'&&!/status of 404|fonts\.g|ERR_FAILED|ERR_ABORTED|net::/.test(m.text())) errs.push(tag+' '+m.text()); }); };
 const ready=async pg=>{ await pg.waitForFunction(()=>window.CRUI&&BD.util.frames().length>0,null,{timeout:30000}); await pg.waitForTimeout(500); };
 const ctxOpts={phone:{viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true},desk:{viewport:{width:1280,height:800}}};
-ok('brand lists 26 doc templates and a National Day category',defs.length===26&&(BRAND.templateCats||[]).some(c=>c.id==='nationalday'),defs.length);
+ok('brand lists 29 doc templates and a National Day category',defs.length===29&&(BRAND.templateCats||[]).some(c=>c.id==='nationalday'),defs.length);
 
 async function check(pg,d,tag){
   const doc=JSON.parse(fs.readFileSync(ROOT+'brands/1stchoice/'+d.doc,'utf8')), want=doc.nodes[0].k.filter(k=>k.c==='Text'), [w,h]=SZ[d.size];
@@ -50,18 +50,18 @@ for(const [tag,o] of Object.entries(ctxOpts)){
   await (tag==='phone'?pg.tap('#crBar [data-cr="add"]'):pg.click('#crBar [data-cr="add"]')); await pg.waitForTimeout(400);
   const ids=await pg.evaluate(()=>[...document.querySelectorAll('#crSheet [data-asset]')].map(x=>x.dataset.asset));
   const hidden=BRAND.assets.filter(a=>a.hidden).map(a=>a.id), shown=BRAND.assets.filter(a=>!a.hidden&&a.group==='National Day 2026').map(a=>a.id);
-  ok(tag+': Add lists no hidden asset ('+hidden.length+' hidden)',hidden.length===26&&!ids.some(i=>hidden.includes(i)),ids.filter(i=>hidden.includes(i)));
+  ok(tag+': Add lists no hidden asset ('+hidden.length+' hidden)',hidden.length===29&&!ids.some(i=>hidden.includes(i)),ids.filter(i=>hidden.includes(i)));
   ok(tag+': Add lists the National Day pieces',shown.length>0&&shown.every(i=>ids.includes(i)),shown.filter(i=>!ids.includes(i)));
   /* the Templates picker inside Create lists them, under the right size */
   await pg.evaluate(()=>document.getElementById('crSheetX')&&document.getElementById('crSheetX').click()); await pg.waitForTimeout(250);
   await pg.goto(BASE+'tools/create.html'); await ready(pg);
   ok(tag+': Create start sheet lists every new template',await pg.evaluate(ids=>ids.every(i=>document.querySelector('[data-tpl="'+i+'"]')),defs.map(d=>d.id)));
-  /* hub: Templates → National Day chip with all 26 */
+  /* hub: Templates → National Day chip with all 29 */
   await pg.goto(BASE+'index.html#templates'); await pg.waitForSelector('#templatesView .tp-chip',{timeout:15000}); await pg.waitForTimeout(500);
   const chip=await pg.evaluate(()=>{ const c=[...document.querySelectorAll('#templatesView .tp-chip')], i=c.findIndex(x=>/National Day/.test(x.textContent)); return {i,first:c[0]&&c[0].textContent,second:c[1]&&c[1].textContent,n:i>=0?+(c[i].querySelector('.tp-cn')||{}).textContent:0}; });
-  ok(tag+': hub has a National Day chip right after All, count 26',chip.i===1&&chip.n===26,chip);
+  ok(tag+': hub has a National Day chip right after All, count 29',chip.i===1&&chip.n===29,chip);
   await pg.click('#templatesView .tp-chip >> nth=1'); await pg.waitForTimeout(500);
-  ok(tag+': the National Day filter lists 26 entries',await pg.evaluate(()=>document.querySelectorAll('#templatesView .tp-card').length)===26);
+  ok(tag+': the National Day filter lists 29 entries',await pg.evaluate(()=>document.querySelectorAll('#templatesView .tp-card').length)===29);
   await ctx.close(); }
 ok('no console errors',!errs.length,errs.slice(0,3));
 await b.close(); console.log(fails?'\n'+fails+' FAILED':'\nAll passed'); process.exit(fails?1:0);
