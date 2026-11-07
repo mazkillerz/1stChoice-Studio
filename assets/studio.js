@@ -158,6 +158,20 @@ async function fontsReady(fams,ms){ const end=Date.now()+(ms||12000), left=()=>M
     if(document.fonts.ready) await cap(document.fonts.ready);
   }catch(_){}
 }
+/* saved-versions (mega): covers. A cover that is missing, or one flat colour (the old thumb filled black before a photo had decoded), is redrawn
+   the next time the design opens: coverFlat(blob) tells, healCover(C,d,make) redraws and stores it quietly with C.setThumb when the new picture is not flat itself. */
+async function coverFlat(blob){
+  if(!blob) return true;
+  try{ const bm=await createImageBitmap(blob), c=document.createElement('canvas'); c.width=24; c.height=32; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(bm,0,0,24,32); if(bm.close) bm.close();
+    const dd=x.getImageData(0,0,24,32).data; let mn=255,mx=0; for(let i=0;i<dd.length;i+=4){ const l=dd[i]*.3+dd[i+1]*.59+dd[i+2]*.11; if(l<mn) mn=l; if(l>mx) mx=l; } c.width=c.height=0; return mx-mn<14; }
+  catch(_){ return true; }   // it does not even decode: a broken cover
+}
+async function healCover(C,d,make){
+  try{ if(!C||!C.setThumb||!d) return false; let old=null; if(d.thumb_path){ try{ old=await C.download(d.thumb_path); }catch(_){} }
+    if(old&&!(await coverFlat(old))) return false;
+    const nb=await make(); if(!nb||await coverFlat(nb)) return false; await C.setThumb(d.id,nb); return true; }
+  catch(_){ return false; }
+}
 const FONT_READY=new Set();
 async function ensureFont(fam){
   if(!fam||FONT_READY.has(fam)) return; const f=MORE_FONTS.find(x=>x.family===fam);
@@ -876,6 +890,7 @@ async function tool(cfg){
     </div>
     <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
+    <button type="button" class="link" id="saveAlt" hidden></button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
@@ -1316,15 +1331,22 @@ async function tool(cfg){
   }
 
   /* ---- saved designs (shared with the team) ---- */
+  const RENDER_FRAME=new URLSearchParams(location.search).get('render')==='1';
   let design=null;   // {id,name,kind,collections}
   function showDesignBar(){
     const bar=$('designBar'); syncSaveOpts(); if(!design){ bar.hidden=true; return; }
     bar.hidden=false;
     bar.innerHTML=`<span><span class="small">${design.kind==='template'?'Template':'Saved design'}</span><br><b>${esc(design.name)}</b></span><span class="banner-btns"><a class="mini" href="${ROOT}index.html#saved">All saved</a></span>`;
   }
-  function thumbBlob(){
+  /* saved-versions (mega): the cover waits for every photo to be decoded and every font to load, so it is never black or in a fallback font */
+  async function thumbReady(){
+    await Promise.all(S.photos.map(p=>p&&p.img&&typeof p.img.decode==='function'?p.img.decode().catch(()=>{}):null));
+    await saveFonts();
+  }
+  async function thumbBlob(){
+    await thumbReady();
     const k=360/W, c=document.createElement('canvas'); c.width=360; c.height=Math.round(H*k); const ctx=c.getContext('2d'); const sel=S.sel; S.sel=null;
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); withPage(0,()=>draw(ctx,true,k,true)); S.sel=sel; return canvasBlob(c,'image/jpeg',.85);
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height); try{ withPage(0,()=>draw(ctx,true,k,true)); } finally { S.sel=sel; } return canvasBlob(c,'image/jpeg',.85);
   }
   /* ---- saving to the team: one function used by the Save sheet, "Only save to the team" and the leave prompt ---- */
   let teamCols=null; const teamPicked=new Set(), typedCols=new Set();   // typedCols: new collections typed on this page
@@ -1333,17 +1355,24 @@ async function tool(cfg){
   /* who (mega): the name for the design's author; the first save on a device asks once (never in automated browsers) */
   const whoName=()=>{ try{ return (JSON.parse(localStorage.getItem('studio:who'))||{}).name||null; }catch(_){ return null; } };
   async function whoOnce(){ try{ if(whoName()||store('studio:who:asked')||navigator.webdriver) return; store('studio:who:asked','1'); const W=await (window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)); await W.ask({brand:B.id}); }catch(_){} }
-  async function teamSave(o){
-    o=o||{}; const C=await cloud();
+  const whoNow=()=>whoName()||undefined;
+  /* saved-versions (mega): one team save at a time (a second tap during a slow upload used to start a second NEW design, because the
+     first had not set `design` yet); a save waits for a design that is still opening; a design that did not open is never replaced by a copy */
+  let teamQ=Promise.resolve(), designOpen=Promise.resolve(), designLost=false, altMode=null;
+  function teamSave(o){ const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}); return run; }
+  async function teamSave1(o){
+    o=o||{}; await designOpen; const C=await cloud();
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
     await whoOnce();
+    if(!design&&designLost&&!o.asNew) throw new Error('That saved design did not open, so saving now would make a copy. Reload the page to open it first.');
     const asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName());
     const keep=(o.keep!=null?o.keep:(design?design.kind!=='template':true))&&hasPhotosNow(), r=recipe();
     const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb:await thumbBlob(),collections:cols,author:whoName()});
+    const thumb=await thumbBlob();
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb,collections:cols,author:whoNow()});
     const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
-    design={id,name,kind:keep?'design':'template',collections:cols}; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
+    design={id,name,kind:keep?'design':'template',collections:cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
     history.replaceState(null,'',location.pathname+'?design='+id);
     return name;
   }
@@ -1361,15 +1390,21 @@ async function tool(cfg){
   /* true / false, or null when it could not be checked (no connection): never cache a failed check as "not on the team" (1.46.0) */
   async function checkTeam(){ if(teamMember!==null) return teamMember;
     try{ const C=await cloud(); if(!(await C.session())) return teamMember=false; teamMember=!!(await (C.checkMember||C.isMember)()); }catch(_){ return null; } return teamMember; }
+  /* saved-versions (mega): with a saved design open, the main button reads Update “name” and "Save as new" sits under it; a team template
+     opened from Templates starts as a NEW design, with "Update the template" as the other choice. altMode is the person's choice (null = the default). */
+  const isTpl=()=>!!design&&design.kind==='template', wantsNew=()=>!design||(altMode?altMode==='new':isTpl());
+  const short=n=>{ n=String(n||''); return n.length>22?n.slice(0,21)+'…':n; };
   function syncSaveOpts(){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
-    $('teamLbl').textContent=design?'Update “'+design.name+'” in the team':'Save to the team';
-    $('teamSub').textContent=teamMember===false&&!on?'Sign in to share it with your team':design?'Saved designs keep your latest changes':'Your team finds it in Saved';
-    $('teamAsNewRow').hidden=!design;
+    const upd=!!design&&!wantsNew(), nm=short(design&&design.name);
+    $('teamLbl').textContent=upd?'Update “'+design.name+'” in the team':design?'Save to the team as a new design':'Save to the team';
+    $('teamSub').textContent=teamMember===false&&!on?'Sign in to share it with your team':upd?'Saved designs keep your latest changes':design&&isTpl()?'The template stays as it is':'Your team finds it in Saved';
+    $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
+    const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
-    $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=imgDone?(on?(design?'Update in the team':'Add to the team'):'Save again'):on?(design?'Save & update':'Save & add to team'):saveAllLabel();
+    $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template'||wantsNew():true); $('teamKeep').disabled=!hasPhotosNow();
+    $('saveTxt').textContent=imgDone?(on?(upd?'Update in the team':'Add to the team'):'Save again'):on?(upd?'Update “'+nm+'”':design?'Save as new design':'Save & add to team'):saveAllLabel();
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
     if(on) paintTeamCols(); syncSaveAll();
   }
@@ -1386,6 +1421,8 @@ async function tool(cfg){
   $('teamName').addEventListener('input',e=>{ e.target.dataset.touched='1'; });
   $('teamName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
+  $('teamAsNew').addEventListener('change',e=>{ altMode=e.target.checked?'new':'upd'; syncSaveOpts(); });
+  $('saveAlt').addEventListener('click',()=>{ altMode=wantsNew()?'upd':'new'; $('teamOn').checked=true; $('teamOn').dataset.touched='1'; syncSaveOpts(); doSave(); });
   let colsLoading=null;
   async function paintTeamCols(){
     if(!teamCols){ if(!colsLoading) colsLoading=(async()=>{ try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; }
@@ -1400,7 +1437,7 @@ async function tool(cfg){
     const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); haptic('tick'); paintTeamCols(); });
   const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); typedCols.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
-  function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:design&&$('teamAsNew').checked,collections:[...teamPicked]}; }
+  function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:!!design&&wantsNew(),collections:[...teamPicked]}; }
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
   /* a team save that failed: our own messages as they are; a dropped connection in words, never the browser's "Failed to fetch" */
   const teamErr=err=>{ const m=String(err&&err.message||''); return !m||err instanceof TypeError||/fetch|network|load failed|timed? ?out/i.test(m)?'Not saved to the team: no connection. Check it and try again.':m; };
@@ -1438,6 +1475,7 @@ async function tool(cfg){
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
     await fontsOf(r); applyRecipe(r,slots);
     design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; pickDefaultCols(); showDesignBar(); status(''); markSaved();
+    if(d.kind!=='template'&&!RENDER_FRAME) healCover(C,d,thumbBlob);   // a blank cover is redrawn quietly (saved-versions, mega)
     if(ready&&d.kind!=='template'){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
         <div class="dlg-actions"><button type="button" class="mini" id="rdEdit">Edit first</button><button type="button" class="btn" id="rdSave">Save story</button></div></div>`);
@@ -1977,8 +2015,8 @@ async function tool(cfg){
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
-  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; $('teamOn').checked=teamMember===true&&!design; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
-    if(teamMember===null) checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
+  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
+    if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
     hideReady();
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
@@ -1992,7 +2030,7 @@ async function tool(cfg){
     if(imgDone&&team&&only==null){ $('save').disabled=true; const ok=await runTeamSave(); $('save').disabled=false; if(ok){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; } syncSaveOpts(); return; }
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
-    const asked=!$('teamOn').dataset.touched&&!design&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
+    const asked=!$('teamOn').dataset.touched&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
     if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
     if(!team&&asked&&await checkTeam()) team=true;
     if(team&&await runTeamSave(imgDone)){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; }
@@ -2140,7 +2178,7 @@ async function tool(cfg){
   /* a draft with something in it: a photo, or words/look that differ from the tool as it opens (an edit undone and left is not one) */
   function realDraft(x){ return (x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()); }
   try{
-    if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
+    if(q.get('design')){ const op=openDesign(q.get('design'),q.get('go')==='1'); designOpen=op.then(ok=>{ if(!ok&&!design) designLost=true; },()=>{ designLost=true; }); await op; }
     else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this '+devWord()+'.'); } }
     else if(q.get('quick')!=='1'){ const real=drafts.filter(realDraft);
@@ -2148,7 +2186,7 @@ async function tool(cfg){
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
   /* quietly check whether this phone is signed in to the team, so Save to the team is ready (on) when the Save sheet opens */
-  setTimeout(()=>checkTeam().then(m=>{ if(m&&!design&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
+  setTimeout(()=>checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
   /* photos still waiting from an earlier visit (1.8.0): the page reloaded on the story you were on (after the share sheet, or
      with ?draft=) picks the row up again as it was; anything else (a fresh visit, ?queue=1 from Home) offers or continues it */
   if(QUEUE&&q.get('quick')!=='1'&&!RENDER){ const k=await keptQueue();   // a hidden render frame leaves the waiting photos alone
@@ -2896,6 +2934,26 @@ async function home(){
   /* a swipe in progress (or a held design about to become one) keeps the page still; a plain up-down finger scrolls as always */
   document.addEventListener('touchmove',e=>{ if(sw||(sw0&&!sel&&lp&&lp.fired)) e.preventDefault(); },{passive:false});
   addEventListener('click',e=>{ if(swEat&&e.target.closest&&e.target.closest('#savedGrid')){ swEat=false; e.preventDefault(); e.stopPropagation(); } },true);
+  /* saved-versions (mega): every update keeps the one before it; Restore puts one back (and keeps the current as a version, so nothing is lost) */
+  const relTime=t=>{ try{ const s=(new Date(t).getTime()-Date.now())/1000, f=new Intl.RelativeTimeFormat(document.documentElement.lang||undefined,{numeric:'auto'});
+      const a=Math.abs(s); return a<60?f.format(0,'second'):a<3600?f.format(Math.round(s/60),'minute'):a<86400?f.format(Math.round(s/3600),'hour'):f.format(Math.round(s/86400),'day'); }catch(_){ return ago(t); } };
+  async function versionsSheet(dsg){
+    const d=dialog(`<div class="dlg-body design-sheet"><h3 dir="auto">Versions of “${esc(dsg.name)}”</h3><p class="small">Each update keeps the one before. Restore puts one back; nothing is lost.</p>
+      <div class="act-list ver-list" id="vList" aria-busy="true"><p class="small">Loading…</p></div><div class="status" id="vSt" role="status"></div><button type="button" class="link" id="vClose">Close</button></div>`,'design-dlg ver-dlg');
+    d.querySelector('#vClose').onclick=()=>d.close(); const L2=d.querySelector('#vList'), st=t=>{ d.querySelector('#vSt').textContent=t; };
+    let list=[]; try{ list=await C.versions(dsg.id)||[]; }catch(err){ L2.removeAttribute('aria-busy'); L2.innerHTML=''; st(err.message||'Could not load the versions.'); return; }
+    L2.removeAttribute('aria-busy');
+    if(!list.length){ L2.innerHTML='<p class="small">No earlier versions yet. They appear after the next update.</p>'; return; }
+    const urls2=await (C.fileUrls?C.fileUrls(list.map(v=>v.thumb_path).filter(Boolean)).catch(()=>({})):{});
+    L2.innerHTML=list.map(v=>`<div class="act-row ver-row" data-v="${esc(v.id)}"><span class="ver-pic">${urls2[v.thumb_path]?`<img src="${urls2[v.thumb_path]}" alt="">`:''}</span><span class="ver-txt" dir="auto"><b>${esc(v.name||dsg.name)}</b><span class="small">${v.author?esc(v.author)+' · ':''}<bdi>${esc(relTime(v.created_at))}</bdi></span></span><button type="button" class="mini" data-restore="${esc(v.id)}">Restore</button></div>`).join('');
+    L2.onclick=ev=>{ const b=ev.target.closest('[data-restore]'); if(!b) return; const v=list.find(x=>x.id===b.dataset.restore); if(!v) return;
+      const cf=dialog(`<div class="dlg-body"><h3 dir="auto">Restore this version?</h3><p class="small">“${esc(dsg.name)}” goes back to how it was <bdi>${esc(relTime(v.created_at))}</bdi>. The current one is kept as a version.</p><div class="status" id="rsSt" role="status"></div>
+        <div class="dlg-actions"><button type="button" class="mini" id="rsNo">Cancel</button><button type="button" class="btn" id="rsYes">Restore</button></div></div>`);
+      cf.querySelector('#rsNo').onclick=()=>cf.close();
+      cf.querySelector('#rsYes').onclick=async()=>{ cf.querySelectorAll('button').forEach(x=>x.disabled=true); cf.querySelector('#rsSt').textContent='Restoring…';
+        try{ await C.restoreVersion(dsg.id,v.id,(window.StudioWho&&StudioWho.author&&StudioWho.author())||undefined); cf.close(); d.close(); hubToast('Restored “'+dsg.name+'”.'); loadSaved(true); }
+        catch(err){ cf.querySelector('#rsSt').textContent=err.message||'Could not restore.'; cf.querySelectorAll('button').forEach(x=>x.disabled=false); } }; };
+  }
   function designSheet(dsg){
     try{
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);
@@ -2903,7 +2961,7 @@ async function home(){
       const d=dialog(`<div class="dlg-body design-sheet">
       <div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>
-      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
@@ -2917,6 +2975,16 @@ async function home(){
         const go=async()=>{ const v=i.value.trim(); if(!v) return; try{ await C.renameDesign(dsg.id,v); dsg.name=v; d.close(); paint(); hubToast('Renamed to “'+v+'”.'); loadSaved(true); }catch(err){ st(err.message); } };
         P.querySelector('#rnGo').onclick=go; i.addEventListener('keydown',e2=>{ if(e2.key==='Enter'){ e2.preventDefault(); go(); } }); }
       if(act==='sel'){ d.close(); startSelect(dsg.id); return; }
+      /* saved-versions (mega): Redraw cover (the design is drawn in the hidden render frame, the cover is stored) and Versions */
+      if(act==='cover'){ st('Redrawing the cover…'); b.disabled=true;
+        try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js');
+          const r=await window.StudioRender.design({id:dsg.id,tool:dsg.tool},{now:false},1);
+          if(!r||r.error||!r.out||!r.out[0]) throw new Error(r&&r.error?'That design '+r.error+'.':'Could not draw it.');
+          const bm=await createImageBitmap(r.out[0].blob), k=360/bm.width, cv=document.createElement('canvas'); cv.width=360; cv.height=Math.round(bm.height*k); const cx=cv.getContext('2d'); cx.drawImage(bm,0,0,cv.width,cv.height); if(bm.close) bm.close();
+          const blob=await canvasBlob(cv,'image/jpeg',.85); cv.width=cv.height=0; await C.setThumb(dsg.id,blob);
+          delete urls[dsg.thumb_path]; d.close(); hubToast('Cover redrawn.'); loadSaved(true); }
+        catch(err){ st(err.message||'Could not redraw the cover.'); b.disabled=false; } return; }
+      if(act==='ver'){ d.close(); versionsSheet(dsg); return; }
       if(act==='dup'){ st('Copying…'); b.disabled=true; try{ await C.duplicateDesign(dsg.id); d.close(); hubToast('Copied “'+dsg.name+'”.'); loadSaved(true); }catch(err){ st(err.message); b.disabled=false; } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
@@ -3007,7 +3075,7 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
+const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
