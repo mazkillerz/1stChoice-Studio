@@ -612,7 +612,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
     $('crGo').textContent=on?(upd?'Update “'+short(d.name)+'”':d?'Save as new design':'Save & add to team'):(many?'Save '+checked().length+' pages':'Save image'); };
   $('crTeamOn').onchange=syncT; if($('crAsNew')) $('crAsNew').onchange=()=>{ altMode=$('crAsNew').checked?'new':'upd'; syncT(); }; body.querySelectorAll('#crPP input').forEach(i=>i.onchange=syncT);
   /* "Update the template" (an opened team template) saves over the template itself; everything else follows the New / Update choice */
-  const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:$('crCol').value.trim()?[$('crCol').value.trim()]:(st.design?st.design.collections:[])};
+  const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').disabled?undefined:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:$('crCol').value.trim()?[$('crCol').value.trim()]:(st.design?st.design.collections:[])};
     if(isTplOpen()&&!wantsNew()){ o.kind='template'; o.asNew=false; } return o; };
   $('crGo').onclick=async()=>{ const list=checked(); if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked) await runTeam(opts()); };
   if($('crAlt')) $('crAlt').onclick=()=>{ altMode=wantsNew()?'upd':'new'; $('crTeamOn').checked=true; syncT(); $('crGo').click(); };

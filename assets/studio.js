@@ -164,7 +164,7 @@ async function coverFlat(blob){
   if(!blob) return true;
   try{ const bm=await createImageBitmap(blob), c=document.createElement('canvas'); c.width=24; c.height=32; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(bm,0,0,24,32); if(bm.close) bm.close();
     const dd=x.getImageData(0,0,24,32).data; let mn=255,mx=0; for(let i=0;i<dd.length;i+=4){ const l=dd[i]*.3+dd[i+1]*.59+dd[i+2]*.11; if(l<mn) mn=l; if(l>mx) mx=l; } c.width=c.height=0; return mx-mn<14; }
-  catch(_){ return false; }
+  catch(_){ return true; }   // it does not even decode: a broken cover
 }
 async function healCover(C,d,make){
   try{ if(!C||!C.setThumb||!d) return false; let old=null; if(d.thumb_path){ try{ old=await C.download(d.thumb_path); }catch(_){} }
@@ -1377,7 +1377,7 @@ async function tool(cfg){
     $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
     const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
-    $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template':true); $('teamKeep').disabled=!hasPhotosNow();
+    $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template'||wantsNew():true); $('teamKeep').disabled=!hasPhotosNow();
     $('saveTxt').textContent=imgDone?(on?(upd?'Update in the team':'Add to the team'):'Save again'):on?(upd?'Update “'+nm+'”':design?'Save as new design':'Save & add to team'):saveAllLabel();
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
     if(on) paintTeamCols(); syncSaveAll();

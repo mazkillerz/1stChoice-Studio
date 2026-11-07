@@ -1402,4 +1402,4 @@ input[type=range]{min-height:44px}
 .ver-pic img{width:100%;height:100%;object-fit:cover;display:block}
 .ver-txt{display:flex;flex-direction:column;min-width:0;flex:1}
 .ver-txt b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ver-row .mini{min-height:48px}
+.ver-row .mini.mini{min-height:48px;min-width:48px}
