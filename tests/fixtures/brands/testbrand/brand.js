@@ -36,6 +36,14 @@ Studio.registerBrand({
     {id:'can-b',label:'Beta can',file:'assets/can_b.png',group:'Cans',noFlip:true},
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',group:'Cans',noFlip:true}
   ],
+  tokens:{
+    formats:{ story:[1080,1920], post:[1080,1350], square:[1080,1080], highlight:[1080,1080] },
+    type:{ story:{ headline:{size:96,lh:1.1,font:'display',wt:'700'}, sub:{size:50,lh:1.3,font:'body',wt:'400'}, body:{size:42,lh:1.4,font:'body',wt:'400'}, small:{size:30,lh:1.3,font:'body',wt:'400'} } },
+    space:[4,12,20,28,40],
+    radius:{ sm:8, md:20, lg:36, pill:500 },
+    shadow:{ soft:{blur:12,y:4,color:'rgba(16,32,48,.3)'}, lift:{blur:40,y:12,color:'rgba(16,32,48,.35)'} },
+    safe:{ story:{top:200,bottom:340,side:60} }
+  },
   create:{templates:[]},
   samples:{ 'new-place':['a'], 'photo-story':['b'], 'cinematic':['a'], 'collage':['a','b','c','d'], 'split':['a','b'], 'restock':['a'], 'offer':['c'], 'carousel':['a','b','c','d'] }
 });
