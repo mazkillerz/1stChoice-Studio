@@ -13,6 +13,32 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.54.0 · 8 Nov 2026
+
+### Update your saved design, or save it as new
+type: fix
+Opening a saved design and tapping Save now updates that design: the button says Update “name”, with Save as new right under it. Before, the team switch was off for an opened design, so Save made only a picture and the team copy never changed. A double tap on a slow connection, or a tap while the design was still opening, no longer makes a copy. Team templates start as a new design, with Update the template as the other choice. Create works the same way.
+
+### Versions of every team design
+type: feature
+Each update keeps the one before (up to 20). In Saved, open a design's menu → Versions to see each version's picture, who saved it and when, and Restore any of them. Restoring keeps the current one too, so nothing is lost.
+
+### Covers that show the design
+type: fix
+A saved design's cover waits for its photos and fonts before it is drawn, so it is never black or empty. A cover that failed before is redrawn by itself the next time the design is opened, and Redraw cover is in the design's menu.
+
+### Who's using Studio?
+type: feature
+Studio asks once for your name on this phone (change it any time in Settings), and every team save carries it, so versions show who made each change. Settings also has I'm the owner, for owner-only buttons coming next.
+
+### Opens fast on a weak signal
+type: fix
+Studio's own fonts and the brand fonts now come with Studio instead of from Google, so a slow Google server can no longer hold a page blank, and the right fonts show even the first time you open Studio offline. More fonts in the font menu still come from Google.
+
+### Previews
+type: feature
+New features that wait for the owner's OK now live in Settings → Previews, off until you switch them on (on this phone only).
+
 ## 1.53.0 · 8 Nov 2026
 
 ### National Day templates: every piece is its own layer
