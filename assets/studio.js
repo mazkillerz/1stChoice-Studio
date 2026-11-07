@@ -1327,7 +1327,7 @@ async function tool(cfg){
   let quickReady=false;   // just started from a photo on the home page and nothing edited yet: Save on the bar saves in one tap
   /* several photos from Quick start in a one-photo tool (Restock, Photo story): a story from each, one after the other (1.6.0).
      The words and the look stay; Save, then Next photo brings in the next one as a new story, ready to save in one tap. */
-  const QUEUE=!PG&&!!(TOOLS[cfg.id]&&TOOLS[cfg.id].queue); let queue=[], qPos=0, qTotal=0, qSaved=false;
+  const QUEUE=!PG&&!!(TOOLS[cfg.id]&&TOOLS[cfg.id].queue); let queue=[], qPos=0, qTotal=0, qSaved=false, qCarry=0;   // qCarry: photos from an earlier row added after the new ones (1.48.0)
   let teamMember=null;   // is this phone signed in to the team? null = not checked yet (checked quietly after the page loads)
   const LAST_COLS='studio:lastCols:'+B.id;
   /* true / false, or null when it could not be checked (no connection): never cache a failed check as "not on the team" (1.46.0) */
@@ -1512,7 +1512,8 @@ async function tool(cfg){
     const k=e.key.toLowerCase(); if(k==='z'&&!e.shiftKey){ e.preventDefault(); undo(); } else if((k==='z'&&e.shiftKey)||k==='y'){ e.preventDefault(); redo(); } });
   /* Start fresh = a new story; the unfinished ones stay in Continue editing */
   $('draftFresh').addEventListener('click',()=>{ $('draftBar').hidden=true; status('Your other story is kept on Home.',3000); });
-  $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const x=listDrafts(B.id,cfg.id)[0]; if(x){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); } });
+  /* Continue opens the story the banner counted, not a newer blank one (1.48.0) */
+  $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; const x=listDrafts(B.id,cfg.id).find(realDraft); if(x){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); } });
   $('inspText').addEventListener('input',e=>{ const id=S.sel, x=extra(id); if(x) x.text=e.target.value; else setValue(id,e.target.value); autoGrow(); render(); });
   $('inspSize').addEventListener('input',e=>{ const id=S.sel, x=textExtra(id); if(x) x.size=Math.round(+e.target.value*60); else { (S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1})).k=+e.target.value; } render(); });
   $('inspCenter').addEventListener('click',()=>{ const id=S.sel, b=reg.find(r=>r.id===id); if(!b||b.hidden) return; const l=S.layers[id]||(S.layers[id]={dx:0,dy:0,k:1}); l.dx+=W/2-(b.x+b.w/2); render(); });
@@ -1911,7 +1912,7 @@ async function tool(cfg){
     if(!on) return;
     b.className='btn queue-next'+(qSaved?'':' ghost'); $('queueNextTxt').textContent=qSaved?'Next photo ('+(qPos+1)+' of '+qTotal+')':'Skip to photo '+(qPos+1)+' of '+qTotal; }
   function queueNote(){ const last=qPos===qTotal; return [last?'Last photo: '+qPos+' of '+qTotal:'Photo '+qPos+' of '+qTotal+' is in',
-    qPos===1?(isPhone()?'Tap Save for the next one':'Save it for the next one'):'Same words and look']; }   // one line next to Skip, even on a 360px phone
+    qPos===1?(qCarry?'And '+(qCarry===1?'1 photo':qCarry+' photos')+' from before':isPhone()?'Tap Save for the next one':'Save it for the next one'):'Same words and look']; }   // one line next to Skip, even on a 360px phone
   async function nextInQueue(){ const f=queue.shift(); if(!f) return syncQueue();
     qPos++; qSaved=false; $('queueNext').hidden=true; $('queueBar').hidden=true; hideReady(true);
     if(design){ design=null; baseJson=null; showDesignBar(); }   // the story before went to the team: this one is a new design
@@ -1938,7 +1939,7 @@ async function tool(cfg){
     qSaved=true; await nextInQueue(); }
   let kept=null;
   $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
-  $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
+  $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; qCarry=0; kept=null; syncQueue();
     status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
@@ -2108,11 +2109,13 @@ async function tool(cfg){
   }
   /* ---- then: a saved design (?design=…), a draft (?draft=1 from the hub), a template (?preset=…), or offer the unfinished story ---- */
   const q=new URLSearchParams(location.search), drafts=listDrafts(B.id,cfg.id), want=q.get('draft');
+  /* a draft with something in it: a photo, or words/look that differ from the tool as it opens (an edit undone and left is not one) */
+  function realDraft(x){ return (x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()); }
   try{
     if(q.get('design')) await openDesign(q.get('design'),q.get('go')==='1');
     else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this '+devWord()+'.'); } }
-    else if(q.get('quick')!=='1'){ const real=drafts.filter(x=>(x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()));
+    else if(q.get('quick')!=='1'){ const real=drafts.filter(realDraft);
       if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
@@ -2131,8 +2134,12 @@ async function tool(cfg){
     if(fs&&fs.length){ photoStyleNow(); if(!PG&&cfg.photos.max){ S.count=Math.min(perPage,Math.max(minPhotos,fs.length)); syncUI(); }
       if(PG) await quickPages(fs);
       else { const t=slotTargets(nextEmpty()); for(let i=0;i<Math.min(fs.length,t.length);i++) await setPhoto(t[i],fs[i]);
-        if(QUEUE&&slotCount()===1&&fs.length>1){ queue=fs.slice(1,QUEUE_MAX); qTotal=queue.length+1; qPos=1; await keepFiles(); } }
-      flush(); quickReady=true; if(qTotal) showReady(false,...queueNote()); else showReady(fs.length>1); syncQueue(); }
+        /* the extra photos wait in a row; photos still waiting from an earlier row come after them, so Next photo reaches them
+           here instead of a trip back to Home (1.48.0; before, a new row replaced them and one photo hid them until later) */
+        if(QUEUE&&slotCount()===1){ const old=await keptQueue(), more=fs.slice(1,QUEUE_MAX), carry=old?old.left:[];
+          if(more.length||carry.length){ queue=more.concat(carry); qCarry=carry.length; qTotal=queue.length+1; qPos=1; qSaved=false; await keepFiles(); keepQueue(); } } }
+      flush(); if(draftNext) writeDraft(false);   // the picked photos go into the draft now, not after the 800 ms wait: leaving at once keeps them (1.48.0)
+      quickReady=true; if(qTotal) showReady(false,...queueNote()); else showReady(fs.length>1); syncQueue(); }
     else status('That photo did not come through. Tap Add your photo.'); }
   /* a style that needs no photo, opened fresh: ready as it is, so Save works in one tap (like Quick start) until the first edit */
   else if(noPhotoStyle()&&!design&&!draftId) quickReady=true;
@@ -2285,11 +2292,12 @@ async function home(){
     const d=dialog(`<div class="fab-menu share-menu"><div class="share-head"><span class="share-pics" aria-hidden="true">${urls.map((u,i)=>u?`<img alt="" src="${u}" style="--i:${i}" onerror="this.remove()">`:'').join('')}</span><span class="fi-txt"><b id="shareH">${many?fs.length+' photos are in':'Your photo is in'}</b><span>Pick what to make</span></span></div>${q.map(([id,t],i)=>`<button type="button" class="fab-item" data-share="${id}" style="--i:${q.length-i}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(use(t))}</span></span></button>`).join('')}</div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg share-dlg');
     d.setAttribute('aria-labelledby','shareH'); d.tabIndex=-1; d.focus(); haptic('tick');   // no focus ring on the first choice
     d.querySelector('.fab-x').onclick=()=>d.close();
-    d.addEventListener('close',()=>setTimeout(()=>urls.forEach(u=>u&&URL.revokeObjectURL(u)),400));
+    let picked=false;   // closed without a choice: the photo waits on Home as "Your photo is in" (1.48.0: before, only after a reload)
+    d.addEventListener('close',()=>{ setTimeout(()=>urls.forEach(u=>u&&URL.revokeObjectURL(u)),400); if(!picked) setTimeout(sharedWaiting,60); });
     d.querySelector('.share-menu').addEventListener('click',async e=>{ const b=e.target.closest('[data-share]'); if(!b) return; const id=b.dataset.share;
-      b.classList.add('busy');
+      b.classList.add('busy'); picked=true;
       const ok=await idb.put(quickKey(B.id,id),fs.slice(0,quickMax(id)));
-      if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ b.classList.remove('busy'); hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
+      if(ok===null&&!(await idb.get(quickKey(B.id,id)))){ b.classList.remove('busy'); picked=false; hubToast('That photo could not be opened here. Open the tool and add it there.'); return; }
       idb.del('studio:shared'); store('studio:lastQuick',id);
       location.href=toolPage(id)+'?quick=1'; });
   }
@@ -2301,14 +2309,20 @@ async function home(){
     const pic=$('sharedPic'); if(u) pic.src=u; else pic.parentElement.hidden=true;
     $('sharedTxt').textContent=fs.length>1?fs.length+' photos are in':'Your photo is in';
     bar.hidden=false;
-    $('sharedGo').onclick=()=>{ bar.hidden=true; openShared(fs.length).then(()=>{ const d=document.querySelector('dialog.dlg[open]'); if(d) d.addEventListener('close',()=>setTimeout(sharedWaiting,60)); }); };
+    $('sharedGo').onclick=()=>{ bar.hidden=true; if(u) URL.revokeObjectURL(u); openShared(fs.length); };
     $('sharedX').onclick=()=>{ bar.hidden=true; idb.del('studio:shared'); if(u) URL.revokeObjectURL(u); hubToast('Forgot the shared photo.'); }; }
   /* photos still waiting in Restock or Photo story (several shops in a row, left before the last one): a row like the shared
      photo's, "2 photos still waiting", Continue opens the tool on the next one; ✕ clears them (1.8.0) */
-  async function queueWaiting(){ document.querySelectorAll('.queue-wait').forEach(e=>e.remove());
+  let qwSeq=0;   // read again when you come back to Home (1.48.0): the rows are swapped in once read, so two reads never double them
+  async function queueWaiting(){ const seq=++qwSeq, found=[];
     for(const [id,t] of Object.entries(TOOLS).filter(([,t])=>t.queue).reverse()){
-      const k=queueKey(B.id,id), w=await idb.get(k); waitN[id]=0; if(!w||!w.files||!w.files.length) continue;
+      const k=queueKey(B.id,id), w=await idb.get(k); if(!w||!w.files||!w.files.length) continue;
       const m=(await idb.get(k+':pos'))||{pos:1}, left=w.files.slice(Math.max(0,(m.pos||1)-1)); if(!left.length){ idb.del(k); idb.del(k+':pos'); continue; }
+      found.push([id,t,k,left]); }
+    if(seq!==qwSeq) return;
+    document.querySelectorAll('.queue-wait').forEach(e=>{ const i=e.querySelector('img'); if(i&&i.src.startsWith('blob:')) URL.revokeObjectURL(i.src); e.remove(); });
+    Object.keys(waitN).forEach(id=>{ waitN[id]=0; });
+    for(const [id,t,k,left] of found){
       waitN[id]=left.length;
       let u=''; try{ u=URL.createObjectURL(left[0]); }catch(_){}
       const n=left.length, el=document.createElement('div'); el.className='install shared-wait queue-wait'; el.setAttribute('role','region'); el.setAttribute('aria-label','Photos still waiting for '+t.title); el.dataset.queue=id;
@@ -2407,8 +2421,9 @@ async function home(){
   })();
 
   /* continue editing: every unfinished story kept on this phone, newest first (several per tool) */
-  const cont=Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
-  const thumbs={};
+  const allDrafts=()=>Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
+  let cont=allDrafts();
+  const thumbs={}, tk=x=>x.key+'@'+(x.d.at||0);   // a preview per edit: a story edited since shows its new picture
   /* a Video editor draft has its own name (default "Video"); the other tools show the tool's name */
   const draftTitle=x=>x.tool==='video'&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
   function paintCont(){
@@ -2418,16 +2433,23 @@ async function home(){
     const many=Object.entries(per).filter(([,n])=>n>=DRAFT_CAP).map(([t,n])=>n+' '+TOOLS[t].title);
     const note=$('contNote')||(()=>{ const p=document.createElement('p'); p.id='contNote'; p.className='small cont-note'; $('continueList').before(p); return p; })();
     note.hidden=!many.length; note.textContent=many.length?'Lots of unfinished stories ('+many.join(', ')+'). The oldest are at the end: remove the ones you don’t need with ✕.':'';
-    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[x.key]?`<img alt="" src="${thumbs[x.key]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
-    list.forEach(x=>{ if(thumbs[x.key]!==undefined) return; thumbs[x.key]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[x.key]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
+    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[tk(x)]?`<img alt="" src="${thumbs[tk(x)]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
+    list.forEach(x=>{ const t=tk(x); if(thumbs[t]!==undefined) return; thumbs[t]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[t]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
   }
   /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
   $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.key===b.dataset.rm); if(!x) return;
-    const d=dialog(`<div class="dlg-body">${thumbs[x.key]?`<img class="cf-thumb" src="${thumbs[x.key]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this ${devWord()}. This can't be undone.</p>
+    const d=dialog(`<div class="dlg-body">${thumbs[tk(x)]?`<img class="cf-thumb" src="${thumbs[tk(x)]}" alt="">`:''}<h3>Remove this unfinished ${esc(TOOLS[x.tool].title)} story?</h3><p class="small">Edited ${esc(ago(x.d.at))}. It and its photos are deleted from this ${devWord()}. This can't be undone.</p>
       <div class="dlg-actions"><button type="button" class="mini" id="rmNo">Keep it</button><button type="button" class="btn danger" id="rmYes">Remove</button></div></div>`);
     d.querySelector('#rmNo').onclick=()=>d.close();
     d.querySelector('#rmYes').onclick=()=>{ d.close(); x.gone=true; removeDraft(x.key); paintCont(); hubToast(TOOLS[x.tool].title+' story removed.'); }; });
   if(cont.length) paintCont();
+  /* back on Home with the phone's Back button (the page comes back as it was left) or from another tab: the unfinished stories
+     and the photos still waiting are read again, so a story just left is here and a row just finished is gone (1.48.0) */
+  let homeHidden=false;
+  const refreshLocal=()=>{ const now=allDrafts(), same=now.length===cont.filter(x=>!x.gone).length&&now.every((x,i)=>{ const c=cont.filter(y=>!y.gone)[i]; return c&&c.key===x.key&&c.d.at===x.d.at; });
+    if(!same){ cont=now; paintCont(); } queueWaiting(); };
+  addEventListener('pageshow',e=>{ if(e.persisted) refreshLocal(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') homeHidden=true; else if(homeHidden){ homeHidden=false; refreshLocal(); } });
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
      ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create drafts too (1.37.0):
      Create has its own render=1 mode with the same Studio.renderer hook. Afterwards (1.32.0) the Saved! dialog offers to remove the stories
