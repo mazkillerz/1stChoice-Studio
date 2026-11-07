@@ -28,7 +28,8 @@ const open=async(tool,old)=>{
   if(old) await ctx.route('**/tools/'+tool+'.js',r=>r.fulfill({contentType:'application/javascript',body:old}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(tool+': '+e.message)); await pg.goto(BASE+'tools/'+tool+'.html');
   await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S&&(Studio.debug.S.photos[0]||{}).img,null,{timeout:15000}).catch(()=>{});
-  await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(1200); return {ctx,pg};
+  await pg.evaluate(async()=>{ await Promise.all([...document.fonts].map(f=>f.load().catch(()=>{}))); await document.fonts.ready; });   // every declared brand font face (all weights and subsets) loaded BEFORE the first draw: a draw while a face is still loading can leave different glyph edges in that page for good (1 in 4 under load)
+  await pg.waitForTimeout(1200); return {ctx,pg};
 };
 /* set a case (values reset to the tool's start each time; photos of a given shape), draw, check the layers, hash the pixels */
 const run=(pg,sc)=>pg.evaluate(async sc=>{
@@ -99,15 +100,18 @@ for(const [tool,c] of Object.entries(T)){
   if(tool==='highlight'){ for(const k of ['word','icon']){ await run(a.pg,{style:'white',values:k==='word'?{kind:'word',word:txt(THREE)}:{kind:'icon',sub:txt(THREE)}});
     const box=await a.pg.evaluate(k=>{ const R=Studio.debug.reg().filter(q=>!q.empty&&(k==='word'?q.id==='word':['icon','sub'].includes(q.id))); const y0=Math.min(...R.map(q=>q.y)), y1=Math.max(...R.map(q=>q.y+q.h)); return Math.round((y0+y1)/2); },k);
     ok('highlight · '+k+' on 3 lines: centred in the circle (middle within 40px of 960)',Math.abs(box-960)<=40,box); } }
-  if(o) for(const [n,sc] of Object.entries(c.same)){ let x=await run(a.pg,sc), y=await run(o.pg,sc);
-    for(let t=0;t<6&&x.h!==y.h;t++){ await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>document.fonts.ready))); await a.pg.waitForTimeout(1500); x=await run(a.pg,sc); y=await run(o.pg,sc); }   // a late font or picture (slow font proxy under load): wait for fonts, draw again
-    let why=''; if(x.h!==y.h) why=JSON.stringify(await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>[...document.fonts].filter(f=>f.status!=='unloaded').map(f=>f.family.replace(/["']/g,'')+':'+f.weight+':'+f.status+':'+(f.unicodeRange||'').slice(0,12)).sort().join(' ')))));
-    if(x.h!==y.h&&process.env.DUMP_DIR){   // where do the pixels differ? (the two PNGs and the differing box go to DUMP_DIR)
-      const png=p=>p.evaluate(()=>document.getElementById('view').toDataURL('image/png')); const [pa,po]=[await png(a.pg),await png(o.pg)], k=tool+'-'+n.replace(/\W+/g,'_');
-      fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-new.png',Buffer.from(pa.split(',')[1],'base64')); fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-old.png',Buffer.from(po.split(',')[1],'base64'));
-      why=' DIFF '+JSON.stringify(await a.pg.evaluate(async u=>{ const im=new Image(); im.src=u; await im.decode(); const v=document.getElementById('view'), g=(c,w,h)=>{ const k=document.createElement('canvas'); k.width=w; k.height=h; const x=k.getContext('2d'); x.drawImage(c,0,0); return x.getImageData(0,0,w,h).data; };
-        const A=g(v,v.width,v.height), B=g(im,v.width,v.height); let x0=1e9,y0=1e9,x1=-1,y1=-1,n=0; for(let i=0;i<A.length;i+=4) if(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]){ n++; const p=i/4, px=p%v.width, py=(p/v.width)|0; x0=Math.min(x0,px); x1=Math.max(x1,px); y0=Math.min(y0,py); y1=Math.max(y1,py); } return {n,box:[x0,y0,x1,y1]}; },po))+' '+why; }
-    ok(tool+' · '+n+': same pixels as before 1.49.0',x.h===y.h,why.slice(0,900)); }
+  if(o){ let A=a, O=o, again=Object.entries(c.same), round=0;
+    while(again.length){ const failed=[];
+      for(const [n,sc] of again){ let x=await run(A.pg,sc), y=await run(O.pg,sc);
+        for(let t=0;t<6&&x.h!==y.h;t++){ await Promise.all([A.pg,O.pg].map(p=>p.evaluate(()=>document.fonts.ready))); await A.pg.waitForTimeout(1500); x=await run(A.pg,sc); y=await run(O.pg,sc); }   // a late font or picture: wait for fonts, draw again
+        let why=''; if(x.h!==y.h){ why=JSON.stringify(await Promise.all([A.pg,O.pg].map(p=>p.evaluate(()=>[...document.fonts].filter(f=>f.status!=='unloaded').map(f=>f.family.replace(/["']/g,'')+':'+f.weight+':'+f.status+':'+(f.unicodeRange||'').slice(0,12)).sort().join(' ')))));
+          if(process.env.DUMP_DIR){ const png=p=>p.evaluate(()=>document.getElementById('view').toDataURL('image/png')); const [pa,po]=[await png(A.pg),await png(O.pg)], k=tool+'-'+n.replace(/\W+/g,'_');
+            fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-new.png',Buffer.from(pa.split(',')[1],'base64')); fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-old.png',Buffer.from(po.split(',')[1],'base64')); } }
+        if(x.h!==y.h&&round<2) failed.push([n,sc,why]); else ok(tool+' · '+n+': same pixels as before 1.49.0'+(round?' (fresh pages)':''),x.h===y.h,why.slice(0,900)); }
+      if(!failed.length) break;
+      /* a page can keep different glyph edges for good if a font face arrived mid-draw: judge the failed cases again on two fresh pages (a real drawing change fails there too) */
+      round++; if(A!==a){ await A.ctx.close(); await O.ctx.close(); } A=await open(tool); O=await open(tool,OLD); again=failed.map(f=>[f[0],f[1]]); }
+    if(A!==a){ await A.ctx.close(); await O.ctx.close(); } }
   await a.ctx.close(); if(o) await o.ctx.close();
 }
 ok('no page errors',!errs.length,errs.slice(0,3));
