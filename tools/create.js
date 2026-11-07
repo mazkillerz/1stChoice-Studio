@@ -397,6 +397,7 @@ const thKey=def=>'cr:th:'+TPL_LOOK+':'+(B&&B.id)+':'+def.id+':'+hash(JSON.string
    A preview is only kept when the brand fonts had loaded, so an offline first visit never sticks with fallback letters. */
 const fontsReady=()=>{ try{ const f=B&&B.fonts; return !f||[f.display,f.body].filter(Boolean).every(n=>document.fonts.check('40px "'+n+'"')); }catch(_){ return false; } };
 function tplThumb(def){ if(TH.has(def.id)) return Promise.resolve(TH.get(def.id));
+  if(def.layout==='doc'){ const u=L.ROOT+'assets/thumbs/'+B.id+'/tpl/'+def.id+'.jpg'; TH.set(def.id,u); return Promise.resolve(u); }   // a stored document ships its own picture: no need to load all its layers for a preview
   const p=thumbChain.then(async()=>{ if(TH.has(def.id)) return TH.get(def.id);
     let url=null; try{ url=await L.idb.get(thKey(def)); }catch(_){}
     if(url){ TH.set(def.id,url); return url; }
