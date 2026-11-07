@@ -59,6 +59,7 @@ for(const scheme of ['light','dark']){
   ok(N+'opens ready on the first reel template: one clip, preview ≥ 42% of the height, no sideways scroll',(await nClips(pg))===1&&g0.pvh>=.42&&g0.sw&&g0.bw&&g0.barB,g0);
   const bar0=await pg.$$eval('#bar [data-open]',l=>l.map(b=>b.dataset.open+':'+b.getBoundingClientRect().height));
   ok(N+'the bar has Add, Text, Sound (≥ 48px)',bar0.map(x=>x.split(':')[0]).join()==='add,text,sound'&&bar0.every(x=>+x.split(':')[1]>=48),bar0);
+  for(let i=0;i<40&&(await filledIn(pg,'body'))!==1;i++) await pg.waitForTimeout(250);   // Save's colour follows the project becoming ready (a transition): look until it has settled
   ok(N+'Save is the only filled button',(await filledIn(pg,'body'))===1,await filledIn(pg,'body'));
 
   /* add a video and a photo */

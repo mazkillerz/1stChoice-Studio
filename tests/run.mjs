@@ -3,7 +3,7 @@
            node tests/run.mjs --changed [base]        smoke + taste + the suites mapped to the files changed since base
                                                       (default: origin/main, fetched first, so a stale local main never makes it run everything)
            node tests/run.mjs --quick                 smoke + taste + only the suites in tests/ you added or changed (while you work)
-           node tests/run.mjs --all                   every suite except SKIP and the whole-file twins (home7, polish71: their PART files run instead)
+           node tests/run.mjs --all                   every suite except SKIP and the whole-file twins (home7, polish71, collage-grids: their PART files run instead)
            --dry                                      only print which suites it would run, and why
            NOQUIET=1                                  keep the fixed page.waitForTimeout sleeps as written (default: tests/_quiet.mjs ends a sleep early
                                                       when nothing is scheduled to happen in it; see that file)
@@ -53,7 +53,7 @@ try{ if(sh0('git rev-parse --is-shallow-repository').trim()==='true') console.lo
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const why={};
 const SKIP=['run','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
-const TWINS=['home7','polish71'];   // the whole-file versions of home7-hub/-saved/-save and polish71-saved/-search/-bar: --all runs the parts instead
+const TWINS=['home7','polish71','collage-grids'];   // the whole-file versions of home7-hub/-saved/-save and polish71-saved/-search/-bar: --all runs the parts instead
 if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
@@ -96,14 +96,15 @@ const JOBS=+process.env.JOBS||Math.min(4,os.cpus().length);
 console.log(`Running ${names.length} suites, ${JOBS} at a time: ${names.join(' ')}`);
 const t0=Date.now(), out=[];
 const QUIET=!process.env.NOQUIET, quietArgs=QUIET?['--import',new URL('_quiet.mjs',import.meta.url).pathname]:[];
+const REAL_TIME=['welcome'];   // sleeps that wait for a slide's timed choreography (JS animation sequences, not timers or CSS animations): always the full time
 const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
-  const p=spawn(process.execPath,[...quietArgs,`tests/${name}.mjs`],{env:process.env});
+  const p=spawn(process.execPath,[...(REAL_TIME.includes(name)?[]:quietArgs),`tests/${name}.mjs`],{env:process.env});
   p.stdout.on('data',d=>log+=d); p.stderr.on('data',d=>log+=d);
   p.on('close',code=>{ const lines=log.split('\n'), fails=lines.filter(l=>l.startsWith('FAIL'));
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,backgrounds:165,'batch-saved':75,'collage-grids':210,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+const SLOW={goldens:110,'collage-grids-compat':120,'collage-grids-grids':110,'video-timeline':200,video:190,'video-polish':130,textstyles:95,'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,backgrounds:165,'batch-saved':75,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
   'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));

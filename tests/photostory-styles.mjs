@@ -35,7 +35,7 @@ const newCtx=async(old)=>{
   if(old) await ctx.route('**/tools/photo-story.js',r=>r.fulfill({contentType:'application/javascript',body:OLD}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push((old?'old: ':'')+e.message));
   await pg.goto(BASE+'tools/photo-story.html'); await pg.evaluate(()=>localStorage.clear()); await pg.goto(BASE+'tools/photo-story.html');
-  await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.reg().length>3,null,{timeout:20000}); await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(900);
+  await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.reg().length>3,null,{timeout:20000}); await pg.evaluate(async()=>{ await Promise.all([...document.fonts].map(f=>f.load().catch(()=>{}))); await document.fonts.ready; }); await pg.waitForTimeout(900);   // every declared font face in before the first draw (same cause as draw-edges)
   return {ctx,pg};
 };
 /* set style + values, draw, and read the preview: a hash of every pixel (plus how many different colours a sample shows) */
