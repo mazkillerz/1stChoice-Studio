@@ -150,7 +150,7 @@ if(part('saved')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=awai
   ok(N+'press and hold does not navigate (the release click is swallowed)',pg.url()===url0&&await pg.isVisible('dialog.design-dlg[open]'),pg.url());
   ok(N+'the page behind the sheet cannot scroll',await pg.evaluate(()=>getComputedStyle(document.documentElement).overflow)==='hidden');
   const sh=await pg.evaluate(()=>{ const d=document.querySelector('dialog.design-dlg[open]'); const rows=[...d.querySelectorAll('.act-row')]; return {title:d.querySelector('h3').textContent,open:d.querySelector('a.btn').textContent.trim(),openHref:d.querySelector('a.btn').getAttribute('href'),rows:rows.map(r=>r.textContent.trim()),again:(rows[0].getAttribute('href')||''),acts:rows.map(r=>r.dataset.act||'link'),minH:Math.min(...rows.map(r=>r.getBoundingClientRect().height))}; });
-  ok(N+'the sheet: name, Open, and the six actions',sh.title==='Restock – 24 Oct'&&sh.open==='Open'&&/restock\.html\?design=seed0$/.test(sh.openHref)&&sh.rows.join('|')==='Save the picture again|Duplicate|Rename|Collections|Select more|Delete',sh);
+  ok(N+'the sheet: name, Open, and the six actions',sh.title==='Restock – 24 Oct'&&sh.open==='Open'&&/restock\.html\?design=seed0$/.test(sh.openHref)&&sh.rows.join('|')==='Save the picture again|Redraw cover|Versions|Duplicate|Rename|Collections|Select more|Delete',sh);
   ok(N+'"Save the picture again" links with go=1',/restock\.html\?design=seed0&go=1$/.test(sh.again),sh.again);
   ok(N+'the sheet rows are finger-sized',sh.minH>=48,sh.minH);
   await pg.tap('#dsClose'); await pg.waitForTimeout(400);
@@ -214,7 +214,7 @@ if(part('saved')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=awai
   /* tapping a card opens it in its tool */
   await pg.tap('#savedGrid .sv-card[data-id="seed1"] .sv-open'); await pg.waitForURL(/photo-story\.html\?design=seed1/,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(1500);
   ok(N+'tapping a card opens that design in its tool',/tools\/photo-story\.html\?design=seed1$/.test(pg.url())&&!(await pg.locator('dialog[open]').count()),pg.url());
-  ok(N+'the design is loaded there (design bar set, team switch starts off)',await pg.evaluate(()=>!document.getElementById('designBar').hidden&&!document.getElementById('teamOn').checked)&&/Save story/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+  ok(N+'the design is loaded there (design bar set, team switch starts on)',await pg.evaluate(()=>!document.getElementById('designBar').hidden&&document.getElementById('teamOn').checked)&&/^Update “/.test((await pg.textContent('#saveTxt')).trim()),await pg.textContent('#saveTxt'));
   await ctx.close();
 }
 
@@ -343,12 +343,12 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   const did=nd[0]&&nd[0].id;
   await pg.goto(BASE+'tools/restock.html?design='+did); await pg.waitForTimeout(2600);
   ok(N+'a saved design is open (design bar set)',await pg.evaluate(()=>!document.getElementById('designBar').hidden)&&/\?design=/.test(pg.url()));
-  ok(N+'...and the team switch is OFF, even after the quiet check',!(await pg.isChecked('#teamOn')));
+  ok(N+'...and the team switch is ON (the button says Update), after the quiet check',await pg.isChecked('#teamOn'));
   await sheetOpen();
-  ok(N+'...also when the sheet opens: still off, button "Save story"',!(await pg.isChecked('#teamOn'))&&(await pg.textContent('#saveTxt')).trim()==='Save story',await pg.textContent('#saveTxt'));
+  ok(N+'...also when the sheet opens: on, button Update “name”, Save as new under it',await pg.isChecked('#teamOn')&&/^Update “/.test((await pg.textContent('#saveTxt')).trim())&&(await pg.textContent('#saveAlt')).trim()==='Save as new',await pg.textContent('#saveTxt'));
   ok(N+'...with the design\'s own name in the name field',await pg.inputValue('#teamName')===nm,await pg.inputValue('#teamName'));
-  await pg.tap('#sh-save .team-row'); await pg.waitForTimeout(500);
-  ok(N+'switching it on gives "Save & update"',await pg.isChecked('#teamOn')&&(await pg.textContent('#saveTxt')).trim()==='Save & update',await pg.textContent('#saveTxt'));
+  await pg.waitForTimeout(300);
+  ok(N+'the team row reads Update “name” in the team',/^Update “/.test((await pg.textContent('#teamLbl')).trim()),await pg.textContent('#teamLbl'));
   ok(N+'the design\'s own collections are preselected',JSON.stringify(await pg.$$eval('#teamCols .chip[data-col][aria-pressed="true"]',l=>l.map(c=>c.dataset.col).sort()))==='["Restocks","Spring"]');
   const nBefore=Object.keys((await fdb(pg)).designs).length; dls.length=0;
   await pg.tap('#save'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);

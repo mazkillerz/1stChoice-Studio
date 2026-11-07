@@ -60,9 +60,7 @@ const inp=pg.locator('#sh-words input[type="text"]:visible, #sh-words textarea:v
 await pg.waitForTimeout(900);
 await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
 /* an open saved design: the team switch starts OFF so nobody overwrites a team design by accident; switching it on gives Save & update */
-ok('a saved design is open: the team switch starts off, the button says Save story',!(await pg.isChecked('#teamOn'))&&/Save story/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
-await pg.evaluate(()=>document.getElementById('teamOn').click());
-ok('switching it on: the button says Save & update',/Save & update/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+ok('a saved design is open: the team switch is on, the button says Update “name”',(await pg.isChecked('#teamOn'))&&/^Update “/.test((await pg.textContent('#saveTxt')).trim()),await pg.textContent('#saveTxt'));
 await pg.tap('#save');
 for(let i=0;i<60&&dls.length<2;i++) await pg.waitForTimeout(300);
 ok('Save after an edit makes a new picture',dls.length===2,String(dls.length));
