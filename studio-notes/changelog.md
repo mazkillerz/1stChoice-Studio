@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.48.0 · 7 Nov 2026
+
+### Photos still waiting join your new story
+type: design
+Started a new Restock or Photo story while photos from before were still waiting? They now come right after the new one: "Photo 1 of 3 is in · And 2 photos from before", and Next photo brings them in. No trip back to Home to find them.
+![before](assets/whatsnew/1.48.0-carry-before.jpg)
+![after](assets/whatsnew/1.48.0-carry-after.jpg)
+
+### Small fixes
+type: fix
+A shared photo stays on Home as "Your photo is in" if you close the pick-a-tool sheet. Continue on a tool's "unfinished story" note opens the story with your photo, not an empty one. Home shows your latest unfinished stories and waiting photos when you come back with Back. A photo you start from is kept in Continue editing even if you leave straight away.
+
 ## 1.47.0 · 7 Nov 2026
 
 ### Long words stay on the page
