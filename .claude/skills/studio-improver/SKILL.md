@@ -152,7 +152,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Save card on a computer (the dock), Done in sheets and hub dialogs, `.link` text buttons, Save the frame only, tool descriptions (`TOOLS` blurbs), the design menu's rows, "/" to search on a computer | `simplify15`, `simplify30`, `taste`, `home7-save` |
 | Backgrounds (`groundFx`, `h.ground`, the `gfx` field in Restock / Photo story) | `backgrounds`, `restock-styles`, `photostory-styles` |
 | Brand kit plumbing (`useBrand`, `brands/`, anything that reads brand colours, fonts or words) | `brandkit` |
-| Video editor (`tools/video*`, `assets/reel-*.js`, reels in Templates) | `video`, `video-timeline`, `video-polish`, `video-project`, `reels-hub`, `reel-scene`, `reel-audio`, `reel-export` (the `tools/video` rows in `run.mjs` `MAP`), `video-fixes` |
+| Video editor (`tools/video*`, `assets/reel-*.js`, reels in Templates) | `video`, `video-timeline`, `video-polish`, `video-project`, `reels-hub`, `reel-scene`, `reel-audio`, `reel-export`, `reel-label-reveal`, `reel-audio-label-reveal` (the `tools/video` rows in `run.mjs` `MAP`), `video-fixes` |
 | Cloud errors, offline and slow states (`assets/cloud.js`, `doLoad` / notes in `home()`, `checkTeam()` in `tool()`) | `hub-offline`, `smoke`, `quicksave`, `home7-save` |
 | Any stylesheet (`assets/*.css`, `tools/*.css`) | `simplify45` (no dead CSS; add a class built at run time to its `DYNAMIC` list) |
 | Offer / Carousel drawing (`tools/offer.js`, `tools/carousel.js`) | `draw-edges` |
