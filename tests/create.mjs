@@ -140,7 +140,7 @@ const selLabels=pg=>pg.evaluate(()=>BD.S.sel.map(n=>n.getAttr('label')||BD.util.
   await pg.click('#crBar [data-cr="save"]'); await pg.waitForTimeout(300);
   const [dl]=await Promise.all([pg.waitForEvent('download'),pg.click('#crGo')]); const f=OUT+'/'+dl.suggestedFilename(); await dl.saveAs(f);
   ok('Save image = 2160×3840 lossless PNG',JSON.stringify(pngSize(f))==='[2160,3840]'&&/\.png$/.test(f),pngSize(f));
-  await pg.click('#crAsTpl'); await pg.waitForFunction(()=>/team template/.test(document.getElementById('crSt').textContent),null,{timeout:15000});
+  await pg.click('#crAsTpl'); await pg.waitForFunction(()=>/Saved as a team template/.test(document.getElementById('crSt').textContent),null,{timeout:15000});
   await pg.click('#crSheetX'); await pg.click('#crBar [data-cr="templates"]'); await pg.waitForTimeout(900);
   ok('the team template is listed in Templates',await pg.evaluate(()=>document.querySelectorAll('#crTeamT [data-team]').length===1));
   await ctx.close(); }

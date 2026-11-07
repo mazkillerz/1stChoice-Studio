@@ -13,7 +13,8 @@ Studio.registerBrand({
     display:'Lalezar',         // big headlines
     body:'Cairo',              // small lines, buttons, place names
     latin:'Modak',             // the brand's Latin display face (numbers, kicker, handle)
-    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',
+    css:'fonts/fonts.css',     // self-hosted copies (woff2 + OFL licences in fonts/), loaded first
+    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',   // fallback only
     /* fonts offered first in the Font menu; new text always starts in display/body above */
     choices:[
       {family:'Lalezar',label:'Lalezar (headlines)',wt:''},
@@ -186,6 +187,24 @@ Studio.registerBrand({
      `sub` = the English line under the title in Templates (otherwise "Story · Create"). */
   /* categories for the hub Templates page, inserted after All */
   templateCats:[{id:'nationalday',label:'National Day'}],
+  /* tokens (mega w1): the design values the tools use today, one source for tools, Create and Board (read with Studio.tokens(format)).
+     sizes are canvas pixels; headline = the big words, sub = the second line (dates, "small line" on posts), body, small = the small line.
+     Today's differences (not tokens yet): headline 110-170 by tool/slide (Restock 150, Offer 140, Cinematic/New place 130, Carousel cover 170, Carousel text 110-120,
+     Big words 230, Highlight word 230); small line 38 (story) / 40-46 (post); photo cards radius 44 (36 Photo story, 40 Photo story card); shadows: text 24/2,
+     Photo story card 64/22, Collage 34/12. Weights are canvas weights: body text is 800, display font has none. */
+  tokens:{
+    formats:{ story:[1080,1920], post:[1080,1350], square:[1080,1080], highlight:[1080,1920] },
+    type:{
+      story:{ headline:{size:150,lh:1.2,font:'display',wt:''}, sub:{size:40,lh:1.2,font:'body',wt:'800'}, body:{size:44,lh:1.2,font:'body',wt:'800'}, small:{size:38,lh:1.2,font:'body',wt:'800'} },
+      post:{ headline:{size:170,lh:1.2,font:'display',wt:''}, sub:{size:46,lh:1.2,font:'body',wt:'800'}, body:{size:44,lh:1.2,font:'body',wt:'800'}, small:{size:40,lh:1.2,font:'body',wt:'800'} },
+      square:{ headline:{size:150,lh:1.2,font:'display',wt:''}, sub:{size:42,lh:1.2,font:'body',wt:'800'}, body:{size:40,lh:1.2,font:'body',wt:'800'}, small:{size:36,lh:1.2,font:'body',wt:'800'} },
+      highlight:{ headline:{size:230,lh:1.2,font:'display',wt:''}, sub:{size:84,lh:1.2,font:'body',wt:'800'}, body:{size:84,lh:1.2,font:'body',wt:'800'}, small:{size:84,lh:1.2,font:'body',wt:'800'} }
+    },
+    space:[8,16,24,30,44,56,72,80],
+    radius:{ sm:40, md:56, lg:64, pill:999 },
+    shadow:{ soft:{blur:24,y:2,color:'rgba(0,0,0,.45)'}, lift:{blur:64,y:22,color:'rgba(0,0,0,.42)'} },
+    safe:{ story:{top:250,bottom:300,side:70}, post:{top:0,bottom:0,side:80}, square:{top:0,bottom:0,side:80}, highlight:{top:0,bottom:0,side:0} }
+  },
   create:{
     templates:[
       {id:'ice-cold',label:'Ice cold',sub:'Story · both cans',layout:'hero-panel',size:'story',words:{head:'يسرسح ثلج',small:'خذلك كولد برو',pill:'الخريطة في البايو'},assets:{product:'cans-pair-shadow'}},
