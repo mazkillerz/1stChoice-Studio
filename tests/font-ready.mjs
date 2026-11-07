@@ -22,7 +22,10 @@ const mk=async(fonts,seed)=>{
   const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block'});
   await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
   if(fonts==='slow'){ await ctx.route(/fonts\.googleapis\.com/,async r=>{ await sleep(3000); r.continue().catch(()=>{}); });
-    await ctx.route(/fonts\.gstatic\.com/,async r=>{ await sleep(5000); r.continue().catch(()=>{}); }); }
+    await ctx.route(/fonts\.gstatic\.com/,async r=>{ await sleep(5000); r.continue().catch(()=>{}); });
+    /* the fonts are self-hosted now (w1-fonts), so slow means the local brand font stylesheet and files */
+    await ctx.route(/brands\/[^/]+\/fonts\/fonts\.css/,async r=>{ await sleep(3000); r.continue().catch(()=>{}); });
+    await ctx.route(/brands\/[^/]+\/fonts\/.*\.woff2/,async r=>{ await sleep(5000); r.continue().catch(()=>{}); }); }
   if(fonts==='off') await ctx.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
   if(fonts==='hang') await ctx.route(/fonts\.gstatic\.com/,()=>{});   // font files never answer (a hanging stylesheet would block the page itself)
   if(seed) await ctx.addInitScript(s=>{ try{ if(!localStorage.getItem('fakecloud')) localStorage.setItem('fakecloud',s); localStorage.setItem('studio:welcome','1'); }catch(e){} },seed);

@@ -385,8 +385,9 @@ function brandId(){ const list=Studio.brandList||[]; const saved=store('studio:b
 async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
-  if(BRAND.fonts&&BRAND.fonts.google&&!document.querySelector('link[data-brand-fonts]')){
-    fontLink('https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
+  /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
+  if(BRAND.fonts&&(BRAND.fonts.css||BRAND.fonts.google)&&!document.querySelector('link[data-brand-fonts]')){
+    fontLink(BRAND.fonts.css?BRAND.base+BRAND.fonts.css:'https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
   }
   document.documentElement.style.setProperty('--display','"'+BRAND.fonts.display+'",system-ui,sans-serif');
   Object.entries(BRAND.colors||{}).forEach(([k,v])=>document.documentElement.style.setProperty('--b-'+k,v));   // brand colours for style swatches

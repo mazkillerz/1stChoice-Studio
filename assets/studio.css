@@ -1,7 +1,8 @@
 /* Studio — shared UI (brand-agnostic). Phone first: on a tool page the preview fills the screen and
    one bottom bar opens bottom sheets over it. On desktop the same sheets are cards beside the preview. */
 /* the interface font: IBM Plex Sans Arabic draws Arabic and English with one calm voice (designs keep the brand kit's fonts) */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap");
+/* self-hosted (w1-fonts, mega): local woff2, font-display:swap, so no Google stylesheet can hang a page. Weights 400/500/600 are the only ones used. */
+@import url("fonts/fonts.css");
 
 /* ---------- tokens: one spacing / type / radius scale for every page ---------- */
 :root{
