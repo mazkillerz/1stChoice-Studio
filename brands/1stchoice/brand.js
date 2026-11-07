@@ -141,8 +141,11 @@ Studio.registerBrand({
     {id:"nd26-flag",label:"Crayon flag",file:"assets/nd26/parts/crayon-flag.png",prev:"assets/prev/nd26/crayon-flag.webp",group:"National Day 2026",noFlip:true},
     {id:"nd26-fw-red",label:"Crayon firework · red",file:"assets/nd26/parts/fw-red.png",prev:"assets/prev/nd26/fw-red.webp",group:"National Day 2026",noFlip:true},
     {id:"nd26-fw-green",label:"Crayon firework · green",file:"assets/nd26/parts/fw-green.png",prev:"assets/prev/nd26/fw-green.webp",group:"National Day 2026",noFlip:true},
-    {id:"nd26-sweep",label:"Grey crayon sweep",file:"assets/nd26/parts/sweep-band.png",prev:"assets/prev/nd26/sweep-band.webp",group:"National Day 2026",noFlip:true}
+    {id:"nd26-sweep",label:"Grey crayon sweep",file:"assets/nd26/parts/sweep-band.png",prev:"assets/prev/nd26/sweep-band.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-crayon-red",label:"Crayon red (text fill)",file:"assets/nd26/tex/crayon-red.png",group:"National Day 2026",hidden:true},
+    {id:"nd26-crayon-green",label:"Crayon green (text fill)",file:"assets/nd26/tex/crayon-green.png",group:"National Day 2026",hidden:true}
   ],
+  textFills:[{id:'crayon-red',label:'Crayon red',asset:'nd26-crayon-red',color:'#DA291C'},{id:'crayon-green',label:'Crayon green',asset:'nd26-crayon-green',color:'#007A33'}],
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
   reels:[

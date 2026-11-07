@@ -259,6 +259,7 @@ function drawShape(c,a,w,h,fill,o){
 }
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
+function brandTextFills(){ return (BRAND&&BRAND.textFills)||[]; }
 function listedAssets(){ return brandAssets().filter(a=>!a.hidden); }   // hidden: loads by id (template backgrounds) but is never offered in a picker
 const stickerList=()=>window.STUDIO_STICKERS||[];   // assets/stickers.js, loaded by tool()
 /* Emoji stickers' shapes (tools/highlight-emoji.js, ~20 KB) load only when needed (1.33.0): the Sticker sheet opens (or the
@@ -2972,7 +2973,7 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,listedAssets,assetUrl,SHAPES,
+const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};

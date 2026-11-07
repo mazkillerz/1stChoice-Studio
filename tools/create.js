@@ -143,17 +143,20 @@ function openWords(){ const list=sel(); if(!list.length) return; const texts=lis
   const first=body.querySelector('textarea'); if(first){ setTimeout(()=>{ first.focus({preventScroll:true}); if(first.value===CR.write()) first.select(); },60); } }
 
 /* Colour: the parts of the selected thing that can take a colour */
+const plainFill=(t,v)=>{ t.fill(v); if(t.getAttr('fillTex')||t.fillPriority()==='pattern'){ t.setAttr('fillTex',undefined); t.fillPriority('color'); t.fillPatternImage(null); } };
+function texSwatches(key,cur){ const fills=(L.brandTextFills?L.brandTextFills():[]).filter(f=>L.brandAssets().some(a=>a.id===f.asset)); if(!fills.length) return '';
+  return '<div class="cr-sws cr-tex">'+fills.map(f=>{ const a=L.brandAssets().find(x=>x.id===f.asset); return `<button type="button" class="cr-sw tex" style="--c:${f.color};background:${f.color} url('${esc(L.assetPrevUrl(a))}') center/cover" data-k="${key}" data-tex="${esc(f.id)}" aria-label="${esc(f.label)}" title="${esc(f.label)}" aria-pressed="${cur==='brand:'+f.asset}"></button>`; }).join('')+'</div>'; }
 function colorTargets(n){ const k=kind(n), out=[];
   const add=(label,get,set,o)=>out.push(Object.assign({label,get,set},o||{}));
   if(CR.isEmoji(n)){ add('Emoji',()=>CR.emojiTint(n),v=>CR.setEmojiTint(n,v),{orig:true}); return out; }
-  if(k==='text') add('Words',()=>n.fill(),v=>n.fill(v));
+  if(k==='text') add('Words',()=>n.fill(),v=>plainFill(n,v),{tex:true,node:n});
   else if(k==='rect'||k==='ellipse'||k==='path'){ add('Fill',()=>n.fill(),v=>n.fill(v||''),{none:true}); add('Outline',()=>n.stroke(),v=>{ n.stroke(v||''); if(v&&!n.strokeWidth()) n.strokeWidth(8); },{none:true,width:true,node:n}); }
   else if(k==='icon'||k==='line') add('Line',()=>n.stroke(),v=>{ n.stroke(v); if(n.getClassName()==='Arrow') n.fill(v); });
   else if(k==='group'){ const kids=n.find(c=>c.getClassName()!=='Group'); const bg=kids.filter(c=>c.getAttr('role')==='bg'), tx=kids.filter(c=>kind(c)==='text'), ic=kids.filter(c=>c.getAttr('role')==='icon'||kind(c)==='icon'||c.getAttr('iconId')==='pin-fill');
     const shapes=kids.filter(c=>['rect','ellipse','path'].includes(kind(c))&&!bg.includes(c)&&!ic.includes(c));
     const fillOf=c=>c.getAttr('iconId')==='pin-fill'||kind(c)!=='icon'?'fill':'stroke';
     if(bg.length&&!n.getAttr('slot')) add('Background',()=>bg[0].fill(),v=>bg.forEach(c=>c.fill(v)));
-    if(tx.length) add('Words',()=>tx[0].fill(),v=>tx.forEach(c=>c.fill(v)));
+    if(tx.length) add('Words',()=>tx[0].fill(),v=>tx.forEach(c=>plainFill(c,v)));
     if(ic.length) add('Icon',()=>ic[0][fillOf(ic[0])](),v=>ic.forEach(c=>c[fillOf(c)](v)));
     if(shapes.length) add(bg.length?'Shapes':'Fill',()=>shapes[0].fill(),v=>shapes.forEach(c=>c.fill(v))); }
   return out; }
@@ -162,9 +165,13 @@ function swatches(key,cur,o){ o=o||{}; const c=String(cur||'').toLowerCase(); le
   const rec=(L.recentColours?L.recentColours():[]).map(h=>{ const on=!hit&&!!c&&h.toLowerCase()===c.slice(0,7); if(on) hit=true; return `<button type="button" class="cr-sw recent" style="--c:${h}" data-k="${key}" data-c="${h}" aria-label="Recent colour ${h}" title="Recent ${h}" aria-pressed="${on}"></button>`; }).join('');
   return `<div class="cr-sws">${sw}${rec?'<span class="cr-sw-sep" aria-hidden="true"></span>'+rec:''}${o.none?`<button type="button" class="cr-sw none" data-k="${key}" data-c="" aria-label="None" title="None" aria-pressed="${!c}"></button>`:''}${o.orig?`<button type="button" class="cr-sw orig" data-k="${key}" data-c="" aria-label="Original colours" title="Original colours" aria-pressed="${!c}"></button>`:''}<label class="cr-sw custom" title="Custom colour"><input type="color" data-k="${key}" value="${hex6(cur||'#000000')}" aria-label="Custom colour"></label></div>`; }
 function openColor(){ const list=sel(); if(!list.length) return; const first=list.find(n=>colorTargets(n).length); if(!first) return; const tg=colorTargets(first);
-  const body=selSheet('color','Colour',tg.map((t,i)=>`<span class="lbl">${esc(t.label)}</span>${swatches(i,typeof t.get()==='string'?t.get():'',t)}${t.width?`<div class="cr-row"><span class="lbl">Outline width</span><input type="range" min="0" max="60" step="1" value="${Math.round(t.node.strokeWidth()||0)}" data-sw="${i}"></div>`:''}`).join('')+(list.length>1?'<p class="small">Changes every selected thing that has this part.</p>':''),openColor);
+  const body=selSheet('color','Colour',tg.map((t,i)=>`<span class="lbl">${esc(t.label)}</span>${swatches(i,typeof t.get()==='string'?t.get():'',t)}${t.tex?texSwatches(i,t.node.getAttr('fillTex')):''}${t.width?`<div class="cr-row"><span class="lbl">Outline width</span><input type="range" min="0" max="60" step="1" value="${Math.round(t.node.strokeWidth()||0)}" data-sw="${i}"></div>`:''}`).join('')+(list.length>1?'<p class="small">Changes every selected thing that has this part.</p>':''),openColor);
   const apply=(i,v)=>{ const label=tg[i].label; list.forEach(n=>{ const t=colorTargets(n).find(x=>x.label===label)||(colorTargets(n).length===1?colorTargets(n)[0]:null); if(t) t.set(v); }); after(); };
-  body.addEventListener('click',e=>{ const b=e.target.closest('.cr-sw[data-c]'); if(!b) return; apply(+b.dataset.k,b.dataset.c); BD.changed(); body.querySelectorAll(`.cr-sw[data-k="${b.dataset.k}"]`).forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
+  body.addEventListener('click',e=>{ const tb=e.target.closest('.cr-sw[data-tex]');
+    if(tb){ const f=(L.brandTextFills()||[]).find(x=>x.id===tb.dataset.tex); if(!f) return;
+      list.forEach(n=>{ const ts=kind(n)==='text'?[n]:[]; ts.forEach(t=>{ t.fill(f.color); t.setAttr('fillTex','brand:'+f.asset); t.fillPriority('pattern'); BD.prepText(t); }); }); after(); BD.changed();
+      body.querySelectorAll('.cr-sw').forEach(x=>x.setAttribute('aria-pressed',String(x===tb))); return; }
+    const b=e.target.closest('.cr-sw[data-c]'); if(!b) return; apply(+b.dataset.k,b.dataset.c); BD.changed(); body.querySelectorAll(`.cr-sw[data-k="${b.dataset.k}"]`).forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
   body.addEventListener('input',e=>{ const t=e.target; if(t.type==='color') apply(+t.dataset.k,t.value); if(t.dataset.sw!=null){ list.forEach(n=>{ if(n.strokeWidth&&kind(n)!=='group') n.strokeWidth(+t.value); }); after(); } });
   body.addEventListener('change',e=>{ if(e.target.type==='color'&&L.addRecentColour) L.addRecentColour(e.target.value); BD.changed(); }); }
 function openPageBg(){ const f=BD.activeFrame(); if(!f) return; const bg=U.frameBg(f); reopen=null;
@@ -210,13 +217,13 @@ const fontOf=fam=>L.brandFonts().find(f=>f.family===fam)||(L.MORE_FONTS||[]).fin
 const usualWt=fam=>{ const f=fontOf(fam); return (f&&f.wt)||'400'; };
 const wtOf=t=>(String(t.fontStyle()).match(/\d{3}/)||['400'])[0];
 const topText=x=>U.isFrame(x.getParent());
-function textStyleOf(t){ const st={}, fam=t.fontFamily(); if(typeof t.fill()==='string'&&t.fill()) st.color=t.fill(); if(fam) st.font=fam;
+function textStyleOf(t){ const st={}, fam=t.fontFamily(); if(typeof t.fill()==='string'&&t.fill()) st.color=t.fill(); if(t.getAttr('fillTex')) st.tex=t.getAttr('fillTex'); if(fam) st.font=fam;
   if(t.align()&&t.align()!=='center') st.align=t.align(); if(Math.abs(t.lineHeight()-1.2)>.001) st.lh=Math.round(t.lineHeight()*100)/100;
   if(t.letterSpacing()) st.ls=t.letterSpacing(); if(t.getAttr('tbg')) st.bg=t.getAttr('tbg'); if(t.opacity()<1) st.op=Math.round(t.opacity()*100)/100;
   if(wtOf(t)!==usualWt(fam)) st.wt=wtOf(t); return st; }
 async function useTextStyle(texts,st){ const fam=st.font||null, wt=st.wt||(fam?usualWt(fam):null), fs=wt?(wt==='400'?'normal':wt):null;
   if(fam) await Promise.all(texts.map(x=>BD.ensureFont(fam,fs||x.fontStyle())));
-  texts.forEach(x=>{ if(st.color) x.fill(st.color); if(fam) x.fontFamily(fam); if(fs) x.fontStyle(fs); x.opacity(st.op!=null?st.op:1);
+  texts.forEach(x=>{ if(st.color) x.fill(st.color); if(st.tex){ x.setAttr('fillTex',st.tex); x.fillPriority('pattern'); } else if(st.color) plainFill(x,st.color); if(fam) x.fontFamily(fam); if(fs) x.fontStyle(fs); x.opacity(st.op!=null?st.op:1);
     if(topText(x)){ x.align(st.align||'center'); x.lineHeight(st.lh||1.2); x.letterSpacing(st.ls||0);
       const v=st.bg&&st.bg!=='none'?st.bg:null; x.setAttr('tbg',v||undefined); x.setAttr('tbgR',v?Math.round(x.fontSize()*.5):undefined); x.padding(v?Math.round(x.fontSize()*.28):0); }
     BD.prepText(x); if(x.getAttr('autoW')) x.width(undefined); CR.relayoutAround(x); });
