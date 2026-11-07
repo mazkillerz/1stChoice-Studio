@@ -332,7 +332,7 @@ $('crCropZ').oninput=e=>BD.cropZoom(+e.target.value); BD.on('cropz',z=>{ $('crCr
 $('crCropDone').onclick=()=>{ $('crCrop').hidden=true; BD.endCrop(); };
 
 /* Add sheet: elements, brand pictures, shapes, lines, icons, emoji */
-function openAdd(){ reopen=null; const as=L.brandAssets();
+function openAdd(){ reopen=null; const as=L.listedAssets();
   const els=CR.ELEMENTS.filter(e=>!e.when||e.when());
   const shapeSvg=(d,stroke)=>`<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`;
   const native={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};

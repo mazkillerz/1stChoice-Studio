@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.51.0';
+const VERSION='1.52.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -259,6 +259,7 @@ function drawShape(c,a,w,h,fill,o){
 }
 const ASSET_IMG=new Map();   // ref -> {img} | {missing:true} | Promise
 function brandAssets(){ return (BRAND&&BRAND.assets)||[]; }
+function listedAssets(){ return brandAssets().filter(a=>!a.hidden); }   // hidden: loads by id (template backgrounds) but is never offered in a picker
 const stickerList=()=>window.STUDIO_STICKERS||[];   // assets/stickers.js, loaded by tool()
 /* Emoji stickers' shapes (tools/highlight-emoji.js, ~20 KB) load only when needed (1.33.0): the Sticker sheet opens (or the
    Layers sheet, so it is ready by the tap), or a design, draft or undo step has an emoji sticker. Highlight covers load the file
@@ -1653,9 +1654,9 @@ async function tool(cfg){
     return `<img alt="" src="${c.toDataURL()}">`;
   }
   function paintAssets(){
-    const groups={}; brandAssets().forEach(a=>{ (groups[a.group||'Brand']=groups[a.group||'Brand']||[]).push(a); }); groups.Shapes=SHAPES;
+    const groups={}; listedAssets().forEach(a=>{ (groups[a.group||'Brand']=groups[a.group||'Brand']||[]).push(a); }); groups.Shapes=SHAPES;
     $('assetList').innerHTML=Object.entries(groups).map(([g,list])=>`<span class="lbl">${esc(g)}</span><div class="asset-grid">${list.map(a=>`<button type="button" class="asset-tile" data-asset="${esc(a.id)}" title="${esc(a.file?a.label+' ('+a.file+')':a.label)}">${assetThumb(a)}<span>${esc(a.label)}</span><i class="miss-note">Not added yet</i></button>`).join('')}</div>`).join('')
-      +(brandAssets().length?'':'<p class="small">This brand kit lists no asset files yet.</p>');
+      +(listedAssets().length?'':'<p class="small">This brand kit lists no asset files yet.</p>');
   }
   let assetN=0;
   async function addAsset(ref){
@@ -2368,7 +2369,7 @@ async function home(){
   /* ---------- Templates (assets/templates.js): every ready-made start in one place, by kind, with real previews.
      Tool presets (brand kit `presets`: a tool with a style and words), Create templates (brand kit `create.templates`) and the
      team's own templates (Saved designs of kind "template"). A tap starts it at once. Previews: assets/thumbs/<brand>/tpl/<id>.jpg ---------- */
-  const TPL_CATS=[{id:'all',label:'All'},{id:'restock',label:'Restock'},{id:'story',label:'Stories'},{id:'post',label:'Posts'},{id:'highlight',label:'Highlights'},{id:'reels',label:'Reels'},{id:'team',label:'Team'}];
+  const TPL_CATS=[{id:'all',label:'All'}].concat(((B&&B.templateCats)||[]).filter(c=>c&&c.id&&c.label),[{id:'restock',label:'Restock'},{id:'story',label:'Stories'},{id:'post',label:'Posts'},{id:'highlight',label:'Highlights'},{id:'reels',label:'Reels'},{id:'team',label:'Team'}]);
   const tplThumb=id=>`${ROOT}assets/thumbs/${B.id}/tpl/${id}.jpg`;
   const toolShape=t=>t==='highlight'?'circle':t==='carousel'?'post':'story';
   const TPL_SIZE={story:'Story',post:'Post',square:'Square'};
@@ -2971,7 +2972,7 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,assetUrl,SHAPES,
+const lab={ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={version:VERSION,tool,home,registerBrand,useBrand,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};

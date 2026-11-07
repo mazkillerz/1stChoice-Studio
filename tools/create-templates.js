@@ -40,6 +40,27 @@ CR.templateHelper=helper;
 const LAYOUTS={};
 CR.LAYOUTS=LAYOUTS;
 
+/* A saved Create document shipped in the brand kit (brand entry: doc:'<json path inside the brand folder>').
+   Each frame in it is placed like t.frame does; pictures load by id, fonts are waited for. Works off-screen for previews. */
+LAYOUTS['doc']=async function(t,w,def){
+  const res=await fetch(L.assetUrl({file:def.doc})); if(!res.ok) throw new Error('template file '+def.doc);
+  const doc=await res.json(), nodes=(doc.nodes||[]).map(o=>BD.rebuild(o,true)), made=[];
+  const ids=new Set(); nodes.forEach(n=>{ (n.find?n.find('Image'):[]).forEach(im=>{ const id=im.getAttr('imgId'); if(id) ids.add(id); }); });
+  await Promise.all([...ids].map(id=>BD.getImg(id)));
+  for(const f of nodes){
+    let x=0,y=0; const last=t.frames[t.frames.length-1], fs=U.frames();
+    if(last){ x=Math.round(last.x()+U.fsize(last).w+120); y=last.y(); }
+    else if(t.at){ x=t.at.x; y=t.at.y; }
+    else if(fs.length){ const r=U.unionRect(fs); x=Math.round(r.x+r.width+120); y=Math.round(r.y); }
+    f.x(x); f.y(y); BD.main.add(f); t.frames.push(f); made.push(f);
+  }
+  made.forEach(f=>f.find('Image').forEach(n=>BD.applyFx(n)));
+  const fams=new Set(); made.forEach(f=>f.find('Text').forEach(tx=>fams.add(tx.fontFamily()+'|'+tx.fontStyle())));
+  await Promise.all([...fams].map(k=>{ const [fa,st]=k.split('|'); return BD.ensureFont(fa,st); }));
+  made.forEach(f=>f.find('Text').forEach(tx=>{ if(tx._setTextData) tx._setTextData(); }));
+  BD.main.batchDraw();
+  return made; };
+
 /* Headline, a small line, the product on a soft rounded panel, a pill with a pin, the logo.  (e.g. "Ice cold") */
 LAYOUTS['hero-panel']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
@@ -592,7 +613,7 @@ CR.templateSize=d=>{ const s=SIZES[d.size||'story']||SIZES.story; return {w:s[0]
 /* build one: makes its frame(s) to the right of the current ones (or at opt.at) and returns them */
 CR.buildTemplate=async function(id,opt){ const def=brandTemplates().find(d=>d.id===id); if(!def) return [];
   await Promise.all([BD.ensureFont(BD.displayFont(),''),BD.ensureFont(BD.bodyFont(),'800'),BD.ensureFont(BD.bodyFont(),'600')]);
-  const t=helper(opt), words=Object.assign({},def.words||{});
+  const t=helper(opt), words=Object.assign({},def.words||{}); t.at=opt&&opt.at;
   const made=await LAYOUTS[def.layout](t,words,def);
   made.forEach(f=>{ f.setAttr('tpl',def.id); U.frameBg(f).moveToBottom(); });
   return made; };
