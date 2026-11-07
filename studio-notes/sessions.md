@@ -48,3 +48,17 @@ Each version session builds on its own branch; only the lead merges to `main` an
 - 1.47.0: `session_01Y65H7WtiEquro15H42k9Ww` (started 20:58 after 1.45.0's cleanup reported done; 1.45 waits for the sweep)
 - 1.49.0: `session_01Y65H7ZpZYD9ntgPqbqmJLT` (started 20:58 after 1.43.0 reported done; 1.48.0 waits for 1.41.0, both touch share/save tests)
 - Lead to-do at the 1.46.0 release: in `tool()`, `checkTeam()` uses `C.isMember()` and caches false offline, so "Add to the team" with no signal opens sign-in. Use 1.46's `C.checkMember` and leave `teamMember` null on error (+ a check in hub-offline).
+
+## Renumbered (7 Nov 2026)
+On 5 Nov the shared 5-hour usage limit stopped 1.41, 1.47 and 1.49 mid-turn (1.41 and 1.47 had pushed finished work). Meanwhile another session shipped its own 1.41.0 (can icon) and 1.42.0 (five feed layouts) to `main`. Releases from this round therefore use new numbers, Simplify still at 1.45 and 1.50:
+| Release | From branch(es) |
+|---|---|
+| 1.43.0 | `claude/v1.41-flakes` (fonts before Save, team retry) — released 7 Nov; lead added one 12 s font cap and kept Home from waiting on fonts |
+| 1.44.0 | `claude/v1.42-board-fixes` + `claude/v1.44-video-fixes` |
+| 1.45.0 | `claude/v1.45-simplify` + `claude/v1.43-tool-fixes` (tool page fixes are simplifications) |
+| 1.46.0 | `claude/v1.46-hub-fixes` |
+| 1.47.0 | `claude/v1.47-create-fixes` |
+| 1.48.0 | `claude/v1.48-queue-fixes` (started 7 Nov 08:42: `session_01Y65H7ZRuWsGmaSM4FEgHo8`) |
+| 1.49.0 | `claude/v1.49-draw-fixes` (resumed 7 Nov) |
+| 1.50.0 | `claude/v1.50-simplify` (last) |
+At most **two** helper sessions at once from now on.
