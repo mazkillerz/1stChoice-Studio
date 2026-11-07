@@ -23,7 +23,7 @@ Written 8 Nov 2026 with the owner (Mazoon). A lead Claude Code session reads thi
 - **Wave 0, lead only (short):** read CLAUDE.md, README, `studio-notes/backlog.md`, `lessons.md`, this plan; run the full suite once for a baseline; write the file-ownership map and the briefs; create the integration branch.
 - **Wave 1, foundation (parallel):** 1.1, 1.2, 1.3, 1.4, 2.1 (tokens only), 4.0 (schema).
 - **Wave 2, features (parallel):** 2.1 (components), 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3.
-- **Wave 3, power and polish (parallel):** 3.4, 3.5, 4.4, a Simplify pass over everything new, What's New entries with screenshots, README, the studio-improver skill's Testing map, and the owner checklist.
+- **Wave 3, power and polish (parallel):** 3.4, 3.5, 4.4, a Simplify pass over everything new, What's New entries with screenshots, README, the owner checklist, and **section 5 (upgrade the studio-improver skill)**. Each wave also adds its own lessons to the skill as it ships (5.4), so nothing is lost if a session stops.
 
 ---
 
@@ -95,6 +95,21 @@ Written 8 Nov 2026 with the owner (Mazoon). A lead Claude Code session reads thi
 
 ### 4.4 Live stock on restock stories (only if readable)
 - Investigate `https://location.1stchoice.cloud` for a public, read-only data source (JSON/API) of sale points and stock per flavour. If one exists: pick a sale point in Restock and the place name + stock fill in (refreshed on the day). If not: write down what the owner would need to expose, and skip.
+
+## 5. Upgrade the studio-improver skill (required, not optional)
+The skill at `.claude/skills/studio-improver/SKILL.md` is how every future session improves Studio, so this round must leave it smarter. Keep its locked core and its existing sections; edit, don't bloat (condense older notes when adding). Show the owner the diff in the end-of-round report.
+### 5.1 Repo notes and design system
+- New architecture: brand tokens and shared components (2.1), occasion packs and the pack scaffold (2.2), the brand rules engine and where rule data lives (2.3), the phrasebook table and how approved lines reach the pickers (2.4), Claude Design import (3.1), resize roles (3.2), campaign sets (3.3), MP4 export (3.4), background removal (3.5), calendar/approvals/captions and the Supabase tables (4.x), "Who's using Studio?" names.
+- The "Design system" section points to the tokens and components as the one source of truth, with the rule "new UI uses tokens and shared components; no one-off styles".
+### 5.2 Session loop and parallel work
+- Add the team way of working proven in this round: lead (main model) + sonnet builders + haiku for tests/search/screenshots; one git worktree and one test-server port per builder; file-ownership map; one branch at a time into an integration branch; only the lead bumps version/sw cache/changelog; big changes behind a toggle until the owner approves; merge to `main` only with all tests green.
+- How to resume a stopped round (read `studio-notes/sessions.md`, list `claude/*` branches, re-run the baseline).
+### 5.3 Testing
+- The new fast runner (sharding, `JOBS`, ports), the visual goldens and how to update them on purpose, the new suites mapped to areas, and the list of known-flaky tests (should be empty after 1.3).
+### 5.4 Lessons (add as they happen)
+- Seed with these from 7–8 Nov 2026: load pictures before rebuilding layers from a stored document; Konva needs slack on single-line text boxes; wrap Latin runs in Unicode isolates inside Arabic text; Konva can't draw these SVGs, rasterise them; mark intentional off-page pieces `bleed`; Create's start sheet must use shipped thumbnails for heavy templates (a 5 MB budget test guards it); never let two agents share a working tree; the full suite must be run once per release, not after every tiny change.
+### 5.5 Feature engine and backlog
+- Refresh the backlog with what this round finished and what it uncovered; add the next ideas (more occasion packs, individual logins when the owner creates them, paid AI only if the owner later allows it).
 
 ## Owner checklist (the lead writes the final version at the end)
 - Set your name (and partners' names) in "Who's using Studio?" on each device; mark yourself as the owner.
