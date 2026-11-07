@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 53–54 | 1.44.0 + 1.45.0 | 5 (1.44: `--changed` all green; 1.45 full sweep: 77 suites all green in 18 min, tapscan clean; simplify45 + toolfix43 new) | 4 (lead ran the sweep itself instead of waking the Simplify session, saving usage) | 0 | pass | Combine small finished branches into one release when the numbering forces it; run the sweep from the lead |
 | 52 | 1.43.0 | 4 (font-ready 8/0 incl. a new hanging-fonts check; the pixel flake was an app bug: Save drew before the font stylesheet was in) | 3 (the shared usage limit stopped three sessions mid-round; main moved on meanwhile, so the round was renumbered) | 0 | pass | Run at most two helper sessions at once; one 12 s cap for a whole wait, not one per step |
 | 51 | 1.40.0 | 5 (full sweep 80 runs: 79 then 80 green after a test-side video fix; contrast + tapscan clean; simplify40 34/0 new; three cuts) | 4 (the 19-min sweep waited for wave 1) | 0 | pass | Open sheets with a real tap in shot scripts; take "before" shots from the base |
 | 50 | 1.39.0 | 5 (select-swipe 38/0; 38 suites green at release) | 5 (first to finish, ~13 min) | 0 | pass | Repaint state, never the list, while a finger is down on it |
