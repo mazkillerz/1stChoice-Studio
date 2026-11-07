@@ -26,6 +26,7 @@ process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CR
 const git=(...a)=>execFileSync('git',['-C',ROOT,...a],{encoding:'utf8',maxBuffer:1<<24});
 let OLD=''; for(const c of git('log','--format=%H','--','tools/photo-story.js').split('\n').filter(Boolean)){ const t=git('show',c+':tools/photo-story.js'); if(!/id:'whole'/.test(t)){ OLD=t; break; } }
 if(!OLD) OLD=git('show','HEAD:tools/photo-story.js');
+if(git('rev-parse','--is-shallow-repository').trim()==='true') console.log('NOTE: shallow clone, so the file from before the new looks may be missing from history: git fetch --unshallow');
 
 const NEW=['whole','caption','poster','arch'], ALL=['full','white','cream','black',...NEW];
 const newCtx=async(old)=>{

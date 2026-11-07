@@ -92,7 +92,7 @@ for(const st of ['white','cream','black']){
 }
 
 for(const [tool,c] of Object.entries(T)){
-  const OLD=oldOf(tool+'.js'); ok(tool+': found the file before 1.49.0 in git (fetch more history if not)',!!OLD);
+  const OLD=oldOf(tool+'.js'); ok(tool+': found the file before 1.49.0 in git (fetch more history if not)',!!OLD,OLD?'':(git('rev-parse','--is-shallow-repository').trim()==='true'?'shallow clone: git fetch --unshallow':''));
   const a=await open(tool), o=OLD?await open(tool,OLD):null;
   /* the vertical middle of words on several lines, for Highlight: centred in the circle */
   for(const [n,sc] of Object.entries(c.edge)){ const r=await run(a.pg,sc); ok(tool+' · '+n+': stays on the design',!r.out.length,r.out.slice(0,3)); }
@@ -102,6 +102,11 @@ for(const [tool,c] of Object.entries(T)){
   if(o) for(const [n,sc] of Object.entries(c.same)){ let x=await run(a.pg,sc), y=await run(o.pg,sc);
     for(let t=0;t<6&&x.h!==y.h;t++){ await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>document.fonts.ready))); await a.pg.waitForTimeout(1500); x=await run(a.pg,sc); y=await run(o.pg,sc); }   // a late font or picture (slow font proxy under load): wait for fonts, draw again
     let why=''; if(x.h!==y.h) why=JSON.stringify(await Promise.all([a.pg,o.pg].map(p=>p.evaluate(()=>[...document.fonts].filter(f=>f.status!=='unloaded').map(f=>f.family.replace(/["']/g,'')+':'+f.weight+':'+f.status+':'+(f.unicodeRange||'').slice(0,12)).sort().join(' ')))));
+    if(x.h!==y.h&&process.env.DUMP_DIR){   // where do the pixels differ? (the two PNGs and the differing box go to DUMP_DIR)
+      const png=p=>p.evaluate(()=>document.getElementById('view').toDataURL('image/png')); const [pa,po]=[await png(a.pg),await png(o.pg)], k=tool+'-'+n.replace(/\W+/g,'_');
+      fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-new.png',Buffer.from(pa.split(',')[1],'base64')); fs.writeFileSync(process.env.DUMP_DIR+'/de-'+k+'-old.png',Buffer.from(po.split(',')[1],'base64'));
+      why=' DIFF '+JSON.stringify(await a.pg.evaluate(async u=>{ const im=new Image(); im.src=u; await im.decode(); const v=document.getElementById('view'), g=(c,w,h)=>{ const k=document.createElement('canvas'); k.width=w; k.height=h; const x=k.getContext('2d'); x.drawImage(c,0,0); return x.getImageData(0,0,w,h).data; };
+        const A=g(v,v.width,v.height), B=g(im,v.width,v.height); let x0=1e9,y0=1e9,x1=-1,y1=-1,n=0; for(let i=0;i<A.length;i+=4) if(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]){ n++; const p=i/4, px=p%v.width, py=(p/v.width)|0; x0=Math.min(x0,px); x1=Math.max(x1,px); y0=Math.min(y0,py); y1=Math.max(y1,py); } return {n,box:[x0,y0,x1,y1]}; },po))+' '+why; }
     ok(tool+' · '+n+': same pixels as before 1.49.0',x.h===y.h,why.slice(0,900)); }
   await a.ctx.close(); if(o) await o.ctx.close();
 }

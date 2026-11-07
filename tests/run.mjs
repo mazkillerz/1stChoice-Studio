@@ -17,6 +17,7 @@
 import { spawn, execSync } from 'child_process';
 import os from 'os';
 import fs from 'fs';
+const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
@@ -48,6 +49,7 @@ const MAP=[
   [/assets\/reel-export\.js/,['video','reel-export','video-fixes']],
 ];
 let names=process.argv.slice(2);
+try{ if(sh0('git rev-parse --is-shallow-repository').trim()==='true') console.log('NOTE: this clone is shallow; suites that read old file versions from git (photostory-styles, draw-edges) fail without history. Run: git fetch --unshallow'); }catch(_){}
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const why={};
 const SKIP=['run','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];

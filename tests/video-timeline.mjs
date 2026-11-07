@@ -30,7 +30,7 @@ const ready=async pg=>{ await pg.waitForFunction(()=>window.__video&&window.__vi
 const V=(pg)=>pg.evaluate(()=>window.__video());
 const recipe=async pg=>(await V(pg)).recipe;
 const nClips=pg=>pg.evaluate(()=>document.querySelectorAll('#vtClips .vt-clip').length);
-const waitClips=(pg,n)=>pg.waitForFunction(n=>document.querySelectorAll('#vtClips .vt-clip').length===n,n,{timeout:30000});
+const waitClips=(pg,n,ms=90000)=>pg.waitForFunction(n=>document.querySelectorAll('#vtClips .vt-clip').length===n,n,{timeout:ms});   // 90 s: adding a reel loads its scene files, slow under 4-way load
 const T=(pg,touch,s)=>touch?pg.tap(s):pg.click(s);
 const seek=(pg,t)=>pg.evaluate(t=>{ VD.setT(t); },t);
 const filledIn=(pg,root)=>pg.evaluate(root=>{ const probe=document.createElement('i'); probe.style.background='var(--accent)'; document.body.appendChild(probe); const acc=getComputedStyle(probe).backgroundColor; probe.remove();
@@ -301,7 +301,9 @@ for(const scheme of ['light','dark']){
     ok(N+'?new=1: "Start your video" card, Save disabled and quiet, no clips',em.vis&&em.h==='Start your video'&&em.save&&em.sv!==probe&&em.n===0&&em.play,em);
     const fl=await filledIn(pg,'body'); ok(N+'the empty state has exactly one filled button (Add clips or photos) and a Start-from-a-reel-template link',fl===1&&/link/.test(em.link),fl);
     ok(N+'the New video menu item is in the name menu',await (async()=>{ await pg.tap('#vdMenu'); const t=await pg.evaluate(()=>document.getElementById('vdMenuBox').innerText); await pg.keyboard.press('Escape'); return /New video/.test(t); })());
-    await pg.tap('#vdEmptyReel'); await waitClips(pg,1); await pg.waitForTimeout(300);
+    await pg.waitForFunction(()=>{ const e=document.getElementById('vdEmptyReel'); return e&&e.getClientRects().length&&window.__video&&window.__video().ready; }); await pg.tap('#vdEmptyReel');
+    if(!await waitClips(pg,1,20000).then(()=>true,()=>false)){ await pg.tap('#vdEmptyReel').catch(()=>{}); await waitClips(pg,1); }   // the tap landed before the handler was wired: once more
+     await pg.waitForTimeout(300);
     const r=await recipe(pg); ok(N+'Start from a reel template adds the reel; the empty card goes and Save works',r.clips.length===1&&r.clips[0].kind==='reel'&&!(await pg.isVisible('#vdEmpty'))&&!(await pg.evaluate(()=>document.getElementById('vdSave').disabled)),r.clips.map(c=>c.kind));
     await selectClip(pg,true,r.clips[0].id); await pg.tap('#bar [data-do="del"]'); await pg.waitForTimeout(300);
     ok(N+'deleting the last clip brings the empty state back',await pg.isVisible('#vdEmpty')&&await pg.evaluate(()=>document.getElementById('vdSave').disabled));
