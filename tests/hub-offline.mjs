@@ -125,6 +125,16 @@ for(const dark of [false,true]){ const N='8 '+(dark?'dark':'light')+' 360: ';
   ok(N+'Try again is 44px+ tall',r.bh>=44,r.bh);
   await ctx.close(); }
 
+/* 9 tool page, offline with a kept sign-in: turning on Save to the team keeps it on and opens no sign-in (1.46.0 lead fix) */
+{ const ctx=await mk(), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('9: '+e));
+  await pg.goto(BASE+'tools/restock.html'); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{timeout:20000});
+  await pg.waitForTimeout(2500);
+  const r=await pg.evaluate(async()=>{ const sw=document.getElementById('teamOn'); sw.checked=true; sw.dispatchEvent(new Event('change',{bubbles:true}));
+    await new Promise(r=>setTimeout(r,2500)); return {on:sw.checked,dlg:[...document.querySelectorAll('dialog[open]')].map(d=>d.id||d.className)}; });
+  ok('9 offline + signed in: Save to the team stays on',r.on,r);
+  ok('9 offline + signed in: no sign-in dialog opens',!r.dlg.length,r.dlg);
+  await ctx.close(); }
+
 ok('no page errors',!errs.length,errs.slice(0,3).join(' | '));
 await b.close();
 console.log(res.join('\n')); const f=res.filter(r=>r.startsWith('FAIL')).length;

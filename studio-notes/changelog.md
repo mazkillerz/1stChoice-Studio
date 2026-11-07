@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.46.0 · 7 Nov 2026
+
+### No signal? Studio says so
+type: fix
+With no internet, Home and Saved now say "You're offline" with Try again, and load again by themselves when the signal is back. Before, they could say "Not on the team yet", or stay blank. On a slow connection you see "Still loading…" instead of an empty space, and error messages are plain words, not code. In a tool, turning on Save to the team with no signal no longer asks you to sign in again.
+![before](assets/whatsnew/1.46.0-offline-before.jpg)
+![after](assets/whatsnew/1.46.0-offline-after.jpg)
+
+### Small fixes
+type: fix
+All tools: drag a pinned tool to the top or bottom of the sheet and the list scrolls with it. Saved: the ⋯ on a chosen collection no longer hides under the row's fade. Deleting a collection with no signal now says why it did not work. Home no longer moves sideways on small phones while you are signed out.
+
 ## 1.45.0 · 7 Nov 2026
 
 ### Save sheet keeps your design in view on small phones

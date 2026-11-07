@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='1.45.0';
+const VERSION='1.46.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1330,7 +1330,9 @@ async function tool(cfg){
   const QUEUE=!PG&&!!(TOOLS[cfg.id]&&TOOLS[cfg.id].queue); let queue=[], qPos=0, qTotal=0, qSaved=false;
   let teamMember=null;   // is this phone signed in to the team? null = not checked yet (checked quietly after the page loads)
   const LAST_COLS='studio:lastCols:'+B.id;
-  async function checkTeam(){ if(teamMember!==null) return teamMember; try{ const C=await cloud(); teamMember=!!(await C.session())&&!!(await C.isMember()); }catch(_){ teamMember=false; } return teamMember; }
+  /* true / false, or null when it could not be checked (no connection): never cache a failed check as "not on the team" (1.46.0) */
+  async function checkTeam(){ if(teamMember!==null) return teamMember;
+    try{ const C=await cloud(); if(!(await C.session())) return teamMember=false; teamMember=!!(await (C.checkMember||C.isMember)()); }catch(_){ return null; } return teamMember; }
   function syncSaveOpts(){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
@@ -1349,7 +1351,9 @@ async function tool(cfg){
   store('studio:teamSave',null);   // forget the old remembered setting
   $('teamOn').checked=false;
   $('teamOn').addEventListener('change',async e=>{ const sw=e.target; sw.dataset.touched='1'; syncSaveOpts();
-    if(sw.checked&&!(await checkTeam())){ const ok=await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'); teamMember=ok;
+    const m=sw.checked?await checkTeam():true;
+    if(m===null){ try{ const C=await cloud(); if(C.signedInHere&&C.signedInHere()){ syncSaveOpts(); return; } }catch(_){} }   // offline but signed in here: keep it on; the team save says if it fails
+    if(sw.checked&&!m){ const ok=await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'); teamMember=ok;
       if(!ok){ sw.checked=false; } else { teamCols=null; } syncSaveOpts(); } });
   $('teamName').addEventListener('input',e=>{ e.target.dataset.touched='1'; });
   $('teamName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
