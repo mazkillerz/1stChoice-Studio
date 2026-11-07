@@ -148,8 +148,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   if(vp.touch&&theme==='light'){
     await pg.setViewportSize({width:360,height:740}); await pg.waitForTimeout(300);
     await pg.locator('#tsWrap').scrollIntoViewIfNeeded();
-    const w=await pg.evaluate(()=>{ const d=document.documentElement, wr=document.getElementById('tsWrap').getBoundingClientRect(); const sh=document.getElementById('sh-insp').getBoundingClientRect(); const chips=[...document.querySelectorAll('.ts-chip')].map(c=>c.getBoundingClientRect()); return {sw:d.scrollWidth,iw:innerWidth,inside:chips.every(c=>c.right<=innerWidth+1&&c.left>=-1&&c.right<=sh.right+1),rows:new Set(chips.map(c=>Math.round(c.top))).size}; });
-    ok(N+'at 360px with 8 styles there is no sideways scroll and chips wrap inside the sheet',w.sw<=w.iw+1&&w.inside&&w.rows>=2,w);
+    const w=await pg.evaluate(()=>{ const d=document.documentElement, l=document.getElementById('tsList'), lr=l.getBoundingClientRect(); const sh=document.getElementById('sh-insp').getBoundingClientRect(); const chips=[...document.querySelectorAll('.ts-chip')].map(c=>c.getBoundingClientRect()); l.scrollLeft=l.scrollWidth; const last=[...document.querySelectorAll('.ts-chip')].pop().getBoundingClientRect(); return {sw:d.scrollWidth,iw:innerWidth,inside:lr.left>=sh.left-1&&lr.right<=sh.right+1,rows:new Set(chips.map(c=>Math.round(c.top))).size,scrolls:l.scrollWidth>l.clientWidth,last:last.right<=innerWidth+1&&last.left>=-1}; });
+    ok(N+'at 360px with 8 styles there is no sideways page scroll; the styles are one row inside the sheet that scrolls to the last one (1.43.0)',w.sw<=w.iw+1&&w.inside&&w.rows===1&&w.scrolls&&w.last,w);
     await pg.setViewportSize({width:vp.width,height:vp.height}); await pg.waitForTimeout(150);
   }
   // remove each style

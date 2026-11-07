@@ -931,9 +931,14 @@ async function tool(cfg){
     let bottom=kb>0?innerHeight-kb:bar.top;
     if(openName){ const el=sheetEl(openName); bottom=Math.min(bottom,bottom-el.offsetHeight); }
     const top=(document.querySelector('nav.top')?.getBoundingClientRect().bottom||0);
-    const pager=($('pager').hidden?0:$('pager').offsetHeight+6)+(($('ctaPhoto').hidden||openName)?0:$('ctaPhoto').offsetHeight+6);
+    stage.classList.remove('tight');
+    const pagerH=$('pager').hidden?0:$('pager').offsetHeight+6, ctaH=($('ctaPhoto').hidden||openName)?0:$('ctaPhoto').offsetHeight+6;
     stage.style.setProperty('--stage-top',top+'px'); stage.style.setProperty('--stage-bottom',Math.max(0,innerHeight-bottom)+'px');
-    const availH=Math.max(120,bottom-top-16-pager), availW=innerWidth-24;
+    /* 1.43.0: a tall sheet on a short phone left no room for the slide strip and the preview, which slid under the top bar:
+       the strip steps aside until the sheet closes, and the preview never asks for more room than there is */
+    let room=bottom-top-16-ctaH-pagerH;
+    if(openName&&pagerH&&room<96){ stage.classList.add('tight'); room+=pagerH; }
+    const availH=Math.max(72,room), availW=innerWidth-24;
     let h=availH, w=h*W/H; if(w>availW){ w=availW; h=w*H/W; }
     ph.style.width=Math.floor(w)+'px'; ph.style.height=Math.floor(h)+'px';
   }
@@ -1931,7 +1936,6 @@ async function tool(cfg){
   $('queueGo').addEventListener('click',()=>{ haptic('tick'); if(kept) continueQueue(kept); });
   $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; kept=null; syncQueue();
     status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
-  function needsPhoto(pg){ return pagePhotoCount(pg)>0; }
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
   /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   /* Save on the bar (phone) opens the small Save sheet, ready to go; Save in it (or Save on the bar again) saves */
