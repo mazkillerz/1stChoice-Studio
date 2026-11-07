@@ -1414,3 +1414,14 @@ input[type=range]{min-height:44px}
 .set-row[aria-checked="true"] .set-switch{background:var(--accent)}
 .set-row[aria-checked="true"] .set-switch::after{inset-inline-start:21px}
 @media (prefers-reduced-motion:reduce){.set-row .set-switch,.set-row .set-switch::after{transition:none}}
+
+/* occasion banner (w2-packs, mega) */
+.pack-banner{max-width:1080px;margin:var(--sp-2) auto 0;display:flex;align-items:center;gap:var(--sp-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:10px 8px 10px 14px;margin-inline:var(--gutter) var(--gutter-r)}
+@media (min-width:1112px){.pack-banner{margin-inline:auto}}
+.pack-banner .pb-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pack-banner .pb-txt b{font:600 var(--fs-m) var(--sans)}
+.pack-banner .pb-txt span{color:var(--muted);font:400 var(--fs-s,13px) var(--sans)}
+.pack-banner .pb-go{flex:none}
+.pack-banner .pb-x{flex:none;width:var(--tap);height:var(--tap);border:0;background:none;color:var(--muted);border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.pack-banner .pb-x:active{background:var(--line)}
+@media (max-width:420px){.pack-banner{flex-wrap:wrap;padding-inline-start:14px}.pack-banner .pb-txt{order:1;flex:1 1 calc(100% - 60px)}.pack-banner .pb-x{order:2}.pack-banner .pb-go{order:3;flex:1 1 100%}}
