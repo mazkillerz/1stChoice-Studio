@@ -173,7 +173,7 @@ function dockFly(id,el){ const r=el.closest('.dk-g').getBoundingClientRect(), x=
   if(id==='shape') openMenu(x,y,[...SHAPE_TOOLS.map(([t,l,k])=>({label:l,key:k,icon:IC[t],run:()=>{ lastShape=t; L.store('lab:lastShape',t); BD.setTool(t); }})),'-',{label:'More shapes…',icon:IC.shapes,run:()=>openAssets('shapes')}],{above:true});
   if(id==='text') openMenu(x,y,[{label:'Text',key:'T',icon:IC.text,run:()=>BD.setTool('text')},{label:'Curved text',icon:IC.arc,run:()=>BD.tools.makeArc()},{label:'Text styles…',icon:IC.palette,run:()=>openAssets('text')}],{above:true});
   if(id==='draw') openMenu(x,y,DRAW_T.map(([t,l,k])=>({label:l,key:k,icon:IC[t],run:()=>{ lastDraw=t; if(t==='eraser') BD.setTool('eraser'); else { S.pen.mode=t==='marker'?'marker':'pen'; BD.setTool('pen'); } paintDock(); }})),{above:true}); }
-function brandPop(anchor){ const as=L.brandAssets(), ph=(BD.B&&BD.B.phrases)||{}; const words=[...(ph.headlines||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i).slice(0,14);
+function brandPop(anchor){ const as=L.listedAssets(), ph=(BD.B&&BD.B.phrases)||{}; const words=[...(ph.headlines||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i).slice(0,14);
   openPop(anchor,`<div class="bpop"><span class="lbl">Brand assets</span><div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>
     <span class="lbl">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" dir="auto">${esc(p)}</button>`).join('')}</div>
     <button type="button" class="link" id="bpAll">All brand assets and wording</button></div>`,{above:true,center:true,cls:'pop-wide'});
@@ -359,7 +359,7 @@ const nativeShape={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A2
 const pv=(w,h,m)=>{ m=m||18; const k=m/Math.max(w,h); return `width:${Math.max(4,Math.round(w*k))}px;height:${Math.max(4,Math.round(h*k))}px`; };
 UI.pv=pv;
 function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); const B=BD.B||{}, ph=B.phrases||{};
-  if(id==='brand'){ const as=L.brandAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
+  if(id==='brand'){ const as=L.listedAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
     return (as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
   if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)), sh=BD.tools.tStyles().filter(t=>m(t.name)||m('style')); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));

@@ -15,13 +15,13 @@ import fs from 'fs';
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
-  [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers']],
+  [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers','nd-templates']],
   [/^tools\/(?!video)|assets\/studio\.js/,['simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry','toolfix43','drafts-queue']],
   [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers','board-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear','create-render','font-ready']],
   [/assets\/cloud\.js/,['hub-offline','smoke','quicksave','home7-save']],
   [/assets\/studio\.(js|css)|index\.html/,['hub-offline','hub-fixes','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30','continue-clear','create-render','select-swipe']],
   [/assets\/search\./,['search','polish71-search','create-search','tplteam','select-swipe']],
-  [/tools\/create/,['create','create-search','tplfav','create-stickers','tplteam','create-render','create-fit','create-fixes']],
+  [/tools\/create/,['nd-templates','create','create-search','tplfav','create-stickers','tplteam','create-render','create-fit','create-fixes']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag','simplify45','toolfix43']],[/\.css$/,['simplify45']],

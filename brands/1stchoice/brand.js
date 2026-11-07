@@ -104,7 +104,41 @@ Studio.registerBrand({
     {id:'winter-campfire',label:'Campfire',file:'assets/winter/campfire.webp',prev:'assets/prev/winter_campfire.webp',group:'Cat · winter camp (only when asked)'},
     {id:'winter-moon',label:'Moon',file:'reels/winter-cat/img/moon.webp',prev:'assets/prev/winter_moon.webp',group:'Cat · winter camp (only when asked)'},
     {id:'winter-cloud',label:'Cloud',file:'reels/winter-cat/img/cloud1.webp',prev:'assets/prev/winter_cloud.webp',group:'Cat · winter camp (only when asked)'},
-    {id:'winter-star',label:'Star',file:'reels/winter-cat/img/star1.webp',prev:'assets/prev/winter_star.webp',group:'Cat · winter camp (only when asked)'}
+    {id:'winter-star',label:'Star',file:'reels/winter-cat/img/star1.webp',prev:'assets/prev/winter_star.webp',group:'Cat · winter camp (only when asked)'},
+    /* National Day 2026: pieces + hidden template backgrounds (hidden:true never shows in Add asset) */
+    {id:"nd26-bg-nd-pfp",label:"Profile picture · background",file:"assets/nd26/bg/nd-pfp.webp",prev:"assets/prev/nd26/nd-pfp.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-countdown-3",label:"Countdown · 3 · background",file:"assets/nd26/bg/nd-countdown-3.webp",prev:"assets/prev/nd26/nd-countdown-3.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-countdown-2",label:"Countdown · 2 · background",file:"assets/nd26/bg/nd-countdown-2.webp",prev:"assets/prev/nd26/nd-countdown-2.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-countdown-1",label:"Countdown · 1 · background",file:"assets/nd26/bg/nd-countdown-1.webp",prev:"assets/prev/nd26/nd-countdown-1.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-greeting",label:"Greeting · background",file:"assets/nd26/bg/nd-greeting.webp",prev:"assets/prev/nd26/nd-greeting.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-the-day",label:"The day · background",file:"assets/nd26/bg/nd-the-day.webp",prev:"assets/prev/nd26/nd-the-day.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-thanks",label:"Thank you · background",file:"assets/nd26/bg/nd-thanks.webp",prev:"assets/prev/nd26/nd-thanks.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-teaser-post",label:"Teaser · background",file:"assets/nd26/bg/nd-teaser-post.webp",prev:"assets/prev/nd26/nd-teaser-post.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-discount-post",label:"Discount · background",file:"assets/nd26/bg/nd-discount-post.webp",prev:"assets/prev/nd26/nd-discount-post.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-giveaway-post",label:"Giveaway · background",file:"assets/nd26/bg/nd-giveaway-post.webp",prev:"assets/prev/nd26/nd-giveaway-post.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-greeting-post",label:"Greeting post · background",file:"assets/nd26/bg/nd-greeting-post.webp",prev:"assets/prev/nd26/nd-greeting-post.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-nd-highlight",label:"Highlight cover · background",file:"assets/nd26/bg/nd-highlight.webp",prev:"assets/prev/nd26/nd-highlight.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-t1-poll",label:"Label · Poll · background",file:"assets/nd26/bg/lr-t1-poll.webp",prev:"assets/prev/nd26/lr-t1-poll.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-t2-guess",label:"Label · Guess · background",file:"assets/nd26/bg/lr-t2-guess.webp",prev:"assets/prev/nd26/lr-t2-guess.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-t3-guesses",label:"Label · Guesses · background",file:"assets/nd26/bg/lr-t3-guesses.webp",prev:"assets/prev/nd26/lr-t3-guesses.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-t4-tonight",label:"Label · Tonight · background",file:"assets/nd26/bg/lr-t4-tonight.webp",prev:"assets/prev/nd26/lr-t4-tonight.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-r1-reveal",label:"Label · Reveal · background",file:"assets/nd26/bg/lr-r1-reveal.webp",prev:"assets/prev/nd26/lr-r1-reveal.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-r3-printing",label:"Label · Printing · background",file:"assets/nd26/bg/lr-r3-printing.webp",prev:"assets/prev/nd26/lr-r3-printing.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-r4-where",label:"Label · Where · background",file:"assets/nd26/bg/lr-r4-where.webp",prev:"assets/prev/nd26/lr-r4-where.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-e1-poll",label:"Label · Pick one · background",file:"assets/nd26/bg/lr-e1-poll.webp",prev:"assets/prev/nd26/lr-e1-poll.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-e2-hunt",label:"Label · Find cat · background",file:"assets/nd26/bg/lr-e2-hunt.webp",prev:"assets/prev/nd26/lr-e2-hunt.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-c1-cover",label:"Label slide 1 · background",file:"assets/nd26/bg/lr-c1-cover.webp",prev:"assets/prev/nd26/lr-c1-cover.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-c2-closeup",label:"Label slide 2 · background",file:"assets/nd26/bg/lr-c2-closeup.webp",prev:"assets/prev/nd26/lr-c2-closeup.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-c3-printing",label:"Label slide 3 · background",file:"assets/nd26/bg/lr-c3-printing.webp",prev:"assets/prev/nd26/lr-c3-printing.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-c4-flavours",label:"Label slide 4 · background",file:"assets/nd26/bg/lr-c4-flavours.webp",prev:"assets/prev/nd26/lr-c4-flavours.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-bg-lr-c5-where",label:"Label slide 5 · background",file:"assets/nd26/bg/lr-c5-where.webp",prev:"assets/prev/nd26/lr-c5-where.webp",group:"National Day 2026",hidden:true,noFlip:true},
+    {id:"nd26-cat-upper",label:"Omani cat · kumma",file:"assets/nd26/parts/cat-upper.png",prev:"assets/prev/nd26/cat-upper.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-cat-upper-wink",label:"Omani cat · wink",file:"assets/nd26/parts/cat-upper-wink.png",prev:"assets/prev/nd26/cat-upper-wink.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-cat-head",label:"Omani cat · head",file:"assets/nd26/parts/cat-head.png",prev:"assets/prev/nd26/cat-head.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-flag",label:"Crayon flag",file:"assets/nd26/parts/crayon-flag.png",prev:"assets/prev/nd26/crayon-flag.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-fw-red",label:"Crayon firework · red",file:"assets/nd26/parts/fw-red.png",prev:"assets/prev/nd26/fw-red.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-fw-green",label:"Crayon firework · green",file:"assets/nd26/parts/fw-green.png",prev:"assets/prev/nd26/fw-green.webp",group:"National Day 2026",noFlip:true},
+    {id:"nd26-sweep",label:"Grey crayon sweep",file:"assets/nd26/parts/sweep-band.png",prev:"assets/prev/nd26/sweep-band.webp",group:"National Day 2026",noFlip:true}
   ],
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
@@ -150,6 +184,8 @@ Studio.registerBrand({
   /* Create: the templates offered for this brand. Layouts live in tools/create-templates.js (no wording there);
      the words here come only from the approved phrases above. `write` (اكتب هنا) marks a spot for your own words.
      `sub` = the English line under the title in Templates (otherwise "Story · Create"). */
+  /* categories for the hub Templates page, inserted after All */
+  templateCats:[{id:'nationalday',label:'National Day'}],
   create:{
     templates:[
       {id:'ice-cold',label:'Ice cold',sub:'Story · both cans',layout:'hero-panel',size:'story',words:{head:'يسرسح ثلج',small:'خذلك كولد برو',pill:'الخريطة في البايو'},assets:{product:'cans-pair-shadow'}},
@@ -198,7 +234,34 @@ Studio.registerBrand({
       {id:'highlight-new',label:'Highlight: new',sub:'Cover · one icon',badge:'New',cat:'highlight',layout:'highlight',size:'square',icon:'sparkles',words:{}},
       /* emoji covers (1.38.0): the same round layout with one emoji from tools/highlight-emoji.js (no words) */
       {id:'highlight-places-emoji',label:'Highlight: places emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'places',keys:'emoji pin location',words:{}},
-      {id:'highlight-order-emoji',label:'Highlight: order emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'cart',keys:'emoji cart shop',words:{}}
+      {id:'highlight-order-emoji',label:'Highlight: order emoji',sub:'Cover · one emoji',badge:'New',cat:'highlight',layout:'highlight',size:'square',emoji:'cart',keys:'emoji cart shop',words:{}},
+      /* National Day 2026 + new label reveal: each one is a saved Create document (doc = JSON in this folder), backgrounds are hidden assets */
+      {id:"nd-pfp",label:"Profile picture",sub:"Profile picture · Square",layout:"doc",doc:"templates/nd26/nd-pfp.json",size:"square",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-countdown-3",label:"Countdown · 3",sub:"Countdown · 3 days · Story",layout:"doc",doc:"templates/nd26/nd-countdown-3.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-countdown-2",label:"Countdown · 2",sub:"Countdown · 2 days · Story",layout:"doc",doc:"templates/nd26/nd-countdown-2.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-countdown-1",label:"Countdown · 1",sub:"Countdown · 1 day · Story",layout:"doc",doc:"templates/nd26/nd-countdown-1.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-greeting",label:"Greeting",sub:"Greeting story · Story",layout:"doc",doc:"templates/nd26/nd-greeting.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-the-day",label:"The day",sub:"The day story · Story",layout:"doc",doc:"templates/nd26/nd-the-day.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-thanks",label:"Thank you",sub:"Thank you story · Story",layout:"doc",doc:"templates/nd26/nd-thanks.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-teaser-post",label:"Teaser",sub:"Teaser post · Post",layout:"doc",doc:"templates/nd26/nd-teaser-post.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-discount-post",label:"Discount",sub:"Discount post · Post",layout:"doc",doc:"templates/nd26/nd-discount-post.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-giveaway-post",label:"Giveaway",sub:"Giveaway post · Post",layout:"doc",doc:"templates/nd26/nd-giveaway-post.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-greeting-post",label:"Greeting post",sub:"Greeting post · Post",layout:"doc",doc:"templates/nd26/nd-greeting-post.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"nd-highlight",label:"Highlight cover",sub:"Highlight cover · Story",layout:"doc",doc:"templates/nd26/nd-highlight.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-t1-poll",label:"Label · Poll",sub:"What are we printing? (poll) · Story",layout:"doc",doc:"templates/nd26/lr-t1-poll.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-t2-guess",label:"Label · Guess",sub:"Guess under the scribble · Story",layout:"doc",doc:"templates/nd26/lr-t2-guess.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-t3-guesses",label:"Label · Guesses",sub:"Your guesses · Story",layout:"doc",doc:"templates/nd26/lr-t3-guesses.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-t4-tonight",label:"Label · Tonight",sub:"Reveal tonight · Story",layout:"doc",doc:"templates/nd26/lr-t4-tonight.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-r1-reveal",label:"Label · Reveal",sub:"The reveal · Story",layout:"doc",doc:"templates/nd26/lr-r1-reveal.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-r3-printing",label:"Label · Printing",sub:"Printing story · Story",layout:"doc",doc:"templates/nd26/lr-r3-printing.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-r4-where",label:"Label · Where",sub:"Where to get it · Story",layout:"doc",doc:"templates/nd26/lr-r4-where.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-e1-poll",label:"Label · Pick one",sub:"Classic or Passion? (poll) · Story",layout:"doc",doc:"templates/nd26/lr-e1-poll.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-e2-hunt",label:"Label · Find cat",sub:"Find our cat · Story",layout:"doc",doc:"templates/nd26/lr-e2-hunt.json",size:"story",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-c1-cover",label:"Label slide 1",sub:"Carousel · 1 Cover · Post",layout:"doc",doc:"templates/nd26/lr-c1-cover.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-c2-closeup",label:"Label slide 2",sub:"Carousel · 2 Close-up · Post",layout:"doc",doc:"templates/nd26/lr-c2-closeup.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-c3-printing",label:"Label slide 3",sub:"Carousel · 3 Printing · Post",layout:"doc",doc:"templates/nd26/lr-c3-printing.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-c4-flavours",label:"Label slide 4",sub:"Carousel · 4 Two flavours · Post",layout:"doc",doc:"templates/nd26/lr-c4-flavours.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"},
+      {id:"lr-c5-where",label:"Label slide 5",sub:"Carousel · 5 Where to get it · Post",layout:"doc",doc:"templates/nd26/lr-c5-where.json",size:"post",cat:"nationalday",keys:"national day oman 18 november label reveal نوفمبر العيد الوطني"}
     ]
   },
   /* Example photos each tool opens with (files in samples/). */
