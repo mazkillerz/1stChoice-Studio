@@ -13,6 +13,30 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.45.0 · 7 Nov 2026
+
+### Save sheet keeps your design in view on small phones
+type: fix
+On smaller phones (like an iPhone SE) the Save sheet pushed the preview up under the top bar. The sheet now always leaves room for your design above it, and Carousel and Highlight tuck the slide strip away while you save.
+![before](assets/whatsnew/1.45.0-savesheet-before.jpg)
+![after](assets/whatsnew/1.45.0-savesheet-after.jpg)
+
+### One Add photo on a computer
+type: design
+On a computer the photo tools showed two ways to add a photo at once: the tile in the Photo card and a blue button under the preview. Now the Photo card's tile is the one place, so Save is the only blue button. Phones keep the button under the preview.
+![before](assets/whatsnew/1.45.0-addphoto-before.jpg)
+![after](assets/whatsnew/1.45.0-addphoto-after.jpg)
+
+### A shorter More tab
+type: design
+In a text's More tab, Copy style, Save this style and the Paste buttons now sit two to a row on one line, and your saved text styles are one row you swipe sideways (the last one peeks in at the edge). On a small phone the design above it is about a third bigger while More is open.
+![before](assets/whatsnew/1.45.0-more-before.jpg)
+![after](assets/whatsnew/1.45.0-more-after.jpg)
+
+### Tidied up
+type: design
+Studio's style sheet is 22 rules lighter: leftovers from earlier changes that no screen used any more. Nothing looks different; a new check keeps unused styles from piling up again.
+
 ## 1.44.0 · 7 Nov 2026
 
 ### Video editor: no more blank white preview

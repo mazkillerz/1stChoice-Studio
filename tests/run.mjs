@@ -16,14 +16,14 @@ import fs from 'fs';
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers']],
-  [/^tools\/(?!video)|assets\/studio\.js/,['simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry']],
+  [/^tools\/(?!video)|assets\/studio\.js/,['simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry','toolfix43']],
   [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers','board-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear','create-render','font-ready']],
   [/assets\/studio\.(js|css)|index\.html/,['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30','continue-clear','create-render','select-swipe']],
   [/assets\/search\./,['search','polish71-search','create-search','tplteam','select-swipe']],
   [/tools\/create/,['create','create-search','tplfav','create-stickers','tplteam','create-render']],
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
-  [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
+  [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag','simplify45','toolfix43']],[/\.css$/,['simplify45']],
   [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers','board-touch']],
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav','reels-hub','feedlayouts']],
   [/tools\/create-templates|assets\/search\./,['postpresets','feedlayouts']],
@@ -41,7 +41,7 @@ const MAP=[
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const SKIP=['run','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry'],
+const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43'],
       HUB_SUITES=['home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const why={}; const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });

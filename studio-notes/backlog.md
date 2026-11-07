@@ -21,29 +21,18 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 
 | 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
 
-| 47 | Board: Shapes / Icons grid tiles are 43.8px on a phone (5 a row), under the 44px floor | 1 | 2 | 1 | 1 | 3 | From 1.36.0. |
-| 48 | Board: "Use on all text" in a text style's ⋯ (like the tool pages' Paste on all text) | 1 | 2 | 1 | 1 | 3 | From 1.36.0. |
 | 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
 
 ## UX audit findings (open)
 - 1.43.0: a Google Fonts stylesheet that hangs (not fails) blocks the whole page from showing: `studio.css` starts with an `@import` of the interface font and pages link brand fonts in `<head>`. Offline it fails fast and is fine. If it matters, load the font CSS without blocking (`media="print" onload`) and keep the 12 s cap in `fontsReady()`.
 - 1.43.0: `run.mjs` maps `studio.js` lines outside `tool()` / `home()` (e.g. `useBrand()`, `ensureFont()`, `fontsReady()`) to hub suites only; tool pages use them too, so it should add `TOOL_SUITES`.
 - 1.43.0: `batch-saved` "desktop: ZIP pictures match the phone batch bytes" failed once in 12 runs under 4× load after the font fix, then 0 in 32; `font-ready` failed one unknown check once in 4 runs (Google Fonts through the sandbox proxy). Dump both files if either repeats.
-- 1.40.0: on a computer the photo tools show Add photo twice (the Photo card tile and "Add your photo" under the preview). Only if the owner finds it confusing.
-- 1.40.0 pattern review: lessons sessions 32–39 (1.21–1.28) can move to `_archive/` like 16–31; their rules are in the skill.
-- 1.37.0 + 1.40.0 releases: `batch-saved` "pixel identity: <tool> Save == batch" failed under 4-way load twice (Restock, then Photo story) and passed 36/0 alone each time (3 of 3). Next session: find the cause (likely a font or photo not yet decoded in one of the two renders under load) and make the suite wait for it; a pixel suite that flakes hides real failures.
 - 1.38.0: Create's two emoji highlight templates make the start sheet load `highlight-emoji.js` + `stickers.js` once on the first visit (live previews); later visits use the IndexedDB preview cache (`create-stickers` 1e/1f check it).
 - 1.36.0: Board-saved text styles can carry `wt` / `bf`; a tool page never shows such a style as "on" (applying works).
-- 1.29.0: done in 1.30.0: New place's frame save is see-through (`framePass` in `renderPage()`; any new photo-drawing helper must also no-op under it).
-- 1.29.0: done in 1.30.0: the Grain-reload and restock-styles "compatible" flakes are fixed test-side (warm-up + re-settle; colour-grid compare within 4).
 - 1.27.0: partly done in 1.32.0 (day words). Saved search matches name, tool and collection names only. If the team searches by date words ("yesterday") or by the words inside a design, add them to `findHit()` (one place).
 - 1.21.0: Backgrounds on white are deliberately quiet (Fade is a soft darkening at the bottom). If the owner finds them too faint on a real phone, raise the light-ground alphas in `groundFx()` (one place); old designs are unaffected because Plain draws nothing.
-- 1.21.0: done: Undo / Redo keep the chosen layer (`restore()`), or close the layer bar when the step removed it.
 - 1.14.0: cans were flippable as built; at release they got `noFlip:true` in the brand kit (lead decision, so a can's label never reads backwards). The owner can reverse it in `brands/1stchoice/brand.js`.
-- 1.14.0: done in 1.28.0: five-option rows are 3 + 2 engine-wide (`segOdd()` adds `.seg-32`, a 6-column grid). Seven options are still 4 + 3 (fine).
 - 1.28.0: an emoji sticker in one colour (a picked colour) loses inner details such as the chat bubble's dots (same as Emoji covers). If the owner wants, draw the lighter parts as cut-outs instead.
-- 1.28.0: done in 1.33.0: `tools/highlight-emoji.js` loads only when Layers / Sticker opens or a design has an emoji sticker.
-- 1.13.0: done in 1.23.0: "phone" wording now comes from `devWord()` (phone on a touch screen ≤820px, device otherwise), incl. Create's draft messages and the Home footer (`#footDev`). Comments in code still say phone; harmless.
 - 1.19.0: partly done in 1.35.0 (Save this style beside Copy style, no empty styles block: one row less). The More tab is up to five rows on a phone (Reset/Hide, Copy/Paste, Paste on all text, the styles, Save this style) so the preview shrinks while it is open; if more lands in More, split it (a "Style" tab for copy/paste/styles). Shoot it at 360px too.
 - 1.16.0: the Create picker's cards are wrapped in `.cr-tw` and Recently used cards are `.cr-rec[data-rtpl]`; keep both when changing the picker.
 - 1.15.0: the toast's Undo is now a pill: check it still reads on the dark toast on a real phone.
@@ -52,7 +41,6 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - 1.11.0: owner to confirm the Did you know post's numbered lines (١ كولد برو · ٢ منعش · ٣ يصحصحك) or send real facts to approve.
 - 1.10.0: Home can show "2 photos still waiting" and a Continue editing card for the same Restock job (they do different things); if the team finds two rows confusing, the waiting row could carry the unsaved story too.
 - 1.8.0 release: `share` failed 2 checks (address clean after a share, pick-a-tool sheet) once in a 3-way parallel run and passed 31/31 alone: the service-worker wait is timing-sensitive under load.
-- 1.8.0 idea: done in 1.34.0: the Save sheet says "Skip to photo 2 of 3", the note's Skip has the same words as its label.
 - 1.7.0: Copy style on a layer whose colour is Auto copies no colour, so pasting it onto a coloured layer turns that layer back to Auto (like Canva). Watch whether that surprises anyone.
 - 1.7.0: on a computer the More row now has a gap above Send back / Bring forward (it touched the row above before); same fix gave Copy/Paste style its spacing.
 - 1.6.0: every queued story gets the same automatic name ("Restock – 28 Oct"); cards tell them apart by picture and time. An idea: let the name take the shop (place) when the brand kit has a list of sale points (never name the types of sale points).
