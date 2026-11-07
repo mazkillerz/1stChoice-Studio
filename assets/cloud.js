@@ -107,11 +107,15 @@ async function setDesignCollections(brand,designId,names){
 }
 
 /* ---------- designs ---------- */
+/* a table or column the migration has not created yet (Postgres 42P01 / 42703, PostgREST PGRST204 / PGRST205): older data keeps working */
+function missing(e){ return !!e&&(['42P01','42703','PGRST204','PGRST205'].includes(e.code)||/could not find|does not exist|schema cache/i.test(String(e.message||''))); }
+const DESIGN_COLS='id,tool,name,kind,thumb_path,updated_at,used_at,created_at';
 async function designs(brand){
   const c=await client();
-  const {data,error}=await c.from('designs').select('id,tool,name,kind,thumb_path,updated_at,used_at,created_at,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
-  fail(error,'Saved designs');
-  return data.map(d=>({...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
+  let r=await c.from('designs').select(DESIGN_COLS+',author,review,review_by,review_at,caption,hashtags,campaign_id,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
+  if(r.error&&missing(r.error)) r=await c.from('designs').select(DESIGN_COLS+',design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
+  fail(r.error,'Saved designs');
+  return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
 }
 async function getDesign(id){ const c=await client(); const {data,error}=await c.from('designs').select('*,design_collections(collection_id,collections(name))').eq('id',id).single(); fail(error,'Open design'); data.collectionNames=(data.design_collections||[]).map(x=>x.collections&&x.collections.name).filter(Boolean); return data; }
 async function upload(path,blob){ const c=await client(); const {error}=await c.storage.from(CFG.bucket).upload(path,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'}); fail(error,'Upload'); return path; }
@@ -131,12 +135,32 @@ async function fileUrls(paths){
 }
 async function download(path){ const c=await client(); const {data,error}=await c.storage.from(CFG.bucket).download(path); fail(error,'Photo'); return data; }
 
+const VERSION_CAP=20;
+const VCOLS='id,design_id,name,recipe,thumb_path,photo_paths,author,created_at';
+/* the saved versions of one design, newest first ([] until the migration has been applied) */
+async function versions(designId){
+  const c=await client(); const {data,error}=await c.from('design_versions').select(VCOLS).eq('design_id',designId).order('created_at',{ascending:false});
+  if(missing(error)) return []; fail(error,'Versions'); return data||[];
+}
+/* keep the newest VERSION_CAP versions; the older rows go first, then (by the caller's tidy) their files */
+async function pruneVersions(designId){
+  const c=await client(); const {data,error}=await c.from('design_versions').select('id').eq('design_id',designId).order('created_at',{ascending:false});
+  if(error) return; const old=(data||[]).slice(VERSION_CAP).map(x=>x.id);
+  if(old.length) await c.from('design_versions').delete().in('id',old);
+}
+async function versionFiles(designId){ try{ return (await versions(designId)).flatMap(v=>[v.thumb_path,...(v.photo_paths||[])]).filter(Boolean); }catch(_){ return []; } }
+async function keepAsVersion(prev,author){
+  const c=await client();
+  const {data,error}=await c.from('design_versions').insert({design_id:prev.id,name:prev.name,recipe:prev.recipe,thumb_path:prev.thumb_path,photo_paths:prev.photo_paths||[],author:prev.author||author||null}).select('id').single();
+  if(missing(error)) return null; fail(error,'Save design'); return data.id;
+}
 /* save (new or update). photos: [{blob}|{path}|null] in slot order; kind 'template' keeps no photos. */
 /* Images go to Supabase ONLY here, when someone taps Save design: the photos actually used in the story
-   (unchanged ones are not uploaded again) plus one small preview. Drafts never leave the phone. */
+   (unchanged ones are not uploaded again) plus one small preview. Drafts never leave the phone.
+   An update keeps the row it replaces as a version (design_versions, newest 20) and its files stay. */
 async function saveDesign(o){
   const c=await client(); const id=o.id||uid(); const base=o.brand+'/'+id+'/';
-  const paths=[], fresh=[];
+  const paths=[], fresh=[]; let verId=null;
   try{
     if(o.kind!=='template'){
       for(let i=0;i<(o.photos||[]).length;i++){ const p=o.photos[i];
@@ -147,13 +171,42 @@ async function saveDesign(o){
     }
     const thumb=await upload(base+'thumb-'+uid().slice(0,8)+'.jpg',o.thumb); fresh.push(thumb);
     const row={id,brand:o.brand,tool:o.tool,name:o.name.trim(),kind:o.kind||'design',schema_version:o.recipe.v||1,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,photo_paths:paths.filter(Boolean)};
-    const {error}=await c.from('designs').upsert(row); fail(error,'Save design');
-    // tidy: anything left in this design's folder that the new version doesn't use (old photos, old preview) is removed
-    const keep=new Set([...row.photo_paths,thumb]);
+    if(o.id){ const {data:prev}=await c.from('designs').select('id,name,recipe,thumb_path,photo_paths,author').eq('id',id).maybeSingle();
+      if(prev) verId=await keepAsVersion(prev,o.author); }
+    let {error}=await c.from('designs').upsert(o.author?{...row,author:o.author}:row);
+    if(error&&o.author&&missing(error)) ({error}=await c.from('designs').upsert(row));   // the migration is not applied yet: save as before
+    fail(error,'Save design');
+    if(verId) await pruneVersions(id);
+    // tidy: anything left in this design's folder that the new version (and every kept version) doesn't use is removed
+    const keep=new Set([...row.photo_paths,thumb,...(await versionFiles(id))]);
     try{ await removeFiles((await listFolder(base)).filter(p=>!keep.has(p))); }catch(_){}
-  }catch(err){ try{ await removeFiles(fresh); }catch(_){} throw err; }   // a failed save leaves nothing behind
+  }catch(err){ try{ await removeFiles(fresh); }catch(_){} if(verId){ try{ await c.from('design_versions').delete().eq('id',verId); }catch(_){} } throw err; }   // a failed save leaves nothing behind
   if(o.collections) await setDesignCollections(o.brand,id,o.collections);
   return id;
+}
+/* put an older version back; the state it replaces is kept as a new version first, so nothing is lost */
+async function restoreVersion(designId,versionId,author){
+  const c=await client();
+  const {data:v,error:e1}=await c.from('design_versions').select(VCOLS).eq('id',versionId).eq('design_id',designId).single(); fail(e1,'Restore');
+  const {data:cur,error:e2}=await c.from('designs').select('id,brand,name,recipe,thumb_path,photo_paths,author').eq('id',designId).single(); fail(e2,'Restore');
+  await keepAsVersion(cur,author);
+  const patch={recipe:v.recipe,thumb_path:v.thumb_path,photo_paths:v.photo_paths||[],updated_at:new Date().toISOString()};
+  if(author){ const r=await c.from('designs').update({...patch,author}).eq('id',designId); if(r.error&&missing(r.error)) ({error:r.error}=await c.from('designs').update(patch).eq('id',designId)); fail(r.error,'Restore'); }
+  else { const {error}=await c.from('designs').update(patch).eq('id',designId); fail(error,'Restore'); }
+  await pruneVersions(designId);
+  try{ const base=cur.brand+'/'+designId+'/'; const keep=new Set([v.thumb_path,...(v.photo_paths||[]),cur.thumb_path,...(cur.photo_paths||[]),...(await versionFiles(designId))].filter(Boolean));
+    await removeFiles((await listFolder(base)).filter(p=>!keep.has(p))); }catch(_){}
+  return designId;
+}
+/* replace only the cover picture ("Redraw cover"); the recipe stays */
+async function setThumb(designId,blob){
+  const c=await client(); const {data:cur,error:e0}=await c.from('designs').select('brand,thumb_path,photo_paths').eq('id',designId).single(); fail(e0,'Cover');
+  const np=await upload(cur.brand+'/'+designId+'/thumb-'+uid().slice(0,8)+'.jpg',blob);
+  const {error}=await c.from('designs').update({thumb_path:np,updated_at:new Date().toISOString()}).eq('id',designId);
+  if(error){ try{ await removeFiles([np]); }catch(_){} fail(error,'Cover'); }
+  const keep=new Set([np,...(cur.photo_paths||[]),...(await versionFiles(designId))]);
+  try{ if(cur.thumb_path&&!keep.has(cur.thumb_path)) await removeFiles([cur.thumb_path]); }catch(_){}
+  return np;
 }
 async function renameDesign(id,name){ const c=await client(); const {error}=await c.from('designs').update({name:name.trim()}).eq('id',id); fail(error,'Rename'); }
 async function touchUsed(id){ const c=await client(); await c.from('designs').update({used_at:new Date().toISOString()}).eq('id',id); }
@@ -178,7 +231,49 @@ async function duplicateDesign(id,newName){
   fail(error,'Duplicate'); if(d.collectionNames.length) await setDesignCollections(d.brand,nid,d.collectionNames); return nid;
 }
 
+/* ---------- review, caption (columns on designs; they need the migration) ---------- */
+async function setReview(id,status,by){
+  const c=await client(); const {error}=await c.from('designs').update({review:status||null,review_by:status?(by||null):null,review_at:status?new Date().toISOString():null}).eq('id',id); fail(error,'Review');
+}
+async function setCaption(id,caption,hashtags){
+  const c=await client(); const {error}=await c.from('designs').update({caption:caption==null?null:String(caption),hashtags:hashtags||null}).eq('id',id); fail(error,'Caption');
+}
+
+/* ---------- Wave 2 rows: calendar, comments, phrases, campaigns (reads give [] until the migration is applied) ---------- */
+async function rows(q,what){ const {data,error}=await q; if(missing(error)) return []; fail(error,what); return data||[]; }
+async function calendar(brand,range){
+  const c=await client(); let q=c.from('calendar_items').select('*').eq('brand',brand); range=range||{};
+  if(range.from) q=q.gte('day',range.from); if(range.to) q=q.lte('day',range.to);
+  return rows(q.order('day').order('at',{nullsFirst:true}),'Calendar');
+}
+async function saveCalendarItem(item){
+  const c=await client(); const row={...item,updated_at:new Date().toISOString()}; if(!row.id) row.id=uid();
+  const {data,error}=await c.from('calendar_items').upsert(row).select().single(); fail(error,'Save to calendar'); return data;
+}
+async function deleteCalendarItem(id){ const c=await client(); const {error}=await c.from('calendar_items').delete().eq('id',id); fail(error,'Delete'); }
+async function comments(designId){ const c=await client(); return rows(c.from('comments').select('*').eq('design_id',designId).order('created_at'),'Comments'); }
+async function addComment(o){
+  const c=await client(); const row={design_id:o.design_id,author:o.author||null,text:String(o.text||'').trim(),x:o.x==null?null:o.x,y:o.y==null?null:o.y};
+  const {data,error}=await c.from('comments').insert(row).select().single(); fail(error,'Comment'); return data;
+}
+async function resolveComment(id,on){ const c=await client(); const {error}=await c.from('comments').update({resolved:on!==false}).eq('id',id); fail(error,'Comment'); }
+async function phrases(brand){ const c=await client(); return rows(c.from('phrases').select('*').eq('brand',brand).order('created_at',{ascending:false}),'Phrases'); }
+async function suggestPhrase(o){
+  const c=await client(); const {data,error}=await c.from('phrases').insert({brand:o.brand,line:String(o.line||'').trim(),category:o.category||null,author:o.author||null,status:'suggested'}).select().single(); fail(error,'Suggest'); return data;
+}
+async function setPhraseStatus(id,status,by,line){
+  const c=await client(); const patch={status,approved_by:status==='suggested'?null:(by||null),updated_at:new Date().toISOString()}; if(line!=null) patch.line=String(line).trim();
+  const {error}=await c.from('phrases').update(patch).eq('id',id); fail(error,'Phrase');
+}
+async function campaigns(brand){ const c=await client(); return rows(c.from('campaigns').select('*').eq('brand',brand).order('updated_at',{ascending:false}),'Campaigns'); }
+async function saveCampaign(camp){
+  const c=await client(); const row={...camp,updated_at:new Date().toISOString()}; if(!row.id) row.id=uid();
+  const {data,error}=await c.from('campaigns').upsert(row).select().single(); fail(error,'Save campaign'); return data;
+}
+async function deleteCampaign(id){ const c=await client(); const {error}=await c.from('campaigns').delete().eq('id',id); fail(error,'Delete'); }
+
 window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
-  designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download};
+  designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
+  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign};
 })();
