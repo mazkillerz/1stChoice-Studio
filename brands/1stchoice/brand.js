@@ -12,6 +12,7 @@ Studio.registerBrand({
   fonts:{
     display:'Lalezar',         // big headlines
     body:'Cairo',              // small lines, buttons, place names
+    latin:'Modak',             // the brand's Latin display face (numbers, kicker, handle)
     google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',
     /* fonts offered first in the Font menu; new text always starts in display/body above */
     choices:[
@@ -82,6 +83,17 @@ Studio.registerBrand({
     {id:'can-passion-shadow',label:'Passion + shadow',file:'assets/passion_can_shadow.png',prev:'assets/prev/passion_can_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true},
     {id:'cans-pair',label:'Both cans',file:'assets/cans_pair.png',prev:'assets/prev/cans_pair.webp',group:'Cans (HD cut-outs)',noFlip:true},
     {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true},
+    /* the flat one-colour can icon (approved 6 Nov 2026, "A+B": real-can look with "1ST" on the label). SVG + 2048px PNG in assets/icon/.
+       Solid and Outline take any colour (tint); the flavour ones keep their label colour (Classic taupe, Passion berry / yellow on dark). */
+    {id:'can-icon',label:'Can icon',file:'assets/icon/can-icon-solid.png',prev:'assets/prev/can_icon_solid.webp',group:'Can icon (2D)',tint:true},
+    {id:'can-icon-outline',label:'Can icon · outline',file:'assets/icon/can-icon-outline.png',prev:'assets/prev/can_icon_outline.webp',group:'Can icon (2D)',tint:true},
+    {id:'can-icon-classic',label:'Can icon · Classic',file:'assets/icon/can-icon-classic.png',prev:'assets/prev/can_icon_classic.webp',group:'Can icon (2D)',noFlip:true},
+    {id:'can-icon-passion',label:'Can icon · Passion',file:'assets/icon/can-icon-passion.png',prev:'assets/prev/can_icon_passion.webp',group:'Can icon (2D)',noFlip:true},
+    {id:'can-icon-passion-yellow',label:'Can icon · Passion (on dark)',file:'assets/icon/can-icon-passion-yellow.png',prev:'assets/prev/can_icon_passion_yellow.webp',group:'Can icon (2D)',noFlip:true},
+    {id:'can-stamp',label:'Stamp · 1ST CHOICE',file:'assets/icon/can-stamp.png',prev:'assets/prev/can_stamp.webp',group:'Can icon (2D)',noFlip:true},
+    {id:'mark-1st',label:'1ST mark',file:'assets/icon/mark-1st.png',prev:'assets/prev/mark_1st.webp',group:'Logo',tint:true},
+    {id:'type-coldbrew',label:'COLD BREW · coffee-filled',file:'assets/type/type-coldbrew.png',prev:'assets/prev/type_coldbrew.webp',group:'Type (coffee-filled)',noFlip:true},
+    {id:'type-1st',label:'1ST · coffee-filled',file:'assets/type/type-1st.png',prev:'assets/prev/type_1st.webp',group:'Type (coffee-filled)',noFlip:true},
     /* the cat in the can-label style (from the winter cat reel, Oct 2026). The owner's rule: the cat only when asked. */
     {id:'cat-wink',label:'Cat · wink with can',file:'reels/winter-cat/img/L4b.webp',prev:'assets/prev/winter_cat_wink.webp',group:'Cat · winter camp (only when asked)'},
     {id:'cat-can',label:'Cat · holding can',file:'reels/winter-cat/img/L4.webp',prev:'assets/prev/winter_cat_can.webp',group:'Cat · winter camp (only when asked)'},
@@ -167,6 +179,17 @@ Studio.registerBrand({
       {id:'one-word-post',label:'One word post',sub:'Post · one big word',badge:'New',cat:'post',layout:'one-word-post',size:'post',look:'cream',words:{head:'روّق'}},
       {id:'map-post',label:'Map in bio post',sub:'Post · where to find us',badge:'New',cat:'post',layout:'map-post',size:'post',words:{head:'وين تلقانا؟',pill:'الخريطة في البايو'}},
       {id:'good-morning',label:'Good morning',sub:'Story · ready in one tap',badge:'New',cat:'story',layout:'good-morning',size:'story',words:{head:'صباح الخير',small:'يصحصحك'},assets:{product:'can-classic-shadow'}},
+      /* five feed layouts (1.42.0), each as a post and a story */
+      {id:'cover-post',label:'Magazine cover',sub:'Post · the can as cover star',badge:'New',cat:'post',layout:'cover',size:'post',keys:'feed instagram magazine',words:{kicker:'COLD BREW',small:'كلاسيك / باشن فروت',line1:'يسرسح ثلج',line2:'ما مر',line3:'منعش',foot:'الخريطة في البايو'},assets:{product:'can-classic-shadow',stamp:'can-stamp'}},
+      {id:'cover-story',label:'Magazine cover story',sub:'Story · the can as cover star',badge:'New',layout:'cover',size:'story',keys:'feed instagram magazine',words:{kicker:'COLD BREW',small:'باشن فروت',line1:'يسرسح ثلج',line2:'منعش',line3:'ترا فنان',foot:'متوفر في نقاط بيع مختارة'},assets:{product:'can-passion-shadow',stamp:'can-stamp'}},
+      {id:'closeup-post',label:'Close-up',sub:'Post · the can fills the frame',badge:'New',cat:'post',layout:'closeup',size:'post',keys:'feed instagram big can',words:{head:'ترا فنان...',small:'ما مر'},assets:{product:'can-classic'}},
+      {id:'closeup-story',label:'Close-up story',sub:'Story · the can fills the frame',badge:'New',layout:'closeup',size:'story',flavour:'passion',keys:'feed instagram big can',words:{head:'منعش...',chip:'باشن فروت',small:'متوفر في نقاط بيع مختارة',pill:'الخريطة في البايو'},assets:{product:'can-passion'}},
+      {id:'many-post',label:'One of many',sub:'Post · one real can among icons',badge:'New',cat:'post',layout:'one-of-many',size:'post',keys:'feed instagram grid icons',words:{head:'اختيارك؟',small:'اختيارك الأول، دائماً'},assets:{product:'can-classic-shadow',icon:'can-icon-outline',mark:'mark-1st'}},
+      {id:'many-story',label:'One of many story',sub:'Story · one real can among icons',badge:'New',layout:'one-of-many',size:'story',keys:'feed instagram grid icons',words:{head:'اختيارك؟',small:'اختيارك الأول، دائماً',pill:'الخريطة في البايو'},assets:{product:'can-passion-shadow',icon:'can-icon-outline',mark:'mark-1st'}},
+      {id:'podium-post',label:'Podium',sub:'Post · the can on the first step',badge:'New',cat:'post',layout:'podium',size:'post',keys:'feed instagram winner first',words:{head:'اختيارك؟',small:'اختيارك الأول، دائماً'},assets:{product:'can-classic-shadow'}},
+      {id:'podium-story',label:'Podium story',sub:'Story · the can on the first step',badge:'New',layout:'podium',size:'story',keys:'feed instagram winner first',words:{head:'اختيارك؟',small:'اختيارك الأول، دائماً',pill:'الخريطة في البايو'},assets:{product:'can-passion-shadow'}},
+      {id:'type-post',label:'Coffee type',sub:'Post · big coffee-filled letters',badge:'New',cat:'post',layout:'type-photo',size:'post',keys:'feed instagram lettering',words:{head:'يسرسح ثلج...',small:'كلاسيك / باشن فروت',pill:'اطلب الحين'},assets:{type:'type-coldbrew'}},
+      {id:'type-story',label:'Coffee type story',sub:'Story · big coffee-filled letters',badge:'New',layout:'type-photo',size:'story',keys:'feed instagram lettering',words:{head:'اختيارك؟',small:'اختيارك الأول، دائماً',pill:'الخريطة في البايو'},assets:{type:'type-1st'}},
       {id:'highlight-places',label:'Highlight: places',sub:'Cover · one icon',layout:'highlight',size:'square',icon:'pin',words:{}},
       {id:'highlight-chat',label:'Highlight: chat',sub:'Cover · one icon',layout:'highlight',size:'square',icon:'chat',words:{}},
       {id:'highlight-reviews',label:'Highlight: reviews',sub:'Cover · one icon',layout:'highlight',size:'square',icon:'star',words:{}},

@@ -13,6 +13,18 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.42.0 · 6 Nov 2026
+
+### Five new feed layouts
+type: feature
+Magazine cover, Close-up, One of many, Podium and Coffee type, each as a post and a story in Create's templates (ten new templates). Add asset now also has the stamp, the 1ST mark and the coffee-filled lettering.
+
+## 1.41.0 · 6 Nov 2026
+
+### The can icon is in Add asset
+type: feature
+A flat, one-colour icon of our can (the real can's dark coffee and white label, with "1ST" on it) for posts and stories: inline like an emoji, as bullets, a corner stamp, a pattern or a counter. Add asset › Can icon (2D) has Solid and Outline (pick any colour, white on photos too), Classic and Passion, and Passion for dark grounds. The SVG and 2048 px PNG files are in the brand kit.
+
 ## 1.40.0 · 4 Nov 2026
 
 ### Carousel: change a slide without scrolling
