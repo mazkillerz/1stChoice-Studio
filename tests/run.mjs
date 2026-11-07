@@ -24,7 +24,7 @@ const MAP=[
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag']],
-  [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers']],
+  [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers','board-touch']],
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav','reels-hub','feedlayouts']],
   [/tools\/create-templates|assets\/search\./,['postpresets','feedlayouts']],
   [/assets\/welcome\./,['welcome']],
@@ -32,11 +32,11 @@ const MAP=[
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch','simplify40']],
   [/assets\/batch\.js/,['batch','batch-saved']],
   [/assets\/render\.js/,['batch-saved','draft-pictures','reels-hub']],
-  [/tools\/video/,['video','video-timeline','video-polish']],
-  [/assets\/reel-project\.js/,['video-project','video','video-timeline','video-polish']],
-  [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene']],
+  [/tools\/video/,['video','video-timeline','video-polish','video-fixes']],
+  [/assets\/reel-project\.js/,['video-project','video','video-timeline','video-polish','video-fixes']],
+  [/assets\/reel\.js|reel\.json|brands\/[\w-]+\/reels\//,['video','reel-scene','video-fixes']],
   [/assets\/reel-audio\.js/,['video','reel-audio']],
-  [/assets\/reel-export\.js/,['video','reel-export']],
+  [/assets\/reel-export\.js/,['video','reel-export','video-fixes']],
 ];
 let names=process.argv.slice(2);
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');

@@ -13,6 +13,38 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.44.0 · 7 Nov 2026
+
+### Video editor: no more blank white preview
+type: fix
+On some phones the video preview could turn blank white. The editor kept a full-size copy of the picture for every size it had shown, and the phone ran out of memory for pictures. Now it keeps only what it needs. If a phone still runs short, the preview steps down to a smaller size, and if even that fails it says so with a Retry button.
+![before](assets/whatsnew/1.44.0-blank-before.jpg)
+![after](assets/whatsnew/1.44.0-blank-after.jpg)
+
+### Video editor: pull the Mix sheet up for more room
+type: design
+On a phone, drag the top edge of the Mix sheet (or any sheet) up to see more sounds at once, and down again for a bigger preview. Studio remembers the height you like. Also: screen recordings now get their real length when you add them, and the ?debug=1 panel no longer covers the buttons.
+![before](assets/whatsnew/1.44.0-mix-before.jpg)
+![after](assets/whatsnew/1.44.0-mix-after.jpg)
+
+### Board fits your fingers
+type: fix
+On a phone, every button in Board is now big enough to tap: the top bar, the tool dock, Layers, the Design panel, menus and the quick bar. Shapes and Icons are 4 a row (they were small at 5), emoji 5 a row. To make room for bigger tools on a narrow phone, Frame moved from the dock into More tools (first in the list). In Layers, Lock and Hide show on the layer you chose, so a tap at the end of another row can no longer hide or lock it by mistake. On a computer Board looks the same.
+![before](assets/whatsnew/1.44.0-board-touch-before.jpg)
+![after](assets/whatsnew/1.44.0-board-touch-after.jpg)
+
+### Use a text style on all text in Board
+type: feature
+In Assets › Text, tap ⋯ next to a text style, then Use on all text: every text in the frame you're on takes that look at once. One Undo brings the old looks back. It was one text at a time.
+![before](assets/whatsnew/1.44.0-board-allstyle-before.jpg)
+![after](assets/whatsnew/1.44.0-board-allstyle-after.jpg)
+
+### Small fixes in Board
+type: fix
+Export no longer shows 2× twice (2× (sharp) is the 2× size). On a phone, a tap on the empty canvas lets go of what you chose, the quick bar no longer sits on top of the Layers panel, and menus leave out keyboard keys. The Weight box shows the whole name (Regular, Semibold, Extra bold), and Board's own text uses Studio's lighter weights.
+![before](assets/whatsnew/1.44.0-board-export-before.jpg)
+![after](assets/whatsnew/1.44.0-board-export-after.jpg)
+
 ## 1.43.0 · 7 Nov 2026
 
 ### Saved pictures always use the right font
