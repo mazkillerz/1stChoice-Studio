@@ -440,10 +440,41 @@ async function loadPacks(B){
   }
 }
 function brandId(){ const list=Studio.brandList||[]; const saved=store('studio:brand'); return list.includes(saved)?saved:(list[0]||null); }
+/* phrasebook (mega): approved team lines join the brand's built-in phrases at brand load, from a cache (localStorage 'studio:phrases:<brand>'),
+   so every picker reads them with no wait and offline. The brand kit's phraseCats maps each category to the phrase keys it joins.
+   With no approved rows nothing changes. assets/phrasebook.js is the screen (flag "team"). */
+const PH_KEY=id=>'studio:phrases:'+id;
+function phCache(id){ try{ const r=JSON.parse(localStorage.getItem(PH_KEY(id))); return Array.isArray(r)?r:[]; }catch(_){ return []; } }
+function phMerge(B,rows){
+  if(!B.phrases) return;
+  if(!B._phBase){ B._phBase={}; Object.keys(B.phrases).forEach(k=>{ B._phBase[k]=Array.isArray(B.phrases[k])?B.phrases[k].slice():B.phrases[k]; }); }
+  Object.keys(B.phrases).forEach(k=>{ if(k in B._phBase) B.phrases[k]=Array.isArray(B._phBase[k])?B._phBase[k].slice():B._phBase[k]; else delete B.phrases[k]; });
+  const ok=(rows||[]).filter(r=>r&&r.status==='approved'&&String(r.line||'').trim());
+  B._phRows=ok.map(r=>({id:r.id,line:String(r.line).trim(),category:r.category||'other',author:r.author||null}));
+  B._phRows.forEach(r=>{ const c=(B.phraseCats||[]).find(x=>x.id===r.category); (c&&c.keys||[]).forEach(k=>{
+    const base=B._phBase[k]; if(base!==undefined&&!Array.isArray(base)) return;
+    const cur=B.phrases[k]||(B.phrases[k]=[]); if(!cur.includes(r.line)) cur.push(r.line); }); });
+}
+let phBusy=null;
+/* refresh the cache when signed in: only when the team preview is on or a cache already exists (so a plain visit makes no new request) */
+function phRefresh(B){
+  if(phBusy||!(flags.on('team')||localStorage.getItem(PH_KEY(B.id))!==null)) return; if(navigator.onLine===false) return;
+  phBusy=(async()=>{ try{ const C=await cloud(); if(!C||!C.phrases||!(await C.session())) return;
+    const rows=await C.phrases(B.id); try{ localStorage.setItem(PH_KEY(B.id),JSON.stringify(rows)); }catch(_){} phMerge(B,rows); try{ document.dispatchEvent(new CustomEvent('studio:phrases')); }catch(_){} }catch(_){} phBusy=null; })();
+}
+/* every approved line: the built-in phrases (all text values) plus the team's approved rows */
+function phrasesApproved(detail){
+  const B=BRAND; if(!B||!B.phrases) return [];
+  const base=B._phBase||B.phrases, out=[], seen=new Set(), add=(line,cat,builtIn)=>{ line=String(line||'').trim(); if(!line||seen.has(line)) return; seen.add(line); out.push(detail?{line,category:cat,builtIn}:line); };
+  Object.keys(base).forEach(k=>[].concat(base[k]).forEach(l=>{ if(typeof l==='string') add(l,k,true); }));
+  (B._phRows||[]).forEach(r=>add(r.line,r.category,false));
+  return out;
+}
 async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
   await loadPacks(BRAND);   // occasion packs (w2-packs): merged before any tool reads assets or templates
+  phMerge(BRAND,phCache(id)); setTimeout(()=>phRefresh(BRAND),600);   // phrasebook (mega): approved team lines from the cache; refreshed in the background
   /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
   if(BRAND.fonts&&(BRAND.fonts.css||BRAND.fonts.google)&&!document.querySelector('link[data-brand-fonts]')){
     fontLink(BRAND.fonts.css?BRAND.base+BRAND.fonts.css:'https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
@@ -2641,6 +2672,9 @@ async function home(){
   /* who (mega): the name on saved designs (assets/who.js, loaded the first time it is needed) */
   const whoRead=()=>{ try{ return JSON.parse(localStorage.getItem('studio:who'))||{}; }catch(_){ return {}; } };
   const whoLib=async()=>{ if(!window.StudioWho) await loadScript(ROOT+'assets/who.js'); return window.StudioWho; };
+  /* phrasebook (mega): the screen is assets/phrasebook.js (lazy, preview flag "team") */
+  async function pbOpen(){ try{ if(!document.getElementById('pbCss')){ const l=document.createElement('link'); l.id='pbCss'; l.rel='stylesheet'; l.href=ROOT+'assets/phrasebook.css'; document.head.appendChild(l); }
+    if(!window.StudioPhrasebook) await loadScript(ROOT+'assets/phrasebook.js'); StudioPhrasebook.open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
@@ -2653,6 +2687,7 @@ async function home(){
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
+      ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
       ${row('previews',ICON.sparkle,'Previews','New features waiting for the owner’s OK',flags.list().filter(f=>f.on).length?flags.list().filter(f=>f.on).length+' on':'Off')}
       ${row('lab',ICON.lab,'Experimental','New things being tested (passcode)')}</div>
       <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this ${devWord()}.</p></div>`,'set-dlg');
@@ -2664,7 +2699,7 @@ async function home(){
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
       if(a==='previews'){ openPreviews(b); return; }
       d.close();
-      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab();
+      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen();
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
   }
   /* Settings → Previews (mega): one switch per preview flag */
@@ -2703,6 +2738,7 @@ async function home(){
   }
   function searchActions(){ const a=[];
     flags.list().forEach(f=>a.push({kind:'action',id:'act:flag-'+f.id,title:(f.on?'Turn off preview: ':'Try preview: ')+f.label,sub:f.sub,keys:'preview try beta new feature '+f.label+' '+f.sub,icon:ICON.sparkle,run:()=>{ flags.set(f.id,!f.on); location.reload(); }}));
+    if(flags.on('team')) a.push({kind:'action',id:'act:phrasebook',title:'Phrasebook',sub:'Approved lines, suggest a new one',keys:'phrasebook phrases words lines suggest approve arabic wording',icon:ICON.text||ICON.sparkle,run:pbOpen});
     a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
     a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
@@ -3181,5 +3217,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
