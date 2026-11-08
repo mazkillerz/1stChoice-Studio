@@ -343,7 +343,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
   const els=CR.ELEMENTS.filter(e=>!e.when||e.when());
   const shapeSvg=(d,stroke)=>`<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`;
   const native={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};
-  const body=openSheet('add','Add',`<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
+  const body=openSheet('add','Add',`${impRow()}<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
     <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span>${esc(e.label)}</button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
     <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
@@ -357,6 +357,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
   CR.stickersReady().then(()=>{ const a=body.querySelector('#crStk'), b=body.querySelector('#crEmo'); if(a&&!a.children.length) a.innerHTML=CR.stickerTiles(); if(b&&!b.children.length) b.innerHTML=CR.emojiTiles(); });
   body.querySelectorAll('[data-prev]').forEach(sp=>{ const e=CR.element(sp.dataset.prev); if(e&&e.asset){ const a=as.find(x=>x.id===e.asset); if(a) sp.innerHTML=`<img alt="" src="${L.assetPrevUrl(a)}">`; return; } const u=CR.preview(sp.dataset.prev); if(u) sp.innerHTML=`<img alt="" src="${u}">`; });
   body.addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; const d=b.dataset, f=BD.activeFrame(), w=f?fsize(f).w:1080, c=CR.colors();
+    if(d.import){ impPick(); return; }
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
     if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji||d.sticker)) return;
@@ -429,12 +430,13 @@ async function openTemplates(opt){ opt=opt||{}; reopen=null; const start=!!opt.s
   const list=all.filter(d=>favs.has('t:'+d.id)).concat(all.filter(d=>!favs.has('t:'+d.id)));   // favourites first
   const recent=recentRow(byId,null).filter(r=>r.d).map(r=>r.d);   // brand templates now; team ones fill in once paintTeam has them (#46)
   const body=openSheet('templates',start?'What are you making?':'Templates',
-    `<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
+    `${start?impRow():''}<span class="lbl">${start?'Start blank':'Add a blank page'}</span>${sizeRow()}
      ${recent.length?recentHtml(recent.map(d=>tplCard(d,{recent:true})).join('')):'<span id="crRecentAt" hidden></span>'}
      <span class="lbl">Templates</span>${list.length>=6?TPL_SEARCH:''}${list.length?`<div class="cr-tpls">${list.map(d=>tplCard(d,{favs,focus:opt.focus})).join('')}</div><div class="cr-empty" id="crTplNone" hidden>No templates match</div>`:'<div class="cr-empty">This brand kit has no templates yet.</div>'}
      <span class="lbl">Team templates</span><div id="crTeamT"><div class="cr-empty">Looking…</div></div>
      <p class="small">Templates are starting points: every word, picture and shape can be changed.</p>`);
-  body.addEventListener('click',async e=>{ const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team],[data-rteam]'), si=e.target.closest('#crTeamSign'), rt=e.target.closest('#crTeamRetry'), sr=e.target.closest('[data-star],[data-tstar]');
+  body.addEventListener('click',async e=>{ if(e.target.closest('[data-import]')){ impPick(); return; }
+    const sz=e.target.closest('[data-size]'), tp=e.target.closest('[data-tpl],[data-rtpl]'), tt=e.target.closest('[data-team],[data-rteam]'), si=e.target.closest('#crTeamSign'), rt=e.target.closest('#crTeamRetry'), sr=e.target.closest('[data-star],[data-tstar]');
     if(sr){ const id=sr.dataset.tstar?'team:'+sr.dataset.tstar:'t:'+sr.dataset.star, on=sr.getAttribute('aria-pressed')!=='true'; idMark(favKey(),id,on); sr.setAttribute('aria-pressed',String(on)); sr.title=on?'Remove from favourites':'Add to favourites'; return; }   // order changes the next time the sheet opens, nothing jumps now
     if(sz){ closeSheet(true); if(start||isBlank()) startBlank(sz.dataset.size); else addBlank(sz.dataset.size); }
     if(tp) chooseMode(mode=>applyTemplate(tp.dataset.tpl||tp.dataset.rtpl,mode));
@@ -668,6 +670,27 @@ async function startRender(draft,design){ let ok=false;
   Studio.renderer={ok:ok&&fs.length>0,missing:lost?['photo']:[],pages:fs.length,W:s.w,H:s.h,
     async page(pg,max){ const f=frames()[pg]; if(!f) return null; if(document.fonts&&document.fonts.ready) await document.fonts.ready;
       try{ const r=await BD.exportFrame(f,{scale:max&&max<2?max:2,type:'image/png'}); return {blob:r.blob,K:r.scale}; }catch(_){ return null; } }}; }
+
+/* import (mega 3.1): Claude Design boards -> layers, behind the `import` preview flag. Nothing here runs or shows with the flag off. */
+const impOn=()=>{ try{ return Studio.flags.on('import'); }catch(_){ return false; } };
+const impRow=()=>impOn()?`<div class="act-list cr-imp"><button type="button" class="act-row" data-import="1">${I.plus}<span class="set-txt"><b>Import a Claude Design board</b><small>.html or .zip, every piece becomes its own layer</small></span></button></div>`:'';
+let impIn=null, impP=null;
+const impIsBoard=f=>!!f&&/\.(html?|zip)$/i.test(f.name||'');
+function impPick(){ if(!impIn){ impIn=document.createElement('input'); impIn.type='file'; impIn.accept='.html,.htm,.zip,text/html,application/zip'; impIn.hidden=true; impIn.id='crImport'; document.body.appendChild(impIn);
+    impIn.addEventListener('change',()=>{ const f=impIn.files[0]; impIn.value=''; if(f) impRun(f); }); } impIn.click(); }
+function impMode(){ if(isBlank()) return Promise.resolve('replace');
+  return new Promise(res=>{ let done=false; const fin=v=>{ if(!done){ done=true; res(v); } };
+    const d=L.dialog(`<div class="dlg-body"><h3>Import this board</h3><p class="small">Add it as new pages after what you have, or start over with it.</p>
+      <div class="dlg-actions col"><button type="button" class="btn" id="imAdd">Add as new pages</button><button type="button" class="btn ghost" id="imRep">Replace everything</button><button type="button" class="link" id="imNo">Cancel</button></div></div>`);
+    d.addEventListener('close',()=>fin(null)); d.querySelector('#imNo').onclick=()=>d.close(); d.querySelector('#imAdd').onclick=()=>{ fin('add'); d.close(); }; d.querySelector('#imRep').onclick=()=>{ fin('replace'); d.close(); }; }); }
+async function impRun(file){ if(!impOn()||impP) return; closeSheet(true);
+  impP=(async()=>{ try{ if(!window.CRImport) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-import.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+      await CRImport.run(file,{busy:t=>BD.busy(t),toast,mode:impMode,clearAll,addDocNodes,afterBuild}); }
+    catch(err){ console.error(err); BD.busy(null); toast('Could not open the importer. Check your connection and try again.'); } })();
+  await impP; impP=null; }
+if(impOn()){ const has=e=>[...(e.dataTransfer&&e.dataTransfer.items||[])].some(i=>i.kind==='file');
+  addEventListener('dragover',e=>{ if(has(e)){ e.preventDefault(); e.dataTransfer.dropEffect='copy'; } });
+  addEventListener('drop',e=>{ const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(impIsBoard); if(!f) return; e.preventDefault(); impRun(f); }); }
 
 /* ---------- start ---------- */
 (async function(){

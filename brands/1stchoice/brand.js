@@ -108,6 +108,8 @@ Studio.registerBrand({
     {id:'winter-cloud',label:'Cloud',file:'reels/winter-cat/img/cloud1.webp',prev:'assets/prev/winter_cloud.webp',group:'Cat · winter camp (only when asked)'},
     {id:'winter-star',label:'Star',file:'reels/winter-cat/img/star1.webp',prev:'assets/prev/winter_star.webp',group:'Cat · winter camp (only when asked)'},
   ],
+  /* import (mega 3.1): the class names a Claude Design board uses for crayon-filled words -> the text fills above */
+  importMap:{texClasses:{cr:'crayon-red',cg:'crayon-green'}},
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
   reels:[
