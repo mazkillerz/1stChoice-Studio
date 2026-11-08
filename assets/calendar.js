@@ -1,13 +1,17 @@
 /* Studio content calendar (brand-agnostic, behind the "team" preview flag). Lazy-loaded the first time #calendar opens.
    StudioCalendar.init({root,brand,cloud,member,signIn,netDown,esc,haptic,icons,dialog,toast,who,store,onBack,flagOn?}) -> {show({today?}),refresh(),mode}.
-   Items live in the cloud (C.calendar / C.saveCalendarItem / C.deleteCalendarItem): {id,brand,day:'YYYY-MM-DD',at:'HH:MM'|null,status,title,caption,hashtags[],design_ids[],campaign_id,author}.
+   Items live in the cloud (C.calendar / C.saveCalendarItem / C.deleteCalendarItem): {id,brand,day:'YYYY-MM-DD',at:'HH:MM'|null,status,format:'post'|'story'|null,title,caption,hashtags[],design_ids[],campaign_id,author}.
    Phone: a vertical week list (7 day rows, today marked), swipe or arrows for the week, a month toggle (dots per status, tap a day -> that week),
-   press and hold an item for its menu (Move to date, Change status, Edit, Delete). Computer: month grid with the items inside, drag one to move it.
+   a visible ⋯ on each item opens its menu (Mark as posted/ready, Copy caption, Move to tomorrow, Delete), tap an item to edit it (calendar-simple). Computer: month grid with the items inside, drag one to move it.
    The old local "posted" log (if a device kept one) shows as read-only posted items; nothing is migrated or deleted. */
 (function(){
 'use strict';
-const STATUS=[['draft','Draft'],['in_review','In review'],['approved','Approved'],['posted','Posted']];
-const SLABEL=Object.fromEntries(STATUS);
+/* the sheet's three choices (Ready = 'approved' in the database); 'in_review' is set by the review feature and shown read-only */
+const STATUS=[['draft','Draft'],['approved','Ready'],['posted','Posted']];
+const SLABEL={draft:'Draft',in_review:'In review',approved:'Ready',posted:'Posted'};
+const TIMES=[['09:00','9:00'],['12:00','12:00'],['19:00','7:00 pm'],['21:00','9:00 pm']];
+const POST_TOOLS=['carousel','highlight','post'];   // anything else a tool makes is story-shaped (1080×1920)
+const MAXCAP=2200;
 const LEGACY_KEYS=['POSTED_LOG','studio:postedLog','studio:posted','studio:posted-log'];
 const pad=n=>(n<10?'0':'')+n;
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -16,11 +20,15 @@ const addDays=(d,n)=>{ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()
 const weekStart=d=>addDays(d,-d.getDay());   // weeks start on Sunday
 const todayIso=()=>iso(new Date());
 const L=(d,o)=>d.toLocaleDateString('en',o);
+const nrm=s=>window.Studio&&Studio.normText?Studio.normText(s):String(s==null?'':s).toLowerCase().trim();
+const fmtTime=t=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(t||'')); if(!m) return ''; const h=+m[1]; return h>=12?((h%12)||12)+':'+m[2]+' pm':h+':'+m[2]; };
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); return true; }catch(_){ try{ const a=document.createElement('textarea'); a.value=t; a.style.cssText='position:fixed;opacity:0'; document.body.appendChild(a); a.select(); const ok=document.execCommand('copy'); a.remove(); return ok; }catch(__){ return false; } } }
 const hhmm=t=>t?String(t).slice(0,5):'';
 const firstLine=s=>String(s||'').split(/\r?\n/).find(l=>l.trim())||'';
-const tagsOf=s=>[...new Set(String(s||'').split(/[\s,،]+/).map(t=>t.replace(/^#+/,'').trim()).filter(Boolean))].map(t=>'#'+t);
+const tagsOf=s=>[...new Set(String(s||'').match(/#[\p{L}\p{N}_]+/gu)||[])];   // #tags typed in the caption
 const SVG=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
 const CAL_IC=SVG('<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/>');
+const ICF={post:SVG('<rect x="4" y="4" width="16" height="16" rx="2.5"/>'),story:SVG('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/>')};
 
 /* the old local log: a list of {day|date, title|name|text} under one of a few keys; read once, shown read-only */
 function legacyItems(brand){
@@ -42,6 +50,9 @@ function make(o){
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
+  const shapeOf=g=>g?(POST_TOOLS.includes(g.tool)?'post':'story'):null;
+  const fmtOf=it=>it.format||shapeOf(it.design_ids.map(designOf).find(Boolean))||'post';
+  const capOf=it=>{ const g=dCap(it); return String(it.caption||(g&&g.caption)||'').trim(); };
   /* captions (mega 4.3): a linked design's caption stands in for an item that has none (shown on the card; the sheet offers "Use the design's caption") */
   const dCap=it=>{ for(const id of (it.design_ids||[])){ const g=designOf(id); if(g&&String(g.caption||'').trim()) return g; } return null; };
   /* /captions (mega) */
@@ -75,15 +86,16 @@ function make(o){
   /* ---------- drawing ---------- */
   const title=()=>{ const [a,b]=range(); if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
     return a.getMonth()===b.getMonth()?L(a,{day:'numeric'})+' – '+L(b,{day:'numeric',month:'short'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
-  const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean).slice(0,4); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}${it.design_ids.length>4?`<i>+${it.design_ids.length-4}</i>`:''}</span>`:''; };
+  const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}</span>`:''; };
   const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
-  const card=it=>{ const ro=!!it.legacy, cap=firstLine(it.caption||(dCap(it)||{}).caption);   // captions (mega): fallback to the design's
+  const card=it=>{ const ro=!!it.legacy, cap=capOf(it), f=fmtOf(it), t0=firstLine(cap).slice(0,60);
+    const showTitle=!cap||it.title!==t0;   // a title made from the caption's first line would only repeat it
     return `<article class="cal-item st-${it.status}${ro?' ro':''}" data-id="${esc(it.id)}"${ro?'':' draggable="true"'}>
       <button type="button" class="ci-main" data-open="${esc(it.id)}"${ro?' disabled':''}>
-        <span class="ci-top">${it.at?`<span class="ci-time">${esc(it.at)}</span>`:''}${chip(it.status)}</span>
-        <b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>${campTag(it)}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-cap">From the old posted log</span>':''}${thumbs(it)}
-      </button>${ro?'':`<button type="button" class="ci-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(it.title||'this item')}">${ic('more')}</button>`}</article>`; };
+        <span class="ci-top"><span class="ci-fmt" role="img" aria-label="${f==='story'?'Story':'Post'}">${ICF[f]}</span>${it.at?`<bdi class="ci-time">${esc(fmtTime(it.at))}</bdi>`:''}${chip(it.status)}</span>
+        <span class="ci-body">${thumbs(it)}<span class="ci-txt">${showTitle?`<b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>`:''}${campTag(it)}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-note">From the old posted log</span>':''}</span></span>
+      </button>${ro?'':`<button type="button" class="ci-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(it.title||'this item')}">${ic('more')}</button>${cap?`<button type="button" class="ci-copy" data-copy="${esc(it.id)}">Copy caption</button>`:''}`}</article>`; };
   const pill=it=>`<button type="button" class="cal-pill st-${it.status}${it.legacy?' ro':''}" data-open="${esc(it.id)}" data-id="${esc(it.id)}"${it.legacy?' disabled':' draggable="true"'} dir="auto"><i aria-hidden="true"></i>${esc(it.title||'Untitled')}</button>`;
   const byDay=()=>{ const m={}; items.forEach(x=>{ (m[x.day]=m[x.day]||[]).push(x); }); Object.values(m).forEach(l=>l.sort((a,b)=>(a.at||'').localeCompare(b.at||''))); return m; };
   function weekHtml(){ const s=weekStart(anchor), m=byDay(), t=todayIso();
@@ -108,14 +120,14 @@ function make(o){
       :state==='out'?noteBox(CAL_IC,'The calendar is for your team','Sign in to plan and see your team’s posts.','<button type="button" class="btn slim" data-cal-signin>Sign in</button>')
       :noteBox(ic('rotate'),'Could not load the calendar',esc(note),againBtn);
     const live=state==='ok';
-    root.innerHTML=`<div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
+    const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb));
+    root.innerHTML=`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
         <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>
-        <button type="button" class="mini solid cal-new" data-add="${iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>
-      <div class="cal-bar"><div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>
-        <strong class="cal-title" aria-live="polite">${esc(title())}</strong>
-        <button type="button" class="cal-arrow" data-nav="1" aria-label="${mode==='month'?'Next month':'Next week'}">${ic('next')}</button></div>
-        <button type="button" class="chip cal-today" data-nav="0">Today</button>
-        <div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button></div></div>
+        <button type="button" class="mini solid cal-new" data-add="${here?todayIso():iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>
+      <div class="cal-bar"><div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button></div>
+        <div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>
+        ${here?'':'<button type="button" class="cal-today" data-nav="0">Today</button>'}<strong class="cal-title" aria-live="polite">${esc(title())}</strong>
+        <button type="button" class="cal-arrow" data-nav="1" aria-label="${mode==='month'?'Next month':'Next week'}">${ic('next')}</button></div></div></div>
       <div class="cal-body">${body}</div>`;
     window.scrollTo({top:keepY,behavior:'instant'});
   }
@@ -123,59 +135,96 @@ function make(o){
   function setMode(m,day){ if(day) anchor=parse(day); mode=m; wr('studio:calMode',m); hap('tick'); state=state==='ok'?'ok':state; load(); }
 
   /* ---------- save, move, status, delete ---------- */
-  const keep=it=>({id:it.id,brand:o.brand,day:it.day,at:it.at||null,status:it.status,title:it.title||'',caption:it.caption||'',hashtags:it.hashtags||[],design_ids:it.design_ids||[],campaign_id:it.campaign_id||null,author:it.author||null});
+  const keep=it=>({id:it.id,brand:o.brand,day:it.day,at:it.at||null,status:it.status,format:it.format||null,title:it.title||'',caption:it.caption||'',hashtags:it.hashtags||[],design_ids:it.design_ids||[],campaign_id:it.campaign_id||null,author:it.author||null});
   async function persist(it,msg){ try{ await C.saveCalendarItem(keep(it)); if(msg) o.toast(msg); }catch(err){ o.toast('Could not save: '+(err.message||err)); } await load(); }
   async function move(id,day){ const it=items.find(x=>x.id===id); if(!it||it.legacy||it.day===day) return; const was=it.day; it.day=day; draw(); fillThumbs();
     try{ await C.saveCalendarItem(keep(it)); o.toast('Moved to '+L(parse(day),{weekday:'short',day:'numeric',month:'short'})+'.'); }catch(err){ it.day=was; o.toast('Could not move it: '+(err.message||err)); }
     await load(); }
   async function whoOnce(){ if(authorName()||rd('studio:calWhoAsked')||navigator.webdriver||!o.who||!o.who.ask) return; wr('studio:calWhoAsked',1); try{ await o.who.ask({user:true,brand:o.brand}); }catch(_){} }
 
-  /* ---------- the add / edit sheet ---------- */
+  /* ---------- the "Plan a post" sheet (add + edit): Post/Story, design, day + time, caption, status, one Save ---------- */
+  const titleFor=(it)=>{ const g=it.design_ids.map(designOf).find(Boolean); return (g&&g.name)||firstLine(it.caption).slice(0,60)||(it.format==='story'?'Story':'Post'); };
+  const tileHtml=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean);
+    if(it.design_ids.length&&!ds.length) return `<span class="ct-ph">${ic('photo')}</span><span class="ct-txt"><b>A design</b><small>Change</small></span>`;
+    return ds.length?`<span class="ct-thumbs">${ds.map(g=>`<img alt="" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}>`).join('')}</span><span class="ct-txt"><b dir="auto">${esc(ds.map(g=>g.name).join(', '))}</b><small>Change</small></span>`
+      :`<span class="ct-ph">${ic('photo')}</span><span class="ct-txt"><b>Pick a design</b><small>From your saved designs</small></span>`; };
   function editSheet(src,dayHint){
-    const isNew=!src, it=src?{...src,design_ids:[...src.design_ids],hashtags:[...src.hashtags]}:{day:dayHint||todayIso(),at:null,status:'draft',title:'',caption:'',hashtags:[],design_ids:[]};
-    const author=it.author||authorName();
-    const d=o.dialog(`<form class="dlg-body cal-sheet" action="#" novalidate><h3 id="calEH">${isNew?'New post':'Edit post'}</h3>
-      <div class="cal-row2"><div class="field"><label class="lbl" for="calDay">Date</label><input type="date" id="calDay" required value="${esc(it.day)}"></div>
-        <div class="field"><label class="lbl" for="calAt">Time (optional)</label><input type="time" id="calAt" value="${esc(it.at||'')}"></div></div>
-      <div class="field"><span class="lbl" id="calStL">Status</span><div class="chips cal-stat" role="group" aria-labelledby="calStL">${STATUS.map(([k,l])=>`<button type="button" class="chip" data-st="${k}" aria-pressed="${it.status===k}">${l}</button>`).join('')}</div></div>
-      <div class="field"><label class="lbl" for="calTitle">Title</label><input type="text" id="calTitle" dir="auto" maxlength="120" autocomplete="off" value="${esc(it.title)}"></div>
-      <div class="field"><label class="lbl" for="calCap">Caption</label><textarea id="calCap" class="cal-ta" dir="auto" rows="4">${esc(it.caption)}</textarea></div>
-      <button type="button" class="link" id="calUseCap" hidden>Use the design’s caption</button><!-- captions (mega) -->
-      <div class="field"><label class="lbl" for="calTags">Hashtags</label><input type="text" id="calTags" dir="auto" autocomplete="off" autocapitalize="off" value="${esc((it.hashtags||[]).join(' '))}"></div>
-      <div class="field"><span class="lbl">Designs</span><div class="cal-linked" id="calLinked"></div><button type="button" class="mini" id="calPick" aria-expanded="false">${ic('photo')}<span>Link designs</span></button><div class="cal-picker" id="calPicker" hidden></div></div>
-      <p class="small cal-by">${author?`By <bdi>${esc(author)}</bdi>`:'No name set yet'} · <button type="button" class="link" id="calWho">${author?'Change':'Set your name'}</button></p>
+    const isNew=!src, it=src?{...src,design_ids:[...src.design_ids],hashtags:[...src.hashtags]}:{day:dayHint||todayIso(),at:'19:00',status:'draft',format:null,title:'',caption:'',hashtags:[],design_ids:[]};
+    if(!it.format&&!isNew) it.format=null;
+    let fmt=it.format||(isNew?null:fmtOf(it));
+    const quick=TIMES.some(t=>t[0]===it.at), other=!!it.at&&!quick;
+    const d=o.dialog(`<form class="dlg-body cal-sheet" action="#" novalidate>
+      <div class="cs-head"><h3 id="calEH">${isNew?'Plan a post':'Edit post'}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
+      <div class="field"><span class="lbl" id="calFL">Format</span><div class="cal-fmt" role="group" aria-labelledby="calFL">${[['post','Post'],['story','Story']].map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
+      <div class="field"><span class="lbl">Design</span><button type="button" class="cal-tile" id="calPick" aria-haspopup="dialog"></button><button type="button" class="link" id="calSkip" hidden>Remove design</button></div>
+      <div class="field"><span class="lbl">Day and time</span><div class="cal-when"><label class="cal-daypill" for="calDay"><span id="calDayTxt"></span><input type="date" id="calDay" required value="${esc(it.day)}" aria-label="Day"></label>
+        <div class="chips cal-times" role="group" aria-label="Time">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="${it.at===v}">${l.replace(' pm','&nbsp;pm')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="${other}">Other</button></div>
+        <input type="time" id="calAt" aria-label="Time" value="${esc(other?it.at:'')}"${other?'':' hidden'}></div></div>
+      <div class="field"><label class="lbl" for="calCap">Caption</label><textarea id="calCap" class="cal-ta" dir="auto" rows="3" placeholder="Write or paste the caption">${esc(it.caption)}</textarea><div class="cal-count small" id="calCount" aria-live="off"></div></div>
+      <div class="field"><span class="lbl" id="calStL">Status</span>${it.status==='in_review'?'<p class="small cal-rev">In review</p>':''}<div class="cal-seg3" role="group" aria-labelledby="calStL">${STATUS.map(([k,l])=>`<button type="button" class="cs3" data-st="${k}" aria-pressed="${it.status===k}">${l}</button>`).join('')}</div></div>
       <div class="status" id="calSt" role="status"></div>
-      <div class="dlg-actions"><button type="button" class="mini" id="calCancel">Cancel</button><button type="submit" class="btn" id="calSave">${isNew?'Add to calendar':'Save'}</button></div>
-      ${isNew?'':'<button type="button" class="link danger-link" id="calDel">Delete this post</button>'}</form>`,'cal-dlg');
+      <div class="cal-foot"><button type="submit" class="btn" id="calSave">Save</button>${isNew?'':'<button type="button" class="link danger-link" id="calDel">Delete this post</button>'}</div></form>`,'cal-dlg cal-edit');
     d.setAttribute('aria-labelledby','calEH'); const $=s=>d.querySelector(s), st=t=>{ $('#calSt').textContent=t; };
-    let linked=()=>{ $('#calLinked').innerHTML=it.design_ids.length?it.design_ids.map(id=>{ const g=designOf(id); return `<span class="cal-lk"><img alt="" data-path="${esc(g?g.thumb_path||'':'')}"${g&&urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g?g.name:'A design')}</span><button type="button" class="lk-x" data-unlink="${esc(id)}" aria-label="Remove ${esc(g?g.name:'design')}">${ic('close')}</button></span>`; }).join(''):'<span class="small">No designs linked yet.</span>'; fillThumbs(); };
-    /* captions (mega): the button shows while a linked design has a caption; it fills the caption (and the hashtags when none are typed) */
-    const capBtn=()=>{ const g=dCap(it); $('#calUseCap').hidden=!g; };
-    $('#calUseCap').onclick=()=>{ const g=dCap(it); if(!g) return; $('#calCap').value=g.caption||''; if(!$('#calTags').value.trim()&&(g.hashtags||[]).length) $('#calTags').value=g.hashtags.join(' '); };
-    const linked0=linked; linked=()=>{ linked0(); capBtn(); };
-    linked();
+    const dayTxt=()=>{ const v=$('#calDay').value; $('#calDayTxt').innerHTML=/^\d{4}-\d{2}-\d{2}$/.test(v)?'<bdi>'+esc(L(parse(v),{weekday:'short',day:'numeric',month:'short'}))+'</bdi>':'Pick a day'; };
+    const paintTile=()=>{ $('#calPick').innerHTML=tileHtml(it); $('#calSkip').hidden=!it.design_ids.length; fillThumbsIn(d); };
+    const count=()=>{ const n=$('#calCap').value.length; const c=$('#calCount'); c.innerHTML=`<bdi>${n.toLocaleString('en')}</bdi> / ${MAXCAP.toLocaleString('en')}`; c.classList.toggle('over',n>MAXCAP); };
+    const grow=()=>{ const t=$('#calCap'); t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+2,Math.round(parseFloat(getComputedStyle(t).lineHeight||24)*8+24))+'px'; };
+    dayTxt(); paintTile(); count(); setTimeout(grow,0);
+    $('#calDay').addEventListener('input',dayTxt); $('#calDay').addEventListener('change',dayTxt);
+    $('#calCap').addEventListener('input',()=>{ count(); grow(); });
+    d.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{ fmt=b.dataset.fmt; d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     d.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ it.status=b.dataset.st; d.querySelectorAll('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
-    $('#calLinked').addEventListener('click',e=>{ const b=e.target.closest('[data-unlink]'); if(!b) return; it.design_ids=it.design_ids.filter(x=>x!==b.dataset.unlink); linked(); if(!$('#calPicker').hidden) paintPicker(); });
-    const paintPicker=()=>{ const P=$('#calPicker');
-      P.innerHTML=designs.length?`<div class="cal-pgrid">${designs.filter(g=>g.kind!=='template').map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" aria-pressed="${it.design_ids.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('')}</div>`:'<p class="small">No saved designs yet. Save one from a tool and it shows here.</p>'; };
-    $('#calPick').onclick=async()=>{ const P=$('#calPicker'), open=P.hidden; P.hidden=!open; $('#calPick').setAttribute('aria-expanded',String(open)); if(!open) return; paintPicker();
-      const need=designs.map(g=>g.thumb_path).filter(p=>p&&!urls[p]); if(need.length&&C&&C.fileUrls){ try{ Object.assign(urls,await C.fileUrls(need)); }catch(_){} fillThumbsIn(d); } };
-    $('#calPicker').addEventListener('click',e=>{ const b=e.target.closest('[data-pick]'); if(!b) return; const id=b.dataset.pick, on=!it.design_ids.includes(id); it.design_ids=on?it.design_ids.concat(id):it.design_ids.filter(x=>x!==id); b.setAttribute('aria-pressed',String(on)); linked(); });
-    $('#calWho').onclick=async()=>{ if(o.who&&o.who.ask){ const n=await o.who.ask({user:true,brand:o.brand}); if(n){ it.author=n; $('.cal-by').innerHTML=`By <bdi>${esc(n)}</bdi> · <button type="button" class="link" id="calWho2">Change</button>`; $('#calWho2').onclick=()=>$('#calWho').onclick(); } } };
+    d.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ const v=b.dataset.at, on=b.getAttribute('aria-pressed')==='true';
+      d.querySelectorAll('[data-at]').forEach(x=>x.setAttribute('aria-pressed','false'));
+      if(v==='other'){ b.setAttribute('aria-pressed','true'); $('#calAt').hidden=false; $('#calAt').focus(); it.at=$('#calAt').value||null; return; }
+      $('#calAt').hidden=true; $('#calAt').value=''; if(on){ it.at=null; return; } b.setAttribute('aria-pressed','true'); it.at=v; });
+    $('#calAt').addEventListener('input',()=>{ it.at=$('#calAt').value||null; });
+    $('#calPick').onclick=()=>pickDesign(it,fmt,id=>{ it.design_ids=[id]; const g=designOf(id);
+      if(g&&!$('#calCap').value.trim()&&String(g.caption||'').trim()){ $('#calCap').value=g.caption+((g.hashtags||[]).length?'\n\n'+g.hashtags.join(' '):''); count(); grow(); }
+      paintTile(); });
+    $('#calSkip').onclick=()=>{ it.design_ids=[]; paintTile(); };
     $('#calCancel').onclick=()=>d.close();
     const del=$('#calDel'); if(del) del.onclick=()=>{ d.close(); confirmDelete(src); };
     d.querySelector('form').addEventListener('submit',async e=>{ e.preventDefault();
-      const day=$('#calDay').value, ttl=$('#calTitle').value.trim();
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return st('Pick a date.'); if(!ttl) { st('Add a title.'); $('#calTitle').focus(); return; }
+      const day=$('#calDay').value;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return st('Pick a day.'); if(!fmt) return st('Choose Post or Story.');
       const sv=$('#calSave'); sv.disabled=true; st('Saving…');
       await whoOnce();
-      const row={...it,day,at:$('#calAt').value||null,title:ttl,caption:$('#calCap').value,hashtags:tagsOf($('#calTags').value),author:it.author||authorName()||null};
-      try{ await C.saveCalendarItem(keep(row)); d.close(); anchor=parse(day); o.toast(isNew?'Added to the calendar.':'Saved.'); hap('tick'); await load(); }
+      const caption=$('#calCap').value, row={...it,day,format:fmt,caption,hashtags:tagsOf(caption),author:it.author||authorName()||null}; row.title=titleFor({...row});
+      try{ await C.saveCalendarItem(keep(row)); d.close(); anchor=parse(day); o.toast('Saved'); hap('tick'); await load(); }
       catch(err){ sv.disabled=false; st('Could not save: '+(err.message||err)+' Try again.'); } });
-    setTimeout(()=>{ if(isNew) $('#calTitle').focus(); },80);
     return d;
   }
   function fillThumbsIn(d){ d.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; }); }
+
+  /* the full-screen design picker: search, collection chips, shape chips, one grid that scrolls with the page, thumbs loaded as they scroll into view */
+  async function pickDesign(it,fmt,done){
+    let cols=[]; try{ cols=C&&C.collections?(await C.collections(o.brand))||[]:[]; }catch(_){ cols=[]; }
+    const list=designs.filter(g=>g.kind!=='template'), colName=Object.fromEntries(cols.map(c=>[c.id,c.name]));
+    const hay=new Map(list.map(g=>[g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' '),...(g.collections||[]).map(c=>colName[c]||c)].join(' '))]));
+    let q='', col='', shape=fmt==='story'?'story':fmt==='post'?'post':'';
+    const d=o.dialog(`<div class="dlg-body cal-pick"><div class="cp-top"><div class="cp-bar"><button type="button" class="cs-x" data-back aria-label="Back">${ic('back')}</button><h3 id="calPH">Pick a design</h3><button type="button" class="link cp-skip" data-skip>Skip for now</button></div>
+      <label class="cp-search"><span class="sr-only">Search designs</span>${ic('search')}<input type="search" id="calQ" dir="auto" autocomplete="off" placeholder="Search by name, tool or collection" enterkeyhint="search"></label>
+      <div class="chips cp-chips" role="group" aria-label="Collection"><button type="button" class="chip" data-col="" aria-pressed="true">All</button>${cols.map(c=>`<button type="button" class="chip" data-col="${esc(c.id)}" aria-pressed="false" dir="auto">${esc(c.name)}</button>`).join('')}</div>
+      <div class="chips cp-shape" role="group" aria-label="Shape">${[['story','Stories'],['post','Posts'],['','All shapes']].map(([k,l])=>`<button type="button" class="chip sm" data-shape="${k}" aria-pressed="${shape===k}">${l}</button>`).join('')}</div></div>
+      <div class="cp-grid" id="calG"></div><p class="small cp-none" id="calNone" hidden>No designs match. Clear the search or pick All.</p></div>`,'cal-dlg cal-full');
+    d.setAttribute('aria-labelledby','calPH'); const $=s=>d.querySelector(s);
+    const pending=new Set(); let ft=0;
+    const flush=()=>{ ft=0; const need=[...pending].filter(p=>!urls[p]); pending.clear(); if(!need.length||!C||!C.fileUrls){ fillThumbsIn(d); return; } C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbsIn(d); }).catch(()=>{}); };
+    const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>{ es.forEach(en=>{ if(!en.isIntersecting) return; const im=en.target; io.unobserve(im); const p=im.dataset.path; if(urls[p]) im.src=urls[p]; else if(p){ pending.add(p); clearTimeout(ft); ft=setTimeout(flush,40); } }); },{root:d,rootMargin:'400px 0px'}):null;
+    const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>(!col||(g.collections||[]).includes(col))&&(!shape||shapeOf(g)===shape)&&(!nq||hay.get(g.id).includes(nq)));
+      $('#calG').innerHTML=shown.map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" aria-pressed="${it.design_ids.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('');
+      $('#calNone').hidden=!!shown.length; $('#calNone').textContent=list.length?'No designs match. Clear the search or pick All.':'No saved designs yet. Save one from a tool and it shows here.';
+      d.querySelectorAll('.cal-pcard img').forEach(im=>{ if(im.getAttribute('src')) return; if(io) io.observe(im); else pending.add(im.dataset.path); }); if(!io){ flush(); } };
+    paint();
+    $('#calQ').addEventListener('input',e=>{ q=e.target.value; paint(); });
+    d.addEventListener('click',e=>{ const t=e.target;
+      if(t.closest('[data-back],[data-skip]')){ d.close(); return; }
+      let b=t.closest('[data-col]'); if(b){ col=b.dataset.col; d.querySelectorAll('[data-col]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); return; }
+      b=t.closest('[data-shape]'); if(b){ shape=b.dataset.shape; d.querySelectorAll('[data-shape]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); return; }
+      b=t.closest('[data-pick]'); if(b){ const id=b.dataset.pick; d.close(); done(id); } });
+    d.addEventListener('close',()=>{ if(io) io.disconnect(); });
+  }
   function confirmDelete(it){
     const d=o.dialog(`<div class="dlg-body"><h3 id="calDH">Delete this post?</h3><p dir="auto">“${esc(it.title||'Untitled')}” will be removed from the calendar for everyone.</p>
       <div class="dlg-actions"><button type="button" class="mini" data-no>Cancel</button><button type="button" class="btn danger" data-yes>Delete</button></div></div>`,'cal-dlg');
@@ -184,33 +233,25 @@ function make(o){
       try{ await C.deleteCalendarItem(it.id); d.close(); o.toast('Deleted.'); }catch(err){ d.close(); o.toast('Could not delete: '+(err.message||err)); } await load(); };
   }
 
-  /* ---------- the item menu (press and hold, ⋯, right-click) ---------- */
+  /* ---------- the item menu (the ⋯ button, right-click on a computer) ---------- */
+  const copyCap=async it=>{ const t=capOf(it); if(!t) return; o.toast((await copyText(t))?'Caption copied':'Could not copy the caption.'); };
   function menu(it){
     if(!it||it.legacy||document.querySelector('dialog[open]')) return;
-    const row=(a,icn,l,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-a="${a}">${icn}<span>${l}</span></button>`;
-    const d=o.dialog(`<div class="dlg-body cal-menu"><h3 id="calMH" dir="auto">${esc(it.title||'Untitled')}</h3><p class="small">${esc(L(parse(it.day),{weekday:'long',day:'numeric',month:'long'}))}${it.at?' · '+esc(it.at):''} · ${esc(SLABEL[it.status]||it.status)}</p>
-      <div class="act-list">${row('move',ic('move'),'Move to date…')}${row('status',ic('check'),'Change status')}${row('edit',ic('pencil'),'Edit')}${row('del',ic('trash'),'Delete','danger')}</div>
-      <div class="ds-panel" id="calMP"></div><button type="button" class="link" id="calMX">Close</button></div>`,'cal-dlg');
-    d.setAttribute('aria-labelledby','calMH'); const P=d.querySelector('#calMP'); d.querySelector('#calMX').onclick=()=>d.close();
-    d.querySelector('.act-list').addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a;
-      if(a==='edit'){ d.close(); editSheet(it); return; } if(a==='del'){ d.close(); confirmDelete(it); return; }
-      if(a==='move'){ P.innerHTML=`<div class="inline"><label class="sr-only" for="calMD">New date</label><input type="date" id="calMD" value="${esc(it.day)}"><button type="button" class="mini solid" id="calMG">Move</button></div>`;
-        const inp=P.querySelector('#calMD'); inp.focus(); P.querySelector('#calMG').onclick=()=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(inp.value)) return; d.close(); move(it.id,inp.value); }; }
-      if(a==='status'){ P.innerHTML=`<div class="chips cal-stat" role="group" aria-label="Status">${STATUS.map(([k,l])=>`<button type="button" class="chip" data-s="${k}" aria-pressed="${it.status===k}">${l}</button>`).join('')}</div>`;
-        P.onclick=ev=>{ const c=ev.target.closest('[data-s]'); if(!c) return; d.close(); const was=it.status; if(c.dataset.s===was) return; it.status=c.dataset.s; persist(it,'Marked '+SLABEL[it.status].toLowerCase()+'.'); }; } });
+    const row=(a,icn,l,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-a="${a}">${icn}<span>${l}</span></button>`, posted=it.status==='posted';
+    const d=o.dialog(`<div class="dlg-body cal-menu"><h3 id="calMH" dir="auto">${esc(it.title||'Untitled')}</h3><p class="small"><bdi>${esc(L(parse(it.day),{weekday:'long',day:'numeric',month:'long'}))}</bdi>${it.at?' · <bdi>'+esc(fmtTime(it.at))+'</bdi>':''} · ${esc(SLABEL[it.status]||it.status)}</p>
+      <div class="act-list">${row('mark',ic('check'),posted?'Mark as ready':'Mark as posted')}${capOf(it)?row('copy',ic('copy'),'Copy caption'):''}${row('tomorrow',ic('move'),'Move to tomorrow')}${row('del',ic('trash'),'Delete','danger')}</div>
+      <button type="button" class="link" id="calMX">Close</button></div>`,'cal-dlg');
+    d.setAttribute('aria-labelledby','calMH'); d.querySelector('#calMX').onclick=()=>d.close();
+    d.querySelector('.act-list').addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a; d.close();
+      if(a==='del') return confirmDelete(it); if(a==='copy') return copyCap(it);
+      if(a==='tomorrow') return move(it.id,iso(addDays(parse(it.day),1)));
+      if(a==='mark'){ it.status=posted?'approved':'posted'; persist(it,'Marked '+SLABEL[it.status].toLowerCase()+'.'); } });
   }
 
   /* ---------- events (one set, on the root) ---------- */
-  let lp=null, lpFired=false, dragId=null, tx=null;
-  const cancelLp=()=>{ if(lp){ clearTimeout(lp.t); lp.el.classList.remove('pressing'); lp=null; } };
-  root.addEventListener('pointerdown',e=>{ cancelLp(); lpFired=false; const el=e.target.closest('.cal-item,.cal-pill'); if(!el||e.pointerType==='mouse'||e.button>0) return; const it=items.find(x=>x.id===el.dataset.id); if(!it||it.legacy) return;
-    el.classList.add('pressing'); lp={el,x:e.clientX,y:e.clientY,t:setTimeout(()=>{ lpFired=true; el.classList.remove('pressing'); lp=null; hap('tick'); menu(it); },480)}; });
-  root.addEventListener('pointermove',e=>{ if(lp&&Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>10) cancelLp(); },{passive:true});
-  ['pointerup','pointercancel'].forEach(t=>root.addEventListener(t,cancelLp));
-  addEventListener('scroll',()=>{ if(lp) cancelLp(); },{passive:true,capture:true});
-  root.addEventListener('contextmenu',e=>{ const el=e.target.closest('.cal-item,.cal-pill'); if(!el) return; e.preventDefault(); cancelLp(); menu(items.find(x=>x.id===el.dataset.id)); });
+  let dragId=null, tx=null;
+  root.addEventListener('contextmenu',e=>{ const el=e.target.closest('.cal-item,.cal-pill'); if(!el) return; e.preventDefault(); menu(items.find(x=>x.id===el.dataset.id)); });
   root.addEventListener('click',e=>{ const t=e.target;
-    if(lpFired){ lpFired=false; e.preventDefault(); return; }
     if(t.closest('[data-cal-back]')) return o.onBack();
     if(t.closest('[data-cal-reload]')) return load();
     if(t.closest('[data-cal-signin]')){ o.signIn().then(ok=>{ if(ok) load(); }); return; }
@@ -218,12 +259,13 @@ function make(o){
     b=t.closest('[data-mode]'); if(b) return setMode(b.dataset.mode);
     b=t.closest('[data-week]'); if(b){ anchor=parse(b.dataset.week); mode='week'; wr('studio:calMode','week'); hap('tick'); load(); return; }
     b=t.closest('[data-add]'); if(b) return editSheet(null,b.dataset.add);
+    b=t.closest('[data-copy]'); if(b) return copyCap(items.find(x=>x.id===b.dataset.copy));
     b=t.closest('[data-more]'); if(b) return menu(items.find(x=>x.id===b.dataset.more));
     b=t.closest('[data-open]'); if(b){ const it=items.find(x=>x.id===b.dataset.open); if(it&&!it.legacy) editSheet(it); } });
   /* swipe sideways on the list: previous / next week (or month) */
   root.addEventListener('touchstart',e=>{ const el=e.target.closest('.cal-body'); tx=el&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}:null; },{passive:true});
   root.addEventListener('touchend',e=>{ if(!tx||!e.changedTouches.length) return; const dx=e.changedTouches[0].clientX-tx.x, dy=e.changedTouches[0].clientY-tx.y, ms=Date.now()-tx.t; tx=null;
-    if(Math.abs(dx)>80&&Math.abs(dy)<45&&Math.abs(dx)>Math.abs(dy)*2&&ms<700&&state==='ok'&&!lpFired) go(dx<0?1:-1); },{passive:true});
+    if(Math.abs(dx)>80&&Math.abs(dy)<45&&Math.abs(dx)>Math.abs(dy)*2&&ms<700&&state==='ok') go(dx<0?1:-1); },{passive:true});
   /* drag to move (computers): items are draggable; every day (week row or month cell) takes a drop */
   root.addEventListener('dragstart',e=>{ const el=e.target.closest&&e.target.closest('[data-id][draggable="true"]'); if(!el){ return; } dragId=el.dataset.id; el.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain',dragId); e.dataTransfer.effectAllowed='move'; }catch(_){} });
   root.addEventListener('dragend',e=>{ dragId=null; root.querySelectorAll('.dragging,.drop').forEach(x=>x.classList.remove('dragging','drop')); });

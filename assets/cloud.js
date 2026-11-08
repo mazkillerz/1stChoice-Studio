@@ -248,7 +248,9 @@ async function calendar(brand,range){
 }
 async function saveCalendarItem(item){
   const c=await client(); const row={...item,updated_at:new Date().toISOString()}; if(!row.id) row.id=uid();
-  const {data,error}=await c.from('calendar_items').upsert(row).select().single(); fail(error,'Save to calendar'); return data;
+  let r=await c.from('calendar_items').upsert(row).select().single();
+  if(r.error&&'format' in row&&missing(r.error)){ const {format,...rest}=row; r=await c.from('calendar_items').upsert(rest).select().single(); }   // the format column is not there yet: save without it
+  fail(r.error,'Save to calendar'); return r.data;
 }
 async function deleteCalendarItem(id){ const c=await client(); const {error}=await c.from('calendar_items').delete().eq('id',id); fail(error,'Delete'); }
 async function comments(designId){ const c=await client(); return rows(c.from('comments').select('*').eq('design_id',designId).order('created_at'),'Comments'); }

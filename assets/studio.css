@@ -755,6 +755,17 @@ body.swiping #savedGrid .sv-open{cursor:default}
 }
 @media (min-width:821px){ .stage>.cta-photo{display:none} }
 
+/* Calendar Home row (calendar-simple): lives here, not in calendar.css, because calendar.css only loads when the calendar opens */
+.cal-home{padding-top:var(--sp-2)}
+.cal-home-row{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:var(--sp-2) 18px;border:0;border-radius:var(--r-xl);background:var(--surface);box-shadow:var(--shadow-1);color:var(--fg);text-align:start;cursor:pointer;font:500 var(--fs-m) var(--sans)}
+.cal-home-row svg{width:22px;height:22px;flex:none;color:var(--muted)}
+.cal-home-row .ch-txt{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.cal-home-row b{font:600 var(--fs-m) var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-home-row small{font:400 var(--fs-s) var(--sans);color:var(--muted)}
+.cal-home-row.today small{color:var(--fg)}
+.cal-home-row:active{transform:scale(.99)}
+.cal-home-row:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
 /* ---------- The look (the "fresh look": a preview in 0.6.0, the default for everyone since 0.7.0): the same neutral design
    with motion, soft depth and one bold accent. These rules sit last so they win over the base rules above. ---------- */
 :root{
