@@ -28,6 +28,7 @@ Settings → Previews → Live stock in Restock adds Pick a sale point: choose a
 ### Shorter menus
 type: design
 A saved design's menu no longer scrolls: with Team workflow on, Caption, Send for review, Comments and Campaign sit behind one Team row. Settings is grouped: you first (account, your name, owner), then the app.
+![after](assets/whatsnew/2.0.0-menu-after.jpg)
 
 ### Small fixes
 type: fix
@@ -38,14 +39,17 @@ A calendar item saved quickly could lose who made it; it keeps the name now. Cla
 ### Brand check in Save
 type: feature
 When a design has something off-brand, the Save sheet shows one quiet line for it: a word we don't use (with a one-tap swap to the approved word), 25+ next to Passion fruit, White and Cream on one design, words under Instagram's covered top or bottom, text too small for a phone, text hard to read on its background, a can that isn't the HD cut-out, or an Arabic line that isn't approved yet. Fix or Ignore; it never stops a save, and a clean design sees nothing new. Turn it off in Settings → Brand check.
+![after](assets/whatsnew/1.55.0-brandcheck-after.jpg)
 
 ### Resize to another size
 type: feature
 In Create, Page → Resize to… makes a copy of the page as a story, post, square or highlight cover, laid out again for that size: headline, product, button, logo and backgrounds move into the new safe area. The original page stays as it was.
+![after](assets/whatsnew/1.55.0-resize-after.jpg)
 
 ### National Day is an occasion pack
 type: feature
 Occasions now come as packs: National Day's templates, pieces and crayon text live together, and while it is in season (all of November) Home shows a small card that opens its templates. Saved designs open exactly as before. The next occasion (Ramadan, Eid, Winter camp) is "drop the files in and list them".
+![after](assets/whatsnew/1.55.0-pack-after.jpg)
 
 ### One look everywhere
 type: design
@@ -54,6 +58,7 @@ Pills, panels, stickers, number circles, the logo block and the Instagram handle
 ### Previews to try: Team workflow
 type: feature
 Settings → Previews → Team workflow switches on, on this phone: a content calendar (week list on the phone, month view, drag to move on a computer, posting day on Home), Send for review with an owner's review queue on Home and comments pinned to a spot on the picture, an Approved collection, captions and hashtags saved with each design (Copy after Save), campaign sets (shared words for several designs, Save all as full-quality pictures, plan them on the calendar), and the Phrasebook, where the team suggests lines and the owner approves them for every word picker.
+![after](assets/whatsnew/1.55.0-team-after.jpg)
 
 ### Previews to try: Claude Design import and Moving stories
 type: feature
@@ -64,10 +69,12 @@ Settings → Previews → Import a Claude Design board opens an exported board (
 ### Update your saved design, or save it as new
 type: fix
 Opening a saved design and tapping Save now updates that design: the button says Update “name”, with Save as new right under it. Before, the team switch was off for an opened design, so Save made only a picture and the team copy never changed. A double tap on a slow connection, or a tap while the design was still opening, no longer makes a copy. Team templates start as a new design, with Update the template as the other choice. Create works the same way.
+![after](assets/whatsnew/1.54.0-update-after.jpg)
 
 ### Versions of every team design
 type: feature
 Each update keeps the one before (up to 20). In Saved, open a design's menu → Versions to see each version's picture, who saved it and when, and Restore any of them. Restoring keeps the current one too, so nothing is lost.
+![after](assets/whatsnew/1.54.0-versions-after.jpg)
 
 ### Covers that show the design
 type: fix
