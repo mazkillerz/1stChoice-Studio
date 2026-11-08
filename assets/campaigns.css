@@ -1,5 +1,5 @@
 /* Campaign sets (w2-campaigns, preview flag team): the Campaigns row in Saved, Add to campaign, the campaign view, Plan. Interface tokens only. */
-.camp-row{display:flex;padding:0 var(--sp-4,16px) var(--sp-2,8px)}
+.camp-row{display:flex;padding:0 0 var(--sp-2,8px)}
 .camp-row[hidden]{display:none}
 .camp-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px}
 .camp-chip svg{width:18px;height:18px}

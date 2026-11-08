@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.1.1 · 8 Nov 2026
+
+### Saved and calendar fixes
+type: fix
+Designs you made from a template and saved without a photo of your own now show in the calendar's Pick a design (they were left out). On the Saved page, the collections are no longer squeezed into a tiny strip next to Campaigns: Campaigns has its own line and the collections wrap onto more lines, so every one is one tap away.
+
 ## 2.1.0 · 8 Nov 2026
 
 ### Calendar: plan a post or story in a few taps

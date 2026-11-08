@@ -23,7 +23,7 @@ const db=seedDesigns();
 ['Summer can','Passion fruit','علبة باشن فروت','Weekend offer','Friends and cans','New flavour','Morning coffee','Ramadan kareem','Gift box'].forEach((name,i)=>{ const id='x'+i, tool=['photo-story','carousel','offer','restock','collage','highlight','split','photo-story','offer'][i], cols=[['Offers'],['Restocks'],[],['Offers'],[],['Restocks'],[],['Offers'],[]][i];
   db.files['1stchoice/'+id+'/thumb.jpg']=db.files['1stchoice/seed0/thumb.jpg']; db.designs[id]={id,brand:'1stchoice',tool,name,kind:'design',recipe:{photoPaths:[]},thumb_path:'1stchoice/'+id+'/thumb.jpg',cols,updated_at:new Date(Date.now()-(150+i)*3600e3).toISOString()}; });
 db.designs.seed7.kind='template'; db.designs.seed7.name='A template';   // templates are not offered
-const NDES=Object.values(db.designs).filter(d=>d.kind!=='template').length;
+const NDES=Object.values(db.designs).length;   // templates too (2.1.1): a design saved without its own photo is stored as a template
 db.calendar=[
   {id:'c1',brand:'1stchoice',day:TODAY,at:'09:30',status:'draft',format:'story',title:'Restock – 24 Oct',caption:'New batch today\nsecond line #cold',hashtags:['#cold'],design_ids:['seed0'],author:'Sara',created_at:new Date().toISOString()},
   {id:'c2',brand:'1stchoice',day:TODAY,at:null,status:'in_review',format:'post',title:'Weekend post',caption:'',hashtags:[],design_ids:[],author:'Sara',created_at:new Date().toISOString()}];
@@ -103,7 +103,7 @@ async function phone(dark){
   ok(T+'picker opens full screen with the Posts chip preset from the format',await pg.evaluate(()=>{ const r=document.querySelector('dialog.cal-full').getBoundingClientRect(); return Math.abs(r.width-innerWidth)<=1&&Math.abs(r.height-innerHeight)<=2&&document.querySelector('[data-shape="post"]').getAttribute('aria-pressed')==='true'; }));
   await pg.tap('[data-shape=""]'); await pg.waitForTimeout(150);
   const all=(await pg.$$('.cal-full .cal-pcard')).length;
-  ok(T+'All shapes shows ALL designs (templates left out)',all===NDES,[all,NDES]);
+  ok(T+'All shapes shows ALL designs (templates included)',all===NDES,[all,NDES]);
   ok(T+'Posts chip narrows to the post-shaped ones',nAll>0&&nAll<all,[nAll,all]);
   await pg.evaluate(()=>{ const g=document.querySelector('.cal-full .cal-pcard:last-child'); g.scrollIntoView({block:'end'}); });
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-full .cal-pcard:last-child img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});

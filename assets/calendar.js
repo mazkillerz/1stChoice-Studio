@@ -200,7 +200,7 @@ function make(o){
   /* the full-screen design picker: search, collection chips, shape chips, one grid that scrolls with the page, thumbs loaded as they scroll into view */
   async function pickDesign(it,fmt,done){
     let cols=[]; try{ cols=C&&C.collections?(await C.collections(o.brand))||[]:[]; }catch(_){ cols=[]; }
-    const list=designs.filter(g=>g.kind!=='template'), colName=Object.fromEntries(cols.map(c=>[c.id,c.name]));
+    const list=designs.slice(), colName=Object.fromEntries(cols.map(c=>[c.id,c.name]));
     const hay=new Map(list.map(g=>[g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' '),...(g.collections||[]).map(c=>colName[c]||c)].join(' '))]));
     let q='', col='', shape=fmt==='story'?'story':fmt==='post'?'post':'';
     const d=o.dialog(`<div class="dlg-body cal-pick"><div class="cp-top"><div class="cp-bar"><button type="button" class="cs-x" data-back aria-label="Back">${ic('back')}</button><h3 id="calPH">Pick a design</h3><button type="button" class="link cp-skip" data-skip>Skip for now</button></div>

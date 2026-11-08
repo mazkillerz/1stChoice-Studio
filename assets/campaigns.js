@@ -100,7 +100,7 @@ function init(o){
   /* the Campaigns row under the Saved title (only with the flag; this module is only loaded then) */
   function paint(){
     const anchor=o.anchor&&o.anchor(); if(!anchor) return;
-    let row=document.getElementById('campRow'); if(!row){ row=document.createElement('div'); row.id='campRow'; row.className='camp-row'; anchor.before(row);
+    let row=document.getElementById('campRow'); if(!row){ row=document.createElement('div'); row.id='campRow'; row.className='camp-row'; (anchor.closest('.sp-bar')||anchor).before(row);
       row.addEventListener('click',e=>{ if(e.target.closest('[data-camps]')){ hap('tick'); list(); } }); }
     const has=!!o.designs().length; row.hidden=!has;
     load().then(()=>{ row.innerHTML=`<button type="button" class="chip camp-chip" data-camps aria-haspopup="dialog">${ic('layers')}<span>Campaigns</span>${camps.length?`<i>${camps.length}</i>`:''}</button>`; }).catch(()=>{ row.innerHTML=`<button type="button" class="chip camp-chip" data-camps>${ic('layers')}<span>Campaigns</span></button>`; }); }
