@@ -29,6 +29,15 @@ function load(src){return new Promise((res,rej)=>{const i=new Image();i.onload=(
 const segOdd=(opts,cols)=>!cols&&opts.length===5?' seg-32':'';
 function segCols(opts){ const n=opts.length, max=opts.some(o=>o.ic)?3:4; if(n<=max) return n; if(n>6&&n%4===0) return 4; /* 8 styles: two short rows, not four tall ones */ return n%max===0?max:(n%(max-1)===0?max-1:max); }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+/* lazy modules (simplify w3): lazy('review',{css:1}) loads assets/<name>.js (and <name>.css) once and resolves its global (StudioReview).
+   One place for what each feature used to do by hand; a failed load is forgotten so the next tap retries. Studio.lazy / Studio.loadScript are for tools. */
+const LAZY={};
+function lazyCss(name){ if(!document.getElementById('lz-'+name)){ const l=document.createElement('link'); l.id='lz-'+name; l.rel='stylesheet'; l.href=ROOT+'assets/'+name+'.css'; document.head.appendChild(l); } }
+function lazy(name,o){ o=o||{}; const g=o.global||'Studio'+name.replace(/(^|-)(\w)/g,(m,a,c)=>c.toUpperCase());
+  if(o.css) lazyCss(name);
+  if(window[g]) return Promise.resolve(window[g]);
+  return LAZY[name]||(LAZY[name]=loadScript(ROOT+'assets/'+name+'.js').then(()=>window[g],e=>{ delete LAZY[name]; throw e; })); }
+const whoLib=()=>lazy('who');   // StudioWho, loaded
 /* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
    loaded the first time someone picks one. Safari opens them itself, so it's only used when needed. */
 const isHeic=f=>!!f&&(/^image\/hei[cf]/i.test(f.type||'')||/\.(heic|heif)$/i.test(f.name||''));
@@ -1257,7 +1266,7 @@ async function tool(cfg){
   function syncCut(real){ const row=$('cutRow'); row.hidden=!real; if(!real) return; const why=window.StudioCutout?StudioCutout.supported():'', b=$('photoCut'), p=S.photos[S.active];
     b.disabled=!!why||!!(window.StudioCutout&&StudioCutout.isBusy()); b.hidden=false; if(!why&&!(window.StudioCutout&&StudioCutout.isBusy())) cutNote(p&&p.cutout?'Background removed. Undo brings it back.':(window.StudioCutout?StudioCutout.firstNote():'First time only: this downloads about 15 MB, then it works offline.')); else if(why) cutNote(why); }
   if($('photoCut')) $('photoCut').addEventListener('click',async()=>{ const i=S.active, p=S.photos[i]; if(!p||!p.img||p.sample) return;
-    try{ if(!window.StudioCutout) await loadScript(ROOT+'assets/cutout.js'); }catch(_){ cutNote('Could not load it. Check the connection.'); return; }
+    try{ await lazy('cutout'); }catch(_){ cutNote('Could not load it. Check the connection.'); return; }
     const why=StudioCutout.supported(); if(why){ cutNote(why); return; }
     $('photoCut').disabled=true; haptic('tick');
     try{ const c=await StudioCutout.run(p.img,{onProgress:t=>{ cutNote(t); }}); if(!c||S.photos[i]!==p) return;
@@ -1448,7 +1457,7 @@ async function tool(cfg){
   function defaultName(){ const d=new Date(); return cfg.title+' – '+d.getDate()+' '+d.toLocaleString('en',{month:'short'}); }
   /* who (mega): the name for the design's author; the first save on a device asks once (never in automated browsers) */
   const whoName=()=>{ try{ return (JSON.parse(localStorage.getItem('studio:who'))||{}).name||null; }catch(_){ return null; } };
-  async function whoOnce(){ try{ if(whoName()||store('studio:who:asked')||navigator.webdriver) return; store('studio:who:asked','1'); const W=await (window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)); await W.ask({brand:B.id}); }catch(_){} }
+  async function whoOnce(){ try{ if(whoName()||store('studio:who:asked')||navigator.webdriver) return; store('studio:who:asked','1'); const W=await whoLib(); await W.ask({brand:B.id}); }catch(_){} }
   const whoNow=()=>whoName()||undefined;
   /* saved-versions (mega): one team save at a time (a second tap during a slow upload used to start a second NEW design, because the
      first had not set `design` yet); a save waits for a design that is still opening; a design that did not open is never replaced by a copy */
@@ -1549,8 +1558,7 @@ async function tool(cfg){
   var CAP_ON=flags.on('team'), capSt={caption:'',tags:[],dirty:false}, capEd=null, capCopyBtn=null;
   const CAP_KEY='studio:cap:'+B.id+':'+cfg.id;
   const capHas=()=>!!String(capSt.caption||'').trim()||capSt.tags.length>0;
-  const capLib=async()=>{ if(!document.getElementById('capCss')){ const l=document.createElement('link'); l.id='capCss'; l.rel='stylesheet'; l.href=ROOT+'assets/captions.css'; document.head.appendChild(l); }
-    if(!window.StudioCaptions) await loadScript(ROOT+'assets/captions.js'); return window.StudioCaptions; };
+  const capLib=()=>lazy('captions',{css:1});
   function capSum(){ const el=document.getElementById('capSum'); if(!el) return; const f=String(capSt.caption||'').split(/\r?\n/).find(l=>l.trim()); el.textContent=f?f.trim():capSt.tags.length?capSt.tags.join(' '):'Add a caption and hashtags'; el.dir='auto'; }
   function capDoneSync(){ if(!CAP_ON||!capCopyBtn) return; const tl=$('teamStatus'); capCopyBtn.hidden=!(capHas()&&(!$('doneBox').hidden||(!tl.hidden&&tl.classList.contains('ok')))); }
   function capLoad(d){ if(!CAP_ON) return; capSt={caption:d.caption||'',tags:Array.isArray(d.hashtags)?d.hashtags.slice():[],dirty:false}; if(capEd) capEd.set(capSt.caption,capSt.tags); capSum(); capDoneSync(); }
@@ -1575,9 +1583,8 @@ async function tool(cfg){
   /* review (mega): after a team save the Save sheet offers "Send for review" (only with the "team" preview on) */
   function rvSaved(){ const b=$('rvSend'); if(!b||!design) return; b.hidden=false; b.disabled=false; b.textContent='Send for review'; }
   if($('rvSend')) $('rvSend').addEventListener('click',async()=>{ const b=$('rvSend'); if(!design) return; b.disabled=true;
-    try{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); }
-      if(!window.StudioReview) await loadScript(ROOT+'assets/review.js');
-      await StudioReview.send({brand:B.id,cloud,ask:()=>window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)},design.id); b.textContent='Sent for review'; }
+    try{ const R=await lazy('review',{css:1});
+      await R.send({brand:B.id,cloud,ask:whoLib},design.id); b.textContent='Sent for review'; }
     catch(err){ b.disabled=false; status(teamErr(err)); } });
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
 
@@ -2082,7 +2089,7 @@ async function tool(cfg){
         if(r==='needtap'){ progress(null); showResult(files,true); finish('Ready!','Tap “Save to Photos” to put it in your photos.'+small,true); return; }
       }
       /* a computer: several pages come as one ZIP (browsers stop a page that downloads many files at once); one by one if the ZIP can't be made */
-      if(!inClaude&&!touch&&!isPhone()&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); if(!window.StudioBatch) await loadScript(ROOT+'assets/batch.js'); zip=await window.StudioBatch.zip(files,stamp); }catch(_){ zip=null; }
+      if(!inClaude&&!touch&&!isPhone()&&files.length>1){ let zip=null; try{ progress(1,'Packing '+files.length+' '+PN.many+' into one ZIP…'); zip=await (await lazy('batch')).zip(files,stamp); }catch(_){ zip=null; }
         if(zip){ const name=base+'.zip', url=URL.createObjectURL(zip), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000);
           showResult(files,false); finish('Saved!','Your '+files.length+' '+PN.many+' are in your downloads in one ZIP ('+name+'), numbered in order.'+small); return; } }
       if(!inClaude){ for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1500); await new Promise(r=>setTimeout(r,250)); } }
@@ -2161,8 +2168,8 @@ async function tool(cfg){
       return {...o,kind:'other'}; });
     return {format:tokFormat(W,H),w:W,h:H,rules:B.rules,brand:B,approved,grounds:reg.grounds||[],items}; }
   const rulesScope=()=>design?design.id:'draft:'+(draftId||'new');
-  function rulesRun(){ if(!window.StudioRules&&!rulesLoading) rulesLoad().then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
-  let rulesLoading=null; const rulesLoad=()=>rulesLoading=rulesLoading||loadScript(ROOT+'assets/rules.js').catch(()=>{});
+  function rulesRun(){ if(!window.StudioRules&&!rulesLoading) (rulesLoading=lazy('rules').catch(()=>{})).then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
+  let rulesLoading=null;
   const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
   function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
@@ -2620,11 +2627,10 @@ async function home(){
     const root=$('calendarView'); if(!root) return; if(!calReady){ calPend=true; return; }
     const today=calToday; calToday=false;
     try{
-      if(!document.getElementById('calCss')){ const l=document.createElement('link'); l.id='calCss'; l.rel='stylesheet'; l.href=ROOT+'assets/calendar.css'; document.head.appendChild(l); }
-      if(!window.StudioCalendar) await loadScript(ROOT+'assets/calendar.js');
-      if(!calApi) calApi=StudioCalendar.init({root,brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
+      const Cal=await lazy('calendar',{css:1});
+      if(!calApi) calApi=Cal.init({root,brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
         cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
-        netDown:e=>netDown(e), who:{author:()=>window.StudioWho&&StudioWho.author(),ask:async o2=>{ const W=await whoLib(); return W.ask(o2); }}});
+        netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null,ask:   /* who.js may still be loading: read the stored name meanwhile, or a fast save lost its author */ async o2=>(await whoLib()).ask(o2)}});
       if(window.StudioWho===undefined) whoLib().catch(()=>{});
       calApi.show({today});
     }catch(_){ root.innerHTML='<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>The calendar did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" id="calRetry">Try again</button></div>'; const r=root.querySelector('#calRetry'); if(r) r.onclick=showCalendar; }
@@ -2647,10 +2653,8 @@ async function home(){
   const RV_LABEL={in_review:'In review',approved:'Approved',changes:'Changes asked'};
   const rvChip=d=>flags.on('team')&&d.review&&RV_LABEL[d.review]?`<em class="rv-chip st-${d.review}" title="${esc(RV_LABEL[d.review]+(d.review_by?' · '+d.review_by:''))}">${RV_LABEL[d.review]}</em>`:'';
   const rvWho=()=>{ try{ const r=JSON.parse(localStorage.getItem('studio:who')); return {name:String((r&&r.name)||'').trim(),owner:!!(r&&r.owner)}; }catch(_){ return {name:'',owner:false}; } };
-  let rvLoad=null;
-  const rvCss=()=>{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); } };
-  if(flags.on('team')) rvCss();
-  const rvLib=()=>{ rvCss(); if(!rvLoad) rvLoad=window.StudioReview?Promise.resolve():loadScript(ROOT+'assets/review.js'); return rvLoad.then(()=>window.StudioReview); };
+  const rvLib=()=>lazy('review',{css:1});
+  if(flags.on('team')) lazyCss('review');   // the chips and Home row need the styles before the script
   const rvCtx=()=>({brand:B.id,cloud:getCloud,esc,haptic,dialog,toast:hubToast,ago,designs:()=>all,ask:whoLib,
     thumb:async p=>{ if(!p) return null; if(urls[p]) return urls[p]; const c=await getCloud(); const u=await c.fileUrl(p); if(u) urls[p]=u; return u; },
     refresh:()=>{ paint(); loadSaved(true); }});
@@ -2747,8 +2751,8 @@ async function home(){
     const list=cont.filter(x=>!x.gone).map((x,i)=>({tool:x.tool,id:x.id,key:x.key,at:x.d.at,draft:true,name:draftTitle(x),label:draftTitle(x)+' ('+ago(x.d.at)+')',
       skip:x.tool==='video'?'is a video: open it to save the MP4':x.d.json||x.d.board?'':'could not be opened'}));
     if(!list.length) return;
-    try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
-    const max=window.StudioRender.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
+    let R; try{ R=await lazy('render'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
+    const max=R.MAX; if(list.length>max) hubToast('Saving the newest '+max+'.');
     const one=n=>n===1, dev=devWord();
     const offer={label:n=>one(n)?'Remove it from Continue editing':'Remove these '+n+' from Continue editing',
       title:n=>one(n)?'Remove this story from Continue editing?':'Remove these '+n+' stories from Continue editing?',
@@ -2758,7 +2762,7 @@ async function home(){
           if(!x||x.gone||!now||now.at!==it.at) return;   // edited in another tab since: keep it
           x.gone=true; removeDraft(x.key); n++; });
         paintCont(); haptic('tick'); hubToast(n?(one(n)?'1 story':n+' stories')+' removed from Continue editing.':'Nothing removed: those stories changed since.'); }};
-    await window.StudioRender.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true,offer}); };
+    await R.saveDesigns(list.slice(0,max),{toast:hubToast,drafts:true,offer}); };
 
   /* ---------- first-run welcome (assets/welcome.js): three short swipes (the main tools, pins and search, saving). Once per device,
      only on a device that never used Studio; Settings → Welcome tour (or ?welcome=1) shows it again. ---------- */
@@ -2775,33 +2779,31 @@ async function home(){
   /* ---------- Settings (the gear at the top): the few things you can change, in one short list ---------- */
   /* who (mega): the name on saved designs (assets/who.js, loaded the first time it is needed) */
   const whoRead=()=>{ try{ return JSON.parse(localStorage.getItem('studio:who'))||{}; }catch(_){ return {}; } };
-  const whoLib=async()=>{ if(!window.StudioWho) await loadScript(ROOT+'assets/who.js'); return window.StudioWho; };
-  const rulesOn=()=>{ try{ return localStorage.getItem('studio:rulesOff')!=='1'; }catch(_){ return true; } };   // rules (mega): Settings → Brand check
+    const rulesOn=()=>{ try{ return localStorage.getItem('studio:rulesOff')!=='1'; }catch(_){ return true; } };   // rules (mega): Settings → Brand check
   /* phrasebook (mega): the screen is assets/phrasebook.js (lazy, preview flag "team") */
-  async function pbOpen(){ try{ if(!document.getElementById('pbCss')){ const l=document.createElement('link'); l.id='pbCss'; l.rel='stylesheet'; l.href=ROOT+'assets/phrasebook.css'; document.head.appendChild(l); }
-    if(!window.StudioPhrasebook) await loadScript(ROOT+'assets/phrasebook.js'); StudioPhrasebook.open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
+  async function pbOpen(){ try{ (await lazy('phrasebook',{css:1})).open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
     const acc=me?row('account',ICON.user,'Account',esc((C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out')):row('account',ICON.user,'Sign in','See and save your team’s designs');
     const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini" data-x>Done</button></div>
       <div class="act-list set-list">${acc}
-      ${row('who',ICON.user,'Who’s using Studio',who.name?esc(who.name):'Not set yet · your name goes on saved designs','Change')}
-      <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button>
-      <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings in Save: off-brand words, small text, covered zones</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
-      ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
+      ${row('who',ICON.user,'Who’s using Studio',who.name?esc(who.name):'Not set yet · goes on saved designs','Change')}
+      <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button></div>
+      <div class="act-list set-list">${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
+      <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings before you save</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
+      ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
-      ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
       ${row('previews',ICON.sparkle,'Previews','New features waiting for the owner’s OK',flags.list().filter(f=>f.on).length?flags.list().filter(f=>f.on).length+' on':'Off')}
       ${row('lab',ICON.lab,'Experimental','New things being tested (passcode)')}</div>
       <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this ${devWord()}.</p></div>`,'set-dlg');
     d.setAttribute('aria-labelledby','setH'); d.tabIndex=-1; d.focus();
     d.querySelector('[data-x]').onclick=()=>d.close();
-    d.querySelector('.set-list').addEventListener('click',e=>{ const b=e.target.closest('[data-set]'); if(!b) return; const a=b.dataset.set; haptic('tick');
+    d.querySelector('.set').addEventListener('click',e=>{ const b=e.target.closest('[data-set]'); if(!b) return; const a=b.dataset.set; haptic('tick');
       if(a==='view'){ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); b.querySelector('.set-end').textContent=toolsView==='list'?'List':'Grid'; b.firstElementChild.outerHTML=toolsView==='list'?ICON.list:ICON.grid; return; }
-      if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · your name goes on saved designs'; }); return; }
+      if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · goes on saved designs'; }); return; }
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
       if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
       if(a==='previews'){ openPreviews(b); return; }
@@ -3081,15 +3083,15 @@ async function home(){
   { const b=document.createElement('button'); b.type='button'; b.className='sel-act'; b.id='selSave'; b.disabled=true; b.innerHTML=ICON.download+'<span>Save pictures</span>';
     $('selBar').insertBefore(b,$('selDel'));
     b.addEventListener('click',async()=>{ const list=picked(); if(!list.length) return; haptic('tick');
-      try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
-      await window.StudioRender.saveDesigns(list,{toast:hubToast,done:()=>{ if(sel) endSelect(true); }}); }); }
+      let R; try{ R=await lazy('render'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
+      await R.saveDesigns(list,{toast:hubToast,done:()=>{ if(sel) endSelect(true); }}); }); }
   /* campaigns (mega w2, preview flag team): assets/campaigns.js (lazy). Select mode gets "Campaign", Saved gets one Campaigns row, a design's menu "Add to campaign".
      With the flag off none of this exists (no button, no row, no request). */
   let campApi=null, campBusy=null;
-  const campLoad=()=>campBusy||(campBusy=(async()=>{ if(!window.StudioCampaigns) await loadScript(ROOT+'assets/campaigns.js');
-    return campApi=window.StudioCampaigns.init({brand:B.id,cloud:getCloud,designs:()=>all,urls:()=>urls,fillThumbs,esc,dialog,toast:hubToast,haptic,icons:ICON,toolPage,TOOLS,
+  const campLoad=()=>campBusy||(campBusy=(async()=>{ lazyCss('campaigns'); const K=await lazy('campaigns');
+    return campApi=K.init({brand:B.id,cloud:getCloud,designs:()=>all,urls:()=>urls,fillThumbs,esc,dialog,toast:hubToast,haptic,icons:ICON,toolPage,TOOLS,
       who:()=>{ try{ return (window.StudioWho&&StudioWho.author&&StudioWho.author())||null; }catch(_){ return null; } },
-      refresh:()=>loadSaved(true),endSelect:()=>{ if(sel) endSelect(true); },picked:()=>picked(),anchor:()=>$('colChips'),ROOT,loadScript,plural}); })().catch(e=>{ campBusy=null; throw e; }));
+      refresh:()=>loadSaved(true),endSelect:()=>{ if(sel) endSelect(true); },picked:()=>picked(),anchor:()=>$('colChips'),lazy,plural}); })().catch(e=>{ campBusy=null; throw e; }));
   const campPaint=()=>{ if(!flags.on('team')||!loaded||!member) return; if(campApi) campApi.paint(); else campLoad().then(a=>a.paint()).catch(()=>{}); };
   if(flags.on('team')){ const b=document.createElement('button'); b.type='button'; b.className='sel-act'; b.id='selCamp'; b.disabled=true; b.innerHTML=ICON.layers+'<span>Campaign</span>';
     $('selBar').insertBefore(b,$('selDel'));
@@ -3195,11 +3197,9 @@ async function home(){
   const relTime=t=>{ try{ const s=(new Date(t).getTime()-Date.now())/1000, f=new Intl.RelativeTimeFormat(document.documentElement.lang||undefined,{numeric:'auto'});
       const a=Math.abs(s); return a<60?f.format(0,'second'):a<3600?f.format(Math.round(s/60),'minute'):a<86400?f.format(Math.round(s/3600),'hour'):f.format(Math.round(s/86400),'day'); }catch(_){ return ago(t); } };
   /* captions (mega 4.3): a design's menu gets Caption (edit + Copy) and, when it has one, Copy caption (assets/captions.js, flag "team") */
-  const capRows=dsg=>{ const row=(a,l,i)=>`<button type="button" class="act-row" data-act="${a}">${i}<span>${l}</span></button>`;
-    return row('cap','Caption',ICON.pencil)+((dsg.caption||(dsg.hashtags||[]).length)?row('capcopy','Copy caption',ICON.copy):''); };
+  const capRows=(dsg,row)=>row('cap',ICON.pencil,'Caption')+((dsg.caption||(dsg.hashtags||[]).length)?row('capcopy',ICON.copy,'Copy caption'):'');
   async function capSheet(act,dsg,P,st,d){
-    try{ if(!document.getElementById('capCss')){ const l=document.createElement('link'); l.id='capCss'; l.rel='stylesheet'; l.href=ROOT+'assets/captions.css'; document.head.appendChild(l); }
-      if(!window.StudioCaptions) await loadScript(ROOT+'assets/captions.js'); const L=window.StudioCaptions;
+    try{ const L=await lazy('captions',{css:1});
       if(act==='capcopy'){ L.copy(dsg.caption,dsg.hashtags,hubToast); return; }
       P.innerHTML='<div class="cap-box"><div id="capEdHost"></div><button type="button" class="mini solid" id="capSaveBtn">Save caption</button></div>';
       const ed=L.editor(P.querySelector('#capEdHost'),{brand:B,root:ROOT,caption:dsg.caption||'',tags:dsg.hashtags||[],toast:hubToast,poolLoad:()=>L.pool(C,B.id)});
@@ -3226,11 +3226,15 @@ async function home(){
   function designSheet(dsg){
     try{
       const page=toolPage(dsg.tool), names=dsg.collections.map(colName).filter(Boolean), url=urls[dsg.thumb_path], tpl=dsg.kind==='template', open=page+'?design='+encodeURIComponent(dsg.id);
-      const row=(act,ic,label,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-act="${act}">${ic}<span>${label}</span></button>`;
+      const row=(act,ic,label,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-act="${act}">${ic}<span>${label}</span>${act==='team'?ICON.next:''}</button>`;
+      /* team rows (mega): with the "team" preview on, Caption, Send for review, Comments and Campaign live behind one Team row (a second list in the same sheet),
+         so the menu stays short; each feature adds its rows here and nothing else changes with the flag off */
+      const teamRows=flags.on('team')?capRows(dsg,row)+rvRows(dsg,row):'';
       const d=dialog(`<div class="dlg-body design-sheet">
       <div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>
-      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${flags.on('team')?capRows(dsg):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${rvRows(dsg,row)}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      <div id="dsLists"><div class="act-list" id="dsMain">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${teamRows?row('team',ICON.user,'Team'):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      ${teamRows?`<div class="act-list" id="dsTeam" hidden>${row('teamback',ICON.back,'Back')}${teamRows}</div>`:''}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
@@ -3238,8 +3242,9 @@ async function home(){
     if(campApi&&flags.on('team')) campApi.designRow(d,dsg);   // campaigns (mega w2)
     d.querySelector('#dsClose').onclick=()=>d.close();
     d.querySelector('.ds-peek').onclick=()=>{ d.close(); peek(dsg); };
-    d.querySelector('.act-list').addEventListener('click',async ev=>{
+    d.querySelector('#dsLists').addEventListener('click',async ev=>{
       const b=ev.target.closest('[data-act]'); if(!b) return; const act=b.dataset.act; st('');
+      if(act==='team'||act==='teamback'){ const t=act==='team'; d.querySelector('#dsMain').hidden=t; d.querySelector('#dsTeam').hidden=!t; (d.querySelector(t?'#dsTeam [data-act]':'#dsMain [data-act="team"]')||{focus(){}}).focus(); return; }
       d.querySelectorAll('.act-row').forEach(x=>x.classList.toggle('on',x===b&&(act==='rename'||act==='cols')));
       if(act==='rename'){ P.innerHTML=`<div class="inline"><label class="sr-only" for="rn">New name</label><input type="text" id="rn" dir="auto" maxlength="80"><button type="button" class="mini solid" id="rnGo">Save</button></div>`; const i=P.querySelector('#rn'); i.value=dsg.name; i.focus(); i.select();
         const go=async()=>{ const v=i.value.trim(); if(!v) return; try{ await C.renameDesign(dsg.id,v); dsg.name=v; d.close(); paint(); hubToast('Renamed to “'+v+'”.'); loadSaved(true); }catch(err){ st(err.message); } };
@@ -3248,8 +3253,7 @@ async function home(){
       if(act==='sel'){ d.close(); startSelect(dsg.id); return; }
       /* saved-versions (mega): Redraw cover (the design is drawn in the hidden render frame, the cover is stored) and Versions */
       if(act==='cover'){ st('Redrawing the cover…'); b.disabled=true;
-        try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js');
-          const r=await window.StudioRender.design({id:dsg.id,tool:dsg.tool},{now:false},1);
+        try{ const r=await (await lazy('render')).design({id:dsg.id,tool:dsg.tool},{now:false},1);
           if(!r||r.error||!r.out||!r.out[0]) throw new Error(r&&r.error?'That design '+r.error+'.':'Could not draw it.');
           const bm=await createImageBitmap(r.out[0].blob), k=360/bm.width, cv=document.createElement('canvas'); cv.width=360; cv.height=Math.round(bm.height*k); const cx=cv.getContext('2d'); cx.drawImage(bm,0,0,cv.width,cv.height); if(bm.close) bm.close();
           const blob=await canvasBlob(cv,'image/jpeg',.85); cv.width=cv.height=0; await C.setThumb(dsg.id,blob);
@@ -3351,5 +3355,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

@@ -52,7 +52,7 @@ function editor(host,o){
   function warn(){ const w=q('.cap-warn'); let f=[]; try{ if(window.StudioRules&&StudioRules.checkText) f=StudioRules.checkText(ta.value,{rules:B.rules,brand:B}); }catch(_){}
     w.hidden=!f.length; w.textContent=f.length?f[0].msg+(f.length>1?' (+'+(f.length-1)+' more)':''):''; return f; }
   const later=()=>{ clearTimeout(wT); wT=setTimeout(warn,250); };
-  const ensureRules=()=>{ if(window.StudioRules||!window.Studio) return; if(!ensureRules.p){ const s=document.createElement('script'); s.src=(o.root||'')+'assets/rules.js'; ensureRules.p=new Promise(r=>{ s.onload=s.onerror=r; }); document.head.appendChild(s); } ensureRules.p.then(warn); };
+  const ensureRules=()=>{ if(window.StudioRules||!window.Studio) return; Studio.lazy('rules').catch(()=>{}).then(warn); };
   function addTag(raw){ const add=tagsOf(raw); if(!add.length) return false; add.forEach(t=>{ if(!tags.includes(t)) tags.push(t); }); paintTags(); emit(); return true; }
   const flush=()=>{ if(addTag(tin.value)) tin.value=''; };
   ta.addEventListener('input',()=>{ emit(); later(); });

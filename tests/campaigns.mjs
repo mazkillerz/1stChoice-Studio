@@ -161,7 +161,7 @@ async function cell(name,vp,opt){
     await pg.evaluate(()=>{ const m=document.querySelector('#savedGrid [data-id="sOther"] [data-dmore]'); if(m) m.click(); else document.querySelector('#savedGrid [data-id="sOther"] .sv-open').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true})); });
     await pg.waitForSelector('.design-sheet [data-camp]',{timeout:5000}).catch(()=>{});
     ok('a free design menu says "Add to campaign"',/Add to campaign/.test(await pg.textContent('.design-sheet [data-camp]').catch(()=>'')));
-    await tap('.design-sheet [data-camp]'); await pg.waitForSelector('.camp-dlg #adChips [data-id]'); await tap('#adChips [data-id]'); await tap('#adGo'); await pg.waitForFunction(()=>!!(JSON.parse(localStorage.getItem('fakecloud')).designs.sOther||{}).campaign_id,null,{timeout:8000}).catch(()=>{});
+    await tap('.design-sheet [data-act="team"]'); await tap('.design-sheet [data-camp]'); await pg.waitForSelector('.camp-dlg #adChips [data-id]'); await tap('#adChips [data-id]'); await tap('#adGo'); await pg.waitForFunction(()=>!!(JSON.parse(localStorage.getItem('fakecloud')).designs.sOther||{}).campaign_id,null,{timeout:8000}).catch(()=>{});
     d=await dbOf(pg); ok('"Add to campaign" put the design in it',d.designs.sOther.campaign_id===d.campaigns[0].id);
     await pg.waitForTimeout(600); await tap('#campRow [data-camps]'); await pg.waitForSelector('#cpList [data-cp]'); await tap('#cpList [data-cp]'); await pg.waitForSelector('.camp-view #cvGrid [data-rm="sOther"]',{timeout:8000});
     await tap('#cvGrid [data-rm="sOther"]'); await pg.waitForFunction(()=>!(JSON.parse(localStorage.getItem('fakecloud')).designs.sOther||{}).campaign_id,null,{timeout:5000}).catch(()=>{});

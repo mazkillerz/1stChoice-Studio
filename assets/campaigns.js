@@ -88,8 +88,6 @@ const pad=n=>(n<10?'0':'')+n, iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'
 function init(o){
   const esc=o.esc, hap=k=>{ try{ o.haptic(k); }catch(_){} }, ic=k=>(o.icons&&o.icons[k])||'';
   let camps=[], C=null;
-  const css=()=>{ if(!document.getElementById('campCss')){ const l=document.createElement('link'); l.id='campCss'; l.rel='stylesheet'; l.href=o.ROOT+'assets/campaigns.css'; document.head.appendChild(l); } };
-  css();
   const inCamp=id=>o.designs().filter(d=>d.campaign_id===id);
   const fmtOf=d=>{ const t=(o.TOOLS[d.tool]||{}).type; return t==='story'?'Story':t==='post'?'Post':t==='highlight'?'Highlight':d.tool==='video'?'Video':''; };
   const toolTitle=d=>(o.TOOLS[d.tool]||{}).title||d.tool;
@@ -151,7 +149,7 @@ function init(o){
 
   /* a design's menu: one row */
   function designRow(dlg,dsg){
-    const box=dlg.querySelector('.act-list'); if(!box||dsg.kind==='template') return; const c=dsg.campaign_id&&camps.find(x=>x.id===dsg.campaign_id);
+    const box=dlg.querySelector('#dsTeam'); if(!box||dsg.kind==='template') return; const c=dsg.campaign_id&&camps.find(x=>x.id===dsg.campaign_id);
     const b=document.createElement('button'); b.type='button'; b.className='act-row'; b.dataset.camp='1'; b.innerHTML=ic('layers')+'<span dir="auto">'+(c?'Campaign: '+esc(c.name):'Add to campaign')+'</span>';
     b.onclick=()=>{ dlg.close(); c?open(c.id):addTo([dsg]); }; box.appendChild(b); }
 
@@ -193,7 +191,7 @@ function init(o){
       try{ await C.setCampaign(b.dataset.rm,null); const x=o.designs().find(q=>q.id===b.dataset.rm); if(x) x.campaign_id=null; grid(); o.refresh(); }catch(err){ st(err.message||String(err)); b.disabled=false; } });
     /* Save all: the same full-quality pictures as Saved's Save pictures (assets/render.js: 2x lossless PNG, 2x -> 1.5x -> 1x with its message) */
     $('#cvAll').onclick=async()=>{ const ds=mine(); if(!ds.length) return; hap('tick'); d.close();
-      try{ if(!window.StudioRender) await o.loadScript(o.ROOT+'assets/render.js'); }catch(_){ o.toast('Could not start saving. Check your connection and try again.'); return; }
+      try{ await o.lazy('render'); }catch(_){ o.toast('Could not start saving. Check your connection and try again.'); return; }
       await window.StudioRender.saveDesigns(ds,{toast:o.toast,done:()=>{}}); };
     /* Add all to the team: every design in a campaign is already a team design, so this makes sure of it for the ones saved only as a template or
        with a missing owner, and tells the person plainly when nothing was left to add */

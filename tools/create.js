@@ -303,7 +303,7 @@ function openPage(){ const f=BD.activeFrame(); if(!f) return; reopen=null; const
   body.querySelector('#pSafe').onchange=e=>{ BD.showSafe=e.target.checked; BD.paintUI(); }; }
 /* one-tap resize (w2-resize): tools/create-resize.js, loaded when first used */
 const rzCur=f=>f.getAttr('round')?'highlight':fsize(f).h>=1900?'story':fsize(f).h>=1300?'post':'square';
-async function rzRun(f,id){ try{ if(!(BD.resize&&BD.resize.resizeTo)) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-resize.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+async function rzRun(f,id){ try{ if(!(BD.resize&&BD.resize.resizeTo)) await Studio.loadScript('create-resize.js');
     const c=BD.resize.resizeTo(f,id); if(!c) return; BD.showPage(c); touch(); BD.changed(); BD.emitDoc(); paintPages(); closeSheet(); toast('Resized to a '+BD.resize.FORMATS[id].label.toLowerCase()+' on a new page. The first one is untouched.'); }
   catch(err){ console.warn(err); toast('Could not resize that page.'); } }
 function copyPage(f){ const c=BD.rebuild(BD.toObj(f),true); BD.main.add(c); c.zIndex(f.zIndex()+1); c.setAttr('label',(f.getAttr('label')||'Page')+' copy'); c.find('Image').forEach(n=>BD.applyFx(n)); BD.changed(); BD.emitDoc(); return c; }
@@ -603,7 +603,7 @@ function rulesDesigns(approved){ if(!B||!B.rules) return []; const many=frames()
       return {...o,kind:'other'}; });
     return {format:s.h>=1900?'story':s.h>=1300?'post':'square',w:s.w,h:s.h,rules:B.rules,brand:B,approved:[...approved,...rulesBase],grounds,items,page:many?pi+1:0}; }); }
 function rulesRun(){ const host=$('rulesHost'); if(!host) return;
-  if(!window.StudioRules){ rulesLoad=rulesLoad||new Promise(r=>{ const sc=document.createElement('script'); sc.src=new URL('../assets/rules.js',location.href).href; sc.onload=r; sc.onerror=r; document.head.appendChild(sc); }); rulesLoad.then(()=>{ if(window.StudioRules&&$('rulesHost')===host) rulesRun(); }); return; }
+  if(!window.StudioRules){ rulesLoad=rulesLoad||Studio.lazy('rules').catch(()=>{}); rulesLoad.then(()=>{ if(window.StudioRules&&$('rulesHost')===host) rulesRun(); }); return; }
   StudioRules.mount(host,{collect:async()=>rulesDesigns(await rulesBook()),scope:()=>st.design?st.design.id:'draft:'+(S.id||'new')}).run(); }
 
 function fname(n,total,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-create').replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(total>1?'-'+n:'')+'.png'; }
@@ -712,7 +712,7 @@ function impMode(){ if(isBlank()) return Promise.resolve('replace');
       <div class="dlg-actions col"><button type="button" class="btn" id="imAdd">Add as new pages</button><button type="button" class="btn ghost" id="imRep">Replace everything</button><button type="button" class="link" id="imNo">Cancel</button></div></div>`);
     d.addEventListener('close',()=>fin(null)); d.querySelector('#imNo').onclick=()=>d.close(); d.querySelector('#imAdd').onclick=()=>{ fin('add'); d.close(); }; d.querySelector('#imRep').onclick=()=>{ fin('replace'); d.close(); }; }); }
 async function impRun(file){ if(!impOn()||impP) return; closeSheet(true);
-  impP=(async()=>{ try{ if(!window.CRImport) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-import.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+  impP=(async()=>{ try{ if(!window.CRImport) await Studio.loadScript('create-import.js');
       await CRImport.run(file,{busy:t=>BD.busy(t),toast,mode:impMode,clearAll,addDocNodes,afterBuild}); }
     catch(err){ console.error(err); BD.busy(null); toast('Could not open the importer. Check your connection and try again.'); } })();
   await impP; impP=null; }
@@ -725,7 +725,7 @@ const motionOn=()=>{ try{ return Studio.flags.on('motion'); }catch(_){ return fa
 let motionP=null;
 async function openMotion(){ if(!motionOn()) return; const f=BD.activeFrame(); if(!f) return; reopen=null;
   try{ motionP=motionP||(async()=>{ if(!document.getElementById('crMotionCss')){ const l=document.createElement('link'); l.rel='stylesheet'; l.href='create-motion.css'; l.id='crMotionCss'; document.head.appendChild(l); }
-      if(!window.CRMotion) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-motion.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); })();
+      if(!window.CRMotion) await Studio.loadScript('create-motion.js'); })();
     await motionP; CRMotion.open({openSheet,closeSheet,toast,esc,I,fname,savePicture:fr=>saveImages([fr])}); }
   catch(err){ motionP=null; console.warn(err); toast('Could not open Moving story. Check your connection and try again.'); } }
 
@@ -759,7 +759,7 @@ async function cutRun(n){
   const im=BD.IMGS.get(n.getAttr('imgId')); if(!im){ toast('Could not open that photo.'); return; }
   cutBusy=true;
   try{
-    if(!window.StudioCutout) await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='../assets/cutout.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    await Studio.lazy('cutout');
     const why=StudioCutout.supported(); if(why){ toast(why); return; }
     BD.busy('Removing the background…');
     const c=await StudioCutout.run(im.el,{onProgress:t=>BD.busy(t)}); if(!c||!n.getStage()) return;
