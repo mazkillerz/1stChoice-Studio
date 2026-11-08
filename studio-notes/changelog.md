@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.1.0 · 8 Nov 2026
+
+### Calendar: plan a post or story in a few taps
+type: feature
+In the calendar (Settings → Previews → Team workflow), tap + on a day: choose Post or Story, pick the design, tap a time (9 am, 12 pm, 7 pm or 9 pm, or Other), write or paste the caption, Save. The caption box is right to left for Arabic, counts characters (2,200 for a post) and fills itself from the design's saved caption; hashtags are picked up from the text. Each item shows Post or Story, its time, Draft, Ready or Posted, the design and the first lines of the caption with Copy caption, for when you post. Tap an item to change anything, including the day and time; ⋯ has Mark as posted, Move to tomorrow and Delete. The title field, the hashtag editor and the long-press menu are gone.
+![after](assets/whatsnew/2.1.0-calendar-after.jpg)
+
+### Calendar fixes
+type: fix
+Link designs showed only the newest few designs (in practice the Restock stories): the designs sat in a small box that scrolled inside the sheet. Picking a design now opens a full screen with every saved design, a search box (Arabic or English) and a chip for each collection, plus Stories and Posts. The Calendar row on Home was drawn unstyled (a big grey block) until the calendar had been opened once; it is a normal row now.
+
 ## 2.0.0 · 8 Nov 2026
 milestone: Studio for the whole team
 Three releases in one round: saved designs you can trust (Update, versions, covers), a brand check in every Save, resize, occasion packs, one shared look, and a full team workflow to try in Settings → Previews.
