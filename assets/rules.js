@@ -95,5 +95,12 @@ function mount(host,opts){ let o=opts; if(CSS&&!document.querySelector('link[dat
     if(f&&e.target.closest('[data-fix]')){ try{ f.fix.apply(); }catch(err){ console.warn('rules fix',err); } if(o.refresh) o.refresh(); run(); return; }
     if(f&&e.target.closest('[data-ign]')){ ignore(o.scope(),f.id); list=list.filter(x=>x!==f); draw(); } });
   return host._rules={run,upd:x=>{ o=x; }}; }
-window.StudioRules={check,mount,enabled,setEnabled,contrast,approvedSet,ignored};
+/* captions (mega 4.3): the same wording rules on a caption's text. checkText(text,{rules,brand,approved?}) -> [{id,rule,msg}]. Soft: the caller shows a quiet line, never blocks. */
+function checkText(text,o){ o=o||{}; const R=o.rules||{}, out=[]; text=String(text||''); if(!text.trim()) return out;
+  const d={rules:R,brand:o.brand||{},approved:o.approved||[],items:[{id:'caption',kind:'text',text}]}, it=d.items[0];
+  try{ banned(it,R,out); }catch(_){} try{ passion(d,R,out); }catch(_){}
+  try{ const sp=R.sale&&R.sale.words; if(sp&&sp.length){ const n=N(text); sp.forEach(w=>{ if(w&&n.includes(N(w))) out.push({id:'sale:'+N(w),rule:'Sale point',msg:iso(w)+' names a type of sale point. We never name those.'}); }); } }catch(_){}
+  if(!out.some(f=>/^banned/.test(f.id))){ try{ unapproved(it,d,approvedSet(d),out); }catch(_){} }
+  return out; }
+window.StudioRules={check,checkText,mount,enabled,setEnabled,contrast,approvedSet,ignored};
 })();

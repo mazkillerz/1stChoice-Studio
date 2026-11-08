@@ -41,6 +41,9 @@ function make(o){
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
+  /* captions (mega 4.3): a linked design's caption stands in for an item that has none (shown on the card; the sheet offers "Use the design's caption") */
+  const dCap=it=>{ for(const id of (it.design_ids||[])){ const g=designOf(id); if(g&&String(g.caption||'').trim()) return g; } return null; };
+  /* /captions (mega) */
   const againBtn='<button type="button" class="btn slim" data-cal-reload>Try again</button>';
   const noteBox=(icn,title,text,btn)=>`<div class="sv-note cal-note"><span class="sn-ic" aria-hidden="true">${icn}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
   const authorName=()=>{ try{ return (o.who&&o.who.author&&o.who.author())||null; }catch(_){ return null; } };
@@ -72,7 +75,7 @@ function make(o){
     return a.getMonth()===b.getMonth()?L(a,{day:'numeric'})+' – '+L(b,{day:'numeric',month:'short'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
   const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean).slice(0,4); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}${it.design_ids.length>4?`<i>+${it.design_ids.length-4}</i>`:''}</span>`:''; };
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
-  const card=it=>{ const ro=!!it.legacy, cap=firstLine(it.caption);
+  const card=it=>{ const ro=!!it.legacy, cap=firstLine(it.caption||(dCap(it)||{}).caption);   // captions (mega): fallback to the design's
     return `<article class="cal-item st-${it.status}${ro?' ro':''}" data-id="${esc(it.id)}"${ro?'':' draggable="true"'}>
       <button type="button" class="ci-main" data-open="${esc(it.id)}"${ro?' disabled':''}>
         <span class="ci-top">${it.at?`<span class="ci-time">${esc(it.at)}</span>`:''}${chip(it.status)}</span>
@@ -134,6 +137,7 @@ function make(o){
       <div class="field"><span class="lbl" id="calStL">Status</span><div class="chips cal-stat" role="group" aria-labelledby="calStL">${STATUS.map(([k,l])=>`<button type="button" class="chip" data-st="${k}" aria-pressed="${it.status===k}">${l}</button>`).join('')}</div></div>
       <div class="field"><label class="lbl" for="calTitle">Title</label><input type="text" id="calTitle" dir="auto" maxlength="120" autocomplete="off" value="${esc(it.title)}"></div>
       <div class="field"><label class="lbl" for="calCap">Caption</label><textarea id="calCap" class="cal-ta" dir="auto" rows="4">${esc(it.caption)}</textarea></div>
+      <button type="button" class="link" id="calUseCap" hidden>Use the design’s caption</button><!-- captions (mega) -->
       <div class="field"><label class="lbl" for="calTags">Hashtags</label><input type="text" id="calTags" dir="auto" autocomplete="off" autocapitalize="off" value="${esc((it.hashtags||[]).join(' '))}"></div>
       <div class="field"><span class="lbl">Designs</span><div class="cal-linked" id="calLinked"></div><button type="button" class="mini" id="calPick" aria-expanded="false">${ic('photo')}<span>Link designs</span></button><div class="cal-picker" id="calPicker" hidden></div></div>
       <p class="small cal-by">${author?`By <bdi>${esc(author)}</bdi>`:'No name set yet'} · <button type="button" class="link" id="calWho">${author?'Change':'Set your name'}</button></p>
@@ -141,7 +145,11 @@ function make(o){
       <div class="dlg-actions"><button type="button" class="mini" id="calCancel">Cancel</button><button type="submit" class="btn" id="calSave">${isNew?'Add to calendar':'Save'}</button></div>
       ${isNew?'':'<button type="button" class="link danger-link" id="calDel">Delete this post</button>'}</form>`,'cal-dlg');
     d.setAttribute('aria-labelledby','calEH'); const $=s=>d.querySelector(s), st=t=>{ $('#calSt').textContent=t; };
-    const linked=()=>{ $('#calLinked').innerHTML=it.design_ids.length?it.design_ids.map(id=>{ const g=designOf(id); return `<span class="cal-lk"><img alt="" data-path="${esc(g?g.thumb_path||'':'')}"${g&&urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g?g.name:'A design')}</span><button type="button" class="lk-x" data-unlink="${esc(id)}" aria-label="Remove ${esc(g?g.name:'design')}">${ic('close')}</button></span>`; }).join(''):'<span class="small">No designs linked yet.</span>'; fillThumbs(); };
+    let linked=()=>{ $('#calLinked').innerHTML=it.design_ids.length?it.design_ids.map(id=>{ const g=designOf(id); return `<span class="cal-lk"><img alt="" data-path="${esc(g?g.thumb_path||'':'')}"${g&&urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g?g.name:'A design')}</span><button type="button" class="lk-x" data-unlink="${esc(id)}" aria-label="Remove ${esc(g?g.name:'design')}">${ic('close')}</button></span>`; }).join(''):'<span class="small">No designs linked yet.</span>'; fillThumbs(); };
+    /* captions (mega): the button shows while a linked design has a caption; it fills the caption (and the hashtags when none are typed) */
+    const capBtn=()=>{ const g=dCap(it); $('#calUseCap').hidden=!g; };
+    $('#calUseCap').onclick=()=>{ const g=dCap(it); if(!g) return; $('#calCap').value=g.caption||''; if(!$('#calTags').value.trim()&&(g.hashtags||[]).length) $('#calTags').value=g.hashtags.join(' '); };
+    const linked0=linked; linked=()=>{ linked0(); capBtn(); };
     linked();
     d.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ it.status=b.dataset.st; d.querySelectorAll('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     $('#calLinked').addEventListener('click',e=>{ const b=e.target.closest('[data-unlink]'); if(!b) return; it.design_ids=it.design_ids.filter(x=>x!==b.dataset.unlink); linked(); if(!$('#calPicker').hidden) paintPicker(); });

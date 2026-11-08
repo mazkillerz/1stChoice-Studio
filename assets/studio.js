@@ -1443,6 +1443,7 @@ async function tool(cfg){
     const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb,collections:cols,author:whoNow()});
     const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     design={id,name,kind:keep?'design':'template',collections:cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
+    await capSave(C,id,asNew);   // captions (mega)
     history.replaceState(null,'',location.pathname+'?design='+id);
     return name;
   }
@@ -1508,7 +1509,7 @@ async function tool(cfg){
   const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); typedCols.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
   function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:!!design&&wantsNew(),collections:[...teamPicked]}; }
-  function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; }
+  function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; capDoneSync(); }   // captions (mega)
   /* a team save that failed: our own messages as they are; a dropped connection in words, never the browser's "Failed to fetch" */
   const teamErr=err=>{ const m=String(err&&err.message||''); return !m||err instanceof TypeError||/fetch|network|load failed|timed? ?out/i.test(m)?'Not saved to the team: no connection. Check it and try again.':m; };
   /* true when it saved; on a failure the switch stays on, so the next tap of the button tries the team again (1.41.0) */
@@ -1517,6 +1518,36 @@ async function tool(cfg){
     try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); return true; }
     catch(err){ teamLine(''); status(teamErr(err)); return false; }
   }
+
+  /* captions (mega 4.3, preview flag "team"): a collapsed Caption row in the team part of the Save sheet (caption + hashtags, phrase chips,
+     Copy), "Copy caption" after Save. A team save stores them with C.setCaption; until then they stay on this phone with the draft.
+     Assets: assets/captions.js + captions.css (lazy). Flag off: none of this exists. */
+  var CAP_ON=flags.on('team'), capSt={caption:'',tags:[],dirty:false}, capEd=null, capCopyBtn=null;
+  const CAP_KEY='studio:cap:'+B.id+':'+cfg.id;
+  const capHas=()=>!!String(capSt.caption||'').trim()||capSt.tags.length>0;
+  const capLib=async()=>{ if(!document.getElementById('capCss')){ const l=document.createElement('link'); l.id='capCss'; l.rel='stylesheet'; l.href=ROOT+'assets/captions.css'; document.head.appendChild(l); }
+    if(!window.StudioCaptions) await loadScript(ROOT+'assets/captions.js'); return window.StudioCaptions; };
+  function capSum(){ const el=document.getElementById('capSum'); if(!el) return; const f=String(capSt.caption||'').split(/\r?\n/).find(l=>l.trim()); el.textContent=f?f.trim():capSt.tags.length?capSt.tags.join(' '):'Add a caption and hashtags'; el.dir='auto'; }
+  function capDoneSync(){ if(!CAP_ON||!capCopyBtn) return; const tl=$('teamStatus'); capCopyBtn.hidden=!(capHas()&&(!$('doneBox').hidden||(!tl.hidden&&tl.classList.contains('ok')))); }
+  function capLoad(d){ if(!CAP_ON) return; capSt={caption:d.caption||'',tags:Array.isArray(d.hashtags)?d.hashtags.slice():[],dirty:false}; if(capEd) capEd.set(capSt.caption,capSt.tags); capSum(); capDoneSync(); }
+  async function capSave(C,id,asNew){ if(!CAP_ON||!(capSt.dirty||(asNew&&capHas()))) return;
+    try{ await C.setCaption(id,capSt.caption.trim()?capSt.caption:null,capSt.tags.length?capSt.tags:null); capSt.dirty=false; try{ localStorage.removeItem(CAP_KEY); }catch(_){} }
+    catch(err){ status('Saved, but the caption did not save: '+(err&&err.message||err)); } }
+  if(CAP_ON){
+    try{ const dr=JSON.parse(localStorage.getItem(CAP_KEY)||'null'); if(dr&&(dr.caption||(dr.tags||[]).length)) capSt={caption:dr.caption||'',tags:dr.tags||[],dirty:true}; }catch(_){}
+    capLib().catch(()=>{});   // the stylesheet is needed for the row; the script is small
+    const wrap=document.createElement('div'); wrap.className='tb-field cap-wrap';
+    wrap.innerHTML=`<button type="button" class="cap-open" id="capOpen" aria-expanded="false" aria-controls="capBox"><span>Caption</span><small id="capSum"></small>${ICON.next}</button><div class="cap-box" id="capBox" hidden></div>`;
+    $('teamMore').before(wrap); capSum();
+    capCopyBtn=document.createElement('button'); capCopyBtn.type='button'; capCopyBtn.className='link cap-done'; capCopyBtn.id='capCopy'; capCopyBtn.textContent='Copy caption'; capCopyBtn.hidden=true;
+    $('doneBox').after(capCopyBtn);
+    capCopyBtn.addEventListener('click',async()=>{ const L=await capLib(); L.copy(capSt.caption,capSt.tags,toast); });
+    $('capOpen').addEventListener('click',async()=>{ const box=$('capBox'), open=box.hidden; box.hidden=!open; $('capOpen').setAttribute('aria-expanded',String(open)); if(!open||capEd) return;
+      const L=await capLib();
+      capEd=L.editor(box,{brand:B,root:ROOT,caption:capSt.caption,tags:capSt.tags,toast,poolLoad:()=>cloud().then(C=>L.pool(C,B.id)),
+        onChange:(c,t)=>{ capSt={caption:c,tags:t,dirty:true}; capSum(); capDoneSync(); try{ localStorage.setItem(CAP_KEY,JSON.stringify({caption:c,tags:t})); }catch(_){} }}); });
+  }
+  /* /captions (mega) */
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
@@ -1544,7 +1575,7 @@ async function tool(cfg){
     const slots=[];
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
     await fontsOf(r); applyRecipe(r,slots);
-    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; pickDefaultCols(); showDesignBar(); status(''); markSaved();
+    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; pickDefaultCols(); showDesignBar(); status(''); markSaved(); capLoad(d);   // captions (mega)
     if(d.kind!=='template'&&!RENDER_FRAME) healCover(C,d,thumbBlob);   // a blank cover is redrawn quietly (saved-versions, mega)
     if(ready&&d.kind!=='template'){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
@@ -1956,7 +1987,7 @@ async function tool(cfg){
   if(inClaude) window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
   function fname(ext,kind,n,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-'+(kind||cfg.fileName||'story')).replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(n?'-'+n:'')+'.'+ext; }
   function progress(pct,txt){ $('progress').hidden=pct==null; if(pct!=null){ $('progressBar').style.width=Math.round(pct*100)+'%'; $('progressRole').setAttribute('aria-valuenow',String(Math.round(pct*100))); if(txt) $('progressTxt').textContent=txt; } }
-  function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } }
+  function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } capDoneSync(); }   // capDoneSync: captions (mega)
   /* Save all pages (1.9.0): paged tools save every page in one go, named <design>-01.png, -02.png… (the design's name, else the
      tool and the time); a phone gets one share sheet with all of them, a computer one ZIP (assets/batch.js). Cancel stops before anything is saved. */
   function saveAllLabel(){ return !PG?'Save story':pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
@@ -3089,6 +3120,18 @@ async function home(){
   /* saved-versions (mega): every update keeps the one before it; Restore puts one back (and keeps the current as a version, so nothing is lost) */
   const relTime=t=>{ try{ const s=(new Date(t).getTime()-Date.now())/1000, f=new Intl.RelativeTimeFormat(document.documentElement.lang||undefined,{numeric:'auto'});
       const a=Math.abs(s); return a<60?f.format(0,'second'):a<3600?f.format(Math.round(s/60),'minute'):a<86400?f.format(Math.round(s/3600),'hour'):f.format(Math.round(s/86400),'day'); }catch(_){ return ago(t); } };
+  /* captions (mega 4.3): a design's menu gets Caption (edit + Copy) and, when it has one, Copy caption (assets/captions.js, flag "team") */
+  const capRows=dsg=>{ const row=(a,l,i)=>`<button type="button" class="act-row" data-act="${a}">${i}<span>${l}</span></button>`;
+    return row('cap','Caption',ICON.pencil)+((dsg.caption||(dsg.hashtags||[]).length)?row('capcopy','Copy caption',ICON.copy):''); };
+  async function capSheet(act,dsg,P,st,d){
+    try{ if(!document.getElementById('capCss')){ const l=document.createElement('link'); l.id='capCss'; l.rel='stylesheet'; l.href=ROOT+'assets/captions.css'; document.head.appendChild(l); }
+      if(!window.StudioCaptions) await loadScript(ROOT+'assets/captions.js'); const L=window.StudioCaptions;
+      if(act==='capcopy'){ L.copy(dsg.caption,dsg.hashtags,hubToast); return; }
+      P.innerHTML='<div class="cap-box"><div id="capEdHost"></div><button type="button" class="mini solid" id="capSaveBtn">Save caption</button></div>';
+      const ed=L.editor(P.querySelector('#capEdHost'),{brand:B,root:ROOT,caption:dsg.caption||'',tags:dsg.hashtags||[],toast:hubToast,poolLoad:()=>L.pool(C,B.id)});
+      P.querySelector('#capSaveBtn').onclick=async()=>{ const v=ed.get(); try{ await C.setCaption(dsg.id,v.caption.trim()?v.caption:null,v.tags.length?v.tags:null); dsg.caption=v.caption.trim()?v.caption:null; dsg.hashtags=v.tags.length?v.tags:null; d.close(); hubToast('Caption saved.'); }catch(err){ st(err.message||'Could not save the caption.'); } };
+    }catch(err){ st('The caption editor did not open. Check your connection.'); }
+  }
   async function versionsSheet(dsg){
     const d=dialog(`<div class="dlg-body design-sheet"><h3 dir="auto">Versions of “${esc(dsg.name)}”</h3><p class="small">Each update keeps the one before. Restore puts one back; nothing is lost.</p>
       <div class="act-list ver-list" id="vList" aria-busy="true"><p class="small">Loading…</p></div><div class="status" id="vSt" role="status"></div><button type="button" class="link" id="vClose">Close</button></div>`,'design-dlg ver-dlg');
@@ -3113,7 +3156,7 @@ async function home(){
       const d=dialog(`<div class="dlg-body design-sheet">
       <div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>
-      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${flags.on('team')?capRows(dsg):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
@@ -3137,6 +3180,7 @@ async function home(){
           delete urls[dsg.thumb_path]; d.close(); hubToast('Cover redrawn.'); loadSaved(true); }
         catch(err){ st(err.message||'Could not redraw the cover.'); b.disabled=false; } return; }
       if(act==='ver'){ d.close(); versionsSheet(dsg); return; }
+      if(act==='cap'||act==='capcopy'){ capSheet(act,dsg,P,st,d); return; }   // captions (mega)
       if(act==='dup'){ st('Copying…'); b.disabled=true; try{ await C.duplicateDesign(dsg.id); d.close(); hubToast('Copied “'+dsg.name+'”.'); loadSaved(true); }catch(err){ st(err.message); b.disabled=false; } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
