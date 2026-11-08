@@ -71,7 +71,7 @@ ok('the two brands draw differently (ink colour)',R['1stchoice'].ink!==R.testbra
 
 /* 2. layered pieces from Elements */
 { const pg=await page(b,'1stchoice'); await open(pg,'restock');
-  const r=await pg.evaluate(async()=>{ const S=Studio.debug.S; S.extras=[{id:'e1',type:'comp',comp:'bio',x:540,y:600},{id:'e2',type:'comp',comp:'handle',x:540,y:900}]; Studio.debug.render(); await new Promise(x=>setTimeout(x,400));
+  const r=await pg.evaluate(async()=>{ const S=Studio.debug.S; S.extras=[{id:'e1',type:'comp',comp:'bio',text:'Map',x:540,y:600},{id:'e2',type:'comp',comp:'handle',text:'@test',x:540,y:900}]; Studio.debug.render(); await new Promise(x=>setTimeout(x,400));
     const reg=Studio.debug.reg(), a=reg.find(x=>x.id==='e1'), c=reg.find(x=>x.id==='e2'); return {bio:a&&{k:a.kind,w:a.w,h:a.h},handle:c&&{k:c.kind,w:c.w,h:c.h}}; });
   ok('bio (map-in-bio pill) is a pill layer with its own box',r.bio&&r.bio.k==='pill'&&r.bio.w>200&&r.bio.h>=70,r.bio);
   ok('handle (Instagram) is a layer with its own box',r.handle&&r.handle.w>100&&r.handle.h>20,r.handle);
@@ -101,7 +101,7 @@ ok('the two brands draw differently (ink colour)',R['1stchoice'].ink!==R.testbra
   ok('Create: panelDoc corner follows the tokens (md default, "lg" by name)',d.panel===d.tok.md&&d.panelLg===d.tok.lg,[d.panel,d.panelLg,d.tok]);
   ok('Create: handleDoc is an icon + words line',d.handle.el==='line',d.handle);
   ok('no page errors (create)',!pg.errs.length,pg.errs.slice(0,3).join(' | '));
-  await pg.goto(BASE+'lab/board.html'); await pg.waitForTimeout(1800); const r=await pg.evaluate(()=>!!(window.Studio&&Studio.comp&&['pill','panel','tile','step','badge','logo','handle','bio'].every(k=>typeof Studio.comp[k]==='function')));
+  await pg.context().addInitScript(()=>{ try{ localStorage.setItem('studio:lab','"1"'); }catch(e){} }); await pg.goto(BASE+'lab/board.html'); await pg.waitForTimeout(2500); const r=await pg.evaluate(()=>!!(window.Studio&&Studio.comp&&['pill','panel','tile','step','badge','logo','handle','bio'].every(k=>typeof Studio.comp[k]==='function')));
   ok('Board: Studio.comp reachable',r);
   await pg.context().close(); }
 await b.close();
