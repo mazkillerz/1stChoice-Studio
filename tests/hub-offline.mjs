@@ -87,7 +87,7 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   await pg.waitForFunction(()=>document.querySelectorAll('#savedGrid .sv-card').length===8,null,{timeout:10000}); await pg.waitForTimeout(400);
   await pg.evaluate(()=>{ const s=window.StudioCloud; s.designs=async()=>{ const e=new Error('No connection. Check your internet and try again.'); e.offline=true; throw e; }; });
   /* a successful rename asks for a fresh list: that refresh fails */
-  await pg.evaluate(()=>{ document.querySelector('#savedGrid [data-dmore]').click(); }); await pg.waitForSelector('dialog[open] [data-act="rename"]',{timeout:4000});
+  await pg.waitForSelector('#savedGrid [data-dmore]',{state:'attached',timeout:20000}); await pg.evaluate(()=>{ document.querySelector('#savedGrid [data-dmore]').click(); }); await pg.waitForSelector('dialog[open] [data-act="rename"]',{timeout:4000});
   await pg.tap('dialog[open] [data-act="rename"]'); await pg.waitForSelector('dialog[open] input[type="text"]',{timeout:4000});
   await pg.fill('dialog[open] input[type="text"]','Renamed offline'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(800);
   ok('6 the 8 cards stay when the refresh fails',(await pg.$$('#savedGrid .sv-card')).length===8);
