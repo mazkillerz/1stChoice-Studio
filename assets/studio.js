@@ -962,6 +962,7 @@ async function tool(cfg){
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="saveAlt" hidden></button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
+    ${flags.on('team')?'<button type="button" class="link rv-save" id="rvSend" hidden>Send for review</button>':''}<!-- review (mega) -->
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
     <div class="status" id="status" role="status" aria-live="polite"></div>
@@ -1515,7 +1516,7 @@ async function tool(cfg){
   /* true when it saved; on a failure the switch stays on, so the next tap of the button tries the team again (1.41.0) */
   async function runTeamSave(afterPicture){
     teamLine('Saving to the team…'); status('');   // an earlier failure's message goes
-    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); return true; }
+    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); rvSaved(); return true; }
     catch(err){ teamLine(''); status(teamErr(err)); return false; }
   }
 
@@ -1548,6 +1549,13 @@ async function tool(cfg){
         onChange:(c,t)=>{ capSt={caption:c,tags:t,dirty:true}; capSum(); capDoneSync(); try{ localStorage.setItem(CAP_KEY,JSON.stringify({caption:c,tags:t})); }catch(_){} }}); });
   }
   /* /captions (mega) */
+  /* review (mega): after a team save the Save sheet offers "Send for review" (only with the "team" preview on) */
+  function rvSaved(){ const b=$('rvSend'); if(!b||!design) return; b.hidden=false; b.disabled=false; b.textContent='Send for review'; }
+  if($('rvSend')) $('rvSend').addEventListener('click',async()=>{ const b=$('rvSend'); if(!design) return; b.disabled=true;
+    try{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); }
+      if(!window.StudioReview) await loadScript(ROOT+'assets/review.js');
+      await StudioReview.send({brand:B.id,cloud,ask:()=>window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)},design.id); b.textContent='Sent for review'; }
+    catch(err){ b.disabled=false; status(teamErr(err)); } });
   $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
@@ -2133,7 +2141,7 @@ async function tool(cfg){
   function rulesRun(){ if(!window.StudioRules&&!rulesLoading) rulesLoad().then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
   let rulesLoading=null; const rulesLoad=()=>rulesLoading=rulesLoading||loadScript(ROOT+'assets/rules.js').catch(()=>{});
   const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
-  function resetSaveSheet(){ rulesRun(); imgDone=false; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
+  function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
     hideReady();
@@ -2610,6 +2618,37 @@ async function home(){
     try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const list=(await C.calendar(B.id,{from:k,to:k})).filter(x=>x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')); paintRow(list); }catch(_){}
   }
+
+  /* ---------- review (mega): approvals and comments behind the "team" preview (assets/review.js + review.css, lazy). Hooks: svCard chip, paint(),
+     the design menu rows, and the Save sheet's "Send for review". With the flag off none of it runs and nothing is added. ---------- */
+  const RV_LABEL={in_review:'In review',approved:'Approved',changes:'Changes asked'};
+  const rvChip=d=>flags.on('team')&&d.review&&RV_LABEL[d.review]?`<em class="rv-chip st-${d.review}" title="${esc(RV_LABEL[d.review]+(d.review_by?' · '+d.review_by:''))}">${RV_LABEL[d.review]}</em>`:'';
+  const rvWho=()=>{ try{ const r=JSON.parse(localStorage.getItem('studio:who')); return {name:String((r&&r.name)||'').trim(),owner:!!(r&&r.owner)}; }catch(_){ return {name:'',owner:false}; } };
+  let rvLoad=null;
+  const rvCss=()=>{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); } };
+  if(flags.on('team')) rvCss();
+  const rvLib=()=>{ rvCss(); if(!rvLoad) rvLoad=window.StudioReview?Promise.resolve():loadScript(ROOT+'assets/review.js'); return rvLoad.then(()=>window.StudioReview); };
+  const rvCtx=()=>({brand:B.id,cloud:getCloud,esc,haptic,dialog,toast:hubToast,ago,designs:()=>all,ask:whoLib,
+    thumb:async p=>{ if(!p) return null; if(urls[p]) return urls[p]; const c=await getCloud(); const u=await c.fileUrl(p); if(u) urls[p]=u; return u; },
+    refresh:()=>{ paint(); loadSaved(true); }});
+  const rvRows=(dsg,row)=>!flags.on('team')||dsg.kind==='template'?'':(dsg.review==='in_review'?'':row('rvsend',ICON.send||ICON.check,dsg.review==='changes'?'Send for review again':'Send for review'))+row('rvcom',ICON.more,'Comments');
+  async function rvAct(act,dsg){ try{ const R=await rvLib(); if(act==='rvcom') R.openDesign(rvCtx(),dsg); else{ await R.send(rvCtx(),dsg.id); hubToast('Sent “'+dsg.name+'” for review.'); } }catch(err){ hubToast('Could not do that: '+(err.message||err)); } }
+  function rvHome(){
+    if(!flags.on('team')||!$('homeView')||!loaded||!member) return;
+    let row=$('rvRow'); const at=$('savedRow'); if(!at) return;
+    const me=rvWho(), waiting=me.owner?all.filter(d=>d.review==='in_review').length:0;
+    const notes=me.name?all.filter(d=>d.author===me.name&&(d.review==='approved'||d.review==='changes')&&d.review_by&&d.review_by!==me.name&&String(store('studio:rvSeen:'+d.id))!==d.review+'|'+d.review_at).slice(0,2):[];
+    if(!row&&!waiting&&!notes.length) return;   // nothing to show: nothing is added
+    if(!row){ row=document.createElement('section'); row.id='rvRow'; row.className='hub-sec rv-home'; row.setAttribute('aria-label','Reviews'); at.after(row);
+      row.addEventListener('click',async e=>{ const n=e.target.closest('[data-rv]'); if(!n) return; haptic('tick'); const k=n.dataset.rv;
+        if(k==='queue'){ try{ (await rvLib()).queue(rvCtx()); }catch(_){} return; }
+        const d=all.find(x=>x.id===n.dataset.id); if(!d) return; store('studio:rvSeen:'+d.id,d.review+'|'+d.review_at);
+        if(k==='read'){ try{ (await rvLib()).openDesign(rvCtx(),d); }catch(_){} } rvHome(); }); }
+    const tick='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    row.hidden=!waiting&&!notes.length;
+    row.innerHTML=(waiting?`<button type="button" class="rv-home-row" data-rv="queue">${tick}<span class="ch-txt"><b><bdi>${waiting}</bdi> waiting for your review</b></span></button>`:'')
+      +notes.map(d=>`<div class="rv-note st-${d.review}"><button type="button" class="rv-nt" data-rv="read" data-id="${esc(d.id)}" dir="auto">${d.review==='approved'?'Your design “'+esc(d.name)+'” was approved by '+esc(d.review_by):esc(d.review_by)+' asked for changes on “'+esc(d.name)+'”'}</button><button type="button" class="rv-nx" data-rv="dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">×</button></div>`).join('');
+  }
   let tplApi=null;
   function showTemplates(){
     if(!window.StudioTemplates||!$('templatesView')) return;
@@ -2871,9 +2910,9 @@ async function home(){
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
-  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
+  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); rvHome();   /* review (mega) hook */ if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
@@ -3156,7 +3195,7 @@ async function home(){
       const d=dialog(`<div class="dlg-body design-sheet">
       <div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
       <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>
-      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${flags.on('team')?capRows(dsg):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      <div class="act-list">${tpl?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${flags.on('team')?capRows(dsg):''}${row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${row('cols',ICON.folder,'Collections')}${rvRows(dsg,row)}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
@@ -3169,6 +3208,7 @@ async function home(){
       if(act==='rename'){ P.innerHTML=`<div class="inline"><label class="sr-only" for="rn">New name</label><input type="text" id="rn" dir="auto" maxlength="80"><button type="button" class="mini solid" id="rnGo">Save</button></div>`; const i=P.querySelector('#rn'); i.value=dsg.name; i.focus(); i.select();
         const go=async()=>{ const v=i.value.trim(); if(!v) return; try{ await C.renameDesign(dsg.id,v); dsg.name=v; d.close(); paint(); hubToast('Renamed to “'+v+'”.'); loadSaved(true); }catch(err){ st(err.message); } };
         P.querySelector('#rnGo').onclick=go; i.addEventListener('keydown',e2=>{ if(e2.key==='Enter'){ e2.preventDefault(); go(); } }); }
+      if(act==='rvsend'||act==='rvcom'){ d.close(); rvAct(act,dsg); return; }   /* review (mega) hook */
       if(act==='sel'){ d.close(); startSelect(dsg.id); return; }
       /* saved-versions (mega): Redraw cover (the design is drawn in the hidden render frame, the cover is stored) and Versions */
       if(act==='cover'){ st('Redrawing the cover…'); b.disabled=true;
