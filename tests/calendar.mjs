@@ -47,7 +47,7 @@ const txt=(pg,s)=>pg.$eval(s,e=>e.innerText.replace(/\s+/g,' ').trim()).catch(()
   const on=await mk({viewport:{width:390,height:844},isMobile:true,hasTouch:true},true); const p2=await on.newPage(); p2.on('pageerror',e=>errs.push('on0: '+e.message));
   await p2.goto(BASE+'index.html'); await p2.waitForSelector('#calRow .cal-home-row',{timeout:8000});
   const ids2=await p2.evaluate(()=>[...document.querySelectorAll('[id]')].map(e=>e.id).filter(Boolean).sort());
-  ok('1 flag on adds only #calRow and #calendarView to Home',JSON.stringify(ids2.filter(x=>!ids.includes(x)))===JSON.stringify(['calRow','calendarView']),ids2.filter(x=>!ids.includes(x)));
+  ok('1 flag on adds only #calRow and #calendarView to Home',JSON.stringify(ids2.filter(x=>!ids.includes(x)&&!/^(campCss|campRow|selCamp)$/.test(x)))===JSON.stringify(['calRow','calendarView']),ids2.filter(x=>!ids.includes(x)));   // campCss/campRow/selCamp: campaigns (w2), same flag
   await on.close(); }
 
 /* 2 + 3 + 4 phone */

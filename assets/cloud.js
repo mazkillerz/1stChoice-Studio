@@ -272,8 +272,11 @@ async function saveCampaign(camp){
 }
 async function deleteCampaign(id){ const c=await client(); const {error}=await c.from('campaigns').delete().eq('id',id); fail(error,'Delete'); }
 
+/* campaigns (mega w2): which campaign a design belongs to (saveDesign does not pass campaign_id through) */
+async function setCampaign(designId,campaignId){ const c=await client(); const {error}=await c.from('designs').update({campaign_id:campaignId||null}).eq('id',designId); fail(error,'Campaign'); }
+
 window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
-  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign};
+  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign};
 })();
