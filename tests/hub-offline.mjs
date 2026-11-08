@@ -87,7 +87,7 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   await pg.waitForFunction(()=>document.querySelectorAll('#savedGrid .sv-card').length===8,null,{timeout:10000}); await pg.waitForTimeout(400);
   await pg.evaluate(()=>{ const s=window.StudioCloud; s.designs=async()=>{ const e=new Error('No connection. Check your internet and try again.'); e.offline=true; throw e; }; });
   /* a successful rename asks for a fresh list: that refresh fails */
-  await pg.evaluate(()=>{ document.querySelector('#savedGrid [data-dmore]').click(); }); await pg.waitForSelector('dialog[open] [data-act="rename"]',{timeout:4000});
+  await pg.waitForSelector('#savedGrid [data-dmore]',{state:'attached',timeout:20000}); await pg.evaluate(()=>{ document.querySelector('#savedGrid [data-dmore]').click(); }); await pg.waitForSelector('dialog[open] [data-act="rename"]',{timeout:4000});
   await pg.tap('dialog[open] [data-act="rename"]'); await pg.waitForSelector('dialog[open] input[type="text"]',{timeout:4000});
   await pg.fill('dialog[open] input[type="text"]','Renamed offline'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(800);
   ok('6 the 8 cards stay when the refresh fails',(await pg.$$('#savedGrid .sv-card')).length===8);
@@ -95,6 +95,7 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   ok('6 a toast says it is offline and shows the designs from before',/offline/i.test(tt),tt);
   /* Delete collection with no signal: the dialog says so and can be tried again (it used to sit there with no word) */
   await pg.evaluate(()=>{ StudioCloud.deleteCollection=async()=>{ const e=new Error('No connection. Check your internet and try again.'); e.offline=true; throw e; }; });
+  await pg.waitForSelector('#colChips [data-f="c:Restocks"]',{state:'attached',timeout:20000});   // the chips paint after the cards (collections load on their own)
   await pg.evaluate(()=>document.querySelector('#colChips [data-f="c:Restocks"]').click()); await pg.waitForSelector('#colMore');
   await pg.tap('#colMore'); await pg.waitForSelector('#colDelete',{state:'visible'}); await pg.waitForFunction(()=>!document.getAnimations().some(a=>a.playState==='running'),null,{timeout:3000}).catch(()=>{});
   await pg.tap('#colDelete',{timeout:5000}).catch(()=>pg.evaluate(()=>document.getElementById('colDelete').click()));   // under load a toast from part 6 can still be fading over the menu await pg.waitForSelector('dialog[open] #cdGo');

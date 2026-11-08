@@ -104,6 +104,8 @@ let batchHash={}, batchNames=[];
   /* 3. pixel identity */
   for(const [id,tool,pre] of [['sRestock','restock','Shelf-day'],['sPhoto','photo-story','Window-light'],['sCar','carousel','Four-slides']]){
     const p2=await newPage(ctx); await p2.goto(BASE+'tools/'+tool+'.html?design='+id); await p2.waitForFunction(()=>window.Studio&&Studio.debug); await p2.waitForTimeout(1500);
+    /* the design's own photos decoded and the fonts in before Save (a fixed wait let Save draw a not-yet-decoded photo under load: the 1-in-N "hashes differ") */
+    await p2.waitForFunction(()=>{ const S=Studio.debug.S; return (S.photos||[]).every(p=>!p||p.img&&(p.img.complete!==false)); },null,{timeout:60000}).catch(()=>{}); await p2.evaluate(()=>document.fonts.ready); await p2.waitForTimeout(300);
     await p2.tap('#barSave'); await p2.waitForTimeout(500); await p2.tap('#save'); await p2.waitForFunction(()=>window.__shared,null,{timeout:90000});
     const single=await p2.evaluate(async()=>{ const o=[]; for(const f of window.__shared){ const h=await crypto.subtle.digest('SHA-256',await f.arrayBuffer()); o.push([...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')); } return o; });
     const want=Object.keys(batchHash).filter(k=>k.startsWith(pre)).sort().map(k=>batchHash[k]);
