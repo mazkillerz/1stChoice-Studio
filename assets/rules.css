@@ -1,0 +1,12 @@
+/* Brand check lines in the Save sheet (assets/rules.js). Hidden = no height, so a clean design changes nothing. */
+.rules-box{display:flex;flex-direction:column;gap:var(--sp-1,4px);padding:0}
+.rules-box[hidden]{display:none}
+.rules-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rules-row{display:flex;align-items:flex-start;gap:8px;font-size:var(--fs-s,13px);line-height:1.35;color:var(--muted)}
+.rules-ic{flex:none;display:inline-flex;margin-top:2px;color:var(--fg)}
+.rules-msg{flex:1;min-width:0;overflow-wrap:anywhere}
+.rules-rule{font-weight:600;color:var(--fg)}
+.rules-btns{flex:none;display:inline-flex;align-items:center;gap:2px}
+.rules-btns .link,.rules-more{min-height:44px;min-width:44px;padding:0 10px;font-size:var(--fs-s,13px);font-weight:600}
+.rules-more{align-self:flex-start}
+@media (max-width:420px){ .rules-row{flex-wrap:wrap} .rules-btns{margin-inline-start:24px} }
