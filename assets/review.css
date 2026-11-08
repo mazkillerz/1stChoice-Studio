@@ -23,7 +23,7 @@
 .rv-pin{position:absolute;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--accent);color:var(--on-accent);font:600 13px var(--sans);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:var(--shadow-1)}
 .rv-pin::after{content:"";position:absolute;inset:-8px}   /* a 44px touch area around the small pin */
 .rv-pin.done{opacity:.45}
-.rv-pin.new{pointer-events:none;background:var(--gold);color:#161210;animation:rvpop .25s ease-out}
+.rv-pin.new{pointer-events:none;background:var(--gold);color:#000;animation:rvpop .25s ease-out}
 @keyframes rvpop{from{transform:translate(-50%,-50%) scale(.4)}to{transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion:reduce){.rv-pin.new{animation:none}}
 .rv-acts{display:flex;flex-direction:column;gap:var(--sp-1)}
