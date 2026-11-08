@@ -584,7 +584,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     const rw=bx.w*k, rh=bx.h*k, c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot)), ew=rw*c+rh*s, eh=rw*s+rh*c;   // box around the turned layer
     reg.push({id,label,x:cx-ew/2,y:cy-eh/2,w:ew,h:eh,cx,cy,rw,rh,rot,...opt});
   }
-  const h={W,H,ctx,rr,brand:B,C,dir,isLight,
+  const h={W,H,ctx,rr,brand:B,C,dir,isLight,glyph,   /* components (mega w2): h.glyph for Studio.comp */
     get tok(){ return tokens(tokFormat(W,H)); },   // tokens (mega w1): the brand's design tokens for this canvas, read-only
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
     /* fill the whole story with a ground colour and its Background finish (groundFx); kind 'plain' = just the colour */
@@ -664,18 +664,13 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
       },{kind:'text',typ:true,shadow:!!o.shadow,txt:str,tsize:size,tcolor:l.color||o.color||C.ink,tbg:pill});   /* rules (mega): what the brand check reads */
       return l.hidden?0:th;
     },
-    /* rounded button layer */
+    /* rounded button layer (drawn by Studio.comp.pill, assets/components.js: the brand's pill radius token) */
     pill(id,label,str,cx,y,o){
       o=o||{}; if(!str){ reg.push({id,label,empty:true}); return 0; } str=String(str).replace(/\n/g,' ');
       const ff=L(id).font&&fontInfo(L(id).font), pf=ff?((ff.wt?ff.wt+' ':'')+(o.size||36)+'px "'+ff.family+'"'):('800 '+(o.size||36)+'px "'+B.fonts.body+'"');
-      ctx.font=pf; const m=ctx.measureText(str), ph=o.h||76, ic=o.icon?Math.round((o.size||36)*.95):0, ig=ic?14:0, pw=Math.ceil(m.width)+ic+ig+(o.pad||88), b=box(m,o.size||36);
-      layer(id,label,{x:cx-pw/2,y,w:pw,h:ph},color=>{
-        const bg=color||o.bg||C.ink, fg=color?(isLight(color)?C.ink:C.paper):(o.fg||C.paper); ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,pw,ph,ph/2); ctx.fill();
-        const tw=Math.ceil(m.width), x0=(pw-tw-ic-ig)/2, textX=dir==='rtl'?x0:x0+ic+ig, icX=dir==='rtl'?x0+tw+ig:x0;
-        ctx.font=pf; ctx.direction=dir; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillStyle=fg; ctx.fillText(str,textX,ph/2+(b.a-b.d)/2);
-        if(ic) glyph(ctx,o.icon,icX,(ph-ic)/2,ic,fg);
-      },{kind:'pill'});
-      return L(id).hidden?0:ph;
+      const K=Studio.comp.pill, po={...o,fontCss:pf}, g=K.geom(h,str,po);
+      layer(id,label,{x:cx-g.w/2,y,w:g.w,h:g.h},color=>K.paint(h,str,po,g,0,0,color),{kind:'pill'});
+      return L(id).hidden?0:g.h;
     },
     /* place name with a map pin centred on the letters */
     pin(id,label,str,cx,y,o){
@@ -719,7 +714,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
       ctx.font=font; const ws=items.map(t=>Math.ceil(ctx.measureText(t.text).width)+pad), tot=ws.reduce((a,b)=>a+b,0)+gap*(items.length-1), b0=box(ctx.measureText(items[0].text),size);
       layer(id,label,{x:cx-tot/2,y,w:tot,h:ph},color=>{
         let x=0; const order=dir==='rtl'?items.map((t,i)=>i).reverse():items.map((t,i)=>i);
-        order.forEach(i=>{ const t=items[i], w=ws[i]; ctx.beginPath(); rr(ctx,x,0,w,ph,ph/2);
+        order.forEach(i=>{ const t=items[i], w=ws[i]; Studio.comp.pillPath(h,x,0,w,ph);
           if(t.line){ ctx.lineWidth=4; ctx.strokeStyle=color||t.line; ctx.stroke(); } else { ctx.fillStyle=color||t.bg||C.ink; ctx.fill(); }
           ctx.font=font; ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle=t.line?(color||t.fg||t.line):color?(isLight(color)?C.ink:C.paper):(t.fg||C.paper); ctx.fillText(t.text,x+w/2,ph/2+(b0.a-b0.d)/2); x+=w+gap; });
       },{kind:'text'});
@@ -732,11 +727,8 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
       o=o||{}; small=h.digits(small||''); big=h.digits(big||''); if(!small&&!big){ reg.push({id,label,empty:true}); return 0; }
       const tw=o.w||400, th=o.h||260, tf=L(id).font&&fontInfo(L(id).font);
       layer(id,label,{x:cx-tw/2,y,w:tw,h:th},color=>{
-        const bg=color||o.bg||C.ink, dk=!isLight(bg); ctx.fillStyle=bg; ctx.beginPath(); rr(ctx,0,0,tw,th,40); ctx.fill();
-        ctx.direction=dir; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-        if(small){ ctx.font='800 44px "'+B.fonts.body+'"'; ctx.fillStyle=o.smallColor||(dk?(C.cream||C.paper):C.ink); ctx.fillText(small,tw/2,big?78:th/2+16,tw-40); }
-        if(big){ const fam=tf?tf.family:B.fonts.display, wt=tf&&tf.wt?tf.wt+' ':''; let fs=150; ctx.font=wt+fs+'px "'+fam+'"'; while(ctx.measureText(big).width>tw-44&&fs>60){ fs-=6; ctx.font=wt+fs+'px "'+fam+'"'; }
-          ctx.fillStyle=o.bigColor||(dk?(C.accent||C.paper):C.ink); ctx.fillText(big,tw/2,small?th-46:th/2+fs*.36); }
+        const bg=color||o.bg||C.ink, dk=!isLight(bg);
+        Studio.comp.tile(h,{w:tw,h:th,small,big,bg,smallColor:o.smallColor||(dk?(C.cream||C.paper):C.ink),bigColor:o.bigColor||(dk?(C.accent||C.paper):C.ink),family:tf?tf.family:null,wt:tf&&tf.wt});
       },{kind:'pill'});
       return L(id).hidden?0:th;
     },
@@ -799,6 +791,7 @@ async function tool(cfg){
   const stickersReady=window.STUDIO_STICKERS?Promise.resolve(true):loadScript(ROOT+'assets/stickers.js').then(()=>true,()=>false);
   const B=await useBrand();
   const hasStickers=await stickersReady;
+  if(!Studio.comp) await loadScript(ROOT+'assets/components.js');   // shared design components (mega w2)
   const opts=v=>typeof v==='function'?v(B):v;
   const clone=o=>JSON.parse(JSON.stringify(o));
   const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
@@ -1731,9 +1724,9 @@ async function tool(cfg){
   function drawComp(h,x){
     const c=COMP(x.comp); if(!c){ return; } const C=B.colors, t=x.text, id=x.id, lb=c.label;
     if(x.comp==='button') h.pill(id,lb,t,x.x,x.y-38);
-    else if(x.comp==='bio') h.pill(id,lb,t,x.x,x.y-38,{icon:'pin'});
+    else if(x.comp==='bio') Studio.comp.bio(h,{id,label:lb,text:t,cx:x.x,y:x.y-38});
     else if(x.comp==='place') h.pin(id,lb,t,x.x,x.y-22,{color:C.muted});
-    else if(x.comp==='handle') h.pin(id,lb,t,x.x,x.y-22,{icon:'insta',color:C.ink});
+    else if(x.comp==='handle') Studio.comp.handle(h,{id,label:lb,text:t,cx:x.x,y:x.y-22,color:C.ink});
     else if(x.comp==='flavours') h.tags(id,lb,(B.flavours||[]).map(f=>({text:f.name,bg:f.bg,fg:f.fg})),x.x,x.y-36,{size:36,h:72});
     else if(x.comp==='tile'){ const ln=String(t||'').split('\n'); h.tile(id,lb,ln.length>1?ln[0]:'',ln.length>1?ln.slice(1).join(' '):ln[0],x.x,x.y-130); }
     else if(x.comp==='dates') h.text(id,lb,t,x.x,x.y-22,{weight:'800',size:40,color:C.muted,maxW:960});

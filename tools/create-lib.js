@@ -67,7 +67,7 @@ function layPill(g){ const bg=role(g,'bg'), t=role(g,'text'), ic=role(g,'icon');
   const h=g.getAttr('h')||76, pad=g.getAttr('padX')||44, gap=ic?Math.round(h*.16):0;
   t.width(undefined); t.setAttr('autoW',true); BD.prepText(t);
   const ts=tsize(t), is=ic?iconSize(ic):{w:0,h:0,ox:0,oy:0}, w=Math.round(ts.w+is.w+gap+pad*2);
-  bg.setAttrs({x:0,y:0,width:w,height:h,cornerRadius:g.getAttr('r')!=null?g.getAttr('r'):h/2});
+  bg.setAttrs({x:0,y:0,width:w,height:h,cornerRadius:g.getAttr('r')!=null?g.getAttr('r'):Math.min(((Studio.tokens&&Studio.tokens().radius)||{}).pill??999,h/2)});   // the brand's pill radius token (999 = fully round)
   const iconFirst=!rtl(), x0=pad;
   const tx=iconFirst?x0+is.w+gap:x0, ix=iconFirst?x0:x0+ts.w+gap;
   t.setAttrs({x:Math.round(tx),y:Math.round((h-ts.h)/2)});
@@ -147,6 +147,16 @@ function blob(w,h,o){ o=o||{}; const d=(BD.SHAPES.find(s=>s.id==='blob')||{}).pa
 function divider(w,o){ o=o||{}; return new Konva.Line({id:uid(),name:'obj',kind:'line',points:[0,0,w,0],stroke:o.color||C().soft,strokeWidth:o.width||4,lineCap:'round',hitStrokeWidth:30,dash:o.dash||undefined,label:o.label||'Divider'}); }
 function flavourPills(o){ o=o||{}; const fl=B().flavours||[]; if(!fl.length) return null; return row(fl.map(f=>pill(f.name,{bg:f.bg,fg:f.fg,h:o.h||72,label:'Flavour'})),{label:'Flavour pills',gap:o.gap||20}); }
 CR.el={pill,iconLine,row,bubble,numCircle,badge,tile,dots,typing,slot,panel,blob,divider,flavourPills};
+/* components (mega w2): the Konva builders for the shared pieces (the canvas tools draw the same pieces with Studio.comp.pill / panel / step / badge ...).
+   Each returns the layer(s) to add to a page; look and size come from the brand's tokens + colours. */
+const COMP=(window.Studio.comp=window.Studio.comp||{}), tokR=k=>((Studio.tokens&&Studio.tokens().radius)||{})[k];
+COMP.pillDoc=(str,o)=>pill(str,o);                                                                    // a button; o.icon:'pin'|'instagram'..., o.r = corner (default the pill token)
+COMP.bioDoc=(str,o)=>pill(str,Object.assign({icon:'pin',label:'Map in bio'},o));                      // the map-in-bio pill
+COMP.stepDoc=(n,o)=>numCircle(n,o);                                                                   // a number in a circle
+COMP.badgeDoc=(str,o)=>{ o=o||{}; const h=o.h||84, g=pill(str,Object.assign({label:'Sticker badge',font:BD.displayFont(),weight:'normal',h},o)); g.setAttr('r',o.r!=null?o.r:tokR('sm')); layPill(g); g.rotation(o.rot==null?-6:o.rot); return g; };   // a turned sticker with words
+COMP.panelDoc=(w,h,o)=>{ o=o||{}; return panel(w,h,Object.assign({},o,{r:o.r!=null?(typeof o.r==='string'?tokR(o.r):o.r):tokR('md')})); };   // a soft card (r: pixels or a radius token name)
+COMP.handleDoc=(str,o)=>{ o=o||{}; const g=iconLine(str,{icon:'instagram',size:o.size||42,color:o.color||C().ink,label:'Instagram handle'});   // icon + handle; o.font = a Latin display font for the words
+  if(o.font){ const tx=role(g,'text'); if(tx){ tx.setAttr('fontFamily',o.font); tx.setAttr('fontStyle','normal'); layout(g,true); } } return g; };
 
 /* what the Elements tray offers (each makes a fresh layer; w = the frame width it's going into) */
 CR.ELEMENTS=[

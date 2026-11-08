@@ -125,11 +125,11 @@ Studio.tool({
       const {ph,y0}=choosePlan(M=>{ const rest=restOf(M), ph=Math.max(M.real?Math.max(300,Math.min(460,1330-rest)):460,Math.min(760,1330-rest)), y0=Math.max(250,Math.round((H-rest-ph)/2-10));
         return {ph,y0,end:R=>y0+restOf(R)+ph}; },OLD,REAL);
       let y=y0;
-      y+=h.logo((W-lw)/2,y,lw,logoTone)+56;
+      y+=Studio.comp.logo(h,{cx:W/2,y,w:lw,tone:logoTone}).h+56;
       y+=h.text('head','Headline',head,W/2,y,{font:'display',size:hsz(150),color:ink,maxW:940})+44;
       /* a soft panel: grey on a white ground, the warm blob tone on cream, a lighter tint on a dark ground */
       const panel=dark?mixHex(ground,'#ffffff',.1):same(ground,C.paper)?(C.panel||mixHex(ground,'#000000',.05)):same(ground,C.cream)?(C.blob||mixHex(ground,'#000000',.06)):mixHex(ground,'#000000',.06);
-      ctx.fillStyle=panel; ctx.beginPath(); h.rr(ctx,(W-pw)/2,y,pw,ph,64); ctx.fill();
+      Studio.comp.panel(h,{x:(W-pw)/2,y,w:pw,h:ph,r:'lg',fill:panel});
       /* both flavours (or none) = the pair cut-out; exactly one = that flavour's can. The pair keeps a gap: cans never touch. */
       const one=picked.length===1&&picked[0].can?picked[0].can:null, ref=one||(h.brand.products||{}).both;
       if(ref){

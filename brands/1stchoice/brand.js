@@ -118,15 +118,15 @@ Studio.registerBrand({
     {id:'cans-pair-shadow',label:'Both + shadow',file:'assets/cans_pair_shadow.png',prev:'assets/prev/cans_pair_shadow.webp',group:'Cans (HD cut-outs)',noFlip:true},
     /* the flat one-colour can icon (approved 6 Nov 2026, "A+B": real-can look with "1ST" on the label). SVG + 2048px PNG in assets/icon/.
        Solid and Outline take any colour (tint); the flavour ones keep their label colour (Classic taupe, Passion berry / yellow on dark). */
-    {id:'can-icon',label:'Can icon',file:'assets/icon/can-icon-solid.png',prev:'assets/prev/can_icon_solid.webp',group:'Can icon (2D)',tint:true},
-    {id:'can-icon-outline',label:'Can icon · outline',file:'assets/icon/can-icon-outline.png',prev:'assets/prev/can_icon_outline.webp',group:'Can icon (2D)',tint:true},
-    {id:'can-icon-classic',label:'Can icon · Classic',file:'assets/icon/can-icon-classic.png',prev:'assets/prev/can_icon_classic.webp',group:'Can icon (2D)',noFlip:true},
-    {id:'can-icon-passion',label:'Can icon · Passion',file:'assets/icon/can-icon-passion.png',prev:'assets/prev/can_icon_passion.webp',group:'Can icon (2D)',noFlip:true},
-    {id:'can-icon-passion-yellow',label:'Can icon · Passion (on dark)',file:'assets/icon/can-icon-passion-yellow.png',prev:'assets/prev/can_icon_passion_yellow.webp',group:'Can icon (2D)',noFlip:true},
-    {id:'can-stamp',label:'Stamp · 1ST CHOICE',file:'assets/icon/can-stamp.png',prev:'assets/prev/can_stamp.webp',group:'Can icon (2D)',noFlip:true},
+    {component:'icon',id:'can-icon',label:'Can icon',file:'assets/icon/can-icon-solid.png',prev:'assets/prev/can_icon_solid.webp',group:'Can icon (2D)',tint:true},
+    {component:'icon',id:'can-icon-outline',label:'Can icon · outline',file:'assets/icon/can-icon-outline.png',prev:'assets/prev/can_icon_outline.webp',group:'Can icon (2D)',tint:true},
+    {component:'icon',id:'can-icon-classic',label:'Can icon · Classic',file:'assets/icon/can-icon-classic.png',prev:'assets/prev/can_icon_classic.webp',group:'Can icon (2D)',noFlip:true},
+    {component:'icon',id:'can-icon-passion',label:'Can icon · Passion',file:'assets/icon/can-icon-passion.png',prev:'assets/prev/can_icon_passion.webp',group:'Can icon (2D)',noFlip:true},
+    {component:'icon',id:'can-icon-passion-yellow',label:'Can icon · Passion (on dark)',file:'assets/icon/can-icon-passion-yellow.png',prev:'assets/prev/can_icon_passion_yellow.webp',group:'Can icon (2D)',noFlip:true},
+    {component:'icon',id:'can-stamp',label:'Stamp · 1ST CHOICE',file:'assets/icon/can-stamp.png',prev:'assets/prev/can_stamp.webp',group:'Can icon (2D)',noFlip:true},
     {id:'mark-1st',label:'1ST mark',file:'assets/icon/mark-1st.png',prev:'assets/prev/mark_1st.webp',group:'Logo',tint:true},
-    {id:'type-coldbrew',label:'COLD BREW · coffee-filled',file:'assets/type/type-coldbrew.png',prev:'assets/prev/type_coldbrew.webp',group:'Type (coffee-filled)',noFlip:true},
-    {id:'type-1st',label:'1ST · coffee-filled',file:'assets/type/type-1st.png',prev:'assets/prev/type_1st.webp',group:'Type (coffee-filled)',noFlip:true},
+    {component:'type',id:'type-coldbrew',label:'COLD BREW · coffee-filled',file:'assets/type/type-coldbrew.png',prev:'assets/prev/type_coldbrew.webp',group:'Type (coffee-filled)',noFlip:true},
+    {component:'type',id:'type-1st',label:'1ST · coffee-filled',file:'assets/type/type-1st.png',prev:'assets/prev/type_1st.webp',group:'Type (coffee-filled)',noFlip:true},
     /* the cat in the can-label style (from the winter cat reel, Oct 2026). The owner's rule: the cat only when asked. */
     {id:'cat-wink',label:'Cat · wink with can',file:'reels/winter-cat/img/L4b.webp',prev:'assets/prev/winter_cat_wink.webp',group:'Cat · winter camp (only when asked)'},
     {id:'cat-can',label:'Cat · holding can',file:'reels/winter-cat/img/L4.webp',prev:'assets/prev/winter_cat_can.webp',group:'Cat · winter camp (only when asked)'},

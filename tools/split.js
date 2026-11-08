@@ -24,7 +24,7 @@ Studio.tool({
     const lw=190, lh=h.logoH(lw); let fs=72; let m=h.measure(head,{font:'display',size:fs,maxW:9999});
     while(m.w+28+3+28+lw+100>1000&&fs>44){ fs-=4; m=h.measure(head,{font:'display',size:fs,maxW:9999}); }
     const pw=m.w+28+3+28+lw+100, ph=110, px=(W-pw)/2, py=half-ph/2, rtl=h.dir==='rtl';
-    ctx.fillStyle=band; ctx.beginPath(); h.rr(ctx,px,py,pw,ph,ph/2); ctx.fill();
+    Studio.comp.panel(h,{x:px,y:py,w:pw,h:ph,r:ph/2,fill:band});
     const textX=rtl?px+pw-52-m.w:px+52, lineX=rtl?textX-28-3:textX+m.w+28, logoX=rtl?lineX-28-lw:lineX+3+28;
     h.text('head','Words',head,textX,py+(ph-m.h)/2,{font:'display',size:fs,color:bandInk,align:rtl?'end':'start',maxW:9999});
     ctx.fillStyle=rule; ctx.fillRect(lineX,py+ph/2-27,3,54);

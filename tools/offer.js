@@ -39,12 +39,7 @@ Studio.tool({
     const smallR=small?mLines(h,small,{weight:'800',size:38,maxW:900}).h+30:0, datesR=dates?h.measure(dates,{weight:'800',size:40,maxW:900}).h+26:0;
     const drawTiles=y=>h.block('tiles','Offer tiles',(W-rowW)/2,y,rowW,th,(c,color)=>{
       tiles.forEach((t,i)=>{ const k=h.dir==='rtl'?n-1-i:i, x=k*(tw+tg);
-        c.fillStyle=color||tileBg; c.beginPath(); h.rr(c,x,0,tw,th,40); c.fill();
-        c.direction=h.dir; c.textAlign='center'; c.textBaseline='alphabetic';
-        const sm=h.digits(t.small), bg=h.digits(t.big);
-        if(sm){ c.font='800 44px "'+h.brand.fonts.body+'"'; c.fillStyle=tileSmall; c.fillText(sm,x+tw/2,sm&&bg?78:th/2+16,tw-40); }
-        if(bg){ let fs=150; c.font=fs+'px "'+h.brand.fonts.display+'"'; while(c.measureText(bg).width>tw-44&&fs>60){ fs-=6; c.font=fs+'px "'+h.brand.fonts.display+'"'; }
-          c.fillStyle=tileBig; c.fillText(bg,x+tw/2,sm?th-46:th/2+fs*.36); }
+        Studio.comp.tile(h,{x,y:0,w:tw,h:th,small:h.digits(t.small),big:h.digits(t.big),bg:color||tileBg,smallColor:tileSmall,bigColor:tileBig});
       });
     });
     if(full){
@@ -73,7 +68,7 @@ Studio.tool({
        the room it needs (down to 300) and the block is centred again */
     const need=rest(hmR.h,smallR,datesR)-30;
     if(y+need+ph>1621){ ph=Math.max(300,Math.min(ph,1370-need)); total=need+30+ph; y=Math.max(250,Math.round((H-total)/2-10)); }
-    y+=h.logo((W-lw)/2,y,lw,dark?'light':'dark')+50;
+    y+=Studio.comp.logo(h,{cx:W/2,y,w:lw,tone:dark?'light':'dark'}).h+50;
     y+=h.text('head','Headline',head,W/2,y,{font:'display',size:140,color:ink,maxW:940})+40;
     h.photo(0,(W-pw)/2,y,pw,ph,{r:44,mode:'cover'}); y+=ph+44;
     if(n) y+=drawTiles(y)+40;
