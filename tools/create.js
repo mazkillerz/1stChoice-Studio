@@ -674,6 +674,7 @@ $('crMenu').onclick=e=>openMenu(e.currentTarget,[
   {label:'New design',run:()=>{ if(S.id) BD.saveNow(); location.href=location.pathname+'?new=1'; }},
   {label:'Templates',run:()=>openTemplates()},
   {label:'Save…',run:openSave},
+  ...(motionOn()?[{label:'Moving story…',run:openMotion}]:[]),
   '-',{label:'This page…',run:openPage},{label:'Add a page',run:()=>addPage()},
   {label:'Story safe zones',check:!!BD.showSafe,run:()=>{ BD.showSafe=!BD.showSafe; BD.paintUI(); }},
   {label:'Snap to guides',check:S.snap,run:()=>{ S.snap=!S.snap; toast('Snapping '+(S.snap?'on':'off')+'.'); }},
@@ -719,6 +720,15 @@ if(impOn()){ const has=e=>[...(e.dataTransfer&&e.dataTransfer.items||[])].some(i
   addEventListener('dragover',e=>{ if(has(e)){ e.preventDefault(); e.dataTransfer.dropEffect='copy'; } });
   addEventListener('drop',e=>{ const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(impIsBoard); if(!f) return; e.preventDefault(); impRun(f); }); }
 
+/* moving stories (w3-mp4, plan 3.4): tools/create-motion.js, behind the `motion` preview flag; nothing here runs or shows with the flag off */
+const motionOn=()=>{ try{ return Studio.flags.on('motion'); }catch(_){ return false; } };
+let motionP=null;
+async function openMotion(){ if(!motionOn()) return; const f=BD.activeFrame(); if(!f) return; reopen=null;
+  try{ motionP=motionP||(async()=>{ if(!document.getElementById('crMotionCss')){ const l=document.createElement('link'); l.rel='stylesheet'; l.href='create-motion.css'; l.id='crMotionCss'; document.head.appendChild(l); }
+      if(!window.CRMotion) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-motion.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); })();
+    await motionP; CRMotion.open({openSheet,closeSheet,toast,esc,I,fname,savePicture:fr=>saveImages([fr])}); }
+  catch(err){ motionP=null; console.warn(err); toast('Could not open Moving story. Check your connection and try again.'); } }
+
 /* ---------- start ---------- */
 (async function(){
   await BD.start(); B=BD.B; BD.ICONS=CR.allIcons(); document.title=TITLE+' · Studio';
@@ -738,6 +748,6 @@ if(impOn()){ const has=e=>[...(e.dataTransfer&&e.dataTransfer.items||[])].some(i
   if(startWith) await startWith();
   else if(tpl&&CR.templates().some(d=>d.id===tpl)) await openTemplates({focus:tpl});   // opened on a draft/design: show the picker on the asked-for template
   if(st.openSaveAfter) openSave();
-  window.CRUI={openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
+  window.CRUI={openMotion,openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
 })();
 })();

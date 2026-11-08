@@ -86,7 +86,8 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
    Code asks Studio.flags.on(id). A feature the owner approves leaves FLAGS and stops asking. */
 const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Calendar, reviews and campaigns'},
-  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'}
+  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
+  {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'}   /* w3-mp4 */
 ];
 const flags={
   list:()=>FLAGS.map(f=>({...f,on:flags.on(f.id)})),
