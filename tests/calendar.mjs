@@ -1,5 +1,5 @@
 /* Content calendar (behind the "team" preview flag): assets/calendar.js + calendar.css, Home row, #calendar page. fakecloud stands in for Supabase.
-   1 flag off: no entry point, no calendar section, no calendar request; flag on adds only #calRow + #calendarView to Home
+   1 permanent since 2.2.0: the row is the first section on Home with no preview; no calendar files until opened
    A the Home row is styled before the calendar was ever opened (<= 80px tall, small icon, title and sub on separate lines), light + dark
    2 phone (390 touch, light + dark): week list (7 rows, today marked), cards (format icon, time, status chip, thumb, 2 caption lines, Copy caption), arrows, Month toggle
    3 "Plan a post": Post/Story, full-screen picker (ALL designs, search Arabic + English, collection + shape chips, no nested scroller, lazy thumbs), add in <= 6 taps,
@@ -46,15 +46,17 @@ const txt=(pg,s)=>pg.$eval(s,e=>e.innerText.replace(/\s+/g,' ').trim()).catch(()
   let calReq=0; pg.on('request',r=>{ if(/calendar\.(js|css)/.test(r.url())) calReq++; });
   await pg.goto(BASE+'index.html'); await pg.waitForSelector('#savedRowList .sv-card',{timeout:8000});
   const ids=await pg.evaluate(()=>[...document.querySelectorAll('[id]')].map(e=>e.id).filter(Boolean).sort());
-  ok('1 flag off: no calendar row, no calendar page, no #calendar link',!ids.includes('calRow')&&!ids.includes('calendarView')&&!(await pg.$('a[href="#calendar"],[data-tab="calendar"]')));
-  ok('1 flag off: no calendar files requested',calReq===0,calReq);
+  await pg.waitForSelector('#calRow .cal-home-row');
+  const first=await pg.evaluate(()=>{ const r=document.getElementById('calRow'), h=document.getElementById('homeView'); const secs=[...h.querySelectorAll('.hub-sec')].filter(e=>!e.hidden&&e.offsetHeight>0); return {first:secs[0]&&secs[0].id, top:Math.round(r.getBoundingClientRect().top)}; });
+  ok('1 permanent (2.2.0): the calendar row is on Home with no preview, as the first section, near the top',ids.includes('calendarView')&&first.first==='calRow'&&first.top<400,first);
+  ok('1 permanent: no calendar files requested before it is opened',calReq===0,calReq);
   await pg.goto(BASE+'index.html#calendar'); await pg.waitForTimeout(500);
-  ok('1 flag off: #calendar stays on Home',await pg.evaluate(()=>!document.getElementById('homeView').hidden));
+  ok('1 permanent: #calendar opens the calendar',await pg.evaluate(()=>document.getElementById('homeView').hidden&&!document.getElementById('calendarView').hidden));
   await pg.evaluate(()=>{}); await ctx.close();
   const on=await mk({viewport:{width:390,height:844},isMobile:true,hasTouch:true},true); const p2=await on.newPage(); p2.on('pageerror',e=>errs.push('on0: '+e.message));
   await p2.goto(BASE+'index.html'); await p2.waitForSelector('#calRow .cal-home-row',{timeout:8000});
   const ids2=await p2.evaluate(()=>[...document.querySelectorAll('[id]')].map(e=>e.id).filter(Boolean).sort());
-  ok('1 flag on adds only #calRow and #calendarView to Home',JSON.stringify(ids2.filter(x=>!ids.includes(x)&&!/^(lz-campaigns|lz-review|campRow|selCamp)$/.test(x)))===JSON.stringify(['calRow','calendarView']),ids2.filter(x=>!ids.includes(x)));   // lz-campaigns/campRow/selCamp: campaigns (w2), same flag
+  ok('1 the team preview adds nothing calendar-related (the calendar is permanent since 2.2.0)',!ids2.filter(x=>!ids.includes(x)).some(x=>/^cal/.test(x)),ids2.filter(x=>!ids.includes(x)));
   await on.close(); }
 
 /* 2 + 3 + 4 phone */

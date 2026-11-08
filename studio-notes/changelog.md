@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.2.0 · 8 Nov 2026
+
+### The calendar is part of Studio
+type: feature
+The content calendar is no longer a preview: everyone has it, and it is the first thing on Home. Tap it to plan a post or story, see what's posting today, and copy captions when you post. Reviews, captions on designs, campaigns and the phrasebook stay in Settings → Previews → Team workflow for now.
+
 ## 2.1.2 · 8 Nov 2026
 
 ### Saved: collections in one easy row

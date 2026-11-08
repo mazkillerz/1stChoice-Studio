@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.1.2';
+const VERSION='2.2.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -94,7 +94,7 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
    FLAGS lists them (engine words only); Settings → Previews switches them; ?flag-<id>=1|0 sets one from a link.
    Code asks Studio.flags.on(id). A feature the owner approves leaves FLAGS and stops asking. */
 const FLAGS=[
-  {id:'team',label:'Team workflow',sub:'Calendar, reviews and campaigns'},
+  {id:'team',label:'Team workflow',sub:'Reviews, captions, campaigns and the phrasebook'},
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
@@ -2573,7 +2573,7 @@ async function home(){
   /* three places since 1.0.0: Home, Templates (#templates) and Saved (#saved); each page has its own Back entry */
   const VIEWS={home:'homeView',templates:'templatesView',saved:'saved'};
   /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
-  if(flags.on('team')&&!$('calendarView')){ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
+  if(!$('calendarView')){   /* calendar: permanent since 2.2.0 (was the team preview) */ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
   const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':'home';
   const onSaved=()=>curView()==='saved';
   const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':'home';
@@ -2645,8 +2645,8 @@ async function home(){
   }
   const calOpen=today=>{ calToday=!!today; if(curView()==='calendar'){ showCalendar(); } else openView('calendar'); };
   async function calHome(){
-    if(!flags.on('team')||!$('homeView')) return;
-    let row=$('calRow'); if(!row){ const at=$('savedRow'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.after(row);
+    if(!$('homeView')) return;
+    let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row);   /* first thing on Home (2.2.0) */
       row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
     const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
       row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
@@ -2865,7 +2865,7 @@ async function home(){
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
     a.push({kind:'action',id:'act:templates',title:'Templates',sub:'Ready-made stories, posts and covers',keys:'templates ready made start restock story post highlight cover library',icon:ICON.template,run:()=>openView('templates')});
-    if(flags.on('team')&&$('calendarView')) a.push({kind:'action',id:'act:calendar',title:'Calendar',sub:'Plan and see your team’s posts',keys:'calendar content plan schedule posting posted week month',icon:ICON.clock,run:()=>calOpen(true)});
+    if($('calendarView')) a.push({kind:'action',id:'act:calendar',title:'Calendar',sub:'Plan and see your team’s posts',keys:'calendar content plan schedule posting posted week month',icon:ICON.clock,run:()=>calOpen(true)});
     a.push({kind:'action',id:'act:settings',title:'Settings',sub:'Account, your tools, welcome tour',keys:'settings preferences options account gear',icon:ICON.settings,run:openSettings});
     a.push({kind:'action',id:'act:welcome',title:'Welcome tour',sub:'The quick intro to Studio',keys:'welcome tour intro introduction help how onboarding tutorial guide start',icon:ICON.play,run:openWelcome});
     a.push({kind:'action',id:'act:lab',title:'Experimental',sub:'New things being tested (passcode)',keys:'experimental lab labs board beta passcode test',icon:ICON.lab,run:openLab});
