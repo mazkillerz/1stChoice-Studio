@@ -22,7 +22,7 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   /* mega round, Wave 2-3 (1.55.0) */
-  [/assets\/cutout|assets\/vendor\/cutout/,['cutout']],
+  [/assets\/cutout|assets\/vendor\/cutout/,['cutout']],[/assets\/stock\.js|tools\/restock\.js/,['stock']],
   [/assets\/calendar\.|assets\/captions\.|assets\/campaigns\./,['calendar','captions','campaigns']],
   [/assets\/review\./,['review']],[/assets\/rules\./,['rules','captions']],[/assets\/phrasebook\./,['phrasebook']],
   [/assets\/components\.js|tools\/create-lib\.js/,['components','goldens']],
