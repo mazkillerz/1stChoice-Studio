@@ -1497,7 +1497,7 @@ async function tool(cfg){
   /* review (mega): after a team save the Save sheet offers "Send for review" (only with the "team" preview on) */
   function rvSaved(){ const b=$('rvSend'); if(!b||!design) return; b.hidden=false; b.disabled=false; b.textContent='Send for review'; }
   if($('rvSend')) $('rvSend').addEventListener('click',async()=>{ const b=$('rvSend'); if(!design) return; b.disabled=true;
-    try{ if(!document.getElementById('rvCss')){ const l=document.createElement('link'); l.id='rvCss'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); }
+    try{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); }
       if(!window.StudioReview) await loadScript(ROOT+'assets/review.js');
       await StudioReview.send({brand:B.id,cloud,ask:()=>window.StudioWho?Promise.resolve(window.StudioWho):loadScript(ROOT+'assets/who.js').then(()=>window.StudioWho)},design.id); b.textContent='Sent for review'; }
     catch(err){ b.disabled=false; status(teamErr(err)); } });
@@ -2570,7 +2570,7 @@ async function home(){
   const rvChip=d=>flags.on('team')&&d.review&&RV_LABEL[d.review]?`<em class="rv-chip st-${d.review}" title="${esc(RV_LABEL[d.review]+(d.review_by?' · '+d.review_by:''))}">${RV_LABEL[d.review]}</em>`:'';
   const rvWho=()=>{ try{ const r=JSON.parse(localStorage.getItem('studio:who')); return {name:String((r&&r.name)||'').trim(),owner:!!(r&&r.owner)}; }catch(_){ return {name:'',owner:false}; } };
   let rvLoad=null;
-  const rvCss=()=>{ if(!document.getElementById('rvCss')){ const l=document.createElement('link'); l.id='rvCss'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); } };
+  const rvCss=()=>{ if(!document.querySelector('link[data-rv]')){ const l=document.createElement('link'); l.dataset.rv='1'; l.rel='stylesheet'; l.href=ROOT+'assets/review.css'; document.head.appendChild(l); } };
   if(flags.on('team')) rvCss();
   const rvLib=()=>{ rvCss(); if(!rvLoad) rvLoad=window.StudioReview?Promise.resolve():loadScript(ROOT+'assets/review.js'); return rvLoad.then(()=>window.StudioReview); };
   const rvCtx=()=>({brand:B.id,cloud:getCloud,esc,haptic,dialog,toast:hubToast,ago,designs:()=>all,ask:whoLib,
@@ -2581,13 +2581,14 @@ async function home(){
   function rvHome(){
     if(!flags.on('team')||!$('homeView')||!loaded||!member) return;
     let row=$('rvRow'); const at=$('savedRow'); if(!at) return;
+    const me=rvWho(), waiting=me.owner?all.filter(d=>d.review==='in_review').length:0;
+    const notes=me.name?all.filter(d=>d.author===me.name&&(d.review==='approved'||d.review==='changes')&&d.review_by&&d.review_by!==me.name&&String(store('studio:rvSeen:'+d.id))!==d.review+'|'+d.review_at).slice(0,2):[];
+    if(!row&&!waiting&&!notes.length) return;   // nothing to show: nothing is added
     if(!row){ row=document.createElement('section'); row.id='rvRow'; row.className='hub-sec rv-home'; row.setAttribute('aria-label','Reviews'); at.after(row);
       row.addEventListener('click',async e=>{ const n=e.target.closest('[data-rv]'); if(!n) return; haptic('tick'); const k=n.dataset.rv;
         if(k==='queue'){ try{ (await rvLib()).queue(rvCtx()); }catch(_){} return; }
         const d=all.find(x=>x.id===n.dataset.id); if(!d) return; store('studio:rvSeen:'+d.id,d.review+'|'+d.review_at);
         if(k==='read'){ try{ (await rvLib()).openDesign(rvCtx(),d); }catch(_){} } rvHome(); }); }
-    const me=rvWho(), waiting=me.owner?all.filter(d=>d.review==='in_review').length:0;
-    const notes=me.name?all.filter(d=>d.author===me.name&&(d.review==='approved'||d.review==='changes')&&d.review_by&&d.review_by!==me.name&&String(store('studio:rvSeen:'+d.id))!==d.review+'|'+d.review_at).slice(0,2):[];
     const tick='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     row.hidden=!waiting&&!notes.length;
     row.innerHTML=(waiting?`<button type="button" class="rv-home-row" data-rv="queue">${tick}<span class="ch-txt"><b><bdi>${waiting}</bdi> waiting for your review</b></span></button>`:'')
