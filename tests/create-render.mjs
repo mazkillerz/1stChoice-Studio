@@ -86,7 +86,9 @@ await blk('one Create draft',async()=>{ const ctx=await mk(DESK,{touch:false}); 
     const [x,y]=await Promise.all([createImageBitmap(r.blob),createImageBitmap(other)]); if(x.width!==y.width||x.height!==y.height) return {size:[x.width,x.height,y.width,y.height]};
     const px=bm=>{ const c=new OffscreenCanvas(bm.width,bm.height), g=c.getContext('2d'); g.drawImage(bm,0,0); return g.getImageData(0,0,bm.width,bm.height).data; };
     const a=px(x), q=px(y); let bad=0; for(let i=0;i<a.length;i+=4){ if(Math.abs(a[i]-q[i])>2||Math.abs(a[i+1]-q[i+1])>2||Math.abs(a[i+2]-q[i+2])>2||Math.abs(a[i+3]-q[i+3])>2) bad++; }
-    return {bad,total:a.length/4,scale:r.scale}; },buf.toString('base64'));
+    let x0=1e9,y0=1e9,x1=-1,y1=-1; if(bad){ for(let i=0;i<a.length;i+=4) if(Math.abs(a[i]-q[i])>2||Math.abs(a[i+1]-q[i+1])>2||Math.abs(a[i+2]-q[i+2])>2||Math.abs(a[i+3]-q[i+3])>2){ const p=i/4, px_=p%x.width, py=(p/x.width)|0; x0=Math.min(x0,px_); x1=Math.max(x1,px_); y0=Math.min(y0,py); y1=Math.max(y1,py); } }
+    return {bad,total:a.length/4,scale:r.scale,box:bad?[x0,y0,x1,y1]:undefined,own:bad?await new Promise(rs=>{ const f2=new FileReader(); f2.onload=()=>rs(f2.result); f2.readAsDataURL(r.blob); }):undefined}; },buf.toString('base64'));
+  if(diff.own){ const dir=process.env.DUMP_DIR||'/tmp'; fs.writeFileSync(dir+'/create-render-own.png',Buffer.from(diff.own.split(',')[1],'base64')); fs.writeFileSync(dir+'/create-render-home.png',buf); console.log('  (dumped the two PNGs to '+dir+'/create-render-{own,home}.png, differing box '+diff.box+')'); delete diff.own; }
   ok('pixel-identical to Create’s own 2x Save',diff.bad===0&&diff.scale===2,diff);
   await ctx.close(); });
 

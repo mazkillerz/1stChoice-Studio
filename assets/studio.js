@@ -2453,20 +2453,24 @@ async function home(){
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
   /* three places since 1.0.0: Home, Templates (#templates) and Saved (#saved); each page has its own Back entry */
   const VIEWS={home:'homeView',templates:'templatesView',saved:'saved'};
-  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':'home';
+  /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
+  if(flags.on('team')&&!$('calendarView')){ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
+  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':'home';
   const onSaved=()=>curView()==='saved';
-  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':'home';
-  function setTab(v){ tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
+  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':'home';
+  function setTab(v){ if(v==='calendar') v='home';   // calendar (mega): a page under Home
+    tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
     const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
     if(was==='home') homeY=scrollY;
     Object.entries(VIEWS).forEach(([k,id])=>{ const el=$(id); if(el) el.hidden=k!==v; });
-    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates');
+    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates'); document.body.classList.toggle('on-calendar',v==='calendar');
     window.scrollTo({top:v==='home'?homeY:0,behavior:'instant'});
     if(v==='saved'){ paintPage(); const h=$('savedH'); h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
-    if(v==='templates') showTemplates(); }
+    if(v==='templates') showTemplates();
+    if(v==='calendar') showCalendar(); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
   function openView(v){ if(curView()===v) return; try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }
   function openSaved(){ openView('saved'); }
@@ -2505,6 +2509,34 @@ async function home(){
     const team=()=>all.filter(d=>d.kind==='template').map(d=>({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
     if(TOOLS.video&&reelIds().length) return loadReels().then(()=>out.concat(reelEntries(),team()));
     return out.concat(team()); }
+  /* ---------- calendar (mega): content calendar behind the "team" preview (assets/calendar.js + calendar.css, lazy). Home gets one quiet
+     row (the way in; "Posting today: <title>" when something is due today); the page is #calendar; search lists it. ---------- */
+  let calApi=null, calToday=false, calReady=false, calPend=false;   // calReady: Home has finished setting up (a #calendar link opens after it)
+  async function showCalendar(){
+    const root=$('calendarView'); if(!root) return; if(!calReady){ calPend=true; return; }
+    const today=calToday; calToday=false;
+    try{
+      if(!document.getElementById('calCss')){ const l=document.createElement('link'); l.id='calCss'; l.rel='stylesheet'; l.href=ROOT+'assets/calendar.css'; document.head.appendChild(l); }
+      if(!window.StudioCalendar) await loadScript(ROOT+'assets/calendar.js');
+      if(!calApi) calApi=StudioCalendar.init({root,brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
+        cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
+        netDown:e=>netDown(e), who:{author:()=>window.StudioWho&&StudioWho.author(),ask:async o2=>{ const W=await whoLib(); return W.ask(o2); }}});
+      if(window.StudioWho===undefined) whoLib().catch(()=>{});
+      calApi.show({today});
+    }catch(_){ root.innerHTML='<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>The calendar did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" id="calRetry">Try again</button></div>'; const r=root.querySelector('#calRetry'); if(r) r.onclick=showCalendar; }
+  }
+  const calOpen=today=>{ calToday=!!today; if(curView()==='calendar'){ showCalendar(); } else openView('calendar'); };
+  async function calHome(){
+    if(!flags.on('team')||!$('homeView')) return;
+    let row=$('calRow'); if(!row){ const at=$('savedRow'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.after(row);
+      row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
+    const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
+      row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
+    if(!row.firstChild) paintRow(null);
+    if(!member||!C||!C.calendar) return;
+    try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const list=(await C.calendar(B.id,{from:k,to:k})).filter(x=>x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')); paintRow(list); }catch(_){}
+  }
   let tplApi=null;
   function showTemplates(){
     if(!window.StudioTemplates||!$('templatesView')) return;
@@ -2680,6 +2712,7 @@ async function home(){
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
     a.push({kind:'action',id:'act:templates',title:'Templates',sub:'Ready-made stories, posts and covers',keys:'templates ready made start restock story post highlight cover library',icon:ICON.template,run:()=>openView('templates')});
+    if(flags.on('team')&&$('calendarView')) a.push({kind:'action',id:'act:calendar',title:'Calendar',sub:'Plan and see your team’s posts',keys:'calendar content plan schedule posting posted week month',icon:ICON.clock,run:()=>calOpen(true)});
     a.push({kind:'action',id:'act:settings',title:'Settings',sub:'Account, your tools, welcome tour',keys:'settings preferences options account gear',icon:ICON.settings,run:openSettings});
     a.push({kind:'action',id:'act:welcome',title:'Welcome tour',sub:'The quick intro to Studio',keys:'welcome tour intro introduction help how onboarding tutorial guide start',icon:ICON.play,run:openWelcome});
     a.push({kind:'action',id:'act:lab',title:'Experimental',sub:'New things being tested (passcode)',keys:'experimental lab labs board beta passcode test',icon:ICON.lab,run:openLab});
@@ -2736,7 +2769,7 @@ async function home(){
       if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
       if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
       const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
-      [all,cols]=got; cloudNote=''; loaded=true; paint();
+      [all,cols]=got; cloudNote=''; loaded=true; paint(); calHome();
     }catch(err){ if(run!==loadRun) return;
       const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
@@ -3141,6 +3174,7 @@ async function home(){
   const labBtn=$('labBtn'); if(labBtn) labBtn.onclick=openLab;
   if(location.hash==='#lab') setTimeout(openLab,200);
   loadSaved();
+  calReady=true; calHome(); if(calPend&&curView()==='calendar') showCalendar();
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */

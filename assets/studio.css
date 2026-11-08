@@ -1425,3 +1425,7 @@ input[type=range]{min-height:44px}
 .pack-banner .pb-x{flex:none;width:var(--tap);height:var(--tap);border:0;background:none;color:var(--muted);border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .pack-banner .pb-x:active{background:var(--line)}
 @media (max-width:420px){.pack-banner{flex-wrap:wrap;padding-inline-start:14px}.pack-banner .pb-txt{order:1;flex:1 1 calc(100% - 60px)}.pack-banner .pb-x{order:2}.pack-banner .pb-go{order:3;flex:1 1 100%}}
+/* calendar (mega): no new-design button on the calendar page; the calendar's own styles are in assets/calendar.css */
+body.on-calendar nav.top{display:none}
+body.hub.on-calendar{background:var(--bg)}
+body.on-calendar .fab{display:none}

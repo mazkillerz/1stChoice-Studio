@@ -38,7 +38,8 @@ const near=(a,b,t)=>Math.abs(a-b)<=t;
   ok('2b 24 emoji tiles',sh.emo===24,sh);
   ok('2c phone emoji: one button each (>30), no commas',sh.kbd>30&&!sh.comma,sh);
   ok('2d every sticker/emoji tile >= 44x44 and has an svg',sh.small===0&&sh.svgs===sh.tiles,sh);
-  await pg.tap('[data-j="stickers"]'); await pg.waitForTimeout(1200);
+  await pg.tap('[data-j="stickers"]'); await pg.waitForTimeout(300);
+  await pg.evaluate(()=>new Promise(res=>{ const b=document.getElementById('crSheetB'); let last=-1,n=0,f=0; const t=()=>{ if(b.scrollTop===last) n++; else { n=0; last=b.scrollTop; } if(n>=15||++f>600) return res(); requestAnimationFrame(t); }; t(); }));   // a smooth scroll: wait until it has stopped
   const jd=await pg.evaluate(()=>{ const B=document.getElementById('crSheetB').getBoundingClientRect(), t=document.getElementById('j-stickers').getBoundingClientRect(); return {top:t.top-B.top,scroll:document.getElementById('crSheetB').scrollTop}; });
   ok('2e jump chip Stickers scrolls #j-stickers near the top',jd.scroll>100&&jd.top>=-30&&jd.top<=120,jd);
   /* 4 add heart */
