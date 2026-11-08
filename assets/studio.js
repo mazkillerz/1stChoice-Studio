@@ -301,7 +301,7 @@ function emojiStickers(){
     .then(()=>{ if(window.addEmojiStickers) window.addEmojiStickers(); return hasEmojiStickers(); },()=>{ EMOJI_P=null; return false; });
   return EMOJI_P;
 }
-function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||null; }
+function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||(BRAND&&BRAND.aliases&&BRAND.aliases[ref]&&brandAssets().find(x=>x.id===BRAND.aliases[ref]))||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
 function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
 function loadAsset(ref){
@@ -408,10 +408,42 @@ async function canvasBlob(c,type,q){ return await new Promise(r=>c.toBlob(r,type
 
 /* ---------- brands ---------- */
 function registerBrand(b){ BRANDS[b.id]=b; }
+/* occasion packs (w2-packs, mega): brands/<id>/packs/<pack>/pack.js calls Studio.registerPack({...}); the kit lists them (packs:['nd26']).
+   useBrand() loads them and merges assets, textFills, create templates, template chips, palette add-ons and reels into the brand, so every
+   consumer reads them exactly as if they were written in brand.js. aliases = {oldAssetId:newAssetId} keeps saved designs working after a rename. */
+const PACKS={};
+function registerPack(p){ if(p&&p.id) PACKS[p.id]=p; }
+function packLocalYmd(now){ const d=now||new Date(), z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
+/* the season a pack is in today ("2026" = it started in 2026), or '' when it is out of season. dates: {from:'MM-DD',to:'MM-DD'} (may wrap the new year)
+   or a list of full ranges [{from:'2027-02-10',to:'2027-03-12'}] for occasions that move every year */
+function packSeason(p,now){
+  const ymd=packLocalYmd(now), y=+ymd.slice(0,4), list=[].concat((p&&p.dates)||[]);
+  for(const d of list){ if(!d||!d.from||!d.to) continue;
+    if(String(d.from).length>5) { if(ymd>=d.from&&ymd<=d.to) return String(d.from).slice(0,4); continue; }
+    const f=y+'-'+d.from, t=y+'-'+d.to;
+    if(f<=t){ if(ymd>=f&&ymd<=t) return String(y); }
+    else { if(ymd>=f) return String(y); if(ymd<=t) return String(y-1); } }
+  return '';
+}
+async function loadPacks(B){
+  if(B._packsDone) return; B._packsDone=true; B.packList=[]; B.aliases=B.aliases||{};
+  for(const id of (B.packs||[])){
+    try{ if(!PACKS[id]) await loadScript(ROOT+'brands/'+B.id+'/packs/'+id+'/pack.js'); }catch(_){ continue; }
+    const p=PACKS[id]; if(!p) continue; B.packList.push(p);
+    B.assets=(B.assets||[]).concat(p.assets||[]);
+    B.textFills=(B.textFills||[]).concat(p.textFills||[]);
+    if(p.templates&&p.templates.length){ B.create=B.create||{}; B.create.templates=(B.create.templates||[]).concat(p.templates); }
+    if(p.templateCat&&p.templateCat.id) B.templateCats=(B.templateCats||[]).concat([p.templateCat]);
+    if(p.palette&&p.palette.length){ const have=new Set((B.palette||[]).map(c=>c.id)); B.palette=(B.palette||[]).concat(p.palette.filter(c=>!have.has(c.id))); }
+    if(p.reels&&p.reels.length) B.reels=(B.reels||[]).concat(p.reels);
+    Object.assign(B.aliases,p.aliases||{});
+  }
+}
 function brandId(){ const list=Studio.brandList||[]; const saved=store('studio:brand'); return list.includes(saved)?saved:(list[0]||null); }
 async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
+  await loadPacks(BRAND);   // occasion packs (w2-packs): merged before any tool reads assets or templates
   /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
   if(BRAND.fonts&&(BRAND.fonts.css||BRAND.fonts.google)&&!document.querySelector('link[data-brand-fonts]')){
     fontLink(BRAND.fonts.css?BRAND.base+BRAND.fonts.css:'https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
@@ -2421,20 +2453,24 @@ async function home(){
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
   /* three places since 1.0.0: Home, Templates (#templates) and Saved (#saved); each page has its own Back entry */
   const VIEWS={home:'homeView',templates:'templatesView',saved:'saved'};
-  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':'home';
+  /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
+  if(flags.on('team')&&!$('calendarView')){ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
+  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':'home';
   const onSaved=()=>curView()==='saved';
-  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':'home';
-  function setTab(v){ tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
+  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':'home';
+  function setTab(v){ if(v==='calendar') v='home';   // calendar (mega): a page under Home
+    tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
     const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
     if(was==='home') homeY=scrollY;
     Object.entries(VIEWS).forEach(([k,id])=>{ const el=$(id); if(el) el.hidden=k!==v; });
-    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates');
+    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates'); document.body.classList.toggle('on-calendar',v==='calendar');
     window.scrollTo({top:v==='home'?homeY:0,behavior:'instant'});
     if(v==='saved'){ paintPage(); const h=$('savedH'); h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
-    if(v==='templates') showTemplates(); }
+    if(v==='templates') showTemplates();
+    if(v==='calendar') showCalendar(); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
   function openView(v){ if(curView()===v) return; try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }
   function openSaved(){ openView('saved'); }
@@ -2473,6 +2509,34 @@ async function home(){
     const team=()=>all.filter(d=>d.kind==='template').map(d=>({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
     if(TOOLS.video&&reelIds().length) return loadReels().then(()=>out.concat(reelEntries(),team()));
     return out.concat(team()); }
+  /* ---------- calendar (mega): content calendar behind the "team" preview (assets/calendar.js + calendar.css, lazy). Home gets one quiet
+     row (the way in; "Posting today: <title>" when something is due today); the page is #calendar; search lists it. ---------- */
+  let calApi=null, calToday=false, calReady=false, calPend=false;   // calReady: Home has finished setting up (a #calendar link opens after it)
+  async function showCalendar(){
+    const root=$('calendarView'); if(!root) return; if(!calReady){ calPend=true; return; }
+    const today=calToday; calToday=false;
+    try{
+      if(!document.getElementById('calCss')){ const l=document.createElement('link'); l.id='calCss'; l.rel='stylesheet'; l.href=ROOT+'assets/calendar.css'; document.head.appendChild(l); }
+      if(!window.StudioCalendar) await loadScript(ROOT+'assets/calendar.js');
+      if(!calApi) calApi=StudioCalendar.init({root,brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
+        cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
+        netDown:e=>netDown(e), who:{author:()=>window.StudioWho&&StudioWho.author(),ask:async o2=>{ const W=await whoLib(); return W.ask(o2); }}});
+      if(window.StudioWho===undefined) whoLib().catch(()=>{});
+      calApi.show({today});
+    }catch(_){ root.innerHTML='<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>The calendar did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" id="calRetry">Try again</button></div>'; const r=root.querySelector('#calRetry'); if(r) r.onclick=showCalendar; }
+  }
+  const calOpen=today=>{ calToday=!!today; if(curView()==='calendar'){ showCalendar(); } else openView('calendar'); };
+  async function calHome(){
+    if(!flags.on('team')||!$('homeView')) return;
+    let row=$('calRow'); if(!row){ const at=$('savedRow'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.after(row);
+      row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
+    const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
+      row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
+    if(!row.firstChild) paintRow(null);
+    if(!member||!C||!C.calendar) return;
+    try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const list=(await C.calendar(B.id,{from:k,to:k})).filter(x=>x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')); paintRow(list); }catch(_){}
+  }
   let tplApi=null;
   function showTemplates(){
     if(!window.StudioTemplates||!$('templatesView')) return;
@@ -2482,6 +2546,17 @@ async function home(){
       teamNote:()=>member?{text:'No team templates yet. Save a design with “Keep the photos” off, and it shows here for everyone.'}
                         :{text:'Templates your team saves show here.',action:{label:'Sign in',run:()=>$('acct').click()}}});
     tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
+  /* occasion banner (w2-packs, mega): a quiet card under the search while a pack is in season; dismissed per pack and season on this device */
+  (function(){
+    const hero=document.querySelector('#homeView .hero'); if(!hero||!(B.packList||[]).length) return;
+    const p=B.packList.find(x=>x.banner&&x.banner.title&&packSeason(x)&&!store('studio:packBanner:'+B.id+':'+x.id+':'+packSeason(x))); if(!p) return;
+    const key='studio:packBanner:'+B.id+':'+p.id+':'+packSeason(p), cat=(p.templateCat&&p.templateCat.id)||'all';
+    const el=document.createElement('section'); el.className='pack-banner'; el.id='packBanner'; el.setAttribute('aria-label',p.banner.title);
+    el.innerHTML=`<div class="pb-txt"><b>${esc(p.banner.title)}</b>${p.banner.sub?`<span>${esc(p.banner.sub)}</span>`:''}</div><button type="button" class="mini pb-go">Open templates</button><button type="button" class="pb-x" aria-label="Dismiss ${esc(p.banner.title)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    hero.after(el);
+    el.querySelector('.pb-go').onclick=()=>{ haptic('tick'); openView('templates'); if(tplApi) tplApi.show(cat); };
+    el.querySelector('.pb-x').onclick=()=>{ haptic('tick'); store(key,1); el.remove(); };
+  })();
   addEventListener('resize',()=>setTab(curView()));
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>setTab(curView()));
   if(hashView()!=='home') showView(hashView()); else requestAnimationFrame(()=>setTab('home'));
@@ -2637,6 +2712,7 @@ async function home(){
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
     a.push({kind:'action',id:'act:templates',title:'Templates',sub:'Ready-made stories, posts and covers',keys:'templates ready made start restock story post highlight cover library',icon:ICON.template,run:()=>openView('templates')});
+    if(flags.on('team')&&$('calendarView')) a.push({kind:'action',id:'act:calendar',title:'Calendar',sub:'Plan and see your team’s posts',keys:'calendar content plan schedule posting posted week month',icon:ICON.clock,run:()=>calOpen(true)});
     a.push({kind:'action',id:'act:settings',title:'Settings',sub:'Account, your tools, welcome tour',keys:'settings preferences options account gear',icon:ICON.settings,run:openSettings});
     a.push({kind:'action',id:'act:welcome',title:'Welcome tour',sub:'The quick intro to Studio',keys:'welcome tour intro introduction help how onboarding tutorial guide start',icon:ICON.play,run:openWelcome});
     a.push({kind:'action',id:'act:lab',title:'Experimental',sub:'New things being tested (passcode)',keys:'experimental lab labs board beta passcode test',icon:ICON.lab,run:openLab});
@@ -2693,7 +2769,7 @@ async function home(){
       if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
       if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
       const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
-      [all,cols]=got; cloudNote=''; loaded=true; paint();
+      [all,cols]=got; cloudNote=''; loaded=true; paint(); calHome();
     }catch(err){ if(run!==loadRun) return;
       const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
@@ -3098,11 +3174,12 @@ async function home(){
   const labBtn=$('labBtn'); if(labBtn) labBtn.onclick=openLab;
   if(location.hash==='#lab') setTimeout(openLab,200);
   loadSaved();
+  calReady=true; calHome(); if(calPend&&curView()==='calendar') showCalendar();
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

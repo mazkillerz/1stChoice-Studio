@@ -35,3 +35,6 @@ Read this file, `git branch --list 'claude/*'`, `git worktree list`; re-run the 
 
 ## Log
 - Wave 0 (7 Nov): baseline run, this map, integration branch.
+- Wave 1 released as **1.54.0** on 8 Nov (main 658e395, branch `claude/release-1.54`): w1-schema (migration applied to live Supabase), w1-tokens, w1-fonts, w1-fixes, w1-saved, w1-tests + lead's preview flags. Full sweep 100 suites 16 min 38 s on a quiet box (was 27 min / 93 suites under load).
+- Usage: 6 builders + tests used the 5-hour limit in ~4 h; from now **3 builders at once**.
+- Wave 2 status: merged w2-calendar into integration. Paused at the limit and resumed (3 at a time): w2-rules, w2-packs, w2-components; waiting: w2-import, w2-phrases, w2-resize (all started, work saved in their worktrees); not started: 3.3 campaigns, 4.2 approvals, 4.3 captions.

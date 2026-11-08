@@ -26,6 +26,7 @@ process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CR
 const git=(...a)=>execFileSync('git',['-C',ROOT,...a],{encoding:'utf8',maxBuffer:1<<24});
 let OLD=''; for(const c of git('log','--format=%H','--','tools/photo-story.js').split('\n').filter(Boolean)){ const t=git('show',c+':tools/photo-story.js'); if(!/id:'whole'/.test(t)){ OLD=t; break; } }
 if(!OLD) OLD=git('show','HEAD:tools/photo-story.js');
+if(git('rev-parse','--is-shallow-repository').trim()==='true') console.log('NOTE: shallow clone, so the file from before the new looks may be missing from history: git fetch --unshallow');
 
 const NEW=['whole','caption','poster','arch'], ALL=['full','white','cream','black',...NEW];
 const newCtx=async(old)=>{
@@ -34,7 +35,7 @@ const newCtx=async(old)=>{
   if(old) await ctx.route('**/tools/photo-story.js',r=>r.fulfill({contentType:'application/javascript',body:OLD}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push((old?'old: ':'')+e.message));
   await pg.goto(BASE+'tools/photo-story.html'); await pg.evaluate(()=>localStorage.clear()); await pg.goto(BASE+'tools/photo-story.html');
-  await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.reg().length>3,null,{timeout:20000}); await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(900);
+  await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.reg().length>3,null,{timeout:20000}); await pg.evaluate(async()=>{ await Promise.all([...document.fonts].map(f=>f.load().catch(()=>{}))); await document.fonts.ready; }); await pg.waitForTimeout(900);   // every declared font face in before the first draw (same cause as draw-edges)
   return {ctx,pg};
 };
 /* set style + values, draw, and read the preview: a hash of every pixel (plus how many different colours a sample shows) */
