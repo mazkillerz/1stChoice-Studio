@@ -15,7 +15,8 @@ const ROOT=new URL('../',import.meta.url).pathname;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const OUT=fs.mkdtempSync('/tmp/cimport-');
 const MIN=+(process.env.SIM_MIN||0.95);
-let BRAND=null; new Function('Studio',fs.readFileSync(ROOT+'brands/1stchoice/brand.js','utf8'))({registerBrand:b=>{ BRAND=b; }});
+import { loadKit } from './kit.mjs';
+const BRAND=loadKit(ROOT,'1stchoice');
 const defs=BRAND.create.templates.filter(d=>d.layout==='doc');
 const only=process.env.ONLY?process.env.ONLY.split(','):null;
 const b=await chromium.launch(); const errs=[]; let fails=0; const scores=[];
@@ -88,7 +89,7 @@ const wr=(name,buf)=>{ const p=OUT+'/'+name; fs.writeFileSync(p,buf); return p; 
   let n=0, sumScore=0; const rows=[];
   for(const d of defs){ if(only&&!only.includes(d.id)) continue; n++;
     const doc=JSON.parse(fs.readFileSync(ROOT+'brands/1stchoice/'+d.doc,'utf8')), K=doc.nodes[0].k, bd=board(doc);
-    const want={t:K.filter(k=>k.c==='Text').length,i:K.filter(k=>k.c==='Image').length,asset:K.filter(k=>k.c==='Image'&&k.a.kind==='asset').length,r:K.filter(k=>k.c==='Rect'&&k.a.name!=='frame-bg').length,tex:K.filter(k=>k.a&&k.a.fillTex).length,bleed:K.filter(k=>{ const a=k.a; if(!a||a.name==='frame-bg'||a.width==null) return false; const fw=doc.nodes[0].a.fw, fh=doc.nodes[0].a.fh; return a.x<-2||a.y<-2||a.x+a.width>fw+2||a.y+(a.height||0)>fh+2; }).length};   // geometry, not the shipped flag (a few shipped docs flag a piece that is inside the page)
+    const want={t:K.filter(k=>k.c==='Text').length,i:K.filter(k=>k.c==='Image').length,asset:K.filter(k=>k.c==='Image'&&k.a.kind==='asset').length,r:K.filter(k=>k.c==='Rect'&&k.a.name!=='frame-bg').length,tex:K.filter(k=>k.a&&k.a.fillTex).length,bleed:K.filter(k=>{ const a=k.a; if(!a||a.name==='frame-bg'||a.width==null) return false; if(k.c==='Text'&&!a.rotation) return false; const fw=doc.nodes[0].a.fw, fh=doc.nodes[0].a.fh, h=a.height||a.fontSize*a.lineHeight, r=(a.rotation||0)*Math.PI/180, c=Math.abs(Math.cos(r)), s=Math.abs(Math.sin(r)), bw=a.width*c+h*s, bh=a.width*s+h*c; return a.x<-2||a.y<-2||a.x+bw>fw+2||a.y+bh>fh+2; }).length};   // geometry (rotation included), not the shipped flag (a few shipped docs flag a piece that is inside the page)   // geometry, not the shipped flag (a few shipped docs flag a piece that is inside the page)
     const file=wr(d.id+'.zip',zipOf(bd.html,[...bd.files].map(([k,v])=>[k,v])));
     await importVia(pg,file); const s=await stats(pg), sim=await similarity(pg,d.id); sumScore+=sim.score; scores.push([d.id,sim.score,sim.bad]);
     const diffs=[]; if(s.texts!==want.t) diffs.push('text '+s.texts+'/'+want.t); if(s.imgs!==want.i) diffs.push('pictures '+s.imgs+'/'+want.i); if(s.rects!==want.r) diffs.push('shapes '+s.rects+'/'+want.r); if(s.tex!==want.tex) diffs.push('crayon '+s.tex+'/'+want.tex); if(s.asset!==want.asset) diffs.push('art '+s.asset+'/'+want.asset); if(s.bleed!==want.bleed) diffs.push('bleed '+s.bleed+'/'+want.bleed);

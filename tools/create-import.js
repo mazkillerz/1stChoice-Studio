@@ -260,7 +260,7 @@ async function build(D){
         fill:t.col||(fill&&fill.color)||ink,align:t.align,lineHeight:Math.round(t.lh*1000)/1000,padding:0,label:t.fam===disp?'Headline':'Text',...op};
       if(t.ls) a.letterSpacing=t.ls; if(rot) a.rotation=+t.rotation.toFixed(3);
       if(fill){ a.fillTex='brand:'+fill.asset; a.fillPriority='pattern'; if(t.solid){ const sid=await solidFill(fill.id); if(sid) a.fillTex=sid; } }
-      if(top&&rot&&bleedOf({...a,height:t.fs*t.lh})) a.bleed=true; out.push({c:'Text',a}); }
+      if(top&&rot&&bleedOf({x:t.x,y:t.y,width:t.w,height:t.fs*t.lh,rotation:t.rotation})) a.bleed=true;   /* measured on the words' own box, not the slack */ out.push({c:'Text',a}); }
     else if(n.t==='flat'){ counts.clips++; const kids=[]; for(const c of n.nodes) kids.push(...await mk(c,false));
       const g=BD.rebuild({c:'Group',a:{id:uid(),x:0,y:0},k:kids}), r=Math.min(n.cornerRadius||0,n.w/2,n.h/2);
       g.clipFunc(ctx=>{ ctx.beginPath(); if(r&&ctx.roundRect) ctx.roundRect(0,0,n.w,n.h,r); else ctx.rect(0,0,n.w,n.h); });
