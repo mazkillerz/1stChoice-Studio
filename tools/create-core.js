@@ -391,7 +391,7 @@ async function exportFrame(f,opt){ opt=opt||{}; await hdReady(); const s=fsize(f
   for(const k of [want,1.5,1].filter((v,i,a)=>v<=want&&a.indexOf(v)===i)){ if(s.w*s.h*k*k>MAX_PX) continue; let c=null;
     try{ c=renderFrame(f,k); const blob=await L.canvasBlob(c,opt.type||'image/png'); c.width=c.height=0; if(blob&&blob.size>1000) return {blob,scale:k}; }catch(_){ if(c) c.width=c.height=0; } }
   throw new Error('Your phone could not make the image. Close other apps or tabs and try again.'); }
-BD.renderFrame=renderFrame; BD.exportFrame=exportFrame;
+BD.renderFrame=renderFrame; BD.exportFrame=exportFrame; BD.sharpen=sharpen;   /* sharpen: moving stories (w3-mp4) */
 
 /* ---------- keyboard (computer) ---------- */
 document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return; if(document.querySelector('dialog[open]')) return;

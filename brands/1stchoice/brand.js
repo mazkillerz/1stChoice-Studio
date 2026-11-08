@@ -155,6 +155,12 @@ Studio.registerBrand({
   importMap:{texClasses:{cr:'crayon-red',cg:'crayon-green'}},
   /* Coded reels the Video editor opens (tools/video.html): one folder each in reels/<id>/ (format: docs/reels.md).
      The first one opens when the editor starts fresh. Their default words are the owner's own reel wording. */
+  /* moving stories (w3-mp4): the sounds Create's Motion sheet offers, taken from the approved reel sounds (soft, no fizz, no glass ping) */
+  motion:{sounds:[
+    {id:'pop',label:'Soft pops',reel:'label-reveal',file:'snd/pop_soft.flac',level:-24},
+    {id:'whoosh',label:'Whoosh',reel:'label-reveal',file:'snd/whoosh_simple.flac',level:-24},
+    {id:'swish',label:'Swish',reel:'winter-cat',file:'snd/swish.flac',level:-24}
+  ]},
   reels:[
     {id:'winter-cat'},
     {id:'label-reveal'}
