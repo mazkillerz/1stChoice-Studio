@@ -23,7 +23,8 @@ await blk('kit',async()=>{
   let old=null; vm.runInNewContext(BEFORE,{Studio:{registerBrand:b=>{ old=b; }}});
   const now=loadKit(ROOT,'1stchoice');
   const isNd=a=>String(a.id).startsWith('nd26-')||a.group==='National Day 2026';
-  const oldA=old.assets.filter(isNd), newA=now.assets.filter(isNd);
+  const noTag=a=>{ const {component,...r}=a; return r; };   // `component:` tags (2.1 components) were added later: compare everything else
+  const oldA=old.assets.filter(isNd).map(noTag), newA=now.assets.filter(isNd).map(noTag);
   ok('32 former nd26 assets, ids and fields identical',oldA.length===32&&JSON.stringify(oldA)===JSON.stringify(newA),[oldA.length,newA.length]);
   ok('every asset of the old kit is still there, same order',JSON.stringify(old.assets.map(a=>a.id))===JSON.stringify(now.assets.map(a=>a.id).filter(id=>old.assets.some(a=>a.id===id))));
   ok('no asset appeared or went missing overall',old.assets.length===now.assets.length);
