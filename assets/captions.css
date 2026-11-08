@@ -1,0 +1,25 @@
+/* Captions (mega 4.3, preview flag "team"): the editor in the Save sheet and in a design's menu. Interface tokens only. */
+.cap-ed{display:flex;flex-direction:column;gap:var(--sp-3)}
+.cap-field{display:flex;flex-direction:column;gap:var(--sp-2)}
+.cap-ta{width:100%;box-sizing:border-box;min-height:104px;padding:var(--sp-3);border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);color:var(--fg);font:400 var(--fs-m)/1.5 var(--sans);resize:vertical}
+.cap-ta:focus-visible,.cap-tin:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.cap-warn{margin:0;color:var(--muted);border-inline-start:3px solid var(--danger);padding:2px var(--sp-3)}
+.cap-row{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.cap-row.more .cap-chip{font-weight:500}
+.cap-chip{max-width:100%;text-align:start}
+.cap-tags{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);padding:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);min-height:48px}
+.cap-chips{display:contents}
+.cap-tag{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 0 0 var(--sp-3);border-radius:var(--r-pill);background:var(--chip);border:1px solid var(--line);font:600 var(--fs-m) var(--sans)}
+.cap-x{min-width:44px;min-height:44px;border:0;background:none;color:var(--muted);font:500 var(--fs-l) var(--sans);cursor:pointer;border-radius:var(--r-pill)}
+.cap-tin{flex:1 1 120px;min-width:100px;min-height:44px;border:0;background:none;color:var(--fg);font:400 var(--fs-m) var(--sans);padding:0 var(--sp-2)}
+.cap-tin:focus-visible{outline:none}
+.cap-tlbl{display:block;margin-bottom:var(--sp-1);color:var(--muted)}
+.cap-actions{display:flex;justify-content:flex-end}
+/* the collapsed "Caption" row in the Save sheet */
+.cap-open{display:flex;align-items:center;gap:var(--sp-3);width:100%;min-height:48px;padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);color:var(--fg);font:600 var(--fs-m) var(--sans);cursor:pointer;text-align:start}
+.cap-open small{flex:1;min-width:0;font:400 var(--fs-s) var(--sans);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cap-open svg{width:18px;height:18px;flex:none;transition:transform .15s}
+.cap-open[aria-expanded="true"] svg{transform:rotate(90deg)}
+.cap-box{display:flex;flex-direction:column;gap:var(--sp-2)}
+.cap-done{align-self:center}
+@media (prefers-reduced-motion:reduce){.cap-open svg{transition:none}}
