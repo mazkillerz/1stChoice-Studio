@@ -19,6 +19,8 @@ const SAMPLES=ROOT+'brands/1stchoice/samples/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 const W=1080, H=1920;
+/* PART=compat|grids (comma list) runs only those parts; collage-grids-compat.mjs and collage-grids-grids.mjs set it (the two halves take ~2 min each). No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 
 /* the collage.js to compare with: the newest version that does not have the new "Edge space" field */
 const git=(...a)=>{ try{ return execFileSync('git',['-C',ROOT,...a],{encoding:'utf8',maxBuffer:1e7,stdio:['ignore','pipe','ignore']}); }catch(e){ return ''; } };
@@ -63,7 +65,8 @@ const runRed=(pg,x,y,dx,dy)=>pg.evaluate(([x,y,dx,dy])=>{ const c=document.getEl
 
 /* ================= 1. compatibility with the previous collage.js ================= */
 const counts=[2,3,4,5,6,7,8,9];
-if(!OLD){ ok('compat: an earlier collage.js is in git to compare with (skipped, none found)',true); }
+if(!part('compat')){}
+else if(!OLD){ ok('compat: an earlier collage.js is in git to compare with (skipped, none found)',true); }
 else {
   const cO=await newCtx(OLD), cN=await newCtx(), pO=await openCollage(cO,'old'), pN=await openCollage(cN,'new');
   const optionsOf=(pg,n)=>pg.$$eval(`[data-seg="lay${n}"] .seg`,l=>l.map(x=>x.dataset.v));
@@ -105,6 +108,7 @@ else {
   await cO.close(); await cN.close();
 }
 
+if(part('grids')){
 /* ================= 2. every grid of every count ================= */
 const cx=await newCtx(), pg=await openCollage(cx,'new');
 const GR=await pg.evaluate(()=>JSON.parse(JSON.stringify(GR)));
@@ -228,6 +232,7 @@ await setRange(pg,'gap',14); await setRange(pg,'edge',40); await settle(pg);
   let size='', bytes=0; if(dls.length){ const f=await dls[0].path(); const buf=fs.readFileSync(f); size=buf.readUInt32BE(16)+'x'+buf.readUInt32BE(20); bytes=buf.length; }
   ok('save: 4 real photos in a new grid (with a border) save as a 2160x3840 PNG',size==='2160x3840'&&bytes>200000,size+' '+bytes+' bytes'); }
 
+}   // end of PART grids
 /* ================= 6. no page errors ================= */
 ok('no page errors',errs.length===0,errs.slice(0,3).join(' | '));
 await b.close();
