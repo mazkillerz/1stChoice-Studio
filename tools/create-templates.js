@@ -9,7 +9,7 @@ const BD=window.BD, L=Studio.lab, U=BD.util, CR=window.CR;
 /* ---------- the helper every layout gets ---------- */
 function helper(opt){
   opt=opt||{}; const C=CR.colors(), B=BD.B||{};
-  const t={C,B,el:CR.el,num:CR.num,write:CR.write,dateLine:CR.dateLine,display:BD.displayFont(),body:BD.bodyFont(),rtl:B.dir==='rtl',frames:[]};
+  const t={C,B,el:CR.el,comp:Studio.comp,num:CR.num,write:CR.write,dateLine:CR.dateLine,display:BD.displayFont(),body:BD.bodyFont(),rtl:B.dir==='rtl',frames:[]};
   /* a new frame (page) to the right of what's already there */
   t.frame=function(w,h,o){ o=o||{}; let x=0,y=0; const last=t.frames[t.frames.length-1], fs=U.frames();
     if(last){ x=Math.round(last.x()+U.fsize(last).w+(o.gap||120)); y=last.y(); }
@@ -67,9 +67,9 @@ LAYOUTS['hero-panel']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(w.head,{fontSize:170}),{cx:540,y:290});
   if(w.small) t.add(f,t.text(w.small,{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:520});
-  t.add(f,t.el.panel(880,860,{fill:w.panel||C.panel,r:64}),{cx:540,y:640});
+  t.add(f,t.comp.panelDoc(880,860,{fill:w.panel||C.panel,r:64}),{cx:540,y:640});
   await t.asset(f,(def.assets&&def.assets.product)||'cans-pair',720,{cx:540,cy:1080});
-  if(w.pill) t.add(f,t.el.pill(w.pill,{icon:'pin',h:88,label:'Map in bio'}),{cx:540,y:1546});
+  if(w.pill) t.add(f,t.comp.bioDoc(w.pill,{h:88}),{cx:540,y:1546});
   await t.logo(f,210,{cx:540,bottom:1720});
   return [f];
 };
@@ -92,11 +92,11 @@ LAYOUTS['did-you-know']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper}), rtl=t.rtl;
   t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
   const top=560, H=780, cw=380;
-  t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),rtl?{x:72,y:top}:{right:1008,y:top});
+  t.add(f,t.comp.panelDoc(cw,H,{fill:w.panel||C.panel,r:64}),rtl?{x:72,y:top}:{right:1008,y:top});
   await fit(t,f,AS(def,'product','can-classic-shadow'),cw-70,H-100,{cx:rtl?72+cw/2:1008-cw/2,cy:top+H/2});
   const edge=rtl?1008:480, r=52, tw=300;
   for(let i=0;i<3;i++){ const cy=top+130+i*260;
-    const n=t.el.numCircle(i+1,{r,size:62}); t.add(f,n,{cx:rtl?edge-r:edge+r,cy});
+    const n=t.comp.stepDoc(i+1,{r,size:62}); t.add(f,n,{cx:rtl?edge-r:edge+r,cy});
     const x=para(t,WD(t,w,'line'+(i+1)),{width:tw,fontSize:46,align:START(t),label:'Line '+(i+1)});
     t.add(f,x,{cy,[rtl?'right':'x']:rtl?edge-2*r-26:edge+2*r+26}); }
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:92,label:'Button'}),{cx:540,y:1480});
@@ -111,7 +111,7 @@ LAYOUTS['your-choice']=async function(t,w,def){
   const cw=440, gap=40, top=560, H=800, ids=[AS(def,'one','can-classic'),AS(def,'two','can-passion')];
   const order=t.rtl?[1,0]:[0,1];   // first flavour sits at the reading start
   for(let s=0;s<2;s++){ const i=order[s], x=(1080-cw*2-gap)/2+s*(cw+gap), cx=x+cw/2;
-    t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),{x,y:top});
+    t.add(f,t.comp.panelDoc(cw,H,{fill:w.panel||C.panel,r:64}),{x,y:top});
     t.add(f,t.text(fl[i]?fl[i].name:t.write(),{fontSize:56,label:'Flavour'}),{cx,y:top+50});
     await fit(t,f,ids[i],cw-90,H-230,{cx,cy:top+H/2+60}); }
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:92,label:'Button'}),{cx:540,y:1480});
@@ -128,9 +128,9 @@ LAYOUTS['hero-panel-post']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper}), small=!!w.small, top=small?350:POST.top, H=970-top;
   t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:small?70:90});
   if(small) t.add(f,t.text(w.small,{fontSize:44,fill:C.muted,label:'Small line'}),{cx:540,y:262});
-  t.add(f,t.el.panel(920,H,{fill:w.panel||C.panel,r:64}),{cx:540,y:top});
+  t.add(f,t.comp.panelDoc(920,H,{fill:w.panel||C.panel,r:64}),{cx:540,y:top});
   await fit(t,f,AS(def,'product','cans-pair'),800,H-120,{cx:540,cy:top+H/2});
-  if(w.pill) t.add(f,t.el.pill(w.pill,{icon:'pin',h:88,label:'Map in bio'}),{cx:540,y:POST.pill});
+  if(w.pill) t.add(f,t.comp.bioDoc(w.pill,{h:88}),{cx:540,y:POST.pill});
   await t.logo(f,POST.logoW,{cx:540,bottom:POST.logoB});
   return [f];
 };
@@ -139,11 +139,11 @@ LAYOUTS['hero-panel-post']=async function(t,w,def){
 LAYOUTS['did-you-know-post']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper}), rtl=t.rtl, {top,H}=POST, cw=340;
   t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
-  t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),rtl?{x:72,y:top}:{right:1008,y:top});
+  t.add(f,t.comp.panelDoc(cw,H,{fill:w.panel||C.panel,r:64}),rtl?{x:72,y:top}:{right:1008,y:top});
   await fit(t,f,AS(def,'product','can-classic-shadow'),cw-70,H-90,{cx:rtl?72+cw/2:1008-cw/2,cy:top+H/2});
   const edge=rtl?1008:440, r=48, tw=320;
   for(let i=0;i<3;i++){ const cy=top+110+i*230;
-    t.add(f,t.el.numCircle(i+1,{r,size:56}),{cx:rtl?edge-r:edge+r,cy});
+    t.add(f,t.comp.stepDoc(i+1,{r,size:56}),{cx:rtl?edge-r:edge+r,cy});
     const x=para(t,WD(t,w,'line'+(i+1)),{width:tw,fontSize:46,align:START(t),label:'Line '+(i+1)});
     t.add(f,x,{cy,[rtl?'right':'x']:rtl?edge-2*r-24:edge+2*r+24}); }
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:POST.pill});
@@ -158,7 +158,7 @@ LAYOUTS['your-choice-post']=async function(t,w,def){
   const cw=440, gap=40, {top,H}=POST, ids=[AS(def,'one','can-classic'),AS(def,'two','can-passion')];
   const order=t.rtl?[1,0]:[0,1];   // first flavour sits at the reading start
   for(let s=0;s<2;s++){ const i=order[s], x=(1080-cw*2-gap)/2+s*(cw+gap), cx=x+cw/2;
-    t.add(f,t.el.panel(cw,H,{fill:w.panel||C.panel,r:64}),{x,y:top});
+    t.add(f,t.comp.panelDoc(cw,H,{fill:w.panel||C.panel,r:64}),{x,y:top});
     t.add(f,t.text(fl[i]?fl[i].name:t.write(),{fontSize:52,label:'Flavour'}),{cx,y:top+40});
     await fit(t,f,ids[i],cw-100,H-190,{cx,cy:top+H/2+50}); }
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:POST.pill});
@@ -191,7 +191,7 @@ LAYOUTS['chat']=async function(t,w,def){
   // page 2
   f=frames[1]; y=260; await header(f);
   y=put(f,t.el.bubble(msg(2),{side:'end'}),true,y);
-  const pw=500, ph=540, ph1=t.el.panel(pw,ph,{fill:C.panel,r:46}); const pg=t.group('Photo bubble',[ph1]);
+  const pw=500, ph=540, ph1=t.comp.panelDoc(pw,ph,{fill:C.panel,r:46}); const pg=t.group('Photo bubble',[ph1]);
   t.add(f,pg,(true===rtl)?{x:M,y}:{right:W-M,y});
   await fit(t,f,AS(def,'photo','cans-pair'),pw-80,ph-80,{cx:(true===rtl)?M+pw/2:W-M-pw/2,cy:y+ph/2});
   y+=ph+22; y=put(f,t.el.bubble(msg(2),{}),false,y); t.add(f,t.el.typing(),(false===rtl)?{x:M,y}:{right:W-M,y}); dots(f,1);
@@ -222,7 +222,7 @@ LAYOUTS['spot']=async function(t,w,def){
   t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
   const ph=430;
   for(let i=0;i<2;i++){ const y=520+i*(ph+36);
-    t.add(f,t.el.panel(880,ph,{fill:w.panel||C.panel,r:64}),{cx:540,y});
+    t.add(f,t.comp.panelDoc(880,ph,{fill:w.panel||C.panel,r:64}),{cx:540,y});
     await fit(t,f,AS(def,'product','cans-pair'),600,ph-70,{cx:540,cy:y+ph/2}); }
   t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:1500});
   await t.logo(f,200,{cx:540,bottom:1740});
@@ -244,11 +244,11 @@ LAYOUTS['tictactoe']=async function(t,w,def){
 LAYOUTS['rate']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
-  t.add(f,t.el.panel(880,560,{fill:w.panel||C.panel,r:64}),{cx:540,y:520});
+  t.add(f,t.comp.panelDoc(880,560,{fill:w.panel||C.panel,r:64}),{cx:540,y:520});
   await fit(t,f,AS(def,'product','can-classic-shadow'),500,470,{cx:540,cy:800});
   const sel=w.selected||8;
   for(let r=0;r<2;r++){ const items=[]; for(let i=1;i<=5;i++){ const n=r*5+i; const on=n===sel;
-      items.push(t.el.numCircle(n,{r:62,bg:on?C.ink:C.panel,fg:on?C.paper:C.ink,size:n===10?58:70,label:'Rating '+n})); }
+      items.push(t.comp.stepDoc(n,{r:62,bg:on?C.ink:C.panel,fg:on?C.paper:C.ink,size:n===10?58:70,label:'Rating '+n})); }
     t.add(f,t.el.row(items,{gap:26,label:'Ratings'}),{cx:540,y:1150+r*160}); }
   t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:1500});
   await t.logo(f,200,{cx:540,bottom:1740});
@@ -262,7 +262,7 @@ LAYOUTS['mood']=async function(t,w,def){
   const sw=448, sh=360, gx=40;
   for(let i=0;i<4;i++){ const col=i%2, row=Math.floor(i/2), x=(col===0)===rtl?560:72, y=250+row*450;
     t.add(f,t.el.slot(sw,sh,{r:44}),{x,y});
-    t.add(f,t.el.numCircle(i+1,{r:40,size:48}),{cx:rtl?x+sw-52:x+52,cy:y+52});
+    t.add(f,t.comp.stepDoc(i+1,{r:40,size:48}),{cx:rtl?x+sw-52:x+52,cy:y+52});
     t.add(f,t.text(t.write(),{fontSize:42,label:'Caption'}),{cx:x+sw/2,y:y+sh+18}); }
   await t.logo(f,170,{cx:540,bottom:1296});
   return [f];
@@ -279,7 +279,7 @@ LAYOUTS['equation']=async function(t,w,def){
       t.add(f,t.box({width:10,height:46,cornerRadius:5,fill:C.ink,label:'Plus'}),{cx:px,cy}); } }
   t.add(f,t.box({width:96,height:14,cornerRadius:7,fill:C.ink,label:'Equals'}),{cx:540,cy:858});
   t.add(f,t.box({width:96,height:14,cornerRadius:7,fill:C.ink,label:'Equals'}),{cx:540,cy:896});
-  t.add(f,t.el.panel(880,520,{fill:w.panel||C.panel,r:64}),{cx:540,y:970});
+  t.add(f,t.comp.panelDoc(880,520,{fill:w.panel||C.panel,r:64}),{cx:540,y:970});
   await fit(t,f,AS(def,'product','can-passion-shadow'),420,440,{cx:540,cy:1230});
   t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:1520});
   return [f];
@@ -368,7 +368,7 @@ LAYOUTS['restock']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
   t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:520});
-  t.add(f,t.el.panel(880,780,{fill:w.panel||C.panel,r:64}),{cx:540,y:620});
+  t.add(f,t.comp.panelDoc(880,780,{fill:w.panel||C.panel,r:64}),{cx:540,y:620});
   await fit(t,f,AS(def,'product','cans-pair-shadow'),720,520,{cx:540,cy:930});
   const fp=t.el.flavourPills({h:72}); if(fp) t.add(f,fp,{cx:540,y:1230});
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:92,label:'Button'}),{cx:540,y:1480});
@@ -382,7 +382,7 @@ LAYOUTS['new-place']=async function(t,w,def){
   t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:290});
   t.add(f,t.el.slot(880,780,{r:64}),{cx:540,y:490});
   t.add(f,t.el.iconLine(WD(t,w,'place'),{icon:'pin',size:54,label:'Place'}),{cx:540,y:1330});
-  t.add(f,t.el.pill(WD(t,w,'pill'),{icon:'pin',h:92,label:'Map in bio'}),{cx:540,y:1470});
+  t.add(f,t.comp.bioDoc(WD(t,w,'pill'),{h:92}),{cx:540,y:1470});
   await t.logo(f,200,{cx:540,bottom:1740});
   return [f];
 };
@@ -391,7 +391,7 @@ LAYOUTS['new-place']=async function(t,w,def){
 LAYOUTS['stock-alert']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper}), rtl=t.rtl;
   t.add(f,t.head(WD(t,w,'head'),{fontSize:160}),{cx:540,y:290});
-  t.add(f,t.el.panel(880,740,{fill:w.panel||C.panel,r:64}),{cx:540,y:520});
+  t.add(f,t.comp.panelDoc(880,740,{fill:w.panel||C.panel,r:64}),{cx:540,y:520});
   await fit(t,f,AS(def,'product','can-classic-shadow'),460,620,{cx:540,cy:890});
   const bw=760, bh=56, x=(1080-bw)/2, y=1330, lv=w.level||.8;
   t.add(f,t.box({width:bw,height:bh,cornerRadius:bh/2,fill:C.panel,label:'Stock track'}),{x,y});
@@ -420,16 +420,16 @@ const flavourPill=(t,fl,h)=>fl?t.el.pill(fl.name,{bg:fl.bg,fg:fl.fg,h:h||80,labe
 async function twoCards(t,f,def,o){ const C=t.C, fl=(t.B.flavours||[]).slice(0,2), cw=o.cw||440, gap=o.gap||40, x0=(1080-cw*2-gap)/2, order=t.rtl?[1,0]:[0,1];
   const ids=[AS(def,'one',(fl[0]&&fl[0].can)||'can-classic-shadow'),AS(def,'two',(fl[1]&&fl[1].can)||'can-passion-shadow')];
   for(let s=0;s<2;s++){ const i=order[s], x=x0+s*(cw+gap), cx=x+cw/2;
-    t.add(f,t.el.panel(cw,o.H,{fill:o.fill||C.panel,r:64}),{x,y:o.top});
+    t.add(f,t.comp.panelDoc(cw,o.H,{fill:o.fill||C.panel,r:64}),{x,y:o.top});
     await fit(t,f,ids[i],cw-60,o.canH,{cx,cy:o.top+o.canY});
     if(o.name){ const p=flavourPill(t,fl[i],84); if(p) t.add(f,p,{cx,bottom:o.top+o.H-56}); }
-    if(o.mark){ const n=t.el.numCircle(i+1,{r:40,size:48}); t.add(f,n,{cx:t.rtl?x+cw-62:x+62,cy:o.top+62}); } } }
+    if(o.mark){ const n=t.comp.stepDoc(i+1,{r:40,size:48}); t.add(f,n,{cx:t.rtl?x+cw-62:x+62,cy:o.top+62}); } } }
 
 /* "Restock post": a feed post, back in stock. */
 LAYOUTS['restock-post']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
-  t.add(f,t.el.panel(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
+  t.add(f,t.comp.panelDoc(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
   await fit(t,f,AS(def,'product','cans-pair-shadow'),800,520,{cx:540,cy:630});
   t.add(f,t.el.pill(WD(t,w,'pill'),{h:88,label:'Button'}),{cx:540,y:1020});
   await t.logo(f,190,{cx:540,bottom:1270});
@@ -468,11 +468,11 @@ LAYOUTS['one-word-post']=async function(t,w,def){
 LAYOUTS['map-post']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1350,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(WD(t,w,'head'),{fontSize:150}),{cx:540,y:90});
-  t.add(f,t.el.panel(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
+  t.add(f,t.comp.panelDoc(920,680,{fill:w.panel||C.panel,r:64}),{cx:540,y:290});
   f.add(t.circle({r:290,x:540,y:630,fill:C.paper,opacity:.55,label:'Ring'}));
   f.add(t.circle({r:190,x:540,y:630,fill:C.paper,label:'Disc'}));
   t.add(f,t.icon('pin-fill',340,C.ink),{cx:540,cy:630});
-  t.add(f,t.el.pill(WD(t,w,'pill'),{icon:'pin',h:88,label:'Map in bio'}),{cx:540,y:1020});
+  t.add(f,t.comp.bioDoc(WD(t,w,'pill'),{h:88}),{cx:540,y:1020});
   await t.logo(f,190,{cx:540,bottom:1270});
   return [f];
 };
@@ -482,7 +482,7 @@ LAYOUTS['good-morning']=async function(t,w,def){
   const C=t.C, f=t.frame(1080,1920,{label:def.label,fill:w.bg||C.paper});
   t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:290});
   t.add(f,t.text(WD(t,w,'small'),{fontSize:46,fill:C.muted,label:'Small line'}),{cx:540,y:520});
-  t.add(f,t.el.panel(880,900,{fill:w.panel||C.panel,r:64}),{cx:540,y:620});
+  t.add(f,t.comp.panelDoc(880,900,{fill:w.panel||C.panel,r:64}),{cx:540,y:620});
   f.add(t.circle({r:330,x:540,y:1070,fill:C.paper,label:'Sun'}));
   await fit(t,f,AS(def,'product','can-classic-shadow'),460,700,{cx:540,cy:1070});
   await t.logo(f,200,{cx:540,bottom:1740});
@@ -522,7 +522,7 @@ LAYOUTS['cover']=async function(t,w,def){
   const sid=AS(def,'stamp'); if(sid){ const sn=await t.asset(f,sid,P.ss,{x:P.sx,y:P.sy},{label:'Stamp'}); if(sn) turnAbout(sn,P.sx+P.ss/2,P.sy+sn.height()/2,-12); }
   ruleLine(f,72,P.rule,1008,C.ink,3,'Footer rule');
   const h=(t.B.handle||'').replace(/^@/,'');
-  if(h){ const g=t.el.iconLine(h,{icon:'instagram',size:30,color:C.ink,label:'Instagram handle'}); const tx=g.findOne(n=>n.getAttr('role')==='text'); if(tx){ tx.setAttr('fontFamily',lat); tx.setAttr('fontStyle','normal'); CR.layout(g,true); } t.add(f,g,{x:72,y:P.rule+14}); }
+  if(h){ t.add(f,t.comp.handleDoc(h,{size:30,color:C.ink,font:lat}),{x:72,y:P.rule+14}); }
   if(w.foot) t.add(f,t.text(w.foot,{fontSize:26,label:'Footer line'}),{right:1008,y:P.rule+14});
   markBleed(f); return [f];
 };
@@ -538,12 +538,12 @@ LAYOUTS['closeup']=async function(t,w,def){
   } else {
     await byH(t,f,pid,2700,{x:-395,y:-146});
     softShadow(t,t.add(f,t.head(WD(t,w,'head'),{fontSize:160,fill:C.paper}),{cx:540,y:288}));
-    t.add(f,t.el.panel(1080,700,{fill:C.paper,r:64,label:'White sheet'}),{x:0,y:1330});
+    t.add(f,t.comp.panelDoc(1080,700,{fill:C.paper,r:64,label:'White sheet'}),{x:0,y:1330});
     const fl=(t.B.flavours||[]), fv=fl.find(x=>x.id===def.flavour)||fl[0]||{};
     const chip=t.el.pill(WD(t,w,'chip'),{bg:fv.bg,fg:fv.fg,size:32,h:70,label:'Flavour'}); t.add(f,chip,{right:1008,y:1386});
     const cr=chip.getClientRect({relativeTo:f,skipShadow:true});
     if(w.small) t.add(f,t.text(w.small,{fontSize:38,fontStyle:'600',fill:C.muted,label:'Small line'}),{right:Math.round(cr.x-18),cy:Math.round(cr.y+cr.height/2)});
-    const pill=t.el.pill(WD(t,w,'pill'),{icon:pinFor(def),h:88,label:'Map in bio'}); t.add(f,pill,{right:1008,y:1460});
+    const pill=t.comp.bioDoc(WD(t,w,'pill'),{icon:pinFor(def),h:88}); t.add(f,pill,{right:1008,y:1460});
     const pr=pill.getClientRect({relativeTo:f,skipShadow:true});
     await t.logo(f,220,{x:72,cy:Math.round(pr.y+pr.height/2)});
   }
@@ -568,10 +568,10 @@ LAYOUTS['one-of-many']=async function(t,w,def){
   for(let r=0;r<3;r++) for(let c=0;c<3;c++){ if(hero(c,r)) continue; const x=ox+c*step, y=oy+r*step;
     t.add(f,t.box({width:cell,height:cell,cornerRadius:30,stroke:C.soft,strokeWidth:3,label:'Grid cell'}),{x,y});
     await t.asset(f,iconId,154,{cx:x+cell/2,cy:y+cell/2},{opacity:.22,label:'Can icon'}); }
-  t.add(f,t.el.panel(cell*2+gap,cell*2+gap,{r:36,label:'Hero panel'}),{x:hx,y:hy});
+  t.add(f,t.comp.panelDoc(cell*2+gap,cell*2+gap,{r:36,label:'Hero panel'}),{x:hx,y:hy});
   const mid=AS(def,'mark'); if(mid) await t.asset(f,mid,100,{x:hx+cell*2+gap-130,y:hy+30},{label:'Mark'});
   await onBase(t,f,AS(def,'product','can-classic-shadow'),520,hx+(cell*2+gap)/2,hy+546);
-  if(st&&w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:1556});
+  if(st&&w.pill) t.add(f,t.comp.bioDoc(w.pill,{icon:pinFor(def),h:88}),{cx:540,y:1556});
   return [f];
 };
 
@@ -579,7 +579,7 @@ LAYOUTS['one-of-many']=async function(t,w,def){
 LAYOUTS['podium']=async function(t,w,def){
   const C=t.C, st=def.size==='story', H=st?1920:1350, f=frameFor(t,w,def), lat=LATIN(t); await BD.ensureFont(lat,'');
   await topBlock(t,f,w,st,st?170:0);
-  if(st&&w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:580});
+  if(st&&w.pill) t.add(f,t.comp.bioDoc(w.pill,{icon:pinFor(def),h:88}),{cx:540,y:580});
   const cw=st?420:400, sw=300, gap=10, x0=Math.round((1080-(cw+sw*2+gap*2))/2), ns=st?240:210;
   const tops=st?{l:1490,c:1360,r:1580}:{l:1080,c:960,r:1160};
   const blocks=[['l','2',x0,sw],['c','1',x0+sw+gap,cw],['r','3',x0+sw+gap+cw+gap,sw]];
@@ -602,7 +602,7 @@ LAYOUTS['type-photo']=async function(t,w,def){
     if(tid) await t.asset(f,tid,980,{cx:540,y:470},{label:'Coffee type'});
     t.add(f,t.head(WD(t,w,'head'),{fontSize:170}),{cx:540,y:960});
     if(w.small) t.add(f,t.text(w.small,{fontSize:42,fill:C.muted,label:'Small line'}),{cx:540,y:1170});
-    if(w.pill) t.add(f,t.el.pill(w.pill,{icon:pinFor(def),h:88,label:'Map in bio'}),{cx:540,y:1260}); }
+    if(w.pill) t.add(f,t.comp.bioDoc(w.pill,{icon:pinFor(def),h:88}),{cx:540,y:1260}); }
   return [f];
 };
 

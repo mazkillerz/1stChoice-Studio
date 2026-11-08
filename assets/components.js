@@ -79,7 +79,7 @@ function badge(hc,o){ o=o||{}; const e=env(hc,o), c=e.ctx, fonts=e.brand.fonts||
 /* Studio.comp.logo(h,{x|cx,y,w,tone,id}) -> {x,y,w,h} (h:0 when the person hid it) */
 function logo(h,o){ o=o||{}; const w=o.w, x=o.x!=null?o.x:(o.cx!=null?o.cx-w/2:0), hh=h.logoH(w), got=h.logo(x,o.y||0,w,o.tone,o.id); return {x,y:o.y||0,w,h:got?hh:0}; }
 /* the Instagram handle: icon + words. font:'display' = the brand's display font (a Latin handle looks best there); default = the body words used by Elements */
-function handle(h,o){ o=o||{}; const str=o.text!=null?o.text:h.brand.handle; if(!str) return {x:0,y:0,w:0,h:0}; const id=o.id||'handle', label=o.label||'Instagram handle', color=o.color||h.C.ink, cx=o.cx!=null?o.cx:(o.x||0), y=o.y||0;
+function handle(h,o){ o=o||{}; const str='text' in o?o.text:h.brand.handle; if(!str) return {x:0,y:0,w:0,h:0}; const id=o.id||'handle', label=o.label||'Instagram handle', color=o.color||h.C.ink, cx=o.cx!=null?o.cx:(o.x||0), y=o.y||0;
   if(o.font!=='display'){ const hh=h.pin(id,label,str,cx,y,{icon:'insta',color,size:o.size,maxW:o.maxW}); return {x:cx,y,w:0,h:hh}; }
   const size=o.size||44, fam=h.brand.fonts.display||h.brand.fonts.body, c=h.ctx; c.font=size+'px "'+fam+'"'; const m=c.measureText(str), b=ascent(m,size), ic=Math.round(size*.9), gap=14, tw=Math.ceil(m.width), tot=tw+gap+ic, th=Math.ceil(b.a+b.d);
   const hh=h.block(id,label,cx-tot/2,y,tot,th,(g,col)=>{ g.font=size+'px "'+fam+'"'; g.direction=h.dir; g.textAlign='left'; g.textBaseline='alphabetic'; g.fillStyle=col||color;
