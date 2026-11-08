@@ -21,7 +21,8 @@ const ROOT=new URL('../',import.meta.url).pathname, DIR=path.join(ROOT,'tests/go
 const OUT=process.env.GOLD_OUT||path.join(process.env.TMPDIR||os.tmpdir(),'studio-goldens');
 const UPDATE=!!process.env.UPDATE, W=144, MEAN=1.5, BIG=48, SHARE=0.012;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
-let BRAND=null; new Function('Studio',fs.readFileSync(path.join(ROOT,'brands',BRAND_ID,'brand.js'),'utf8'))({registerBrand:b=>{ BRAND=b; }});
+const { loadKit } = await import('./kit.mjs');
+const BRAND=loadKit(ROOT,BRAND_ID);   // brand.js + its packs (w2-packs)
 const all=((BRAND.create&&BRAND.create.templates)||[]).map(d=>d.id);
 const ids=process.argv.slice(2).filter(a=>!a.startsWith('--')), bad0=ids.filter(i=>!all.includes(i));
 if(bad0.length){ console.log('FAIL not in the brand kit: '+bad0.join(', ')); process.exit(1); }
