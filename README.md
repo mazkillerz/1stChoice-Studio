@@ -88,6 +88,7 @@ New features wait here until the owner says yes. Each is off by default on every
 - **Import a Claude Design board:** opens an exported board in Create with every piece as its own layer.
 - **Moving stories:** saves a Create story as a 5 to 8 second MP4 with entrance effects and an optional sound.
 - **Remove background:** cuts a can or a person out of a photo on this phone; the first use downloads about 15 MB.
+- **Live stock in Restock:** pick a sale point and its flavours in stock fill in, from the 1st Choice locations site (needs that site to allow Studio to read it: one CORS header).
 
 
 **Share into Studio** (Android, installed app): Studio is in the phone's Share list (`share_target` in `manifest.webmanifest`). Share one or more photos from the gallery and Studio opens its hub with a **pick a tool** sheet (same look as +): Restock, Photo story, Collage, Carousel or Highlight covers, with a preview of the photos (Collage takes up to 9, Carousel 10, Highlight covers 12; Restock and Photo story make a story from each, up to 10 in a row). The photos go through the service worker (`sw.js` keeps them in IndexedDB as `studio:shared` and opens `index.html?shared=<n>`), then to the tool exactly like Quick start. If the sheet is closed without a choice, Home shows **Your photo is in** under the search box until you tap **Pick** (the sheet again) or **✕** (forgets it). The photo tool used last on the phone has a small **Last time** tag in + and in this sheet (`studio:lastQuick`); the order never changes. iPhones don't offer websites in the Share list.
