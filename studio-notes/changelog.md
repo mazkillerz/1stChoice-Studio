@@ -13,6 +13,16 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.1.2 · 8 Nov 2026
+
+### Saved: collections in one easy row
+type: fix
+The collections on the Saved page no longer stack down the screen: Campaigns and Recent sit on one line, and every collection is on the line under it, in one full-width row you swipe sideways.
+
+### Calendar: open the linked design
+type: fix
+Tap a design's picture on a calendar item (or Open design in the item) to open that design itself, so anyone on the team can see exactly what will be posted. The bottom of the plan sheet no longer sits under the phone's gesture bar, and Draft, Ready and Posted read cleanly.
+
 ## 2.1.1 · 8 Nov 2026
 
 ### Saved and calendar fixes

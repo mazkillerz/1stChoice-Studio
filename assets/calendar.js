@@ -86,7 +86,9 @@ function make(o){
   /* ---------- drawing ---------- */
   const title=()=>{ const [a,b]=range(); if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
     return a.getMonth()===b.getMonth()?L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
-  const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}</span>`:''; };
+  /* a linked design opens from its picture (2.1.2): anyone on the team can see the design itself */
+  const designHref=(id,tool)=>'tools/'+encodeURIComponent(tool)+'.html?design='+encodeURIComponent(id);
+  const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="Open the design" title="Open the design" data-design="${esc(d.id)}" data-tool="${esc(d.tool||'')}" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}</span>`:''; };
   const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
   const card=it=>{ const ro=!!it.legacy, cap=capOf(it), f=fmtOf(it), t0=firstLine(cap).slice(0,60);
@@ -156,7 +158,7 @@ function make(o){
     const d=o.dialog(`<form class="dlg-body cal-sheet" action="#" novalidate>
       <div class="cs-head"><h3 id="calEH">${(isNew?'Plan a ':'Edit ')+(it.format==='story'?'story':'post')}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
       <div class="field"><span class="lbl" id="calFL">Format</span><div class="cal-fmt" role="group" aria-labelledby="calFL">${[['post','Post'],['story','Story']].map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
-      <div class="field"><span class="lbl">Design</span><button type="button" class="cal-tile" id="calPick" aria-haspopup="dialog"></button><button type="button" class="link" id="calSkip" hidden>Remove design</button></div>
+      <div class="field"><span class="lbl">Design</span><button type="button" class="cal-tile" id="calPick" aria-haspopup="dialog"></button><div class="cal-dlinks"><a class="link" id="calOpenD" hidden>Open design</a><button type="button" class="link" id="calSkip" hidden>Remove design</button></div></div>
       <div class="field"><span class="lbl">Day and time</span><div class="cal-when"><label class="cal-daypill" for="calDay"><span id="calDayTxt"></span><input type="date" id="calDay" required value="${esc(it.day)}" aria-label="Day"></label>
         <div class="chips cal-times" role="group" aria-label="Time">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="${it.at===v}">${l.replace(' ','&nbsp;')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="${other}">Other</button></div>
         <input type="time" id="calAt" aria-label="Time" value="${esc(other?it.at:'')}"${other?'':' hidden'}></div></div>
@@ -166,7 +168,7 @@ function make(o){
       <div class="cal-foot"><button type="submit" class="btn" id="calSave">Save</button>${isNew?'':'<button type="button" class="link danger-link" id="calDel">Delete this post</button>'}</div></form>`,'cal-dlg cal-edit');
     d.setAttribute('aria-labelledby','calEH'); const $=s=>d.querySelector(s), st=t=>{ $('#calSt').textContent=t; };
     const dayTxt=()=>{ const v=$('#calDay').value; $('#calDayTxt').innerHTML=/^\d{4}-\d{2}-\d{2}$/.test(v)?'<bdi>'+esc(L(parse(v),{weekday:'short',day:'numeric',month:'short'}))+'</bdi>':'Pick a day'; };
-    const paintTile=()=>{ $('#calPick').innerHTML=tileHtml(it); $('#calSkip').hidden=!it.design_ids.length; fillThumbsIn(d); };
+    const paintTile=()=>{ $('#calPick').innerHTML=tileHtml(it); $('#calSkip').hidden=!it.design_ids.length; { const g=it.design_ids.map(designOf).find(Boolean), a=$('#calOpenD'); a.hidden=!(g&&g.tool); if(g&&g.tool) a.href=designHref(g.id,g.tool); } fillThumbsIn(d); };
     const count=()=>{ const n=$('#calCap').value.length; const c=$('#calCount'); c.innerHTML=`<bdi>${n.toLocaleString('en')}</bdi> / ${MAXCAP.toLocaleString('en')}`; c.classList.toggle('over',n>MAXCAP); };
     const grow=()=>{ const t=$('#calCap'); t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+2,Math.round(parseFloat(getComputedStyle(t).lineHeight||24)*8+24))+'px'; };
     dayTxt(); paintTile(); count(); setTimeout(grow,0);
@@ -261,6 +263,7 @@ function make(o){
     b=t.closest('[data-add]'); if(b) return editSheet(null,b.dataset.add);
     b=t.closest('[data-copy]'); if(b) return copyCap(items.find(x=>x.id===b.dataset.copy));
     b=t.closest('[data-more]'); if(b) return menu(items.find(x=>x.id===b.dataset.more));
+    { const dz=t.closest('[data-design]'); if(dz&&dz.dataset.tool){ e.preventDefault(); hap('tick'); location.href=designHref(dz.dataset.design,dz.dataset.tool); return; } }
     b=t.closest('[data-open]'); if(b){ const it=items.find(x=>x.id===b.dataset.open); if(it&&!it.legacy) editSheet(it); } });
   /* swipe sideways on the list: previous / next week (or month) */
   root.addEventListener('touchstart',e=>{ const el=e.target.closest('.cal-body'); tx=el&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}:null; },{passive:true});
