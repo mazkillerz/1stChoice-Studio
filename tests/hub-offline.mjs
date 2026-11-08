@@ -95,6 +95,7 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   ok('6 a toast says it is offline and shows the designs from before',/offline/i.test(tt),tt);
   /* Delete collection with no signal: the dialog says so and can be tried again (it used to sit there with no word) */
   await pg.evaluate(()=>{ StudioCloud.deleteCollection=async()=>{ const e=new Error('No connection. Check your internet and try again.'); e.offline=true; throw e; }; });
+  await pg.waitForSelector('#colChips [data-f="c:Restocks"]',{state:'attached',timeout:20000});   // the chips paint after the cards (collections load on their own)
   await pg.evaluate(()=>document.querySelector('#colChips [data-f="c:Restocks"]').click()); await pg.waitForSelector('#colMore');
   await pg.tap('#colMore'); await pg.waitForSelector('#colDelete',{state:'visible'}); await pg.waitForFunction(()=>!document.getAnimations().some(a=>a.playState==='running'),null,{timeout:3000}).catch(()=>{});
   await pg.tap('#colDelete',{timeout:5000}).catch(()=>pg.evaluate(()=>document.getElementById('colDelete').click()));   // under load a toast from part 6 can still be fading over the menu await pg.waitForSelector('dialog[open] #cdGo');
