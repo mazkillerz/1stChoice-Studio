@@ -1,11 +1,11 @@
 /* Create (w2-resize): one-tap "Resize to…". Six shipped templates (stories, posts, two National Day documents) resized to every
    other format: a new page next to the original, the original untouched, words inside the safe zone and inside their boxes, the
    headline still the biggest, logo in a corner band, bleed art still bleeding, photos still covering, one undo removes the page.
-   Phone 390 touch (light + dark, the action within 2 taps of the canvas) and 1280. Writes before/after grids to SHOTS (default: tests/out/resize). */
+   Phone 390 touch (light + dark, the action within 2 taps of the canvas) and 1280. Writes before/after grids to SHOTS (default: /tmp/studio-resize-shots). */
 import { chromium } from 'playwright';
 import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
-const SHOTS=process.env.SHOTS||new URL('out/resize/',import.meta.url).pathname; fs.mkdirSync(SHOTS,{recursive:true});
+const SHOTS=process.env.SHOTS||'/tmp/studio-resize-shots/'; fs.mkdirSync(SHOTS,{recursive:true});
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const b=await chromium.launch(); const errs=[]; let fails=0;
 const ok=(n,c,i)=>{ if(!c) fails++; console.log((c?'PASS ':'FAIL ')+n+(i!==undefined&&!c?' '+JSON.stringify(i):'')); };
