@@ -1,0 +1,37 @@
+/* Campaign sets (w2-campaigns, preview flag team): the Campaigns row in Saved, Add to campaign, the campaign view, Plan. Interface tokens only. */
+.camp-row{display:flex;padding:0 var(--sp-4,16px) var(--sp-2,8px)}
+.camp-row[hidden]{display:none}
+.camp-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px}
+.camp-chip svg{width:18px;height:18px}
+.camp-chip i{font-style:normal;color:var(--muted)}
+.dlg.camp{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+.camp-dlg h4{margin:0 0 var(--sp-2,8px);font:600 var(--fs-m,15px) var(--sans)}
+.camp-dlg h4 small{font-weight:400;color:var(--muted)}
+.camp-dlg .act-row small{margin-inline-start:auto;color:var(--muted)}
+.camp-dlg .cp-empty{color:var(--muted);padding:var(--sp-2,8px) 0}
+.camp-dlg .inline{display:flex;gap:var(--sp-2,8px);align-items:center}
+.camp-dlg .inline input{flex:1;min-width:0}
+.camp-dlg .inline .mini,.camp-dlg .cp-head .mini{min-height:44px}
+.cp-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3,12px)}
+.cp-head h3{overflow:hidden;text-overflow:ellipsis}
+.cp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3,12px)}
+.cp-card{position:relative;border:1px solid var(--line);border-radius:var(--r-l,14px);overflow:hidden;background:var(--surface)}
+.cp-open{display:flex;flex-direction:column;color:inherit;text-decoration:none;min-height:44px}
+.cp-thumb{display:block;aspect-ratio:9/12;background:var(--panel,var(--line));overflow:hidden}
+.cp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cp-txt{display:flex;flex-direction:column;gap:2px;padding:8px 10px;min-width:0}
+.cp-txt b{font:600 var(--fs-s,13px) var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-txt small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-rm{position:absolute;top:4px;inset-inline-end:4px;width:44px;height:44px;border:0;border-radius:50%;background:color-mix(in srgb,var(--surface) 82%,transparent);color:var(--fg);display:grid;place-items:center;cursor:pointer}
+.cp-rm svg{width:18px;height:18px}
+.cp-acts{display:flex;flex-wrap:wrap;gap:var(--sp-2,8px);align-items:center}
+.cp-acts .btn{display:inline-flex;align-items:center;gap:8px;min-height:48px}
+.cp-acts .btn svg{width:20px;height:20px}
+.cp-acts .mini{min-height:44px}
+.camp-dlg .link{min-height:44px}
+.camp-dlg .link.danger{color:var(--danger)}
+.camp-dlg .field{display:flex;flex-direction:column;gap:6px}
+.camp-dlg .field input[type=text],.camp-dlg .field input[type=date]{min-height:48px}
+.cp-plan{display:flex;flex-direction:column;gap:var(--sp-3,12px)}
+.cp-plan-row .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.camp-dlg .chip{min-height:44px}

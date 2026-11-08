@@ -117,3 +117,5 @@
 .cal-home-row.today small{color:var(--fg)}
 .cal-home-row:active{transform:scale(.99)}
 .cal-home-row:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+/* campaigns (mega w2): the campaign name on an item */
+.ci-camp{font:500 var(--fs-xs,12px) var(--sans);color:var(--accent);display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

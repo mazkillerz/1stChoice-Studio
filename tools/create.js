@@ -548,7 +548,7 @@ async function teamSave1(o){ o=o||{}; const C=await L.cloud();
   const imgs=tpl?[]:imgs0, name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName());
   const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&!asNew) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));
   const cols=o.collections||(st.design&&!asNew?st.design.collections:[])||[];
-  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:{v:1,kind:'board',doc,imgs},photos,thumb:await thumbBlob(),collections:cols,author:whoNow()});
+  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow()});
   if(tpl&&o.kind==='template'&&!st.design) return {id,name,kind:kindOut};   // a template saved from a draft: keep working on the draft
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }
@@ -573,7 +573,7 @@ async function openDesign(id,ready){
   if(!(await L.ensureMember('This design is saved with the team. Sign in to open it.'))) return false;
   BD.busy('Opening the saved design…');
   try{ const C=await L.cloud(); const d=await C.getDesign(id); if(d.tool!==TOOL){ location.replace(L.toolPage(d.tool)+'?design='+id+(ready?'&go=1':'')); return 'away'; }
-    const r=d.recipe||{}, imgs=r.imgs||[], paths=r.photoPaths||[];
+    const r=(await Studio.campaignRecipe(d))||{}, imgs=r.imgs||[], paths=r.photoPaths||[];   // campaigns (mega w2)
     if(d.kind!=='template') await Promise.all(imgs.map(async(img,i)=>{ const p=paths[i]; if(!p) return; try{ const blob=await C.download(p); const el=await L.loadFile(blob); BD.IMGS.set(img,{el,w:el.width,h:el.height}); st.blobs.set(img,blob); st.paths.set(img,p); }catch(_){} }));
     clearAll(); await addDocNodes(r.doc||{nodes:[]}); S.id=null; S.name=d.name; S.imgs=new Set(imgs);
     BD.showPage(frames()[0]); BD.resetHistory();

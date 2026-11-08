@@ -37,6 +37,7 @@ function make(o){
   const rd=k=>{ try{ return o.store?o.store(k):null; }catch(_){ return null; } }, wr=(k,v)=>{ try{ o.store&&o.store(k,v); }catch(_){} };
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month'].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
+  let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
   let items=[], designs=[], urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
@@ -55,7 +56,8 @@ function make(o){
       C=await o.cloud(); if(my!==run) return;
       if(!(await o.member())){ state='out'; draw(); return; }
       const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).catch(()=>designs):designs]); if(my!==run) return;
-      designs=dl||[]; const lg=legacyItems(o.brand).filter(x=>x.day>=iso(a)&&x.day<=iso(b));
+      designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
+      const lg=legacyItems(o.brand).filter(x=>x.day>=iso(a)&&x.day<=iso(b));
       items=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})).concat(lg); state='ok'; draw();
       if(toToday){ toToday=false; const t=root.querySelector('.cal-day.today'); if(t&&!wide()) t.scrollIntoView({block:'start'}); }
       const need=[...new Set(items.flatMap(x=>x.design_ids).map(designOf).filter(Boolean).map(d=>d.thumb_path).filter(p=>p&&!urls[p]))];
@@ -71,12 +73,13 @@ function make(o){
   const title=()=>{ const [a,b]=range(); if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
     return a.getMonth()===b.getMonth()?L(a,{day:'numeric'})+' – '+L(b,{day:'numeric',month:'short'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
   const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean).slice(0,4); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}${it.design_ids.length>4?`<i>+${it.design_ids.length-4}</i>`:''}</span>`:''; };
+  const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
   const card=it=>{ const ro=!!it.legacy, cap=firstLine(it.caption);
     return `<article class="cal-item st-${it.status}${ro?' ro':''}" data-id="${esc(it.id)}"${ro?'':' draggable="true"'}>
       <button type="button" class="ci-main" data-open="${esc(it.id)}"${ro?' disabled':''}>
         <span class="ci-top">${it.at?`<span class="ci-time">${esc(it.at)}</span>`:''}${chip(it.status)}</span>
-        <b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-cap">From the old posted log</span>':''}${thumbs(it)}
+        <b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>${campTag(it)}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-cap">From the old posted log</span>':''}${thumbs(it)}
       </button>${ro?'':`<button type="button" class="ci-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(it.title||'this item')}">${ic('more')}</button>`}</article>`; };
   const pill=it=>`<button type="button" class="cal-pill st-${it.status}${it.legacy?' ro':''}" data-open="${esc(it.id)}" data-id="${esc(it.id)}"${it.legacy?' disabled':' draggable="true"'} dir="auto"><i aria-hidden="true"></i>${esc(it.title||'Untitled')}</button>`;
   const byDay=()=>{ const m={}; items.forEach(x=>{ (m[x.day]=m[x.day]||[]).push(x); }); Object.values(m).forEach(l=>l.sort((a,b)=>(a.at||'').localeCompare(b.at||''))); return m; };

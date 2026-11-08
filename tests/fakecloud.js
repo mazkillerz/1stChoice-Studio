@@ -60,4 +60,6 @@ window.StudioCloud={
   async saveCampaign(c){ const d=db(); const row=upsertRow(d,'campaigns',{words:{},...c,id:c.id||'k'+uid()}); put(d); return row; },
   async deleteCampaign(id){ const d=db(); d.campaigns=tbl(d,'campaigns').filter(x=>x.id!==id); Object.values(d.designs).forEach(x=>{ if(x.campaign_id===id) x.campaign_id=null; }); d.calendar=tbl(d,'calendar').map(x=>x.campaign_id===id?{...x,campaign_id:null}:x); put(d); }
 };
+/* campaigns (mega w2) */
+window.StudioCloud.setCampaign=async(designId,campaignId)=>{ const d=db(); if(d.designs[designId]){ d.designs[designId].campaign_id=campaignId||null; put(d); } };
 })();

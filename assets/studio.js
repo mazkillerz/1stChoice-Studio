@@ -113,6 +113,11 @@ const TOOLS={
   'video':{title:'Video editor',blurb:'Reels: words, sound, MP4',group:'free',type:'video',keys:'reel reels video coded change save mp4 movie animation motion sound music audio mixer edit'}
 };
 const toolPage=id=>ROOT+'tools/'+id+'.html';
+/* campaigns (mega w2, preview flag team): a design in a campaign opens with the campaign's shared words and look, except what it overrides;
+   saving notes what was changed by hand (assets/campaigns.js, lazy). Without the flag or a campaign these return the design as it is. */
+async function campaignRecipe(d){ const r=d&&d.recipe; if(!r||!d.campaign_id||!flags.on('team')) return r;
+  try{ if(!window.StudioCampaigns) await loadScript(ROOT+'assets/campaigns.js'); return await window.StudioCampaigns.openRecipe(d,{cloud,brand:d.brand}); }catch(_){ return r; } }
+const campaignStamp=(tool,r)=>{ try{ return window.StudioCampaigns?window.StudioCampaigns.stamp(tool,r):r; }catch(_){ return r; } };
 
 /* ---------- Pinned tools: the home page shows only the tools pinned on this device; All tools has every tool.
    Kept on the device (localStorage), not with the team login, so each phone has its own home. A new device starts with Restock;
@@ -1440,7 +1445,7 @@ async function tool(cfg){
     const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
     const thumb=await thumbBlob();
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:r,photos,thumb,collections:cols,author:whoNow()});
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow()});
     const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     design={id,name,kind:keep?'design':'template',collections:cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
     history.replaceState(null,'',location.pathname+'?design='+id);
@@ -1539,7 +1544,7 @@ async function tool(cfg){
   async function openDesign(id,ready){
     status('Opening the saved design…');
     if(!(await ensureMember('This design is saved with the team. Sign in to open it.'))){ status(''); return false; }
-    const C=await cloud(); const d=await C.getDesign(id); const r=d.recipe;
+    const C=await cloud(); const d=await C.getDesign(id); const r=await campaignRecipe(d);   // campaigns (mega w2)
     if(d.tool!==cfg.id){ location.replace(toolPage(d.tool)+'?design='+id+(ready?'&go=1':'')); return false; }
     const slots=[];
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
@@ -2842,7 +2847,7 @@ async function home(){
   const svCard=(d,i)=>{ const tpl=d.kind==='template';
     return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
-  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
+  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); campPaint(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
@@ -2981,6 +2986,7 @@ async function home(){
     const col=filter.startsWith('c:')&&cols.find(c=>'c:'+c.id===filter);
     $('selOut').hidden=!col; if(col) $('selOut').setAttribute('aria-label','Take them out of “'+col.name+'”');
     ['selCol','selOut','selSave','selDel'].forEach(id=>$(id).disabled=!n);
+    if($('selCamp')) $('selCamp').disabled=!n;   // campaigns (mega w2)
   }
   /* Save pictures (1.18.0): each selected design's picture at full quality, in one share sheet (phone) or one ZIP (computer).
      assets/render.js draws them in hidden frames of their tools, with the same code as Save. The button sits before Delete. */
@@ -2989,6 +2995,17 @@ async function home(){
     b.addEventListener('click',async()=>{ const list=picked(); if(!list.length) return; haptic('tick');
       try{ if(!window.StudioRender) await loadScript(ROOT+'assets/render.js'); }catch(_){ hubToast('Could not start saving. Check your connection and try again.'); return; }
       await window.StudioRender.saveDesigns(list,{toast:hubToast,done:()=>{ if(sel) endSelect(true); }}); }); }
+  /* campaigns (mega w2, preview flag team): assets/campaigns.js (lazy). Select mode gets "Campaign", Saved gets one Campaigns row, a design's menu "Add to campaign".
+     With the flag off none of this exists (no button, no row, no request). */
+  let campApi=null, campBusy=null;
+  const campLoad=()=>campBusy||(campBusy=(async()=>{ if(!window.StudioCampaigns) await loadScript(ROOT+'assets/campaigns.js');
+    return campApi=window.StudioCampaigns.init({brand:B.id,cloud:getCloud,designs:()=>all,urls:()=>urls,fillThumbs,esc,dialog,toast:hubToast,haptic,icons:ICON,toolPage,TOOLS,
+      who:()=>{ try{ return (window.StudioWho&&StudioWho.author&&StudioWho.author())||null; }catch(_){ return null; } },
+      refresh:()=>loadSaved(true),endSelect:()=>{ if(sel) endSelect(true); },picked:()=>picked(),anchor:()=>$('colChips'),ROOT,loadScript,plural}); })().catch(e=>{ campBusy=null; throw e; }));
+  const campPaint=()=>{ if(!flags.on('team')||!loaded||!member) return; if(campApi) campApi.paint(); else campLoad().then(a=>a.paint()).catch(()=>{}); };
+  if(flags.on('team')){ const b=document.createElement('button'); b.type='button'; b.className='sel-act'; b.id='selCamp'; b.disabled=true; b.innerHTML=ICON.layers+'<span>Campaign</span>';
+    $('selBar').insertBefore(b,$('selDel'));
+    b.addEventListener('click',async()=>{ const list=picked(); if(!list.length) return; haptic('tick'); try{ (await campLoad()).addTo(list); }catch(_){ hubToast('Could not open campaigns. Check your connection and try again.'); } });}
   function toggleSel(id){ if(!sel) return; sel.has(id)?sel.delete(id):sel.add(id); haptic('tick'); paintSel(); }
   $('selBtn').addEventListener('click',()=>{ if(!sel) return startSelect();
     if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
@@ -3118,6 +3135,7 @@ async function home(){
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
       if(!url) C.fileUrl(dsg.thumb_path).then(u=>{ if(u){ urls[dsg.thumb_path]=u; const ph=d.querySelector('.ds-ph'); if(ph) ph.outerHTML=`<img src="${u}" alt="">`; } }).catch(()=>{});
     const P=d.querySelector('#dsPanel'), st=t=>{ d.querySelector('#dsSt').textContent=t; };
+    if(campApi&&flags.on('team')) campApi.designRow(d,dsg);   // campaigns (mega w2)
     d.querySelector('#dsClose').onclick=()=>d.close();
     d.querySelector('.ds-peek').onclick=()=>{ d.close(); peek(dsg); };
     d.querySelector('.act-list').addEventListener('click',async ev=>{
@@ -3231,5 +3249,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
