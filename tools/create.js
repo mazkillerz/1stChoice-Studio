@@ -290,17 +290,22 @@ function sizeRow(){ return `<div class="cr-sizes">${SIZES.map(s=>`<button type="
 function openPage(){ const f=BD.activeFrame(); if(!f) return; reopen=null; const fs=frames(), i=fs.indexOf(f), s=fsize(f);
   const body=openSheet('page','Page '+(i+1)+(fs.length>1?' of '+fs.length:''),`<span class="lbl">Make this page a… (${s.w}×${s.h} now)</span>
     <div class="cr-seg">${SIZES.filter(x=>!x.pages).map(x=>`<button type="button" data-rs="${x.id}" aria-pressed="${x.w===s.w&&x.h===s.h&&!!x.round===!!f.getAttr('round')}">${esc(x.label)}</button>`).join('')}</div>
-    <span class="lbl">Copy this page as</span><div class="cr-seg"><button type="button" data-cp="story">A story</button><button type="button" data-cp="post">A post</button><button type="button" data-cp="square">A square</button></div>
+    <span class="lbl">Resize to… (a new page next to this one, laid out again)</span><div class="cr-seg" id="pRz">${['story','post','square','highlight'].filter(x=>x!==rzCur(f)).map(x=>`<button type="button" data-rz="${x}">${({story:'Story',post:'Post',square:'Square',highlight:'Highlight'})[x]}</button>`).join('')}</div>
     <span class="lbl">Pages</span><div class="cr-seg"><button type="button" data-pg="add">${I.plus} Add a page</button><button type="button" data-pg="dup">${I.dup} Duplicate</button>${i>0?`<button type="button" data-pg="left">Move earlier</button>`:''}${i<fs.length-1?`<button type="button" data-pg="right">Move later</button>`:''}${fs.length>1?`<button type="button" data-pg="del" class="danger">Delete page</button>`:''}</div>
     <div class="cr-row"><label class="check"><input type="checkbox" id="pSafe" ${BD.showSafe?'checked':''}> Show the story safe zones</label></div>`,{tool:true});
   body.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const d=b.dataset;
     if(d.rs){ resizePage(f,sizeOf(d.rs)); openPage(); }
-    if(d.cp){ const c=copyPage(f); resizePage(c,sizeOf(d.cp)); BD.showPage(c); paintPages(); closeSheet(); toast('Copied as a '+sizeOf(d.cp).label.toLowerCase()+'.'); }
+    if(d.rz) rzRun(f,d.rz);
     if(d.pg==='add'){ closeSheet(); addPage(); }
     if(d.pg==='dup'){ const c=copyPage(f); BD.showPage(c); paintPages(); closeSheet(); }
     if(d.pg==='left'||d.pg==='right'){ d.pg==='left'?f.moveDown():f.moveUp(); BD.changed(); BD.emitDoc(); paintPages(); openPage(); }
     if(d.pg==='del'){ if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to delete'; return; } const next=fs[i+1]||fs[i-1]; f.destroy(); BD.showPage(next); BD.changed(); BD.emitDoc(); paintPages(); closeSheet(); } });
   body.querySelector('#pSafe').onchange=e=>{ BD.showSafe=e.target.checked; BD.paintUI(); }; }
+/* one-tap resize (w2-resize): tools/create-resize.js, loaded when first used */
+const rzCur=f=>f.getAttr('round')?'highlight':fsize(f).h>=1900?'story':fsize(f).h>=1300?'post':'square';
+async function rzRun(f,id){ try{ if(!(BD.resize&&BD.resize.resizeTo)) await new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='create-resize.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+    const c=BD.resize.resizeTo(f,id); if(!c) return; BD.showPage(c); touch(); BD.changed(); BD.emitDoc(); paintPages(); closeSheet(); toast('Resized to a '+BD.resize.FORMATS[id].label.toLowerCase()+' on a new page. The first one is untouched.'); }
+  catch(err){ console.warn(err); toast('Could not resize that page.'); } }
 function copyPage(f){ const c=BD.rebuild(BD.toObj(f),true); BD.main.add(c); c.zIndex(f.zIndex()+1); c.setAttr('label',(f.getAttr('label')||'Page')+' copy'); c.find('Image').forEach(n=>BD.applyFx(n)); BD.changed(); BD.emitDoc(); return c; }
 /* a new size for a page: everything is scaled to fit and centred; a photo that filled the page fills it again */
 function resizePage(f,sz){ const s=fsize(f), k=Math.min(sz.w/s.w,sz.h/s.h), ox=(sz.w-s.w*k)/2, oy=(sz.h-s.h*k)/2;
