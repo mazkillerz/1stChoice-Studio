@@ -9,7 +9,7 @@
 /* the sheet's three choices (Ready = 'approved' in the database); 'in_review' is set by the review feature and shown read-only */
 const STATUS=[['draft','Draft'],['approved','Ready'],['posted','Posted']];
 const SLABEL={draft:'Draft',in_review:'In review',approved:'Ready',posted:'Posted'};
-const TIMES=[['09:00','9:00'],['12:00','12:00'],['19:00','7:00 pm'],['21:00','9:00 pm']];
+const TIMES=[['09:00','9 am'],['12:00','12 pm'],['19:00','7 pm'],['21:00','9 pm']];
 const POST_TOOLS=['carousel','highlight','post'];   // anything else a tool makes is story-shaped (1080×1920)
 const MAXCAP=2200;
 const LEGACY_KEYS=['POSTED_LOG','studio:postedLog','studio:posted','studio:posted-log'];
@@ -85,7 +85,7 @@ function make(o){
 
   /* ---------- drawing ---------- */
   const title=()=>{ const [a,b]=range(); if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
-    return a.getMonth()===b.getMonth()?L(a,{day:'numeric'})+' – '+L(b,{day:'numeric',month:'short'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
+    return a.getMonth()===b.getMonth()?L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
   const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}</span>`:''; };
   const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
@@ -154,11 +154,11 @@ function make(o){
     let fmt=it.format||(isNew?null:fmtOf(it));
     const quick=TIMES.some(t=>t[0]===it.at), other=!!it.at&&!quick;
     const d=o.dialog(`<form class="dlg-body cal-sheet" action="#" novalidate>
-      <div class="cs-head"><h3 id="calEH">${isNew?'Plan a post':'Edit post'}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
+      <div class="cs-head"><h3 id="calEH">${(isNew?'Plan a ':'Edit ')+(it.format==='story'?'story':'post')}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
       <div class="field"><span class="lbl" id="calFL">Format</span><div class="cal-fmt" role="group" aria-labelledby="calFL">${[['post','Post'],['story','Story']].map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
       <div class="field"><span class="lbl">Design</span><button type="button" class="cal-tile" id="calPick" aria-haspopup="dialog"></button><button type="button" class="link" id="calSkip" hidden>Remove design</button></div>
       <div class="field"><span class="lbl">Day and time</span><div class="cal-when"><label class="cal-daypill" for="calDay"><span id="calDayTxt"></span><input type="date" id="calDay" required value="${esc(it.day)}" aria-label="Day"></label>
-        <div class="chips cal-times" role="group" aria-label="Time">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="${it.at===v}">${l.replace(' pm','&nbsp;pm')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="${other}">Other</button></div>
+        <div class="chips cal-times" role="group" aria-label="Time">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="${it.at===v}">${l.replace(' ','&nbsp;')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="${other}">Other</button></div>
         <input type="time" id="calAt" aria-label="Time" value="${esc(other?it.at:'')}"${other?'':' hidden'}></div></div>
       <div class="field"><label class="lbl" for="calCap">Caption</label><textarea id="calCap" class="cal-ta" dir="auto" rows="3" placeholder="Write or paste the caption">${esc(it.caption)}</textarea><div class="cal-count small" id="calCount" aria-live="off"></div></div>
       <div class="field"><span class="lbl" id="calStL">Status</span>${it.status==='in_review'?'<p class="small cal-rev">In review</p>':''}<div class="cal-seg3" role="group" aria-labelledby="calStL">${STATUS.map(([k,l])=>`<button type="button" class="cs3" data-st="${k}" aria-pressed="${it.status===k}">${l}</button>`).join('')}</div></div>
@@ -172,7 +172,7 @@ function make(o){
     dayTxt(); paintTile(); count(); setTimeout(grow,0);
     $('#calDay').addEventListener('input',dayTxt); $('#calDay').addEventListener('change',dayTxt);
     $('#calCap').addEventListener('input',()=>{ count(); grow(); });
-    d.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{ fmt=b.dataset.fmt; d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
+    d.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{ fmt=b.dataset.fmt; const h=d.querySelector('#calEH'); if(h) h.textContent=(isNew?'Plan a ':'Edit ')+(fmt==='story'?'story':'post'); d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     d.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ it.status=b.dataset.st; d.querySelectorAll('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     d.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ const v=b.dataset.at, on=b.getAttribute('aria-pressed')==='true';
       d.querySelectorAll('[data-at]').forEach(x=>x.setAttribute('aria-pressed','false'));

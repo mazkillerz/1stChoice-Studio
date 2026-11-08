@@ -93,7 +93,7 @@ async function phone(dark){
   await tap(`[data-add="${OTHER}"]`); await pg.waitForSelector('dialog.cal-dlg[open] #calCap');
   const sheet0=await pg.evaluate(()=>({title:!!document.querySelector('#calTitle'),tags:!!document.querySelector('#calTags'),st:[...document.querySelectorAll('[data-st]')].map(e=>e.textContent),
     fmt:[...document.querySelectorAll('[data-fmt]')].map(e=>e.textContent.trim()+':'+e.getAttribute('aria-pressed')),at:[...document.querySelectorAll('[data-at]')].map(e=>e.textContent.replace(/\s/g,' ')+':'+e.getAttribute('aria-pressed')),day:document.querySelector('#calDayTxt').textContent,ph:document.querySelector('#calCap').placeholder,cnt:document.querySelector('#calCount').textContent.replace(/\s+/g,' ')}));
-  ok(T+'the sheet has Post/Story (none chosen), a design tile, a day pill, time chips (7:00 pm on), caption, Draft/Ready/Posted; no title, hashtag or old status list',!sheet0.title&&!sheet0.tags&&sheet0.st.join()==='Draft,Ready,Posted'&&sheet0.fmt.join()==='Post:false,Story:false'&&sheet0.at.join()==='9:00:false,12:00:false,7:00 pm:true,9:00 pm:false,Other:false'&&/^\w{3},? .*\d/.test(sheet0.day)&&sheet0.ph==='Write or paste the caption'&&/0 \/ 2,200/.test(sheet0.cnt),sheet0);
+  ok(T+'the sheet has Post/Story (none chosen), a design tile, a day pill, time chips (7 pm on), caption, Draft/Ready/Posted; no title, hashtag or old status list',!sheet0.title&&!sheet0.tags&&sheet0.st.join()==='Draft,Ready,Posted'&&sheet0.fmt.join()==='Post:false,Story:false'&&sheet0.at.join()==='9 am:false,12 pm:false,7 pm:true,9 pm:false,Other:false'&&/^\w{3},? .*\d/.test(sheet0.day)&&sheet0.ph==='Write or paste the caption'&&/0 \/ 2,200/.test(sheet0.cnt),sheet0);
   const CAP='Fresh batch is here #cold #brew\nCome and get it';
   await pg.fill('#calCap',CAP);
   await tap('[data-fmt="post"]'); await tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard');
@@ -142,8 +142,8 @@ async function phone(dark){
   /* edit: day via the date input, a time chip, status Ready */
   const NEWD=iso(new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+(now.getDay()>=5?-1:5)));
   await pg.tap(`.cal-item[data-id="${saved.id}"] .ci-main`); await pg.waitForSelector('dialog.cal-dlg[open] #calCap');
-  const pre=await pg.evaluate(()=>({f:document.querySelector('[data-fmt][aria-pressed="true"]')?.textContent.trim(),t:document.querySelector('[data-at][aria-pressed="true"]')?.textContent.trim(),cap:document.querySelector('#calCap').value,tile:document.querySelector('#calPick').innerText.replace(/\s+/g,' ')}));
-  ok(T+'tapping the card opens the sheet filled in (format, time chip, caption, design)',pre.f==='Post'&&pre.t==='12:00'&&pre.cap===CAP&&/Change/.test(pre.tile),pre);
+  const pre=await pg.evaluate(()=>({f:document.querySelector('[data-fmt][aria-pressed="true"]')?.textContent.trim(),t:document.querySelector('[data-at][aria-pressed="true"]')?.textContent.replace(/\s/g,' ').trim(),cap:document.querySelector('#calCap').value,tile:document.querySelector('#calPick').innerText.replace(/\s+/g,' ')}));
+  ok(T+'tapping the card opens the sheet filled in (format, time chip, caption, design)',pre.f==='Post'&&pre.t==='12 pm'&&pre.cap===CAP&&/Change/.test(pre.tile),pre);
   await pg.fill('#calDay',NEWD); await pg.tap('[data-at="21:00"]'); await pg.tap('[data-st="approved"]'); await pg.tap('#calSave'); await pg.waitForSelector('dialog.cal-dlg',{state:'detached',timeout:6000});
   await pg.waitForTimeout(500);
   const ed=(await stored(pg)).find(x=>x.id===saved.id);
