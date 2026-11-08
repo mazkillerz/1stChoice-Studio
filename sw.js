@@ -19,7 +19,7 @@ const SHELL=[
   'tools/video.html','tools/video.js','tools/video.css','assets/reel.js','assets/reel-audio.js','assets/reel-export.js','assets/reel-project.js','tools/video-tl.js','tools/video-ui.js','assets/vendor/mp4-muxer.js',
   'lab/index.html','lab/lab.css','lab/lab.js','lab/board.html','lab/board.css','lab/board-lib.js','lab/board.js','lab/board-tools.js','lab/board-comp.js','lab/board-io.js','lab/board-ui.js','lab/board-panel.js','lab/board-dialogs.js','lab/board-flex.js','lab/board-stickers.js','assets/vendor/konva.min.js','assets/vendor/qrcode.js',
   'assets/fonts/ibm-plex-sans-arabic-400-arabic.woff2','assets/fonts/ibm-plex-sans-arabic-400-latin-ext.woff2','assets/fonts/ibm-plex-sans-arabic-400-latin.woff2','assets/fonts/ibm-plex-sans-arabic-500-arabic.woff2','assets/fonts/ibm-plex-sans-arabic-500-latin-ext.woff2','assets/fonts/ibm-plex-sans-arabic-500-latin.woff2','assets/fonts/ibm-plex-sans-arabic-600-arabic.woff2','assets/fonts/ibm-plex-sans-arabic-600-latin-ext.woff2','assets/fonts/ibm-plex-sans-arabic-600-latin.woff2','assets/fonts/fonts.css','brands/1stchoice/fonts/cairo-arabic.woff2','brands/1stchoice/fonts/cairo-latin-ext.woff2','brands/1stchoice/fonts/cairo-latin.woff2','brands/1stchoice/fonts/lalezar-400-arabic.woff2','brands/1stchoice/fonts/lalezar-400-latin-ext.woff2','brands/1stchoice/fonts/lalezar-400-latin.woff2','brands/1stchoice/fonts/modak-400-latin-ext.woff2','brands/1stchoice/fonts/modak-400-latin.woff2','brands/1stchoice/fonts/fonts.css','assets/who.js',
-  'assets/components.js','assets/rules.js','assets/rules.css','assets/calendar.js','assets/calendar.css','assets/captions.js','assets/captions.css','assets/campaigns.js','assets/campaigns.css','assets/phrasebook.js','assets/phrasebook.css','assets/review.js','assets/review.css','brands/1stchoice/packs/nd26/pack.js','tools/create-import.js','tools/create-motion.js','tools/create-motion.css','tools/create-resize.js'
+  'assets/components.js','assets/rules.js','assets/rules.css','assets/calendar.js','assets/calendar.css','assets/captions.js','assets/captions.css','assets/campaigns.js','assets/campaigns.css','assets/phrasebook.js','assets/phrasebook.css','assets/review.js','assets/review.css','brands/1stchoice/packs/nd26/pack.js','tools/create-import.js','tools/create-motion.js','tools/create-motion.css','tools/create-resize.js','assets/cutout.js','assets/cutout-worker.js'
 ];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VERSION).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));
@@ -37,6 +37,7 @@ self.addEventListener('fetch',e=>{
   if(url.origin!==self.location.origin) return;
   if(req.mode==='navigate'||/\.(html|js|css|json|webmanifest|md)$/.test(url.pathname)||url.pathname.endsWith('/')){ e.respondWith(networkFirst(req)); return; }
   if(/\.(png|jpe?g|webp|gif|svg|woff2?)$/.test(url.pathname)){ e.respondWith(cacheFirst(req,true)); return; }
+  if(url.pathname.includes('/assets/vendor/cutout/')){ e.respondWith(cacheFirst(req)); return; }   // background-removal model + runtime (~15 MB): kept once fetched, never in the install shell
   if(/\.(flac|mp3|wav|m4a)$/.test(url.pathname)){ e.respondWith(cacheFirst(req)); return; }   // reel sounds (Video editor): kept once fetched
 });
 async function networkFirst(req){

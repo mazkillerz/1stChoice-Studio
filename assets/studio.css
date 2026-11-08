@@ -1429,3 +1429,10 @@ input[type=range]{min-height:44px}
 body.on-calendar nav.top{display:none}
 body.hub.on-calendar{background:var(--bg)}
 body.on-calendar .fab{display:none}
+
+/* remove background (cutout, mega): a button under Flip in the Photo sheet, with a one-line progress note */
+.cut-row{flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3)}
+#photoCut{min-height:48px}
+#photoCut svg{flex:none}
+#photoCut:disabled{opacity:.55}
+.cut-note{flex:1 1 12rem;min-width:0;overflow-wrap:anywhere}
