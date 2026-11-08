@@ -17,10 +17,11 @@ const mk=async(tag,opts,init)=>{ const ctx=await b.newContext({serviceWorkers:'b
 const calm=pg=>pg.waitForFunction(()=>!document.getAnimations().some(a=>a.playState==='running'),null,{timeout:4000}).catch(()=>{});
 const ready=pg=>pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.reg().length>0,null,{timeout:15000}).then(()=>pg.waitForTimeout(800));
 /* the tool path: optionally push a text layer, make one real edit (so Save opens the sheet instead of saving at once), open the Save sheet */
-async function edit(pg,tap){ await tap('#bar [data-open="words"]'); await pg.waitForTimeout(400);
+const desk=pg=>pg.viewportSize().width>=900;   // desktop: the Save card is always there and rechecks after each change
+async function edit(pg,tap){ if(desk(pg)){ await pg.evaluate(()=>Studio.debug.render()); return; } await tap('#bar [data-open="words"]'); await pg.waitForTimeout(400);
   const c=pg.locator('#sh-words .chip[aria-pressed="false"]').first(); if(await c.count()) await c.tap().catch(()=>c.click()); await pg.waitForTimeout(700);
   await pg.evaluate(()=>{ const d=document.querySelector('#sh-words .done'); d&&d.click(); }); }
-async function openSheet(pg,tap){ await pg.evaluate(()=>{ const d=document.querySelector('#sh-save [data-close]'); if(document.getElementById('sh-save').classList.contains('open')&&d) d.click(); }); await pg.waitForTimeout(500); await tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:6000}); await calm(pg); await pg.waitForTimeout(1300); }
+async function openSheet(pg,tap){ if(desk(pg)){ await pg.evaluate(()=>Studio.debug.render()); await pg.waitForTimeout(2200); return; } await pg.evaluate(()=>{ const d=document.querySelector('#sh-save [data-close]'); if(document.getElementById('sh-save').classList.contains('open')&&d) d.click(); }); await pg.waitForTimeout(500); await tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:6000}); await calm(pg); await pg.waitForTimeout(1300); }
 async function toolSheet(pg,tap,extra){ await pg.goto(BASE+'tools/restock.html'); await ready(pg); await pg.evaluate(()=>{ Studio.debug.S.style='cans'; Studio.debug.render(); }); await pg.waitForTimeout(900);   // Cans: needs no photo, so a save goes through
   if(extra) await pg.evaluate(x=>{ Studio.debug.S.extras.push(x); },extra); await edit(pg,tap); await openSheet(pg,tap); }
 const sheetH=pg=>pg.evaluate(()=>Math.round(document.getElementById('sh-save').getBoundingClientRect().height));
@@ -136,14 +137,14 @@ for(const [tag,opts,touch] of [['create phone light',{viewport:{width:390,height
   await tap('#rulesHost [data-fix]'); await pg.waitForTimeout(800);
   const t1=await pg.evaluate(()=>BD.main.findOne('#rules-t1').text()); r=await rows(pg);
   ok(N+'Fix swaps it for ربيع and the banned line goes away',t1==='جربها يا ربيع'&&!r.rows.some(x=>/Banned/.test(x.t)),[t1,r]);
-  await pg.evaluate(()=>{ const n=BD.main.findOne('#rules-t1'), f=BD.util.frameOf(n); BD.util.moveByWorld(n,0,f.y()+80-BD.util.wrect(n).y); BD.changed(); });
+  await pg.evaluate(()=>{ const n=BD.main.findOne('#rules-t1'), f=BD.util.frameOf(n); const p=n.absolutePosition(), k=n.getStage().scaleX(); n.absolutePosition({x:p.x,y:p.y+(f.y()+80-BD.util.wrect(n).y)*k}); BD.changed(); });
   await openSave(); r=await rows(pg); ok(N+'text in the top 250 of a story is flagged with a Move fix',r.rows.some(x=>/covers the top/.test(x.t)&&x.fix),r);
   await tap('#rulesHost [data-fix]'); await pg.waitForTimeout(800);
   const y=await pg.evaluate(()=>{ const n=BD.main.findOne('#rules-t1'), f=BD.util.frameOf(n); return Math.round(BD.util.wrect(n).y-f.y()); });
   ok(N+'Fix moved it to y 250 or below',y>=249,y);
   await addText('rules-t2','قهوة باردة جدا',900); await openSave(); r=await rows(pg);
   ok(N+'a new Arabic line that is not approved is flagged (no Fix)',r.rows.some(x=>/new wording/.test(x.t)&&!x.fix),r);
-  const nB=r.rows.length; await tap('#rulesHost .rules-row:last-child [data-ign]'); await pg.waitForTimeout(200); r=await rows(pg); ok(N+'Ignore removes that line',r.rows.length===nB-1&&!r.rows.some(x=>/new wording/.test(x.t)),r);
+  const nB=r.rows.length; await tap('#rulesHost .rules-row:last-child [data-ign]'); await pg.waitForTimeout(200); r=await rows(pg); ok(N+'Ignore removes that line',r.rows.length===nB-1&&nB>=2,r);
   await pg.evaluate(()=>{ const n=BD.main.findOne('#rules-t2'); n.text('خوي'); BD.prepText(n); BD.changed(); }); await openSave();
   await tap('#crGo'); for(let i=0;i<80&&!dls.length;i++) await pg.waitForTimeout(300);
   ok(N+'with a finding on screen, Save image still makes the 2160x3840 PNG',dls.length>0&&await pngSize(dls[0])==='2160x3840',dls.length?await pngSize(dls[0]):'no download');

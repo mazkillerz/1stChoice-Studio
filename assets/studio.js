@@ -1239,7 +1239,7 @@ async function tool(cfg){
     let best=null; [a,a+len/2,a+len].forEach(p=>targets.forEach(t=>{ const d=t.v-p; if(Math.abs(d)<=tol&&(!best||Math.abs(d)<Math.abs(best.d))) best={d,v:t.v,kind:t.kind}; }));
     return best;
   }
-  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); scheduleThumb(); if(window.StudioRules&&!isPhone()) rulesLater(900); }
+  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); scheduleThumb(); if(!isPhone()&&B.rules) rulesLater(900); }
 
   /* ---- the design "recipe": everything needed to rebuild this story (saving, drafts, undo) ---- */
   function recipe(){
@@ -2045,7 +2045,7 @@ async function tool(cfg){
   const rulesScope=()=>design?design.id:'draft:'+(draftId||'new');
   function rulesRun(){ if(!window.StudioRules&&!rulesLoading) rulesLoad().then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
   let rulesLoading=null; const rulesLoad=()=>rulesLoading=rulesLoading||loadScript(ROOT+'assets/rules.js').catch(()=>{});
-  const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(window.StudioRules&&StudioRules.enabled()) rulesRun(); },ms); };
+  const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
   function resetSaveSheet(){ rulesRun(); imgDone=false; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
