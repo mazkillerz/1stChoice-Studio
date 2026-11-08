@@ -30,7 +30,7 @@ function strings(v,out){ if(typeof v==='string'){ if(AR.test(v)) out.push(v); } 
 function approvedSet(design){ const R=design.rules||{}, set=new Set(), B=design.brand||{};
   const add=l=>String(l||'').split('\n').forEach(x=>{ const k=clean(x); if(k) set.add(k); });
   strings(B.phrases,[]).forEach(add); strings((B.flavours||[]).map(f=>f.name),[]).forEach(add);
-  strings(R.phrases&&R.phrases.extra,[]).forEach(add); (design.approved||[]).forEach(add); return set; }
+  strings(R.phrases&&R.phrases.extra,[]).forEach(add); try{ if(window.Studio&&Studio.phrasesApproved) Studio.phrasesApproved().forEach(add); }catch(_){}   /* + every approved phrasebook line (captions too) */ (design.approved||[]).forEach(add); return set; }
 
 /* ---- the rules ---- */
 function banned(it,R,out){ if(it.kind!=='text'||!it.text) return; const mm=window.Studio&&Studio.normMap; if(!mm) return; const mp=mm(it.text), n=mp.n;
