@@ -13,6 +13,32 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 1.55.0 · 8 Nov 2026
+
+### Brand check in Save
+type: feature
+When a design has something off-brand, the Save sheet shows one quiet line for it: a word we don't use (with a one-tap swap to the approved word), 25+ next to Passion fruit, White and Cream on one design, words under Instagram's covered top or bottom, text too small for a phone, text hard to read on its background, a can that isn't the HD cut-out, or an Arabic line that isn't approved yet. Fix or Ignore; it never stops a save, and a clean design sees nothing new. Turn it off in Settings → Brand check.
+
+### Resize to another size
+type: feature
+In Create, Page → Resize to… makes a copy of the page as a story, post, square or highlight cover, laid out again for that size: headline, product, button, logo and backgrounds move into the new safe area. The original page stays as it was.
+
+### National Day is an occasion pack
+type: feature
+Occasions now come as packs: National Day's templates, pieces and crayon text live together, and while it is in season (all of November) Home shows a small card that opens its templates. Saved designs open exactly as before. The next occasion (Ramadan, Eid, Winter camp) is "drop the files in and list them".
+
+### One look everywhere
+type: design
+Pills, panels, stickers, number circles, the logo block and the Instagram handle are now drawn by one shared piece each, in every tool and Create template, from the brand kit's sizes and corners. Nothing looks different today; a change in the brand kit now changes them all at once.
+
+### Previews to try: Team workflow
+type: feature
+Settings → Previews → Team workflow switches on, on this phone: a content calendar (week list on the phone, month view, drag to move on a computer, posting day on Home), Send for review with an owner's review queue on Home and comments pinned to a spot on the picture, an Approved collection, captions and hashtags saved with each design (Copy after Save), campaign sets (shared words for several designs, Save all as full-quality pictures, plan them on the calendar), and the Phrasebook, where the team suggests lines and the owner approves them for every word picker.
+
+### Previews to try: Claude Design import and Moving stories
+type: feature
+Settings → Previews → Import a Claude Design board opens an exported board (.html or .zip) in Create with every piece as its own layer. Moving stories saves a Create story as a 5–8 second video with entrance effects for each layer (pop, slide, fade, crayon wipe, peek-in) and an optional approved sound.
+
 ## 1.54.0 · 8 Nov 2026
 
 ### Update your saved design, or save it as new

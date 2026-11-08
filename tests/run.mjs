@@ -21,6 +21,14 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
+  /* mega round, Wave 2-3 (1.55.0) */
+  [/assets\/calendar\.|assets\/captions\.|assets\/campaigns\./,['calendar','captions','campaigns']],
+  [/assets\/review\./,['review']],[/assets\/rules\./,['rules','captions']],[/assets\/phrasebook\./,['phrasebook']],
+  [/assets\/components\.js|tools\/create-lib\.js/,['components','goldens']],
+  [/brands\/[\w-]+\/packs\/|tests\/kit\.mjs/,['packs','nd-templates','goldens','templates']],
+  [/tools\/create-import/,['create-import']],[/tools\/create-motion/,['create-motion']],[/tools\/create-resize/,['create-resize']],
+  [/tools\/create\.js|tools\/create-core\.js/,['create-import','create-motion','create-resize','rules','campaigns']],
+  [/assets\/cloud\.js|tests\/fakecloud\.js/,['calendar','review','captions','campaigns','phrasebook']],
   [/^lab\/(board|lab)\.css$/,['fixes54']],
   [/^assets\/fonts\/|^assets\/studio\.css$|^brands\/[\w-]+\/fonts\/|^brands\/[\w-]+\/brand\.js$|^lab\/board\.html$/,['fonts-local']],
   [/^assets\/who\./,['who']],
@@ -58,13 +66,13 @@ let names=process.argv.slice(2);
 try{ if(sh0('git rev-parse --is-shallow-repository').trim()==='true') console.log('NOTE: this clone is shallow; suites that read old file versions from git (photostory-styles, draw-edges) fail without history. Run: git fetch --unshallow'); }catch(_){}
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const why={};
-const SKIP=['run','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
+const SKIP=['run','_quiet','kit','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
 const TWINS=['home7','polish71','collage-grids'];   // the whole-file versions of home7-hub/-saved/-save and polish71-saved/-search/-bar: --all runs the parts instead
 if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
-const TOOL_SUITES=['full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','tokens'],
-      HUB_SUITES=['hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who'];
+const TOOL_SUITES=['rules','captions','components','full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','tokens'],
+      HUB_SUITES=['calendar','review','captions','campaigns','phrasebook','packs','hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
