@@ -490,7 +490,7 @@ async function applyTeam(id,mode){ idMark(recKey(),'team:'+id,true,RECENT_MAX); 
 async function addDocNodes(doc){ const ids=new Set(); (doc.nodes||[]).forEach(o=>BD.collectImgs(o,ids)); await Promise.all([...ids].map(BD.getImg));
   const nodes=(doc.nodes||[]).map(o=>BD.rebuild(o,true)); nodes.forEach(n=>BD.main.add(n)); BD.main.find('Image').forEach(n=>BD.applyFx(n)); await BD.fontsInDoc(); fixMissingPhotos(); return nodes.filter(isFrame); }
 function fixMissingPhotos(){ BD.main.find(n=>kind(n)==='image'&&!BD.IMGS.get(n.getAttr('imgId'))).forEach(n=>{ const g=CR.slotFromImage(n), p=n.getParent(), z=n.zIndex(); p.add(g); g.zIndex(z); n.destroy(); }); }
-function afterBuild(made){ BD.showPage(made&&made.length?made[0]:frames()[0]); touch(); BD.changed(); BD.emitDoc(); paintPages(); }
+function afterBuild(made){ rulesSeen(); BD.showPage(made&&made.length?made[0]:frames()[0]); touch(); BD.changed(); BD.emitDoc(); paintPages(); }
 function makePages(size){ const s=sizeOf(size), out=[]; for(let i=0;i<(s.pages||1);i++){ const f=BD.makeFrame(0,0,s.w,s.h,{label:s.pages?'Slide '+(frames().length+1):s.label,fill:'#FFFFFF'}); if(s.round) f.setAttr('round',1); out.push(f); } return out; }
 function startBlank(size){ clearAll(); afterBuild(makePages(size)); }
 function addBlank(size){ afterBuild(makePages(size)); }
@@ -578,11 +578,33 @@ async function openDesign(id,ready){
   finally{ BD.busy(null); } }
 
 /* ---------- Save sheet: to the phone (2× lossless PNG) and/or to the team ---------- */
+/* rules (mega 2.3): the brand check in the Save sheet. A soft check: it runs after the sheet is open, never gates Save, and a clean
+   design adds nothing (the host stays hidden). Engine + rule data: assets/rules.js and the brand kit's `rules` block. Adapter: Konva nodes -> items. */
+const rulesBase=new Set(), RK=['text','rect','image','asset','sticker','ellipse','poly','star','ring','path','icon'];
+function rulesSeen(){ frames().forEach(f=>f.find(n=>kind(n)==='text').forEach(n=>{ if(n.text()) rulesBase.add(n.text()); })); }   // words already on the page when it was opened or built from a template are not "new"
+let rulesBookP=null, rulesLoad=null;
+const rulesBook=()=>rulesBookP||(rulesBookP=Promise.race([(async()=>{ const C=await L.cloud(); if(!(await C.session())||!(await C.isMember())) return []; return ((await C.phrases(B.id))||[]).filter(x=>x.status==='approved').map(x=>x.line); })(),new Promise(r=>setTimeout(()=>r([]),1500))]).catch(()=>[]));
+function rulesDesigns(approved){ if(!B||!B.rules) return []; const many=frames().length>1;
+  return frames().map((f,pi)=>{ const s=fsize(f), fx=f.x(), fy=f.y(), grounds=[], bg=U.frameBg(f), ch=()=>BD.changed();
+    if(bg&&typeof bg.fill()==='string') grounds.push(bg.fill());
+    const items=f.find(n=>RK.includes(kind(n))&&n.isVisible()).map(n=>{ const r=U.wrect(n), k=kind(n), o={id:n.id(),x:r.x-fx,y:r.y-fy,w:r.width,h:r.height};
+      if(k==='text'){ const sc=Math.abs(n.getAbsoluteScale().x)/(n.getStage()?n.getStage().scaleX():1), c=n.fill();
+        return {...o,kind:'text',text:n.text(),size:n.fontSize()*sc,color:typeof c==='string'?c:null,api:{ move:dy=>{ U.moveByWorld(n,0,dy); ch(); }, scale:q=>{ n.fontSize(Math.round(n.fontSize()*q)); BD.prepText(n); ch(); }, setText:t=>{ n.text(t); BD.prepText(n); ch(); } }}; }
+      if(k==='image') return {...o,kind:'photo'};
+      if(k==='asset') return {...o,kind:'asset',assetId:String(n.getAttr('imgId')||'').replace(/^brand:/,'')};
+      const fl=n.fill&&n.fill(); if(typeof fl==='string'&&n.opacity()>=.9){ if(r.width>=s.w*.85&&r.height>=s.h*.85) grounds.push(fl); return {...o,kind:'shape',fill:fl}; }
+      return {...o,kind:'other'}; });
+    return {format:s.h>=1900?'story':s.h>=1300?'post':'square',w:s.w,h:s.h,rules:B.rules,brand:B,approved:[...approved,...rulesBase],grounds,items,page:many?pi+1:0}; }); }
+function rulesRun(){ const host=$('rulesHost'); if(!host) return;
+  if(!window.StudioRules){ rulesLoad=rulesLoad||new Promise(r=>{ const sc=document.createElement('script'); sc.src=new URL('../assets/rules.js',location.href).href; sc.onload=r; sc.onerror=r; document.head.appendChild(sc); }); rulesLoad.then(()=>{ if(window.StudioRules&&$('rulesHost')===host) rulesRun(); }); return; }
+  StudioRules.mount(host,{collect:async()=>rulesDesigns(await rulesBook()),scope:()=>st.design?st.design.id:'draft:'+(S.id||'new')}).run(); }
+
 function fname(n,total,at){ const d=at||new Date(), z=x=>String(x).padStart(2,'0'); return (B.id+'-create').replace(/[^a-z0-9-]+/gi,'-')+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+(total>1?'-'+n:'')+'.png'; }
 function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add a page first.'); return; }
   const many=fs.length>1; altMode=null;
   const body=openSheet('save','Save',`<div class="cr-save" style="display:flex;flex-direction:column;gap:14px">
     ${many?`<div><span class="lbl">Pages</span><div class="cr-pagepick" id="crPP">${fs.map((f,i)=>`<label><input type="checkbox" data-f="${f.id()}" checked><img alt="" data-pth="${f.id()}">${i+1}</label>`).join('')}</div></div>`:''}
+    <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
     <button type="button" class="btn" id="crGo">${many?'Save '+fs.length+' pages':'Save image'}</button>
     <p class="small">Full quality: ${fs.map(f=>fsize(f)).map(s=>s.w*2+'×'+s.h*2).filter((v,i,a)=>a.indexOf(v)===i).join(', ')} PNG, lossless.</p>
     <div class="cr-status" id="crSt" role="status" aria-live="polite"></div>
@@ -618,7 +640,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   if($('crAlt')) $('crAlt').onclick=()=>{ altMode=wantsNew()?'upd':'new'; $('crTeamOn').checked=true; syncT(); $('crGo').click(); };
   $('crTeamOnly').onclick=()=>runTeam(opts());
   $('crAsTpl').onclick=()=>runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTeamOn').checked?$('crTName').value:defaultName()}));
-  syncT(); }
+  syncT(); rulesRun(); }
 function line(t,ok,spin){ const el=$('crSt'); if(!el) return; el.classList.toggle('ok',!!ok); el.innerHTML=t?(spin?'<span class="spin" aria-hidden="true"></span>':'')+'<span>'+esc(t)+'</span>':''; }
 async function runTeam(o){ st.saving=true; line(o.kind==='template'?'Saving the team template…':'Saving to the team…',false,true);
   try{ const r=await teamSave(o); line(r.kind==='template'?'Saved as a team template: “'+r.name+'”':'Saved to the team as “'+r.name+'”',true); L.celebrate&&L.celebrate(); }
@@ -684,6 +706,7 @@ async function startRender(draft,design){ let ok=false;
     else startWith=()=>openTemplates({start:true}); }
   $('crName').value=S.name||''; if(st.design) document.title=st.design.name+' · '+TITLE+' · Studio';
   st.ready=true; paintPages(); paintCtx(); syncUndo(); syncSaved();
+  rulesSeen();
   if(startWith) await startWith();
   else if(tpl&&CR.templates().some(d=>d.id===tpl)) await openTemplates({focus:tpl});   // opened on a draft/design: show the picker on the asked-for template
   if(st.openSaveAfter) openSave();

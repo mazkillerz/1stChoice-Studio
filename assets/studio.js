@@ -556,7 +556,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     get tok(){ return tokens(tokFormat(W,H)); },   // tokens (mega w1): the brand's design tokens for this canvas, read-only
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
     /* fill the whole story with a ground colour and its Background finish (groundFx); kind 'plain' = just the colour */
-    ground(color,kind){ ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H); },
+    ground(color,kind){ (reg.grounds||(reg.grounds=[])).push(color); ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H); },
     photoAspect(i,opt){const p=S.photos[ix(i,opt)];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
       opt=opt||{}; const p=S.photos[ix(i,opt)], rot=(opt.rot||0)*Math.PI/180;   // rot: degrees, around the box centre
@@ -629,7 +629,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         if(shadow){ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=24;ctx.shadowOffsetY=2;}
         lines.forEach((t,i)=>{ const w=ms[i].width, lx=lineAl==='center'?(tw-w)/2:lineAl==='right'?tw-w:0; ctx.fillText(t,px+lx,py+b.a+i*adv); });
         setLS(0);
-      },{kind:'text',typ:true,shadow:!!o.shadow});
+      },{kind:'text',typ:true,shadow:!!o.shadow,txt:str,tsize:size,tcolor:l.color||o.color||C.ink,tbg:pill});   /* rules (mega): what the brand check reads */
       return l.hidden?0:th;
     },
     /* rounded button layer */
@@ -656,7 +656,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
         const textX=dir==='rtl'?0:pinW+gap, pinX=dir==='rtl'?tw+gap:0;
         ctx.fillText(str,textX,b.a);
         const mid=b.a-(b.a-b.d)/2; if(o.icon&&o.icon!=='pin'){ glyph(ctx,o.icon,pinX,mid-pinH/2,pinH,ctx.fillStyle); return; } ctx.translate(pinX-40*kk,mid-pinH/2-16*kk); ctx.scale(kk,kk); ctx.fill(PIN);
-      },{kind:'text'});
+      },{kind:'text',txt:str,tsize:fs,tcolor:L(id).color||o.color||C.muted,noun:true});   /* rules (mega): a place name is never asked for approval */
       return L(id).hidden?0:th;
     },
     /* an asset layer (brand file or shape) placed by its centre */
@@ -672,10 +672,10 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
           let src=a.tint&&c?tinted(base,c):base;
           ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
           ctx.drawImage(preview?src:sharp(src,x.w*k*scale,hh*k*scale),0,0,x.w,hh);
-        },{kind:'asset',noFlip:!!(a.tint||a.noFlip)});
+        },{kind:'asset',noFlip:!!(a.tint||a.noFlip),aid:x.ref});
       } else {
         const sw=x.w, sh=a.free&&x.h?x.h:x.w*a.h/a.w;
-        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||(a.emoji?null:C.ink),{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset'});
+        layer(x.id,a.label,{x:x.x-sw/2,y:x.y-sh/2,w:sw,h:sh},color=>drawShape(ctx,a,sw,sh,color||x.color||(a.emoji?null:C.ink),{r:x.r,stroke:x.stroke,sw:x.sw}),{kind:a.sticker?'sticker':'asset',aid:x.ref,shape:!a.sticker&&!a.emoji&&!a.line,fillc:L(x.id).color||x.color||C.ink});
       }
     },
     /* numbers in the brand's digits (Arabic brands write ٢٠٪, not 20%) */
@@ -901,6 +901,7 @@ async function tool(cfg){
         </div>
       </div>
     </div>
+    <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
     <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="saveAlt" hidden></button>
@@ -1238,7 +1239,7 @@ async function tool(cfg){
     let best=null; [a,a+len/2,a+len].forEach(p=>targets.forEach(t=>{ const d=t.v-p; if(Math.abs(d)<=tol&&(!best||Math.abs(d)<Math.abs(best.d))) best={d,v:t.v,kind:t.kind}; }));
     return best;
   }
-  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); scheduleThumb(); }
+  function render(){ if(raf) return; raf=requestAnimationFrame(()=>{raf=0;draw(vctx,true);}); scheduleCommit(); scheduleThumb(); if(window.StudioRules&&!isPhone()) rulesLater(900); }
 
   /* ---- the design "recipe": everything needed to rebuild this story (saving, drafts, undo) ---- */
   function recipe(){
@@ -2028,7 +2029,24 @@ async function tool(cfg){
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
-  function resetSaveSheet(){ imgDone=false; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
+  /* rules (mega 2.3): the brand check in the Save sheet. A soft check: it runs after the sheet is open, never gates or delays Save,
+     and a clean design adds nothing (the host stays hidden). Engine + rule data: assets/rules.js, the brand kit's `rules` block. */
+  let rulesM=null, rulesT=0, rulesBookP=null;
+  const rulesBook=()=>rulesBookP||(rulesBookP=Promise.race([checkTeam().then(m=>m&&cloud()).then(c=>c?c.phrases(B.id):[]).then(r=>(r||[]).filter(x=>x.status==='approved').map(x=>x.line)),new Promise(r=>setTimeout(()=>r([]),1500))]).catch(()=>[]));   // approved team phrasebook rows, asked once
+  function rulesDesign(approved){ if(!B.rules) return null;
+    const items=reg.filter(r=>!r.empty&&!r.hidden&&(r.photo!=null||r.id)).map(r=>{ const o={x:r.x,y:r.y,w:r.w,h:r.h,id:r.id};
+      if(r.photo!=null) return {...o,kind:'photo',id:'photo'+r.photo};
+      if(r.kind==='text'&&r.txt){ const id=r.id, raw=layerText(id), k=(S.layers[id]||{}).k||1;
+        return {...o,kind:'text',text:r.txt,size:r.tsize*k,color:r.tcolor,bg:r.tbg,noun:r.noun,api:{ move:dy=>{ LL(id).dy+=dy; render(); }, scale:f=>{ LL(id).k=(LL(id).k||1)*f; render(); },
+          setText:raw===r.txt?(t=>{ const x=extra(id); if(x&&!x.type) x.text=t; else setValue(id,t); if(S.sel===id) syncInspector(); render(); }):null }}; }
+      if(r.kind==='asset'||r.kind==='sticker') return {...o,kind:r.shape?'shape':'asset',assetId:r.aid,fill:r.shape?r.fillc:null};
+      return {...o,kind:'other'}; });
+    return {format:tokFormat(W,H),w:W,h:H,rules:B.rules,brand:B,approved,grounds:reg.grounds||[],items}; }
+  const rulesScope=()=>design?design.id:'draft:'+(draftId||'new');
+  function rulesRun(){ if(!window.StudioRules&&!rulesLoading) rulesLoad().then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
+  let rulesLoading=null; const rulesLoad=()=>rulesLoading=rulesLoading||loadScript(ROOT+'assets/rules.js').catch(()=>{});
+  const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(window.StudioRules&&StudioRules.enabled()) rulesRun(); },ms); };
+  function resetSaveSheet(){ rulesRun(); imgDone=false; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
     if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
   async function doSave(only){
     hideReady();
@@ -2227,7 +2245,7 @@ async function tool(cfg){
   if(q.get('render')==='1') Studio.renderer={ok:design?design.kind!=='template':!!draftId,missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
     async page(pg,max){ await assetsHD(); await saveFonts();   // the same waits as Save
       for(const K of [EXPORT_SCALE,1.5,1]){ if(max&&K>max) continue; const blob=await renderPage(pg,K,true); if(blob) return {blob,K}; } return null; }};   // the same steps down as Save
-  Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId};   // used by the automated tests
+  Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId,rulesDesign:a=>rulesDesign(a||[])};   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
 }
@@ -2566,6 +2584,7 @@ async function home(){
   /* who (mega): the name on saved designs (assets/who.js, loaded the first time it is needed) */
   const whoRead=()=>{ try{ return JSON.parse(localStorage.getItem('studio:who'))||{}; }catch(_){ return {}; } };
   const whoLib=async()=>{ if(!window.StudioWho) await loadScript(ROOT+'assets/who.js'); return window.StudioWho; };
+  const rulesOn=()=>{ try{ return localStorage.getItem('studio:rulesOff')!=='1'; }catch(_){ return true; } };   // rules (mega): Settings → Brand check
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
@@ -2574,6 +2593,7 @@ async function home(){
       <div class="act-list set-list">${acc}
       ${row('who',ICON.user,'Who’s using Studio',who.name?esc(who.name):'Not set yet · your name goes on saved designs','Change')}
       <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button>
+      <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings in Save: off-brand words, small text, covered zones</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
       ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
@@ -2587,6 +2607,7 @@ async function home(){
       if(a==='view'){ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); b.querySelector('.set-end').textContent=toolsView==='list'?'List':'Grid'; b.firstElementChild.outerHTML=toolsView==='list'?ICON.list:ICON.grid; return; }
       if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · your name goes on saved designs'; }); return; }
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
+      if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
       if(a==='previews'){ openPreviews(b); return; }
       d.close();
       if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab();

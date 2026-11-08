@@ -71,6 +71,37 @@ Studio.registerBrand({
     placeName:'اسم المكان',
     write:'اكتب هنا'
   },
+  /* rules (mega 2.3): the brand check that shows quiet warnings in the Save sheet (it never blocks a save).
+     You can edit every list here. Words are matched without harakat and with alef/yeh/teh-marbuta folded, so a word is caught
+     however it is written. "use" is the approved word offered as the one-tap Fix; leave it out when there is no safe swap. */
+  rules:{
+    /* words we don't use (the owner's own list from CLAUDE.md): { words:[...], use:'approved swap', why:'one plain line' } */
+    banned:[
+      {words:['خوي'],use:'ربيع',why:'A friend is “ربيع” / “ربيعي”.'},
+      {words:['خويك'],use:'ربيعك',why:'A friend is “ربيع” / “ربيعي”.'},
+      {words:['غرشة'],use:'علبة',why:'A can is “علبة” (since 20 Oct 2026).'},
+      {words:['غرشتك'],use:'علبتك',why:'Your can is “علبتك”.'},
+      {words:['غرش'],use:'علب',why:'Cans are “علب”.'},
+      {words:['وايد'],use:'واجد',why:'“Very” is “واجد”.'},
+      {words:['مو بعد'],why:'Not an approved phrase.'},
+      {words:['كاسك','كاسكم','تشيرز','cheers'],why:'No cheers or toasting, and cans never touch.'}
+    ],
+    /* the flavour whose name must never appear next to "25+" */
+    passion:{words:['باشن فروت','passion'],assets:['can-passion','can-passion-shadow','can-icon-passion','can-icon-passion-yellow'],never:['25+']},
+    /* the two looks, by the colour of the ground (names from colors above): never both on one design */
+    looks:{white:{name:'White',ground:'paper'},cream:{name:'Cream',ground:'cream'}},
+    /* smallest text for a phone, in pixels on the 1080-wide canvas, by format */
+    minText:{story:30,post:28,square:28,highlight:30},
+    /* text against the colour under it (WCAG ratio): large text (from "largeFrom" px) needs less */
+    contrast:{normal:4.5,large:3,largeFrom:60},
+    /* cans: always the HD cut-outs. Any asset with "can" in its id that is not listed here as HD or allowed gets a warning */
+    cans:{hd:['can-classic','can-classic-shadow','can-passion','can-passion-shadow','cans-pair','cans-pair-shadow'],
+      allow:['can-icon','can-icon-outline','can-icon-classic','can-icon-passion','can-icon-passion-yellow','can-stamp']},
+    /* new Arabic lines: the approved lines are every Arabic line in phrases above (+ the team phrasebook); extra approved lines go here */
+    phrases:{extra:[],
+      /* calendar and money words that are not "wording": a line made only of these (and numbers) is never flagged as new */
+      neutral:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر','السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','من','إلى','يوم','ريال']}
+  },
   /* Assets people can add to any story as movable layers (Add asset). Files live in this folder.
      Cans: always the HD cut-outs (transparent PNG). A file that isn't here yet shows as "Not added yet".
      No cat mascot stickers unless the owner asks for them.
