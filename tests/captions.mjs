@@ -122,16 +122,18 @@ await phone(false);
   await pg.evaluate(()=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); d.designs.seed1.caption='كابشن التصميم\nسطر ثاني'; d.designs.seed1.hashtags=['#cold','#brew']; localStorage.setItem('fakecloud',JSON.stringify(d)); });
   await pg.goto(BASE+'index.html#calendar'); await pg.waitForSelector('#calendarView .cal-item[data-id="c1"]',{timeout:8000}); await pg.waitForTimeout(600);
   const c1=await pg.$eval('.cal-item[data-id="c1"] .ci-cap',e=>e.textContent).catch(()=>''), c2=await pg.$eval('.cal-item[data-id="c2"] .ci-cap',e=>e.textContent).catch(()=>'');
-  ok('5 an item with no caption shows its design\'s caption',c1==='كابشن التصميم',c1);
+  ok('5 an item with no caption shows its design\'s caption',c1==='كابشن التصميم\nسطر ثاني',c1);
   ok('5 an item with its own caption keeps it',c2==='Mine',c2);
   await pg.tap('.cal-item[data-id="c1"] .ci-main'); await pg.waitForSelector('#calCap'); await pg.waitForTimeout(300);
   ok('5 the sheet\'s caption box is still empty (nothing is saved silently)',(await pg.inputValue('#calCap'))==='');
-  ok('5 "Use the design\'s caption" shows',await pg.isVisible('#calUseCap'));
-  await pg.tap('#calUseCap'); await pg.waitForTimeout(200);
-  ok('5 it fills the caption and hashtags',(await pg.inputValue('#calCap'))==='كابشن التصميم\nسطر ثاني'&&(await pg.inputValue('#calTags'))==='#cold #brew',[await pg.inputValue('#calCap'),await pg.inputValue('#calTags')]);
+  ok('5 no separate "Use the design\'s caption" button any more',!(await pg.$('#calUseCap')));
+  await pg.tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard[data-pick="seed1"]'); await pg.tap('dialog.cal-full .cal-pcard[data-pick="seed1"]'); await pg.waitForSelector('dialog.cal-full',{state:'detached'}); await pg.waitForTimeout(200);
+  const filled=await pg.inputValue('#calCap');
+  ok('5 picking the design fills an empty caption with its caption and hashtags',filled==='كابشن التصميم\nسطر ثاني\n\n#cold #brew',filled);
   await pg.tap('#calSave'); await pg.waitForSelector('dialog.cal-dlg',{state:'detached',timeout:6000}); await pg.waitForTimeout(500);
-  const it=((await fdb(pg)).calendar||[]).find(x=>x.id==='c1'); ok('5 saving stores the caption on the item',it&&it.caption==='كابشن التصميم\nسطر ثاني'&&it.hashtags.join(' ')==='#cold #brew',it&&it.caption);
-  await pg.tap('.cal-item[data-id="c2"] .ci-main'); await pg.waitForSelector('#calCap'); ok('5 the button also shows when a caption exists (to replace it)',await pg.isVisible('#calUseCap')); await ctx.close(); }
+  const it=((await fdb(pg)).calendar||[]).find(x=>x.id==='c1'); ok('5 saving stores the caption on the item (hashtags read from the text)',it&&it.caption===filled&&it.hashtags.join(' ')==='#cold #brew',it&&it.caption);
+  await pg.tap('.cal-item[data-id="c2"] .ci-main'); await pg.waitForSelector('#calCap'); await pg.tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard[data-pick="seed1"]'); await pg.tap('dialog.cal-full .cal-pcard[data-pick="seed1"]'); await pg.waitForTimeout(300);
+  ok('5 picking a design never replaces a caption that is already there',(await pg.inputValue('#calCap'))==='Mine',await pg.inputValue('#calCap')); await ctx.close(); }
 
 /* 6 dark phone + desktop */
 await phone(true);
