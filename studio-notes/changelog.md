@@ -13,6 +13,26 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.0.0 · 8 Nov 2026
+milestone: Studio for the whole team
+Three releases in one round: saved designs you can trust (Update, versions, covers), a brand check in every Save, resize, occasion packs, one shared look, and a full team workflow to try in Settings → Previews.
+
+### Remove background, on your phone
+type: feature
+Settings → Previews → Remove background adds a button to the Photo sheet and to photo layers in Create: it cuts a can or a person out of the photo right on your phone (nothing is uploaded), and Undo brings the photo back. The first time it downloads about 15 MB; after that it works offline.
+
+### Live stock in Restock
+type: feature
+Settings → Previews → Live stock in Restock adds Pick a sale point: choose a place and the flavours it has in stock are picked for you, from the 1st Choice locations site (refreshed once a day). It starts working as soon as that site allows Studio to read it.
+
+### Shorter menus
+type: design
+A saved design's menu no longer scrolls: with Team workflow on, Caption, Send for review, Comments and Campaign sit behind one Team row. Settings is grouped: you first (account, your name, owner), then the app.
+
+### Small fixes
+type: fix
+A calendar item saved quickly could lose who made it; it keeps the name now. Claude Design boards with drawings made in the page (SVG) import those drawings as pictures too.
+
 ## 1.55.0 · 8 Nov 2026
 
 ### Brand check in Save
