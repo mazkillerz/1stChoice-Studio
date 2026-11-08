@@ -1,0 +1,401 @@
+{
+ "pins": [
+  {
+   "id": "2b22bc19-bb25-4689-a53a-22588eeff7de",
+   "label": "Hamdaan Shopping Center",
+   "lastStockUpdatedAt": "2026-11-03T15:16:40.606999+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 20
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 10
+    }
+   ]
+  },
+  {
+   "id": "302049d5-5799-4b24-87e1-e94a6979118e",
+   "label": "UTAS Ibra",
+   "lastStockUpdatedAt": "2026-10-24T07:10:42.116734+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 15
+    }
+   ]
+  },
+  {
+   "id": "3543b91a-cc49-4d34-9685-11cf704043c7",
+   "label": "Muscat university Cantin",
+   "lastStockUpdatedAt": "2026-10-28T13:28:20.28697+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 16
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 30
+    }
+   ]
+  },
+  {
+   "id": "38fa3d07-f30f-4cd5-a5f2-a7d8475d3d38",
+   "label": "Mabed Mart | Al Seeb",
+   "lastStockUpdatedAt": "2026-11-03T15:16:38.680569+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 10
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 4
+    }
+   ]
+  },
+  {
+   "id": "3a08addc-5038-4dc8-a2e4-8da9e61ec399",
+   "label": "Rajab Hypermarket",
+   "lastStockUpdatedAt": "2026-11-04T17:13:02.372745+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 12
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 8
+    }
+   ]
+  },
+  {
+   "id": "45cbd153-60c7-4b8b-be54-9b920a601dcd",
+   "label": "Al Barekah Bakery | Farshid & Pezhman Investment | Al Ma'bela Branch",
+   "lastStockUpdatedAt": "2026-11-05T19:45:01.817649+00:00",
+   "stockLines": [
+    {
+     "productName": "Water",
+     "quantityLeft": 1
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 6
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 8
+    }
+   ]
+  },
+  {
+   "id": "6610ef4d-e66a-4976-be5f-863bbd0fc2ee",
+   "label": "Lyon hypermarket",
+   "lastStockUpdatedAt": "2026-11-05T19:54:03.095236+00:00",
+   "stockLines": [
+    {
+     "productName": "Water",
+     "quantityLeft": 1
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 4
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 5
+    }
+   ]
+  },
+  {
+   "id": "7181ce75-239d-4100-9ee3-9adf172497fd",
+   "label": "Al Imtiaz Shopping Center",
+   "lastStockUpdatedAt": "2026-11-05T16:12:41.042751+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 24
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 12
+    }
+   ]
+  },
+  {
+   "id": "7e845755-484c-493f-b7c1-37760fc6307a",
+   "label": "Bagdad Market | Bosher Al Sha'bia",
+   "lastStockUpdatedAt": "2026-11-05T16:12:36.728333+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 20
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 10
+    }
+   ]
+  },
+  {
+   "id": "858a6c70-1a84-4f47-b8f1-a2e9a759a8ff",
+   "label": "Noora Shopping Center | Al Hail Branch",
+   "lastStockUpdatedAt": "2026-11-04T18:10:55.884713+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 6
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 2
+    }
+   ]
+  },
+  {
+   "id": "87f86281-13b8-41d6-9697-d43952d3e6ed",
+   "label": "Nazkhaton bakery",
+   "lastStockUpdatedAt": "2026-10-06T15:03:57.745757+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 2
+    }
+   ]
+  },
+  {
+   "id": "9a3fe79e-1a56-4c50-9e8b-70d73311d9a0",
+   "label": "الكلية المصرفية | بوشر",
+   "lastStockUpdatedAt": "2026-10-27T13:16:43.222928+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 15
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 12
+    }
+   ]
+  },
+  {
+   "id": "a12a69c8-c016-46b4-bd2a-3cb2d1b86dc0",
+   "label": "Pioneers Shopping Center 24 Hours | Al Rumais",
+   "lastStockUpdatedAt": "2026-10-15T13:49:53.906119+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 8
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 6
+    }
+   ]
+  },
+  {
+   "id": "a4894979-5c5e-4903-b532-cbe8c36b9885",
+   "label": "Ibn Al Akhzami shop | UTAS Muscat",
+   "lastStockUpdatedAt": "2026-11-02T15:38:13.378649+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 2
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 8
+    }
+   ]
+  },
+  {
+   "id": "a6023247-43da-4e3d-bc32-a05b888bd733",
+   "label": "Wave Basket market",
+   "lastStockUpdatedAt": "2026-10-19T16:13:28.552598+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 10
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 6
+    }
+   ]
+  },
+  {
+   "id": "a6e43b58-1d47-4fd4-bc8a-4cdd3cff5627",
+   "label": "مخبز وماركت الرحال | الخوض شارع مزون",
+   "lastStockUpdatedAt": "2026-10-26T14:04:36.416435+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 8
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 25
+    }
+   ]
+  },
+  {
+   "id": "a8d84656-4da3-4a91-a995-554d6ca55ab5",
+   "label": "Iqbal Hossein grocery",
+   "lastStockUpdatedAt": "2026-11-05T16:12:38.900941+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 4
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 10
+    }
+   ]
+  },
+  {
+   "id": "b43d1443-f97a-4dce-8461-96f735f4d25f",
+   "label": "مخبز وماركت الرحال | فرع المعبيلة",
+   "lastStockUpdatedAt": "2026-11-04T18:08:05.31404+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 4
+    }
+   ]
+  },
+  {
+   "id": "bc5b9c2a-c159-4993-8524-8f370bfa2098",
+   "label": "Al Qout Shopping Centre | Zyad Al Rahbi",
+   "lastStockUpdatedAt": "2026-10-27T14:57:49.412585+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 1
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 5
+    }
+   ]
+  },
+  {
+   "id": "c240a8ee-070d-408d-ab54-a176300d8534",
+   "label": "Al barekah Bakery | Al Nasser Branch",
+   "lastStockUpdatedAt": "2026-11-03T15:16:42.429656+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 15
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 10
+    }
+   ]
+  },
+  {
+   "id": "c3edba14-59b0-4e98-82fd-0c32b87400d3",
+   "label": "جامعة الشرقية | دكان",
+   "lastStockUpdatedAt": "2026-10-31T12:18:14.920433+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 6
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 12
+    }
+   ]
+  },
+  {
+   "id": "e1f7f03e-a0a1-4cbe-a358-0cab6ee567af",
+   "label": "Sarab grocery",
+   "lastStockUpdatedAt": "2026-11-06T06:48:27.725264+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 0
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 0
+    }
+   ]
+  },
+  {
+   "id": "e34d5fb3-ad30-4512-9c72-cc1f8c4cfa23",
+   "label": "Al BSTA Supermarket",
+   "lastStockUpdatedAt": "2026-11-05T17:18:00.08233+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 10
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 6
+    }
+   ]
+  },
+  {
+   "id": "ed753076-e973-411e-9fc2-33b991826672",
+   "label": "Olive Markets & Bakerie | Al Hail Janubiyah",
+   "lastStockUpdatedAt": "2026-11-05T17:17:57.993729+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 20
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 10
+    }
+   ]
+  },
+  {
+   "id": "f51cc29a-7b5e-4736-b935-f457658dbf2e",
+   "label": "Midrar Shopping",
+   "lastStockUpdatedAt": "2026-10-28T19:08:33.819506+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 8
+    },
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 20
+    }
+   ]
+  },
+  {
+   "id": "fbfb07a8-7d3a-491f-8424-75a39d99fa2c",
+   "label": "Top up shop",
+   "lastStockUpdatedAt": "2026-11-06T06:47:46.484818+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 15
+    },
+    {
+     "productName": "Cold brew - Classic - Plastic Can",
+     "quantityLeft": 3
+    }
+   ]
+  },
+  {
+   "id": "fd34b5f0-3706-445d-8c18-f2ecfaf915ea",
+   "label": "Gulf Collage Cantin",
+   "lastStockUpdatedAt": "2026-10-27T13:10:33.708606+00:00",
+   "stockLines": [
+    {
+     "productName": "Cold brew - Passion Flavored - Plastic Can",
+     "quantityLeft": 16
+    }
+   ]
+  }
+ ]
+}
