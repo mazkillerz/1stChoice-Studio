@@ -8,7 +8,8 @@ const ROOT=new URL('../',import.meta.url).pathname;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const OUT=fs.mkdtempSync('/tmp/ndtest-');
 const pngSize=f=>{ const x=fs.readFileSync(f); return [x.readUInt32BE(16),x.readUInt32BE(20)]; };
-let BRAND=null; new Function('Studio',fs.readFileSync(ROOT+'brands/1stchoice/brand.js','utf8'))({registerBrand:b=>{ BRAND=b; }});
+import { loadKit } from './kit.mjs';
+const BRAND=loadKit(ROOT,'1stchoice');   // brand.js + its packs, merged the way the engine does
 const defs=BRAND.create.templates.filter(d=>d.layout==='doc');
 const SZ={story:[1080,1920],post:[1080,1350],square:[1080,1080]};
 const AR=/[؀-ۿ]/;

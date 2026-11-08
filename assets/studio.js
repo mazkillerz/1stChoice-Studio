@@ -301,7 +301,7 @@ function emojiStickers(){
     .then(()=>{ if(window.addEmojiStickers) window.addEmojiStickers(); return hasEmojiStickers(); },()=>{ EMOJI_P=null; return false; });
   return EMOJI_P;
 }
-function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||null; }
+function assetDef(ref){ return SHAPES.find(x=>x.id===ref)||(String(ref).startsWith('sticker:')&&stickerList().find(x=>x.id===ref))||brandAssets().find(x=>x.id===ref)||(BRAND&&BRAND.aliases&&BRAND.aliases[ref]&&brandAssets().find(x=>x.id===BRAND.aliases[ref]))||null; }
 function assetUrl(a){ return BRAND.base+a.file; }
 function assetPrevUrl(a){ return BRAND.base+(a.prev||a.file); }   // light copy for tiles and previews (falls back to the HD file)
 function loadAsset(ref){
@@ -408,10 +408,42 @@ async function canvasBlob(c,type,q){ return await new Promise(r=>c.toBlob(r,type
 
 /* ---------- brands ---------- */
 function registerBrand(b){ BRANDS[b.id]=b; }
+/* occasion packs (w2-packs, mega): brands/<id>/packs/<pack>/pack.js calls Studio.registerPack({...}); the kit lists them (packs:['nd26']).
+   useBrand() loads them and merges assets, textFills, create templates, template chips, palette add-ons and reels into the brand, so every
+   consumer reads them exactly as if they were written in brand.js. aliases = {oldAssetId:newAssetId} keeps saved designs working after a rename. */
+const PACKS={};
+function registerPack(p){ if(p&&p.id) PACKS[p.id]=p; }
+function packLocalYmd(now){ const d=now||new Date(), z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
+/* the season a pack is in today ("2026" = it started in 2026), or '' when it is out of season. dates: {from:'MM-DD',to:'MM-DD'} (may wrap the new year)
+   or a list of full ranges [{from:'2027-02-10',to:'2027-03-12'}] for occasions that move every year */
+function packSeason(p,now){
+  const ymd=packLocalYmd(now), y=+ymd.slice(0,4), list=[].concat((p&&p.dates)||[]);
+  for(const d of list){ if(!d||!d.from||!d.to) continue;
+    if(String(d.from).length>5) { if(ymd>=d.from&&ymd<=d.to) return String(d.from).slice(0,4); continue; }
+    const f=y+'-'+d.from, t=y+'-'+d.to;
+    if(f<=t){ if(ymd>=f&&ymd<=t) return String(y); }
+    else { if(ymd>=f) return String(y); if(ymd<=t) return String(y-1); } }
+  return '';
+}
+async function loadPacks(B){
+  if(B._packsDone) return; B._packsDone=true; B.packList=[]; B.aliases=B.aliases||{};
+  for(const id of (B.packs||[])){
+    try{ if(!PACKS[id]) await loadScript(ROOT+'brands/'+B.id+'/packs/'+id+'/pack.js'); }catch(_){ continue; }
+    const p=PACKS[id]; if(!p) continue; B.packList.push(p);
+    B.assets=(B.assets||[]).concat(p.assets||[]);
+    B.textFills=(B.textFills||[]).concat(p.textFills||[]);
+    if(p.templates&&p.templates.length){ B.create=B.create||{}; B.create.templates=(B.create.templates||[]).concat(p.templates); }
+    if(p.templateCat&&p.templateCat.id) B.templateCats=(B.templateCats||[]).concat([p.templateCat]);
+    if(p.palette&&p.palette.length){ const have=new Set((B.palette||[]).map(c=>c.id)); B.palette=(B.palette||[]).concat(p.palette.filter(c=>!have.has(c.id))); }
+    if(p.reels&&p.reels.length) B.reels=(B.reels||[]).concat(p.reels);
+    Object.assign(B.aliases,p.aliases||{});
+  }
+}
 function brandId(){ const list=Studio.brandList||[]; const saved=store('studio:brand'); return list.includes(saved)?saved:(list[0]||null); }
 async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
+  await loadPacks(BRAND);   // occasion packs (w2-packs): merged before any tool reads assets or templates
   /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
   if(BRAND.fonts&&(BRAND.fonts.css||BRAND.fonts.google)&&!document.querySelector('link[data-brand-fonts]')){
     fontLink(BRAND.fonts.css?BRAND.base+BRAND.fonts.css:'https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
@@ -2514,6 +2546,17 @@ async function home(){
       teamNote:()=>member?{text:'No team templates yet. Save a design with “Keep the photos” off, and it shows here for everyone.'}
                         :{text:'Templates your team saves show here.',action:{label:'Sign in',run:()=>$('acct').click()}}});
     tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
+  /* occasion banner (w2-packs, mega): a quiet card under the search while a pack is in season; dismissed per pack and season on this device */
+  (function(){
+    const hero=document.querySelector('#homeView .hero'); if(!hero||!(B.packList||[]).length) return;
+    const p=B.packList.find(x=>x.banner&&x.banner.title&&packSeason(x)&&!store('studio:packBanner:'+B.id+':'+x.id+':'+packSeason(x))); if(!p) return;
+    const key='studio:packBanner:'+B.id+':'+p.id+':'+packSeason(p), cat=(p.templateCat&&p.templateCat.id)||'all';
+    const el=document.createElement('section'); el.className='pack-banner'; el.id='packBanner'; el.setAttribute('aria-label',p.banner.title);
+    el.innerHTML=`<div class="pb-txt"><b>${esc(p.banner.title)}</b>${p.banner.sub?`<span>${esc(p.banner.sub)}</span>`:''}</div><button type="button" class="mini pb-go">Open templates</button><button type="button" class="pb-x" aria-label="Dismiss ${esc(p.banner.title)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    hero.after(el);
+    el.querySelector('.pb-go').onclick=()=>{ haptic('tick'); openView('templates'); if(tplApi) tplApi.show(cat); };
+    el.querySelector('.pb-x').onclick=()=>{ haptic('tick'); store(key,1); el.remove(); };
+  })();
   addEventListener('resize',()=>setTab(curView()));
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>setTab(curView()));
   if(hashView()!=='home') showView(hashView()); else requestAnimationFrame(()=>setTab('home'));
@@ -3138,5 +3181,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={version:VERSION,tool,home,registerBrand,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={version:VERSION,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

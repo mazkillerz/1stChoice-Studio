@@ -28,7 +28,8 @@ const MAX_BYTES=45000, W=320, CONCURRENCY=3;
 const PREVIEW_PAGE={carousel:1};   // tool → the slide (0 = first) its thumbnail shows
 
 /* the brand kit, read without a browser */
-let BRAND=null; new Function('Studio',fs.readFileSync(path.join(ROOT,'brands',BRAND_ID,'brand.js'),'utf8'))({registerBrand:b=>{ BRAND=b; }});
+import { loadKit } from './kit.mjs';
+const BRAND=loadKit(ROOT,BRAND_ID);   // brand.js + its packs
 if(!BRAND) throw new Error('brands/'+BRAND_ID+'/brand.js did not register a brand');
 const fonts=[BRAND.fonts&&BRAND.fonts.display,BRAND.fonts&&BRAND.fonts.body].filter(Boolean);
 

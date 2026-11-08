@@ -9,7 +9,8 @@ import path from 'path';
 const { chromium } = await import('playwright');
 const BASE=process.env.BASE||'http://127.0.0.1:8080/', BRAND_ID=process.env.BRAND||'1stchoice';
 const ROOT=new URL('../',import.meta.url).pathname, OUT=path.join(ROOT,'assets/thumbs',BRAND_ID,'tpl');
-let BRAND=null; new Function('Studio',fs.readFileSync(path.join(ROOT,'brands',BRAND_ID,'brand.js'),'utf8'))({registerBrand:b=>{ BRAND=b; }});
+import { loadKit } from './kit.mjs';
+const BRAND=loadKit(ROOT,BRAND_ID);   // brand.js + its packs
 const want=process.argv.slice(2), reels=((BRAND&&BRAND.reels)||[]).map(r=>r.id).filter(id=>!want.length||want.includes(id));
 const b=await chromium.launch(), p=await (await b.newContext({serviceWorkers:'block'})).newPage(); let bad=0;
 await p.goto(BASE+'tests/fixtures/reels/scene.html');
