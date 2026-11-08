@@ -55,6 +55,8 @@ Studio.registerBrand({
   /* the product pictures tools draw without a photo (Restock "Cans"): one can per flavour above, and both together
      (the pair cut-out keeps a gap between the cans: cans never touch) */
   products:{both:'cans-pair-shadow'},
+  /* live stock (w3-stock, behind the "stock" preview): the owner's public read-only stock feed; product names are matched to the flavours above */
+  stock:{feed:'https://location.1stchoice.cloud/api/public/locations',products:[{match:'classic',flavour:'classic'},{match:'passion',flavour:'passion'}],ignore:['water']},
   /* which approved line a tool starts with (tools fall back to the first line of each list) */
   defaults:{offer:{head:'ما يتفوت',pill:'اطلب الحين'},restock:{small:'الكمية محدودة'}},
   /* Wording from the owner's Omani phrasebook. Only approved lines go here. */

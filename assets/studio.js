@@ -88,7 +88,8 @@ const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Calendar, reviews and campaigns'},
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
-  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'}
+  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
+  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'}   /* w3-stock */
 ];
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -1111,6 +1112,13 @@ async function tool(cfg){
     wirePalettes(box,(key,v)=>{ if(!key.startsWith('f:')) return; S.values[key.slice(2)]=v||null; syncUI(); remember(); render(); });
     box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; if(t.dataset.don) S.values[t.dataset.don].on=t.checked; syncUI(); remember(); render(); });
   });
+  /* live stock (w3-stock): with the preview on, a tool that asks for it (cfg.stock={field}) gets "Pick a sale point" above its words */
+  if(flags.on('stock')&&cfg.stock&&B.stock){ const wb=document.querySelector('[data-fields="words"]'); if(wb){
+    const row=document.createElement('div'); row.className='field stock-field'; row.innerHTML='<button type="button" class="mini stock-pick" id="stockPick">Pick a sale point</button><span class="small stock-note" id="stockNote" role="status" aria-live="polite"></span>'; wb.before(row);
+    $('stockPick').onclick=async()=>{ try{ if(!window.StudioStock) await loadScript(ROOT+'assets/stock.js'); }catch(_){ $('stockNote').textContent='You are offline. Fill the stock by hand.'; return; }
+      StudioStock.pick(B,{dialog,norm:normText,onPick:p=>{ const f=fields.find(x=>x.id===cfg.stock.field); if(f&&f.type==='multi'){ S.values[f.id].picks=f.options.filter(o=>(p.stock[o.v]||0)>0).map(o=>o.v); if(S.layers[f.id]) S.layers[f.id].hidden=false; }
+        $('stockPick').innerHTML='<bdi dir="auto"></bdi>'; $('stockPick').firstChild.textContent=p.label; $('stockNote').textContent=(B.flavours||[]).filter(x=>x.id in p.stock).map(x=>x.name+' '+p.stock[x.id]).join(' · ');
+        syncUI(); remember(); render(); }}); }; } }
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
