@@ -86,8 +86,10 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
    Code asks Studio.flags.on(id). A feature the owner approves leaves FLAGS and stops asking. */
 const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Calendar, reviews and campaigns'},
-  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'}
+  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
+  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'}
 ];
+const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
   list:()=>FLAGS.map(f=>({...f,on:flags.on(f.id)})),
   on(id){ try{ return localStorage.getItem('studio:flag:'+id)==='1'; }catch(_){ return false; } },
@@ -926,6 +928,7 @@ async function tool(cfg){
     html+=`</div>`;
   }
   html+=`<div class="slots" id="slots"></div><div class="swap-row" id="swapRow" hidden><button type="button" class="mini" id="swapBtn" aria-pressed="false">${ICON.swap}<span>Swap two</span></button><button type="button" class="mini" id="shuffleBtn">${ICON.shuffle}<span>Shuffle</span></button></div><div class="small">Drag a photo in the preview to move it; pinch or use Zoom to resize.</div>
+  ${flags.on('cutout')?`<div class="photo-flip cut-row" id="cutRow" hidden><button type="button" class="mini" id="photoCut">${CUT_ICON}<span>Remove background</span></button><span class="small cut-note" id="cutNote" role="status" aria-live="polite"></span></div>`:''}
   <div class="field" id="zoomRow" hidden><label class="lbl" for="zoom">Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"><button type="button" class="link" id="fitBtn">Reset photo</button></div>
   <div class="photo-flip" id="flipRow" hidden><button type="button" class="mini" id="photoFlip" aria-pressed="false">${ICON.flip}<span>Flip</span></button></div>
   ${cfg.noLook?'':`<div class="field look-row" id="lookRow" hidden><span class="lbl" id="lookLbl">Photo look</span><div class="looks" id="looks" role="group" aria-labelledby="lookLbl">${PHOTO_LOOKS.map(l=>`<button type="button" class="look" data-look="${l.id}" aria-pressed="false"><canvas width="112" height="112" aria-hidden="true"></canvas><span>${esc(l.label)}</span></button>`).join('')}</div>
@@ -1241,7 +1244,21 @@ async function tool(cfg){
   /* whole photos (contain) can't zoom, so the slider hides for them */
   function syncZoom(){ const p=S.photos[S.active], real=p&&p.img&&!p.sample, box=reg.find(r=>r.photo===S.active); $('zoomRow').hidden=!real||cfg.noZoom||!!(box&&box.mode==='contain'); if(p) $('zoom').value=p.zoom; document.querySelectorAll('.slot').forEach(l=>l.classList.toggle('active',+l.dataset.slot===S.active&&slotCount()>1)); syncFlip(); syncLook(); }
   /* Flip (1.33.0): mirrors the chosen photo left to right in its box; p.flip is kept in the recipe only when on */
-  function syncFlip(){ const p=S.photos[S.active], real=!!(p&&p.img&&!p.sample&&photoUsed(S.active)); $('flipRow').hidden=!real; $('photoFlip').setAttribute('aria-pressed',String(real&&!!p.flip)); $('looks')?.classList.toggle('flip',real&&!!p.flip); }
+  function syncFlip(){ const p=S.photos[S.active], real=!!(p&&p.img&&!p.sample&&photoUsed(S.active)); if($('cutRow')) syncCut(real); $('flipRow').hidden=!real; $('photoFlip').setAttribute('aria-pressed',String(real&&!!p.flip)); $('looks')?.classList.toggle('flip',real&&!!p.flip); }
+  /* remove background (cutout, mega): behind the 'cutout' preview flag; the model runs in a Web Worker (assets/cutout.js) */
+  const cutNote=t=>{ const n=$('cutNote'); if(n) n.textContent=t||''; };
+  function syncCut(real){ const row=$('cutRow'); row.hidden=!real; if(!real) return; const why=window.StudioCutout?StudioCutout.supported():'', b=$('photoCut'), p=S.photos[S.active];
+    b.disabled=!!why||!!(window.StudioCutout&&StudioCutout.isBusy()); b.hidden=false; if(!why&&!(window.StudioCutout&&StudioCutout.isBusy())) cutNote(p&&p.cutout?'Background removed. Undo brings it back.':(window.StudioCutout?StudioCutout.firstNote():'First time only: this downloads about 15 MB, then it works offline.')); else if(why) cutNote(why); }
+  if($('photoCut')) $('photoCut').addEventListener('click',async()=>{ const i=S.active, p=S.photos[i]; if(!p||!p.img||p.sample) return;
+    try{ if(!window.StudioCutout) await loadScript(ROOT+'assets/cutout.js'); }catch(_){ cutNote('Could not load it. Check the connection.'); return; }
+    const why=StudioCutout.supported(); if(why){ cutNote(why); return; }
+    $('photoCut').disabled=true; haptic('tick');
+    try{ const c=await StudioCutout.run(p.img,{onProgress:t=>{ cutNote(t); }}); if(!c||S.photos[i]!==p) return;
+      const tc=document.createElement('canvas'), tk=240/Math.max(c.width,c.height); tc.width=Math.round(c.width*tk); tc.height=Math.round(c.height*tk); tc.getContext('2d').drawImage(c,0,0,tc.width,tc.height);
+      S.photos[i]={...p,img:c,thumb:tc.toDataURL('image/png'),file:null,key:'p'+Date.now().toString(36)+i,cutout:true};
+      slotsUI(); syncUI(); render(); cutNote('Background removed. Undo brings it back.'); toast('Background removed. Tap undo to bring it back.');
+    }catch(err){ cutNote('That did not work. Try another photo.'); }
+    finally{ if($('photoCut')) syncFlip(); } });
   $('photoFlip').addEventListener('click',()=>{ const p=S.photos[S.active]; if(!p||!p.img||p.sample) return; if(p.flip) delete p.flip; else p.flip=true; haptic('tick'); slotsUI(); syncFlip(); render(); });
   /* the photo look row: shown for a real photo; its mood buttons are drawn from that photo with the same blend layers */
   const lightTxt=v=>{ v=Math.round((+v||0)*100); return v>0?'+'+v:String(v); };
@@ -1397,7 +1414,7 @@ async function tool(cfg){
   async function photoBlob(p){
     if(p.file&&!(p.img instanceof HTMLCanvasElement)&&/^image\/(jpeg|png|webp)$/.test(p.file.type)) return p.file;
     const c=document.createElement('canvas'); c.width=p.img.width; c.height=p.img.height; c.getContext('2d').drawImage(p.img,0,0);
-    const b=await canvasBlob(c,'image/jpeg',.95); c.width=c.height=0; return b;
+    const b=p.cutout?await canvasBlob(c,'image/png'):await canvasBlob(c,'image/jpeg',.95); c.width=c.height=0; return b;   // a cut-out keeps its see-through ground (PNG)
   }
 
   /* ---- saved designs (shared with the team) ---- */

@@ -105,7 +105,7 @@ function paintCtx(){ const el=$('crCtx'), list=sel(); let h='';
       if(colorTargets(n).length) h+=cx('color',I.color,'Colour');
       if(CR.canSwap(n)) h+=cx('swap',I.swap,'Swap');
       if(textsIn(n).length) h+=cx('font',I.font,'Font');
-      if(isPhoto(n)) h+=cx('crop',I.crop,'Crop')+cx('replace',I.swap,'Replace');
+      if(isPhoto(n)) h+=cx('crop',I.crop,'Crop')+cx('replace',I.swap,'Replace')+(cutOn()?cx('cutout',I.photo,'Cut out',{aria:'Remove background'}):'');
       h+=cx('size',I.size,'Size')+cx('arrange',I.arrange,'Arrange')+cx('dup',I.dup,'Duplicate')+cx('del',I.trash,'Delete',{cls:'danger'})+cx('more',I.more,'More'); } }
   else { h=cx('done',I.check,'',{cls:'done',aria:'Done (deselect)'})+`<span class="cx-info">${list.length} selected</span>`;
     if(S.multi) h+=cx('multi',I.several,'Done selecting',{pressed:true});
@@ -115,7 +115,7 @@ function paintCtx(){ const el=$('crCtx'), list=sel(); let h='';
 $('crCtx').addEventListener('click',e=>{ const b=e.target.closest('[data-x]'); if(!b) return; const a=b.dataset.x, n=sel()[0];
   const run={done:()=>{ BD.setMulti(false); BD.select([]); },multi:()=>{ BD.setMulti(!S.multi); paintCtx(); if(S.multi) toast('Tap things to add or remove them.'); },all:()=>BD.selectAll(),
     page:()=>openPage(),bg:()=>openPageBg(),unlock:()=>BD.act.lock(false),slot:()=>pickInto(n),words:()=>openWords(),color:()=>openColor(),font:()=>openFont(),
-    crop:()=>startCrop(n),swap:()=>openSwap(),replace:()=>{ st.replaceTarget=n; $('crReplace').click(); },size:()=>openSize(),arrange:()=>openArrange(),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),
+    crop:()=>startCrop(n),cutout:()=>cutRun(n),swap:()=>openSwap(),replace:()=>{ st.replaceTarget=n; $('crReplace').click(); },size:()=>openSize(),arrange:()=>openArrange(),dup:()=>BD.act.duplicate(),del:()=>BD.act.del(),
     group:()=>BD.act.group(),more:()=>moreMenu(b)};
   if(run[a]) run[a](); });
 function moreMenu(anchor){ const list=sel(), n=list[0]; const e=[];
@@ -740,4 +740,26 @@ if(impOn()){ const has=e=>[...(e.dataTransfer&&e.dataTransfer.items||[])].some(i
   if(st.openSaveAfter) openSave();
   window.CRUI={openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
 })();
+/* remove background (cutout mega 3.5): behind the `cutout` preview flag. A new image layer above the photo holds the cut-out
+   (same place, size and turn); the photo is hidden, not deleted, so Undo or the eye in Layers brings it back. */
+function cutOn(){ try{ return Studio.flags.on('cutout'); }catch(_){ return false; } }
+let cutBusy=false;
+async function cutRun(n){
+  if(cutBusy||!n||!n.getStage()) return;
+  const im=BD.IMGS.get(n.getAttr('imgId')); if(!im){ toast('Could not open that photo.'); return; }
+  cutBusy=true;
+  try{
+    if(!window.StudioCutout) await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='../assets/cutout.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    const why=StudioCutout.supported(); if(why){ toast(why); return; }
+    BD.busy('Removing the background…');
+    const c=await StudioCutout.run(im.el,{onProgress:t=>BD.busy(t)}); if(!c||!n.getStage()) return;
+    const blob=await L.canvasBlob(c,'image/png'); c.width=c.height=0;
+    const id=await BD.addPhotoFile(new File([blob],'cutout.png',{type:'image/png'})), nim=BD.IMGS.get(id);
+    const par=n.getParent(), m=BD.rebuild(BD.toObj(n),true); par.add(m); m.zIndex(Math.min(par.children.length-1,n.zIndex()+1));
+    m.setAttrs({imgId:id,label:(n.getAttr('label')||'Photo')+' cut-out'}); m.image(nim.el); BD.applyCrop(m);
+    n.visible(false); BD.select([m]); BD.main.batchDraw(); BD.changed();
+    toast('Background removed. The photo is hidden under it; Undo brings it back.',4200);
+  }catch(err){ toast('That did not work. Try another photo.'); }
+  finally{ cutBusy=false; BD.busy(null); }
+}
 })();
