@@ -1,0 +1,23 @@
+/* Phrasebook sheet (assets/phrasebook.js), behind the "team" preview. Interface tokens only. */
+.pb-dlg .pb{max-width:560px}
+.pb-note{margin:0 0 var(--sp-3)}
+.pb-sec{margin:0 0 var(--sp-4)}
+.pb-sec h4{margin:0 0 var(--sp-2);font:600 var(--fs-s) var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pb-list{display:flex;flex-direction:column;gap:var(--sp-1)}
+.pb-line{display:flex;align-items:center;gap:var(--sp-2);width:100%;min-height:48px;padding:6px var(--sp-3);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:var(--r-m);font:500 var(--fs-m) var(--sans);cursor:pointer;text-align:start}
+.pb-line:active{background:var(--chip)}
+.pb-t{flex:1;min-width:0;overflow-wrap:anywhere}
+.pb-tag{font:500 var(--fs-xs) var(--sans);font-style:normal;color:var(--muted);background:var(--chip);padding:2px 8px;border-radius:var(--r-pill);flex:none}
+.pb-cp{font:600 var(--fs-xs) var(--sans);color:var(--accent);flex:none;min-width:44px;text-align:end}
+.pb-in,.pb-edit{width:100%;min-height:48px;box-sizing:border-box;margin-bottom:var(--sp-2);padding:6px var(--sp-3);border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);color:var(--fg);font:500 var(--fs-l) var(--sans)}
+.pb-send{margin-top:var(--sp-3);min-height:48px}
+.pb-send:disabled{opacity:.5}
+.pb-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:var(--sp-3);margin-bottom:var(--sp-2)}
+.pb-q{font:500 var(--fs-l) var(--sans);overflow-wrap:anywhere}
+.pb-meta{color:var(--muted);font:500 var(--fs-s) var(--sans);margin:2px 0 var(--sp-2)}
+.pb-act{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.pb-act .btn,.pb-act .mini{min-height:48px}
+.pb-mine{display:flex;align-items:center;gap:var(--sp-2);min-height:48px;border-bottom:1px solid var(--line)}
+.pb-st{font:600 var(--fs-xs) var(--sans);font-style:normal;flex:none;color:var(--muted)}
+.pb-st.s-approved{color:var(--accent)}
+.pb-dlg .chip{min-height:44px}

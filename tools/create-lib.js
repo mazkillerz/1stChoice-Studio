@@ -181,7 +181,10 @@ CR.ELEMENTS=[
   {id:'divider',label:'Divider',make:w=>divider(Math.round(w*.6))},
   {id:'divider-dash',label:'Dashed divider',make:w=>divider(Math.round(w*.6),{dash:[2,22],width:8,color:C().ink,label:'Dotted divider'})}
 ];
-CR.element=id=>CR.ELEMENTS.find(e=>e.id===id)||null;
+/* phrasebook (mega): every approved team line is one more Element (Add > Elements), made by its category; none when there are no approved rows */
+CR.phraseEls=()=>{ const rows=(B()._phRows||[]); return rows.map(r=>({id:'pb-'+r.id,label:r.line,words:true,
+  make:()=>r.category==='button'?pill(r.line,{label:'Button'}):r.category==='headline'?text(r.line,{fontFamily:BD.displayFont(),fontStyle:'normal',fontSize:104,label:'Headline'}):text(r.line,{fontSize:r.category==='small'?38:48,fill:r.category==='small'?C().muted:C().ink,label:r.category==='small'?'Small line':'Phrasebook line'})})); };
+CR.element=id=>CR.ELEMENTS.find(e=>e.id===id)||(String(id).startsWith('pb-')?CR.phraseEls().find(e=>e.id===id):null)||null;
 /* make an element and put it in the frame you're working in */
 CR.addElement=async function(id,at){ const e=CR.element(id); if(!e) return null;
   if(e.asset){ const a=L.brandAssets().find(x=>x.id===e.asset); if(!a) return null; return BD.addAsset(a,at); }

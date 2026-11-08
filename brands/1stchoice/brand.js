@@ -103,6 +103,18 @@ Studio.registerBrand({
       /* calendar and money words that are not "wording": a line made only of these (and numbers) is never flagged as new */
       neutral:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر','السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','من','إلى','يوم','ريال']}
   },
+  /* Phrasebook (Home > Settings > Phrasebook, preview "team"): the owner approves lines the team suggests. Each category joins these phrase keys above,
+     so approved lines show up in the word pickers of every tool (headline: Headline chips of Offer, Photo story, Carousel, Cinematic + the cut words;
+     small: Small line chips; button: Button fields; poll / other: their own lists (poll, other); caption: only the captions and rules check,
+     no picker). Category labels are English; the lines themselves are Arabic. */
+  phraseCats:[
+    {id:'headline',label:'Headline',keys:['headlines','cut']},
+    {id:'small',label:'Small line',keys:['small']},
+    {id:'button',label:'Button',keys:['buttons']},
+    {id:'caption',label:'Caption',keys:[]},
+    {id:'poll',label:'Poll',keys:['poll']},
+    {id:'other',label:'Other',keys:['other']}
+  ],
   /* Assets people can add to any story as movable layers (Add asset). Files live in this folder.
      Cans: always the HD cut-outs (transparent PNG). A file that isn't here yet shows as "Not added yet".
      No cat mascot stickers unless the owner asks for them.
