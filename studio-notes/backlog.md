@@ -2,8 +2,8 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** sessions 52–61 (5–7 Nov 2026, owner-directed round of bug fixes led by one lead session): 1.43.0 fonts before Save + team retry, 1.44.0 Board touch + video blank preview, 1.45.0 Simplify + tool page fixes, 1.46.0 offline/slow cloud states, 1.47.0 Create long words, 1.48.0 drafts + queue, 1.49.0 tool drawing edge cases, 1.50.0 Simplify (pattern review + full sweep), 1.51.0 new reel template New label reveal (ported from the finished HTML reel; tests `reel-label-reveal`, `reel-audio-label-reveal`). The next session, 1.52.0, is a **Mazoon** session.
-**Simplify session:** every 5th minor version. The next one is 1.55.0.
+**Last session:** the mega round (7–8 Nov 2026, one lead + sonnet builders in parallel, plan `studio-notes/mega-plan.md`, log `studio-notes/mega-round.md`): 1.54.0 foundation (Update vs Save as new, versions, covers, Who's using, self-hosted fonts, tokens, faster tests + goldens, preview flags, Supabase tables), 1.55.0 features (brand check, resize, occasion packs, shared components; previews: team workflow, Claude Design import, moving stories), 2.0.0 power and polish (previews: remove background, live stock; Simplify pass). The next session, 2.1.0, is a **team** session; the next Simplify is 2.5.0.
+**Simplify session:** every 5th minor version. The next one is 2.5.0 (2.0.0 ran the pattern review and a Simplify pass over the round).
 
 ## Next up
 _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on the raw.githack.com preview link (could not be reproduced in Chromium; cross-origin pictures were one cause and are fixed; `?debug=1` lists every load and draw): check on the live site with him first. Done in 1.27.0: sound rows are one line (57 px, was 101). The Mix sheet itself is short on a phone (213 px): letting it grow taller when dragged up would show four or more. AAC export is untested on a real iPhone/Android (sandbox Chromium only has Opus). Motion blur (4 subframes) makes export ~4× slower than one frame: measure on a mid-range phone in phase 3._
@@ -12,16 +12,31 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 |---|------|-----:|-------:|----:|-------:|------:|-------|
 | 18 | Fresh look on Board / the lab pages (they load studio.css but have their own bars) | 1 | 3 | 3 | 2 | 5 | After approval. |
 | 21 | Check haptics on a real iPhone (iOS 18 switch tick) and a real Android; the save tick fires after an async save, which iOS may not allow outside a tap | 2 | 2 | 2 | 1 | 5 | Needs a device. |
-| 7 | Background removal for can photos (on-device model, lazy-loaded) | 3 | 4 | 5 | 5 | 7 | Check size/speed on a mid-range Android first. |
+| 7 | ~~Background removal~~ shipped as a preview in 2.0.0 (see #54) | | | | | | |
 | 14 | Board: component overrides beyond words (swap a photo or colour in one copy), and copies that follow the main's size | 1 | 4 | 3 | 3 | 5 | Follow-up to 0.4.0 components. Today only typed words are kept per copy. |
 | 16 | Board: outline (stroke) on Union/Exclude combined shapes; today only Subtract/Intersect keep the bottom shape's outline | 1 | 2 | 1 | 3 | 1 | Needs a real outline path (vector boolean library) — only if asked. |
 | 30 | Board flex follow-ups: wrap in row stacks, fill width for a child (price-list rows), per-side padding, a stack icon in Layers | 1 | 3 | 3 | 2 | 5 | From 1.17.0. Also: after Mazoon's OK on the preview, make flex the default (drop the toggle; keep reading `lab:flex` harmlessly). |
 | 34 | Share text styles with the team (kept in Supabase next to collections) | 2 | 2 | 1 | 2 | 3 | From 1.19.0. Needs a table, so the owner's OK first. |
-| 11 | Second brand kit plumbing check (a dummy brand to prove brand-agnostic) | 1 | 3 | 2 | 2 | 4 | |
+| 11 | ~~Second brand kit plumbing check~~ done (`brandkit`, test brand fixture with tokens) | | | | | | |
 
 | 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
 
 | 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
+
+## From the mega round (8 Nov 2026)
+| # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
+|---|------|-----:|-------:|----:|-------:|------:|-------|
+| 50 | Owner's OK on the previews (Team workflow, Import, Moving stories, Remove background, Live stock): switch each on for everyone by removing it from `FLAGS` | 4 | 4 | 3 | 1 | 10 | One line + drop the checks per feature. |
+| 51 | Live stock: the owner adds `Access-Control-Allow-Origin: https://mazkillerz.github.io` (GET) to `location.1stchoice.cloud/api/public/locations`; then test on the live site | 4 | 2 | 3 | 1 | 8 | Studio side is built (`assets/stock.js`). Snippet in `studio-notes/pending/mega-w3-stock.md`. |
+| 52 | More occasion packs: Ramadan, Eid, Winter camp (drop files into `brands/1stchoice/packs/<id>/`, see `brands/PACKS.md`) | 3 | 4 | 4 | 2 | 9 | Needs the owner's designs or a Claude Design board per occasion (import makes them layers). |
+| 53 | Individual logins once the owner creates them in the Supabase dashboard: "Who's using" becomes the signed-in person; owner role from `team_members.role` | 3 | 3 | 2 | 2 | 6 | Never create accounts or type passwords. |
+| 54 | Remove background: measure on the owner's real Android (first load 15 MB, ~1–3 s expected); person photos are soft on hair/fabric | 2 | 3 | 4 | 1 | 8 | u2netp, Apache-2.0. A bigger model only if a phone handles it. |
+| 55 | Moving stories: preview the sound in Play; AAC on a real phone (sandbox only has Opus) | 1 | 3 | 3 | 2 | 5 | |
+| 56 | Claude Design import: test with real new exports (the tests rebuild boards from shipped documents); zip64 | 1 | 4 | 3 | 2 | 6 | Inline SVG added in 2.0.0. |
+| 57 | Campaign words on covers: a campaign word change shows on a design's cover only after it is opened and saved | 2 | 2 | 1 | 2 | 3 | Save all always uses the new words. |
+| 58 | Brand check: a word list for "never name the types of sale points" (`rules.sale.words` in brand.js) from the owner | 2 | 2 | 1 | 1 | 4 | Check does nothing until the list exists. |
+| 59 | Paid AI (image generation, captions) only if the owner later allows paid APIs | 2 | 4 | 5 | 3 | 8 | Owner said free only (Nov 2026). |
+| 60 | Split the >120 s suites (full, saved-versions, video-timeline, video, backgrounds, create-resize) into PARTs to bring the full sweep under 10 min | 1 | 1 | 1 | 2 | 1 | 16–25 min today on 4 CPUs. |
 
 ## UX audit findings (open)
 - 1.49.0 release: `draw-edges` "same pixels as before 1.49.0" fails a whole tool's group (Restock, Offer or Carousel) in about 1 run in 4 under load, then passes alone. On failure the suite now prints both pages' loaded fonts: identical, so not fonts. Next: hash per region or dump both canvases to find what differs (suspect an asset such as the HD can arriving at a different moment in the old-file page).
