@@ -67,6 +67,15 @@ function prepare(html,res){
   const m=raw.match(/"width"\s*:\s*(\d{3,5})\s*,\s*"height"\s*:\s*(\d{3,5})/); if(m) dims=[+m[1],+m[2]];
   d.querySelectorAll('script,iframe,object,embed,base,meta[http-equiv],helmet,link[rel~=preload],link[rel~=modulepreload]').forEach(e=>e.remove());
   d.querySelectorAll('link[rel~=stylesheet]').forEach(e=>e.remove());   // Google Fonts etc.: the fonts are loaded by Studio itself
+  /* inline <svg> art: each one becomes a picture (<img> of its own markup) so it goes through the same SVG → PNG path as an <img src="x.svg"> */
+  [...d.querySelectorAll('svg')].filter(v=>!(v.parentElement&&v.parentElement.closest('svg'))).forEach(v=>{
+    const vb=(v.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number), im=d.createElement('img');
+    if(!v.getAttribute('xmlns')) v.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    const hasW=v.getAttribute('width')||/(^|;)\s*width\s*:/.test(v.getAttribute('style')||''), hasH=v.getAttribute('height')||/(^|;)\s*height\s*:/.test(v.getAttribute('style')||'');
+    if(!v.getAttribute('width')&&vb.length===4&&vb[2]>0&&!hasW) v.setAttribute('width',vb[2]); if(!v.getAttribute('height')&&vb.length===4&&vb[3]>0&&!hasH) v.setAttribute('height',vb[3]);
+    const blob=new Blob([new XMLSerializer().serializeToString(v)],{type:'image/svg+xml'}), bu=URL.createObjectURL(blob); blobs.set(bu,blob);
+    ['class','style','id'].forEach(k=>{ if(v.hasAttribute(k)) im.setAttribute(k,v.getAttribute(k)); }); ['width','height'].forEach(k=>{ if(v.getAttribute(k)&&!/%/.test(v.getAttribute(k))) im.setAttribute(k,v.getAttribute(k)); });
+    im.setAttribute('src',bu); im.setAttribute('alt',v.getAttribute('aria-label')||''); v.replaceWith(im); });
   d.querySelectorAll('[src]').forEach(e=>{ e.setAttribute('src',fix(e.getAttribute('src'))); e.removeAttribute('srcset'); e.removeAttribute('loading'); });
   d.querySelectorAll('[srcset]').forEach(e=>e.removeAttribute('srcset'));
   const css=s=>s.replace(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/g,(a,q,u)=>/^(data:|blob:)/i.test(u.trim())?a:'url("'+fix(u)+'")');

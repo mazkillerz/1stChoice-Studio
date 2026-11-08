@@ -140,6 +140,14 @@ const wrap=(inner,extra)=>`<!doctype html><html><head><meta charset="utf-8"><tit
   ok('shapes: gradient shade, border, radius, shadow all kept; the off-page shade is marked bleed',R.rects.some(r=>r.grad&&r.stroke&&r.r>0&&r.bleed)&&R.rects.some(r=>r.sh),R.rects);
   ok('text boxes stay inside the page unless turned; the turned one is kept turned and has slack',R.texts.filter(t=>!t.rot).every(t=>t.x>=0&&t.x+t.w<=1081)&&R.texts.some(t=>Math.abs(t.rot+8)<0.5),R.texts);
   ok('a tight line height (1.0) number moves down a little so it sits in its circle',R.texts.find(t=>t.t==='20').y>=1480&&R.texts.find(t=>t.t==='20').y+70<=1625,R.texts.find(t=>t.t==='20'));
+  /* inline <svg> elements (simplify w3): read like <img> SVGs, as PNG art at the drawn size, in place */
+  const inl=wrap(`<svg viewBox="0 0 100 50" style="position:absolute;left:100px;top:200px;width:400px;height:200px"><rect width="100" height="50" fill="#007A33"/><circle cx="25" cy="25" r="18" fill="#DA291C"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" style="position:absolute;left:700px;top:900px"><path d="M12 2 L22 22 L2 22 Z" fill="#161210"/></svg>
+    <div style="position:absolute;left:100px;top:600px;width:600px;font:600 40px Cairo;color:#161210">Beside the art</div>`);
+  await importVia(pg,wr('inline.html',inl)); s=await stats(pg);
+  const IN=await pg.evaluate(()=>{ const f=BD.util.frames().slice(-1)[0]; return f.find('Image').map(n=>({k:n.getAttr('kind'),x:Math.round(n.x()),y:Math.round(n.y()),w:Math.round(n.width()),h:Math.round(n.height()),px:BD.IMGS.get(n.getAttr('imgId')).el.width,png:BD.IMGS.get(n.getAttr('imgId')).el.naturalWidth!==0})).sort((a,b)=>a.y-b.y); });
+  ok('inline <svg> art becomes picture layers (PNG art) at their drawn place and size',IN.length===2&&IN.every(i=>i.k==='asset'&&i.png)&&Math.abs(IN[0].x-100)<3&&Math.abs(IN[0].y-200)<3&&Math.abs(IN[0].w-400)<3&&Math.abs(IN[0].h-200)<3&&Math.abs(IN[1].x-700)<3&&Math.abs(IN[1].w-120)<3&&IN[0].px>=400,IN);
+  ok('  the words beside inline art are still a text layer',s.texts_&&s.texts_.some(t=>t.t==='Beside the art'),s.texts_);
   /* fonts */
   const fonts=wrap(`<div style="position:absolute;left:100px;top:100px;width:800px;font:400 60px 'Zapfino Nonexistent',cursive;color:#111">Unknown font</div>
      <div style="position:absolute;left:100px;top:300px;width:800px;font:700 60px 'Tajawal',sans-serif;color:#111">أهلا</div>

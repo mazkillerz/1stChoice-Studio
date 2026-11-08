@@ -52,7 +52,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   await home(pg); await pg.waitForTimeout(500);
   ok(N+'no queue row for a non-owner, no chip yet',await pg.evaluate(()=>!document.querySelector('#rvRow .rv-home-row')&&!document.querySelector('.rv-chip')));
   for(const id of ['seed0','seed1']){
-    await tap(pg,'#savedRowList .sv-more[data-dmore="'+id+'"]'); await pg.waitForSelector('dialog[open] [data-act="rvsend"]');
+    await tap(pg,'#savedRowList .sv-more[data-dmore="'+id+'"]'); await pg.waitForSelector('dialog[open] [data-act="team"]'); await tap(pg,'dialog[open] [data-act="team"]'); await pg.waitForSelector('dialog[open] [data-act="rvsend"]');
     if(id==='seed0') ok(N+'menu has Send for review and Comments',await pg.evaluate(()=>!!document.querySelector('[data-act="rvcom"]')));
     await tap(pg,'dialog[open] [data-act="rvsend"]');
     await pg.waitForFunction(i=>JSON.parse(localStorage.getItem('fakecloud')).designs[i].review==='in_review',id,{timeout:8000}).catch(()=>{});
@@ -143,7 +143,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   ok(N+'a dismissed note stays gone after a reload (once per change)',await pg.evaluate(()=>!document.querySelector('#rvRow .rv-note.st-approved'))&&await pg.evaluate(()=>!!document.querySelector('#rvRow .rv-note.st-changes')));
   /* anyone can comment: Sara opens Comments from the menu and sees Omar's notes */
   const cid=Object.values(JSON.parse(dbOmar).designs).find(x=>x.review==='approved').id;
-  await tap(pg,'#savedRowList .sv-more[data-dmore="'+cid+'"]'); await pg.waitForSelector('dialog[open] [data-act="rvcom"]'); await tap(pg,'dialog[open] [data-act="rvcom"]');
+  await tap(pg,'#savedRowList .sv-more[data-dmore="'+cid+'"]'); await pg.waitForSelector('dialog[open] [data-act="team"]'); await tap(pg,'dialog[open] [data-act="team"]'); await pg.waitForSelector('dialog[open] [data-act="rvcom"]'); await tap(pg,'dialog[open] [data-act="rvcom"]');
   await pg.waitForSelector('dialog[open] #rvList .rv-c,dialog[open] .rv-none');
   ok(N+'Sara can open Comments from the menu; no Approve for her',await pg.evaluate(()=>!document.querySelector('#rvActs [data-a="approved"]')));
   await pg.fill('#rvText','Thanks Omar'); await tap(pg,'#rvPost'); await pg.waitForFunction(()=>[...document.querySelectorAll('#rvList .rv-c b')].some(b=>b.textContent==='Sara'),null,{timeout:8000}).catch(()=>{});

@@ -47,7 +47,7 @@ const txt=(pg,s)=>pg.$eval(s,e=>e.innerText.replace(/\s+/g,' ').trim()).catch(()
   const on=await mk({viewport:{width:390,height:844},isMobile:true,hasTouch:true},true); const p2=await on.newPage(); p2.on('pageerror',e=>errs.push('on0: '+e.message));
   await p2.goto(BASE+'index.html'); await p2.waitForSelector('#calRow .cal-home-row',{timeout:8000});
   const ids2=await p2.evaluate(()=>[...document.querySelectorAll('[id]')].map(e=>e.id).filter(Boolean).sort());
-  ok('1 flag on adds only #calRow and #calendarView to Home',JSON.stringify(ids2.filter(x=>!ids.includes(x)&&!/^(campCss|campRow|selCamp)$/.test(x)))===JSON.stringify(['calRow','calendarView']),ids2.filter(x=>!ids.includes(x)));   // campCss/campRow/selCamp: campaigns (w2), same flag
+  ok('1 flag on adds only #calRow and #calendarView to Home',JSON.stringify(ids2.filter(x=>!ids.includes(x)&&!/^(lz-campaigns|lz-review|campRow|selCamp)$/.test(x)))===JSON.stringify(['calRow','calendarView']),ids2.filter(x=>!ids.includes(x)));   // lz-campaigns/campRow/selCamp: campaigns (w2), same flag
   await on.close(); }
 
 /* 2 + 3 + 4 phone */
@@ -87,7 +87,7 @@ async function phone(dark){
   await pg.tap('.cal-pcard >> nth=1'); await pg.waitForSelector('.cal-lk img');
   ok(T+'picker links a design and its thumb shows',await pg.evaluate(()=>{ const i=document.querySelector('.cal-lk img'); return !!i&&!!i.getAttribute('src')&&i.naturalWidth>0; }));
   await pg.tap('#calSave'); await pg.waitForSelector('dialog.cal-dlg',{state:'detached',timeout:6000});
-  await pg.waitForSelector('.cal-item .ci-title');
+  await pg.waitForFunction(()=>[...document.querySelectorAll('.cal-item .ci-title')].some(e=>e.textContent.includes('علبتك واجد حلوة')&&e.closest('.cal-item').querySelector('.ci-thumbs img')),null,{timeout:8000,polling:100}).catch(()=>{});   // the list redraws after the save: wait for the new card, not for any card
   const saved=(await stored(pg)).find(x=>x.title==='علبتك واجد حلوة');
   ok(T+'the new item is stored with date, time, status, hashtags, design and author',!!saved&&saved.day===OTHER&&saved.at==='18:00'&&saved.status==='draft'&&saved.hashtags.join(' ')==='#cold #brew'&&saved.design_ids.length===1&&saved.author==='Sara',saved);
   const card=await pg.evaluate(id=>{ const e=document.querySelector('.cal-item[data-id="'+id+'"]'); return e&&{dir:getComputedStyle(e.querySelector('.ci-title')).direction,th:!!e.querySelector('.ci-thumbs img')}; },saved&&saved.id);

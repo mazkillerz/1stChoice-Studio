@@ -108,6 +108,7 @@ await phone(false);
   const el=pg.locator('#savedGrid .sv-card[data-id="seed1"] .sv-open'), bb=await el.boundingBox(), x=bb.x+bb.width/2, y=bb.y+bb.height/2;
   const o={bubbles:true,cancelable:true,composed:true,pointerType:'touch',pointerId:7,isPrimary:true,button:0,buttons:1,clientX:x,clientY:y};
   await el.dispatchEvent('pointerdown',o); await pg.waitForTimeout(650); await el.dispatchEvent('pointerup',{...o,buttons:0}); await el.dispatchEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y}); await pg.waitForTimeout(300);
+  await pg.tap('dialog.design-dlg [data-act="team"]');   // the team rows sit behind one Team row
   ok('4 the design menu has Caption and Copy caption (the design has one)',await pg.isVisible('dialog.design-dlg [data-act="cap"]')&&await pg.isVisible('dialog.design-dlg [data-act="capcopy"]'));
   await pg.tap('dialog.design-dlg [data-act="capcopy"]'); await pg.waitForTimeout(400);
   ok('4 Copy caption copies caption + blank line + hashtags',(await clip(pg))===DCAP+'\n\n#cold #brew',await clip(pg));

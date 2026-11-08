@@ -18,7 +18,6 @@ const DEF={pop:.5,slide:.6,fade:.6,wipe:.8,peek:.7};
 const easeOut=p=>1-Math.pow(1-p,3), easeInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
 const easeBack=p=>{ const c1=1.70158, c3=c1+1, q=p-1; return 1+c3*q*q*q+c1*q*q; };
 const isRtl=n=>{ const ts=kind(n)==='text'?[n]:(n.find?n.find('Text'):[]); return ts.some(t=>t.direction&&t.direction()==='rtl'); };
-const loadScript=src=>new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=()=>no(new Error('Could not load '+src)); document.head.appendChild(s); });
 const layers=f=>items(f).filter(n=>!n.hasName('frame-bg'));
 const getMotion=f=>Object.assign({len:6,sound:''},f&&f.getAttr('motion')||{});
 const getEnter=n=>{ const e=n.getAttr('enter'); return e&&e.type&&e.type!=='none'?{type:e.type,delay:+e.delay||0,dur:+e.dur||DEF[e.type]||.6,dir:e.dir||'up'}:null; };
@@ -54,7 +53,7 @@ function makeRig(f){
 /* ---------- Auto: sensible staggered entrances by role (background first, headline, product, button, logo last) ---------- */
 const ORDER={bg:0,photo:0,bleed:1,headline:2,product:3,sub:4,button:5,handle:6,logo:7};
 async function autoPlan(f,len){
-  if(!(BD.resize&&BD.resize.roles)) await loadScript(new URL('create-resize.js',document.currentScript?document.currentScript.src:location.href).href);
+  if(!(BD.resize&&BD.resize.roles)) await Studio.loadScript(new URL('create-resize.js',document.currentScript?document.currentScript.src:location.href).href);
   const roles=BD.resize.roles(f), s=fsize(f), list=layers(f);
   const touchesEdge=n=>{ const r=prect(n,f), m=Math.max(6,s.w*.012); return r.x<=m||r.y<=m||r.x+r.width>=s.w-m||r.y+r.height>=s.h-m; };
   const crayon=n=>kind(n)==='text'?!!n.getAttr('fillTex'):kind(n)==='asset'&&/crayon/i.test(String(n.getAttr('imgId')||''));
@@ -85,7 +84,7 @@ function levelTo(A){   // gain to mean -28 dB; a soft ceiling keeps peaks <= -9 
   return {meanDb:10*Math.log10(sum/(2*n)+1e-14),peakDb:20*Math.log10(p2)}; }
 async function buildAudio(f,id,len){
   const so=brandSounds().find(x=>x.id===id); if(!so) return null;
-  if(!window.StudioReelAudio) await loadScript(ROOT+'assets/reel-audio.js');
+  await Studio.lazy('reel-audio');
   const hits=layers(f).map(n=>({n,e:getEnter(n)})).filter(x=>x.e&&x.e.delay>=0.05).map(x=>x.e.delay+(x.e.type==='fade'?.0:.03)).sort((a,b)=>a-b)
     .filter((t,i,a)=>i===0||t-a[i-1]>=.12).filter(t=>t<len-.4);
   if(!hits.length) return null;
@@ -134,7 +133,7 @@ function open(host){
   /* the export */
   async function save(){
     if(busy) return; stopPreview(); const f=page(), m=getMotion(f);
-    let sup=null; try{ if(!window.StudioReelExport) await loadScript(ROOT+'assets/reel-export.js'); sup=await StudioReelExport.support(); }catch(_){ sup=null; }
+    let sup=null; try{ await Studio.lazy('reel-export'); sup=await StudioReelExport.support(); }catch(_){ sup=null; }
     if(!sup||sup.mode!=='webcodecs'||!sup.video||!window.VideoEncoder) return fallback();
     const rig=makeRig(f); if(!rig.count){ toast('Give something a motion first, or tap Auto.'); return; }
     busy=true; last=null; paint(); const t0=performance.now(); const sig=(ctl=ctl||{}).ac=new AbortController();
