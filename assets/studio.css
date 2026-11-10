@@ -1465,3 +1465,4 @@ body.on-calendar .fab{display:none}
 .tb-hint{font-size:.82rem;color:var(--muted);min-height:1.1em}
 .tb-wait{display:inline-flex;align-items:center;gap:8px;min-height:40px}
 .tb-retry{flex-basis:100%;text-align:start}
+@media (max-height:700px){.tb-hint{display:none}}
