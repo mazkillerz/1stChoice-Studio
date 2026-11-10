@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.2.0';
+const VERSION='2.2.1';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -967,8 +967,9 @@ async function tool(cfg){
       <label class="opt-row team-row"><span class="opt-ic">${ICON.bookmark}</span><span class="opt-txt"><b id="teamLbl">Save to the team</b><small id="teamSub">Your team finds it in Saved</small></span><input type="checkbox" class="switch" id="teamOn" role="switch"></label>
       <div class="team-box" id="teamBox" hidden>
         <div class="tb-field"><label class="lbl" for="teamName">Name</label><input type="text" id="teamName" dir="auto" maxlength="80" placeholder="Name, e.g. Restock – Al Khoud" enterkeyhint="done"></div>
-        <div class="tb-field"><span class="lbl" id="teamColsLbl">Collection</span><div class="chips tb-cols" id="teamCols" role="group" aria-labelledby="teamColsLbl"></div>
-          <div class="inline" id="teamNewRow" hidden><input type="text" id="teamNewCol" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection" enterkeyhint="done"><button type="button" class="mini" id="teamAddCol">Add</button></div></div>
+        <div class="tb-field"><span class="lbl" id="teamColsLbl">Collection <span class="lbl-opt">optional · tap to pick</span></span><div class="chips tb-cols" id="teamCols" role="group" aria-labelledby="teamColsLbl"></div>
+          <div class="inline" id="teamNewRow" hidden><input type="text" id="teamNewCol" dir="auto" placeholder="Name the new collection" maxlength="40" aria-label="New collection" enterkeyhint="done"><button type="button" class="mini" id="teamAddCol">Add</button></div>
+          <small class="tb-hint" id="teamColsHint" dir="auto" aria-live="polite"></small></div>
         <button type="button" class="link team-more" id="teamMore" aria-expanded="false" aria-controls="teamMoreBox">More options</button>
         <div class="team-more-box" id="teamMoreBox" hidden>
           <label class="check"><input type="checkbox" id="teamKeep"><span class="check-txt">Keep the photos<span class="small">Off: a template, layout and words only</span></span></label>
@@ -1470,7 +1471,8 @@ async function tool(cfg){
   /* saved-versions (mega): one team save at a time (a second tap during a slow upload used to start a second NEW design, because the
      first had not set `design` yet); a save waits for a design that is still opening; a design that did not open is never replaced by a copy */
   let teamQ=Promise.resolve(), designOpen=Promise.resolve(), designLost=false, altMode=null;
-  function teamSave(o){ const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}); return run; }
+  let teamBusy=0;   // team saves still running: leaving the page now would cut them off half way (the collection link used to be lost)
+  function teamSave(o){ teamBusy++; const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}).then(()=>{ teamBusy--; }); return run; }
   async function teamSave1(o){
     o=o||{}; await designOpen; const C=await cloud();
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
@@ -1482,11 +1484,16 @@ async function tool(cfg){
     const cols=o.collections||(design?design.collections:[])||[];
     const thumb=await thumbBlob();
     const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow()});
-    const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
-    design={id,name,kind:keep?'design':'template',collections:cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
+    let fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
+    /* the collections are checked on the saved design itself: any that did not go in are tried once more */
+    const lacks=()=>{ const have=new Set((fresh.collectionNames||[]).map(n=>String(n).trim())); return cols.map(n=>String(n).trim()).filter(n=>n&&!have.has(n)); };
+    let colMiss=lacks();
+    if(colMiss.length){ try{ await C.setDesignCollections(B.id,id,cols); fresh=await C.getDesign(id); colMiss=lacks(); }catch(_){} }
+    design={id,name,kind:keep?'design':'template',collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
     await capSave(C,id,asNew);   // captions (mega)
     history.replaceState(null,'',location.pathname+'?design='+id);
-    return name;
+    if(colMiss.length){ const e=new Error('Saved to the team, but not added to '+colMiss.map(n=>'“'+n+'”').join(', ')+'. Check the connection and tap Save again.'); e.partial=true; throw e; }
+    return {name,cols:cols.map(n=>String(n).trim()).filter(Boolean)};
   }
   /* the Save sheet: one small sheet, ready to go. The name is filled in, the collection is the one you used last, and
      "Save to the team" is on when this phone is signed in to the team (for a new design: a design opened from Saved is only
@@ -1535,29 +1542,39 @@ async function tool(cfg){
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
   $('teamAsNew').addEventListener('change',e=>{ altMode=e.target.checked?'new':'upd'; syncSaveOpts(); });
   $('saveAlt').addEventListener('click',()=>{ altMode=wantsNew()?'upd':'new'; $('teamOn').checked=true; $('teamOn').dataset.touched='1'; syncSaveOpts(); doSave(); });
-  let colsLoading=null;
+  let colsLoading=null, colsFailed=false;
   async function paintTeamCols(){
-    if(!teamCols){ if(!colsLoading) colsLoading=(async()=>{ try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; }
-        if(!design&&teamCols.length) [...teamPicked].forEach(n=>{ if(!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) teamPicked.delete(n); }); })(); await colsLoading; colsLoading=null; }
+    if(!teamCols){ if(!colsLoading){ $('teamCols').innerHTML='<span class="small tb-wait"><span class="spin" aria-hidden="true"></span> Loading collections…</span>'; $('teamColsHint').textContent='';
+        colsLoading=(async()=>{ colsFailed=false; try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; colsFailed=true; }
+        if(!design&&teamCols.length) [...teamPicked].forEach(n=>{ if(!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) teamPicked.delete(n); }); })(); }
+      await colsLoading; colsLoading=null; }
     if(!teamCols) return;
     const all=[...new Set([...teamCols.map(c=>c.name),...teamPicked])].sort((a,b)=>a.localeCompare(b));
-    $('teamCols').innerHTML=all.map(n=>`<button type="button" class="chip" dir="auto" data-col="${esc(n)}" aria-pressed="${teamPicked.has(n)}">${esc(n)}</button>`).join('')
-      +`<button type="button" class="chip add" data-newcol aria-expanded="${!$('teamNewRow').hidden}">${ICON.plus}<span>New</span></button>`;
+    $('teamCols').innerHTML=all.map(n=>`<button type="button" class="chip col-pick" dir="auto" data-col="${esc(n)}" aria-pressed="${teamPicked.has(n)}">${teamPicked.has(n)?ICON.check:''}<span>${esc(n)}</span></button>`).join('')
+      +`<button type="button" class="chip add" data-newcol aria-expanded="${!$('teamNewRow').hidden}">${ICON.plus}<span>New collection</span></button>`
+      +(colsFailed?'<button type="button" class="link tb-retry" data-colretry>Couldn’t load collections · Try again</button>':'');
+    const on=[...teamPicked];
+    $('teamColsHint').textContent=on.length?'It goes in '+on.map(n=>'“'+n+'”').join(' and ')+'.':all.length?'Not in a collection. It still shows in Saved.':'No collections yet. Tap New collection to start one.';
   }
   $('teamMore').addEventListener('click',()=>{ const open=$('teamMoreBox').hidden; $('teamMoreBox').hidden=!open; $('teamMore').setAttribute('aria-expanded',String(open)); $('teamMore').textContent=open?'Fewer options':'More options'; });
-  $('teamCols').addEventListener('click',e=>{ if(e.target.closest('[data-newcol]')){ const r=$('teamNewRow'); r.hidden=!r.hidden; paintTeamCols(); if(!r.hidden) $('teamNewCol').focus(); return; }
+  $('teamCols').addEventListener('click',e=>{ if(e.target.closest('[data-colretry]')){ teamCols=null; paintTeamCols(); return; }
+    if(e.target.closest('[data-newcol]')){ const r=$('teamNewRow'); r.hidden=!r.hidden; paintTeamCols(); if(!r.hidden) $('teamNewCol').focus(); return; }
     const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); haptic('tick'); paintTeamCols(); });
   const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); typedCols.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
-  function teamOpts(){ return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:!!design&&wantsNew(),collections:[...teamPicked]}; }
+  $('teamNewCol').addEventListener('input',e=>{ const v=e.target.value.trim(); if(v) $('teamColsHint').textContent='“'+v+'” will be made when you save (or tap Add).'; else paintTeamCols(); });
+  function teamOpts(){ const typed=$('teamNewCol').value.trim();   // a new name typed without tapping Add still counts
+    if(typed){ teamPicked.add(typed); typedCols.add(typed); }
+    return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:!!design&&wantsNew(),collections:[...teamPicked]}; }
   function teamLine(t,ok){ const el=$('teamStatus'); el.hidden=!t; el.classList.toggle('ok',!!ok); el.innerHTML=t?(ok?ICON.check:'<span class="spin" aria-hidden="true"></span>')+'<span>'+esc(t)+'</span>':''; capDoneSync(); }   // captions (mega)
   /* a team save that failed: our own messages as they are; a dropped connection in words, never the browser's "Failed to fetch" */
   const teamErr=err=>{ const m=String(err&&err.message||''); return !m||err instanceof TypeError||/fetch|network|load failed|timed? ?out/i.test(m)?'Not saved to the team: no connection. Check it and try again.':m; };
   /* true when it saved; on a failure the switch stays on, so the next tap of the button tries the team again (1.41.0) */
   async function runTeamSave(afterPicture){
     teamLine('Saving to the team…'); status('');   // an earlier failure's message goes
-    try{ const name=await teamSave(teamOpts()); teamLine('Saved to the team as “'+name+'”',true); if(!afterPicture) celebrate(); rvSaved(); return true; }
-    catch(err){ teamLine(''); status(teamErr(err)); return false; }
+    try{ const r=await teamSave(teamOpts()); $('teamNewCol').value=''; $('teamNewRow').hidden=true;
+      teamLine('Saved to the team as “'+r.name+'”'+(r.cols.length?' in '+r.cols.map(n=>'“'+n+'”').join(', '):''),true); if(!afterPicture) celebrate(); rvSaved(); return true; }
+    catch(err){ teamLine(''); status(teamErr(err)); if(err&&err.partial) syncSaveOpts(); return false; }
   }
 
   /* captions (mega 4.3, preview flag "team"): a collapsed Caption row in the team part of the Save sheet (caption + hashtags, phrase chips,
@@ -1611,8 +1628,15 @@ async function tool(cfg){
       try{ await teamSave({name:design.name}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
   }
   let leaving=false;
+  /* a link tapped while the team save is still running waits for it (a few seconds), then goes */
+  let waitingLeave=false;
+  document.addEventListener('click',e=>{ const a=e.target.closest&&e.target.closest('a[href]'); if(!a||!teamBusy||e.defaultPrevented||a.target==='_blank'||a.hasAttribute('download')) return;
+    if(a.getAttribute('href').startsWith('#')) return;
+    e.preventDefault(); e.stopImmediatePropagation(); if(waitingLeave) return; waitingLeave=true;
+    toast('Still saving to the team… one moment'); const href=a.href;
+    teamQ.then(()=>{ waitingLeave=false; if(designDirty()){ leavePrompt(href); return; } leaving=true; location.href=href; }); },true);
   document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(a.href); } }));
-  addEventListener('beforeunload',e=>{ if(!leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
+  addEventListener('beforeunload',e=>{ if(teamBusy||(!leaving&&designDirty())){ e.preventDefault(); e.returnValue=''; } });
   async function openDesign(id,ready){
     status('Opening the saved design…');
     if(!(await ensureMember('This design is saved with the team. Sign in to open it.'))){ status(''); return false; }
@@ -3273,8 +3297,11 @@ async function home(){
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
           P.querySelector('.chips').onclick=ev2=>{ const c=ev2.target.closest('[data-n]'); if(c){ picked.has(c.dataset.n)?picked.delete(c.dataset.n):picked.add(c.dataset.n); draw(); } };
-          P.querySelector('#ncAdd').onclick=()=>{ const v=P.querySelector('#nc').value.trim(); if(v){ picked.add(v); draw(); } };
-          P.querySelector('#colsGo').onclick=async()=>{ try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); loadSaved(true); }catch(err){ st(err.message); } }; };
+          const nc=P.querySelector('#nc'), addNc=()=>{ const v=nc.value.trim(); if(v){ picked.add(v); draw(); P.querySelector('#nc').focus(); } };
+          P.querySelector('#ncAdd').onclick=addNc; nc.addEventListener('keydown',ev2=>{ if(ev2.key==='Enter'){ ev2.preventDefault(); addNc(); } });
+          P.querySelector('#colsGo').onclick=async ev2=>{ const v=nc.value.trim(); if(v) picked.add(v);   // a name typed without tapping Add still counts
+            const go=ev2.currentTarget; go.disabled=true; st('Saving…');
+            try{ await C.setDesignCollections(B.id,dsg.id,[...picked]); d.close(); hubToast(picked.size?'In '+[...picked].map(n=>'“'+n+'”').join(', ')+'.':'Taken out of every collection.'); loadSaved(true); }catch(err){ st(err.message); go.disabled=false; } }; };
         draw(); }
       if(act==='del'){
         const cf=dialog(`<div class="dlg-body"><h3 dir="auto">Delete “${esc(dsg.name)}”?</h3>

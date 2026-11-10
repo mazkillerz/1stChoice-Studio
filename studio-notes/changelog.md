@@ -13,6 +13,16 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.2.1 · 10 Nov 2026
+
+### Saving to a collection always works
+type: fix
+A story saved to the team sometimes didn't land in the collection you picked: if you left the page right after the picture was saved, the team save was cut off before the story was put in its collection. Now the collection goes in first, Studio checks it worked (and tries again), and if you tap Home or another link while it's still saving, it waits a moment and then goes. A new collection name you typed is kept even if you didn't tap Add.
+
+### Picking a collection when you save
+type: design
+In the Save sheet every collection is in view (no hidden side-scroll), the picked ones have a tick, and a line under them says where the story goes. "New collection" is clearer, and if the list can't load you get Try again. After saving, the message names the collection too.
+
 ## 2.2.0 · 8 Nov 2026
 
 ### The calendar is part of Studio
