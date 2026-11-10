@@ -1455,3 +1455,14 @@ body.on-calendar .fab{display:none}
 #photoCut svg{flex:none}
 #photoCut:disabled{opacity:.55}
 .cut-note{flex:1 1 12rem;min-width:0;overflow-wrap:anywhere}
+
+/* 2.2.1: the Save sheet's collection picker: every collection in view (wrapping, not a hidden side-scroll), a tick on the
+   picked ones, a line that says where the story goes, and a loading / try-again state */
+.tb-cols{flex-wrap:wrap;overflow:visible;margin:0;padding:2px 0 0}
+.tb-cols .chip.col-pick{gap:6px}
+.tb-cols .chip.col-pick svg{width:16px;height:16px;flex:none}
+.lbl .lbl-opt{font-weight:400;color:var(--muted);margin-inline-start:4px}
+.tb-hint{font-size:.82rem;color:var(--muted);min-height:1.1em}
+.tb-wait{display:inline-flex;align-items:center;gap:8px;min-height:40px}
+.tb-retry{flex-basis:100%;text-align:start}
+@media (max-height:700px){.tb-hint{display:none}}

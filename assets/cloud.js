@@ -98,12 +98,17 @@ async function ensureCollections(brand,names){
 }
 async function renameCollection(id,name){ const c=await client(); const {error}=await c.from('collections').update({name:name.trim()}).eq('id',id); fail(error,'Rename'); }
 async function deleteCollection(id){ const c=await client(); const {error}=await c.from('collections').delete().eq('id',id); fail(error,'Delete'); }
+/* put a design in exactly these collections. New links go in first and old ones come out after, so a save that is cut off
+   half way (the phone left the page, the signal dropped) never leaves the design in no collection at all. Returns the names linked. */
 async function setDesignCollections(brand,designId,names){
   const c=await client(); const cols=await ensureCollections(brand,names);
-  const {error:e1}=await c.from('design_collections').delete().eq('design_id',designId); fail(e1,'Collections');
-  if(cols.length){ const {error}=await c.from('design_collections').insert(cols.map(x=>({design_id:designId,collection_id:x.id}))); fail(error,'Collections'); }
+  if(cols.length){ const {error}=await c.from('design_collections').upsert(cols.map(x=>({design_id:designId,collection_id:x.id})),{onConflict:'design_id,collection_id',ignoreDuplicates:true}); fail(error,'Collections'); }
+  let del=c.from('design_collections').delete().eq('design_id',designId);
+  if(cols.length) del=del.not('collection_id','in','('+cols.map(x=>x.id).join(',')+')');
+  const {error:e1}=await del; fail(e1,'Collections');
   // a collection without a cover takes this design's picture
   for(const col of cols){ await c.from('collections').update({cover_design:designId}).eq('id',col.id).is('cover_design',null); }
+  return cols.map(x=>x.name);
 }
 
 /* ---------- designs ---------- */
@@ -160,7 +165,7 @@ async function keepAsVersion(prev,author){
    An update keeps the row it replaces as a version (design_versions, newest 20) and its files stay. */
 async function saveDesign(o){
   const c=await client(); const id=o.id||uid(); const base=o.brand+'/'+id+'/';
-  const paths=[], fresh=[]; let verId=null;
+  const paths=[], fresh=[]; let verId=null, colErr=null;
   try{
     if(o.kind!=='template'){
       for(let i=0;i<(o.photos||[]).length;i++){ const p=o.photos[i];
@@ -176,12 +181,14 @@ async function saveDesign(o){
     let {error}=await c.from('designs').upsert(o.author?{...row,author:o.author}:row);
     if(error&&o.author&&missing(error)) ({error}=await c.from('designs').upsert(row));   // the migration is not applied yet: save as before
     fail(error,'Save design');
+    // collections straight after the row (not after the slow tidy below), so they are in before anyone leaves the page
+    if(o.collections){ try{ await setDesignCollections(o.brand,id,o.collections); }catch(e){ colErr=e; } }
     if(verId) await pruneVersions(id);
     // tidy: anything left in this design's folder that the new version (and every kept version) doesn't use is removed
     const keep=new Set([...row.photo_paths,thumb,...(await versionFiles(id))]);
     try{ await removeFiles((await listFolder(base)).filter(p=>!keep.has(p))); }catch(_){}
   }catch(err){ try{ await removeFiles(fresh); }catch(_){} if(verId){ try{ await c.from('design_versions').delete().eq('id',verId); }catch(_){} } throw err; }   // a failed save leaves nothing behind
-  if(o.collections) await setDesignCollections(o.brand,id,o.collections);
+  if(colErr) console.warn('Collections not linked yet',colErr);   // the editor checks the saved design and tries again
   return id;
 }
 /* put an older version back; the state it replaces is kept as a new version first, so nothing is lost */
