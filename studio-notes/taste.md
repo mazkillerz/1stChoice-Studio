@@ -65,7 +65,7 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 
 ## Things he rejected (never do again)
 - **One-tap save** (Quick start's Save saving at once, 2.4.0 and before): "when I tap save, I should choose first whether to save and add to team or not" (12 Nov 2026). [S] Save on a phone always opens the Save sheet (My phone / Phone + Team) first; tap budgets are +1 because of it. Checked by smoke/taste/quicksave.
-- Anything hidden under a pinned button in a sheet (the collection chips under Save, 2.4.0 screenshot). [S]
+- Anything hidden under a pinned button in a sheet (the collection chips under Save, 2.4.0 screenshot), and buttons that follow you while scrolling ("the button for choose a collection is moving with me when scrolling", 12 Nov). [S] No sticky buttons inside sheets.
 - The "New Studio look" as a whole (2.3.0 preview): felt less polished than the current design; keep the current sizing, the calendar at the top of Home and its polish (2.4.0 brief). [S] Only instant Saved, collection on cards, the bigger design menu and the calendar time were blended in.
 - A second filter row under the collection chips (All / Stories / Posts in Pick a design) (2.4.0 brief). [S]
 - Anything saved to the team without him choosing it, or a team save with no collection. [S 11 Nov]

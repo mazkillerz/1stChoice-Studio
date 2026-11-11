@@ -15,27 +15,29 @@ How the page shows it, with no extra work: the newest version is the big highlig
 
 ## 2.4.1 · 12 Nov 2026
 
+### Ideas and Goals for everyone
+type: feature
+The Ideas board and monthly Goals are now part of Studio for the whole team, with no switch to turn on. Find them under the Calendar row on Home (Ideas, Goals, + Idea), in the + menu (New idea), in search, and as tabs next to the Calendar.
+
 ### Save always asks first
 type: fix
-Tapping Save never saves straight away any more, not even right after you start from a photo. The Save sheet opens first, on **My phone**, so you always choose: tap **Save to my phone**, or pick **Phone + Team** and a collection. With Phone + Team the sheet now has a little more room and scrolls your collections into view, so they are never hidden under the Save button. "Save picture" from a design's menu opens the same sheet.
+Tapping Save never saves straight away any more, not even right after you start from a photo. The Save sheet opens first, on **My phone**, so you always choose: tap **Save to my phone**, or pick **Phone + Team** and a collection. With Phone + Team the sheet now has a little more room and scrolls so your collections and the Save button are both in view, and the button stays in its place instead of following you as you scroll. "Save picture" from a design's menu opens the same sheet.
 ![before](assets/whatsnew/2.4.1-team-before.jpg)
 ![after](assets/whatsnew/2.4.1-team-after.jpg)
 
 ## 2.4.0 · 12 Nov 2026
-Plan your month in one place. Add any design to the calendar in a few taps, see what you are saving properly, and try the new Ideas board and monthly Goals as a preview.
+Plan your month in one place. Add any design to the calendar in a few taps, see what you are saving properly, and plan with the new Ideas board and monthly Goals.
 
 ### Add to calendar from anywhere
 type: feature
 After you save, the Save sheet now offers **Add to calendar**, and every saved design has a **Calendar** button in its menu. One small sheet: pick the day (this week is right there, More for any other date), a time if you want one, Post, Story or Reel (already chosen from the design's size) and a caption if you have it. Tap **Add to Thursday** and it is on the calendar, linked to the design. Reels can now be planned too.
 
-### A home for every idea (preview)
+### A home for every idea
 type: feature
-[flag:plan] Try Ideas and Goals
 Catch an idea in seconds from the + button or Home: type it, paste a link, add a screenshot or record a voice note (up to 2 minutes, saved small, the whole team can play it). New ideas land in the **Inbox**; one tap on Reel, Post, Story or Giveaway sorts it onto the **Board** (Idea, Planned, In progress, Posted). Each card can link to a design and to a calendar day, so an idea goes from voice note to design to scheduled post. On a computer, drag cards between columns.
 
-### Goals for every month (preview)
+### Goals for every month
 type: feature
-[flag:plan] Try Ideas and Goals
 Set how many posts, stories, reels and giveaways you want this month. Anything marked as posted in the calendar counts by itself ("12 of 15"). Type in your reach, likes, saves and followers, and see at a glance whether you are growing: every number shows the change against last month, and a small chart shows the last 6 months. Ideas, Goals and Calendar sit side by side with tabs on top.
 
 ### See what you are saving

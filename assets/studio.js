@@ -98,8 +98,7 @@ const FLAGS=[
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'},   /* w3-stock */
-  {id:'plan',label:'Ideas and Goals',sub:'An ideas board and monthly goals next to the calendar'}   /* 2.4.0 */
+  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'}   /* w3-stock */
 ];
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -1735,7 +1734,7 @@ async function tool(cfg){
   $('teamOn').addEventListener('change',()=>{ whereP=teamChanged(); });
   /* r3-save: the Save to control. Resolves to true when the team is chosen (signed in) */
   async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP;
-    if(sw.checked&&isPhone()) requestAnimationFrame(()=>{ try{ $('teamCols').closest('.tb-field').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} });   // 2.4.1: the collections, not hidden under Save
+    if(sw.checked&&isPhone()) requestAnimationFrame(()=>{ try{ $('save').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} });   // 2.4.1: the collections and the Save button both in view
     return sw.checked; }
   $('saveWhere').addEventListener('click',e=>{ const b=e.target.closest('[data-where]'); if(!b||b.dataset.where===where()) return; haptic('tick'); setWhere(b.dataset.where); });
   $('saveWhere').addEventListener('keydown',e=>{ if(!/^Arrow/.test(e.key)) return; e.preventDefault(); const w=where()==='me'?'team':'me'; setWhere(w).then(()=>{ const b=$('saveWhere').querySelector('[data-where="'+where()+'"]'); if(b) b.focus(); }); });
@@ -2838,7 +2837,8 @@ async function home(){
   /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
   if(!$('calendarView')){   /* calendar: permanent since 2.2.0 (was the team preview) */ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
   /* 2.4.0 Plan (preview flag "plan"): Ideas (#ideas) and Goals (#goals) sit next to the calendar, one tab strip on top of the three */
-  const PLAN_ON=flags.on('plan');
+  const PLAN_ON=true;   /* 2.4.1: Ideas and Goals are permanent (owner); was the preview flag "plan" */
+  try{ localStorage.removeItem('studio:flag:plan'); }catch(_){}
   if(PLAN_ON) [['ideas','Ideas'],['goals','Goals']].forEach(([v,l])=>{ if($(v+'View')) return; const s=document.createElement('section'); s.id=v+'View'; s.className='cal-view plan-view '+v+'-view'; s.setAttribute('aria-label',l); s.hidden=true; $('calendarView').after(s); VIEWS[v]=v+'View'; });
   const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':$('ideasView')&&!$('ideasView').hidden?'ideas':$('goalsView')&&!$('goalsView').hidden?'goals':'home';
   const onSaved=()=>curView()==='saved';
