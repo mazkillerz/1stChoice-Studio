@@ -20,6 +20,8 @@
       x.lineWidth=2; x.beginPath(); x.moveTo(80,140); x.lineTo(920,140); x.stroke(); x.lineWidth=1.5; x.beginPath(); x.moveTo(80,200); x.lineTo(500,500); x.stroke();
       x.lineWidth=1; x.beginPath(); x.arc(700,400,120,0,7); x.stroke(); x.lineWidth=2; x.beginPath(); x.arc(700,400,80,0,7); x.stroke();
       x.fillStyle='#000'; x.font='400 40px "DejaVu Sans",Arial,sans-serif'; x.textBaseline='middle'; x.fillText('tiny text 1 2 3 4 5',90,560); },
+    cropped(x){ wordmark(x,'#111','BOOM',W/2,H/2,420); },
+    glow(x){ x.save(); x.shadowColor='rgba(255,60,120,.85)'; x.shadowBlur=30; const gr=x.createLinearGradient(0,150,0,450); gr.addColorStop(0,'#ff8a00'); gr.addColorStop(1,'#e8007a'); wordmark(x,gr,'GLOW',W/2,H/2,250); x.restore(); },
     multi(x){ wordmark(x,'#1f5fd1','LOGO',W/2,200,200); x.fillStyle='#e23a2e'; x.beginPath(); x.arc(250,450,110,0,7); x.fill(); x.fillStyle='#f2b01e'; x.fillRect(420,350,200,200); wordmark(x,'#111','o',780,450,260); }
   };
   const SPEC={
@@ -34,6 +36,9 @@
     paper:{base:'wordmark',ground:'#efe8d8',paper:true,jpeg:.8,note:'wordmark photographed on paper (uneven light, noise)'},
     paperColour:{base:'multi',ground:'#efe8d8',paper:true,jpeg:.8,note:'colour logo on paper (uneven light, noise)'},
     twoTone:{base:'wordmark',ground:'split',note:'wordmark across a two-colour ground'},
+    cropped:{ground:'#ffffff',note:'a big wordmark cropped by the picture edge'},
+    glow:{ground:'#f6f3ee',note:'gradient-filled letters with a coloured glow'},
+    phoneLogo:{brand:'logo.png',ground:'#efe8d8',paper:true,blur:1.2,noise:5,jpeg:.6,note:'brand logo printed on paper, soft focus, noise, uneven light, JPEG 0.6'},
     brandLogo:{brand:'logo.png',ground:'#ffffff',jpeg:.7,note:'the real brand logo on white, JPEG 0.7'},
     brandLogoCream:{brand:'logo.png',ground:'#f3ead7',jpeg:.8,note:'the real brand logo on cream, JPEG 0.8'},
     brandCan:{brand:'assets/classic_can.png',ground:'#2f8f8a',jpeg:.85,note:'the real can cut-out on a teal ground, JPEG 0.85'}
@@ -41,7 +46,7 @@
   const loadImg=u=>new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('no '+u)); i.src=u; });
   async function make(name){
     const sp=SPEC[name]; if(!sp) throw new Error('no case '+name);
-    const truth=mk(), tx=truth.getContext('2d');
+    const truth=mk(), tx=truth.getContext('2d'); if(sp.blur) tx.filter='blur('+sp.blur+'px)';
     if(sp.brand){ const im=await loadImg('../brands/1stchoice/'+sp.brand), k=Math.min((W-120)/im.naturalWidth,(H-80)/im.naturalHeight); tx.imageSmoothingQuality='high'; tx.drawImage(im,(W-im.naturalWidth*k)/2,(H-im.naturalHeight*k)/2,im.naturalWidth*k,im.naturalHeight*k); }
     else draw[sp.base||name](tx);
     const img=mk(), x=img.getContext('2d');
@@ -49,7 +54,7 @@
     else if(sp.ground==='split'){ x.fillStyle='#ffffff'; x.fillRect(0,0,W/2,H); x.fillStyle='#ece3c8'; x.fillRect(W/2,0,W/2,H); }
     else { x.fillStyle=sp.ground; x.fillRect(0,0,W,H); }
     x.drawImage(truth,0,0);
-    if(sp.paper){ const d=x.getImageData(0,0,W,H), r=rnd(7); for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ const i=(y*W+xx)*4, cx=xx/W-.5, cy=y/H-.5, light=.78+.3*(xx/W)-.12*(cx*cx+cy*cy)*4+.06*(y/H), n=gauss(r)*3; for(let k=0;k<3;k++){ const v=d.data[i+k]*light+n; d.data[i+k]=v<0?0:v>255?255:v; } } x.putImageData(d,0,0); }
+    if(sp.paper){ const d=x.getImageData(0,0,W,H), r=rnd(7); for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ const i=(y*W+xx)*4, cx=xx/W-.5, cy=y/H-.5, light=.78+.3*(xx/W)-.12*(cx*cx+cy*cy)*4+.06*(y/H), n=gauss(r)*(sp.noise||3); for(let k=0;k<3;k++){ const v=d.data[i+k]*light+n; d.data[i+k]=v<0?0:v>255?255:v; } } x.putImageData(d,0,0); }
     if(sp.jpeg){ const blob=await new Promise(res=>img.toBlob(res,'image/jpeg',sp.jpeg)), bm=await createImageBitmap(blob), c2=mk(); c2.getContext('2d').drawImage(bm,0,0); return {name,img:c2,truth,note:sp.note,spec:sp}; }
     return {name,img,truth,note:sp.note,spec:sp};
   }

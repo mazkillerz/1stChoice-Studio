@@ -38,7 +38,7 @@ const measure=(name,opts)=>pg.evaluate(async ([name,opts])=>{
   return {ms:Math.round(ms),mae:err/n,outside,halo,holes:comps.length,holeAlpha:hn?hs/hn:null,whiteN:wn,whiteKept:wn?wk/wn:null,strokeKeep:tn?tk/tn:null,W,H,info:c.note};
 },[name,opts]);
 
-const FLAT=['wordmark','badge','whiteOnDark','thin','brandLogo','brandLogoCream','brandCan'], SOFT=['jpeg','jpegColour','gradient','paper','paperColour','twoTone','shadow'];
+const FLAT=['wordmark','badge','whiteOnDark','thin','cropped','brandLogo','brandLogoCream','brandCan'], SOFT=['jpeg','jpegColour','gradient','paper','paperColour','twoTone','shadow','phoneLogo'];
 const R={};
 for(const n of [...FLAT,...SOFT]){
   const r=R[n]=await measure(n);
@@ -87,6 +87,9 @@ const big=await pg.evaluate(async()=>{ const c=await CutoutCases.make('jpegColou
 ok('a 2000x2000 logo finishes in under 3 s ('+big.ms+' ms) with transparent and opaque areas',big.ms<3000&&big.w===2000&&big.tr>1e5&&big.op>1e5,big);
 ok('input larger than 2048 is capped on the long side',big.cap[0]===2048&&big.cap[1]===1024,big.cap);
 ok('a UI-friendly progress text is reported',await pg.evaluate(async()=>{ const t=[]; const c=await CutoutCases.make('wordmark'); await StudioCutoutPro.run(c.img,{mode:'logo',onProgress:s=>t.push(s)}); return t.length>0&&t.every(s=>typeof s==='string'); }));
+const tiny=await pg.evaluate(async()=>{ const o=[]; for(const [w,h] of [[1,1],[8,8],[40,12],[300,3]]){ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#000'; x.fillRect(w>>2,0,Math.max(1,w>>1),h); try{ const r=await StudioCutoutPro.run(c,{mode:'logo'}); o.push([r.width,r.height]); }catch(e){ o.push(String(e)); } }
+  const c=await CutoutCases.make('wordmark'); const a=await StudioCutoutPro.run(c.img,{mode:'auto'}); o.push([a.width,a.height]); return o; });
+ok('tiny images and auto mode work (sizes kept)',JSON.stringify(tiny)===JSON.stringify([[1,1],[8,8],[40,12],[300,3],[1000,640]]),tiny);
 /* the UI never freezes while the worker thinks */
 const frames=await pg.evaluate(async()=>{ const gaps=[]; let last=performance.now(),go=true; const f=t=>{ gaps.push(t-last); last=t; if(go) requestAnimationFrame(f); }; requestAnimationFrame(f);
   const k=document.createElement('canvas'); k.width=2000; k.height=2000; const x=k.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,2000,2000); x.fillStyle='#000'; x.font='900 500px sans-serif'; x.fillText('Logo',100,1000);

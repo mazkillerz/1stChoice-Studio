@@ -19,12 +19,14 @@ function decode(bmp,maxSide,flatten){
   x.drawImage(src,0,0,W,H);
   return {data:x.getImageData(0,0,W,H).data,W,H};
 }
+const _f=new Float32Array(1),_i=new Int32Array(_f.buffer);
+function cbrtf(x){ if(x<=1e-12) return 0; _f[0]=x; _i[0]=(_i[0]/3|0)+709921077; let y=_f[0]; y=y-(y*y*y-x)/(3*y*y); return y-(y*y*y-x)/(3*y*y); }
 /* OKLab planes */
 function toLab(d,n){
   const L=new Float32Array(n),A=new Float32Array(n),B=new Float32Array(n);
   for(let i=0,j=0;i<n;i++,j+=4){
     const r=LIN[d[j]],g=LIN[d[j+1]],b=LIN[d[j+2]];
-    const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+    const l=cbrtf(.4122214708*r+.5363325363*g+.0514459929*b),m=cbrtf(.2119034982*r+.6806995451*g+.1073969566*b),s=cbrtf(.0883024619*r+.2817188376*g+.6299787005*b);
     L[i]=.2104542553*l+.793617785*m-.0040720468*s; A[i]=1.9779984951*l-2.428592205*m+.4505937099*s; B[i]=.0259040371*l+.7827717662*m-.808675766*s;
   }
   return {L,A,B};
@@ -133,10 +135,10 @@ function groundField(lab,w,h,fp,progress){
   /* stage 1: smooth, border-connected region (follows soft gradients and uneven light, stops at edges) */
   const pl=models[0].m, cand=new Uint8Array(n), stack=new Int32Array(n); let sp=0;
   const LOOSE=.10, STEP=.025;
-  const near=(i)=>Math.hypot(L[i]-gL[i],A[i]-gA[i],B[i]-gB[i])<LOOSE;
+  const near=(i)=>{ const a=L[i]-gL[i],b=A[i]-gA[i],c=B[i]-gB[i]; return a*a+b*b+c*c<LOOSE*LOOSE; };
   const push=i=>{ if(!cand[i]&&near(i)){ cand[i]=1; stack[sp++]=i; } };
   for(let x=0;x<w;x++){ push(x); push((h-1)*w+x); } for(let y=0;y<h;y++){ push(y*w); push(y*w+w-1); }
-  const stp=(i,j)=>Math.hypot(L[i]-L[j],A[i]-A[j],B[i]-B[j])<STEP;
+  const stp=(i,j)=>{ const a=L[i]-L[j],b=A[i]-A[j],c=B[i]-B[j]; return a*a+b*b+c*c<STEP*STEP; };
   while(sp){ const p=stack[--sp],x=p%w,y=(p/w)|0;
     if(x>0){ const q=p-1; if(!cand[q]&&near(q)&&stp(p,q)){ cand[q]=1; stack[sp++]=q; } }
     if(x<w-1){ const q=p+1; if(!cand[q]&&near(q)&&stp(p,q)){ cand[q]=1; stack[sp++]=q; } }
@@ -183,12 +185,13 @@ function shade(data,j,l,a,b,bg){
   if(mx-mn>.07) return -1; const s=(sr+sg+sb)/3; return s>1?0:s<.3?-1:1-s;
 }
 /* ---------- logo mode ---------- */
-function logo(bmp,o,id){
+function logo(bmp,o,id){ const T0=performance.now(),tm=[],lap=n=>tm.push(n+':'+Math.round(performance.now()-T0));
   const t=Math.max(0,Math.min(100,o.tolerance==null?50:o.tolerance))/100, holes=o.holes!==false;
   const {data,W,H}=decode(bmp,o.maxSide||2048,true), n=W*H; post(id,{progress:'Finding the ground…'});
-  const lab=toLab(data,n),{L,A,B}=lab, fp=fitPlanes(lab,W,H), gf=groundField(lab,W,H,fp), {gL,gA,gB}=gf;
+  lap('decode'); const lab=toLab(data,n),{L,A,B}=lab; lap('lab'); const fp=fitPlanes(lab,W,H), gf=groundField(lab,W,H,fp), {gL,gA,gB}=gf; lap('ground');
   /* distance to the local ground */
   const d=new Float32Array(n); for(let i=0;i<n;i++){ const a=L[i]-gL[i],b=A[i]-gA[i],c=B[i]-gB[i]; d[i]=Math.sqrt(a*a+b*b+c*c); }
+  lap('d');
   /* noise floor from the smooth ground region (or the border samples) */
   const hist=new Int32Array(1001); let hn=0; const srcMask=gf.cand;
   for(let i=0;i<n;i+=(n>400000?3:1)){ if(srcMask?!srcMask[i]:false) continue; const b=Math.min(1000,(d[i]*2000)|0); hist[b]++; hn++; }
@@ -197,19 +200,20 @@ function logo(bmp,o,id){
   /* ink mask, specks, ground regions */
   let X=new Uint8Array(n); for(let i=0;i<n;i++) X[i]=d[i]>=lo?1:0;
   post(id,{progress:'Tracing the outline…'});
-  const ink=label(X,1,W,H,true), peak=new Float32Array(ink.n+1);
+  lap('X');const ink=label(X,1,W,H,true), peak=new Float32Array(ink.n+1);
   for(let i=0;i<n;i++){ const k=ink.lab[i]; if(k&&d[i]>peak[k]) peak[k]=d[i]; }
   const minA=Math.max(4,Math.round(5e-6*n)), dustPeak=Math.max(2.4*lo,.1), speck=new Uint8Array(ink.n+1);
   for(let k=1;k<=ink.n;k++) if(ink.area[k]<minA||(peak[k]<dustPeak&&ink.area[k]<minA*10)) speck[k]=1;
   for(let i=0;i<n;i++){ const k=ink.lab[i]; if(k&&speck[k]) X[i]=0; }
-  const gr=label(X,0,W,H,false), touch=new Uint8Array(gr.n+1);
+  lap('speck');const gr=label(X,0,W,H,false), touch=new Uint8Array(gr.n+1);
   for(let x=0;x<W;x++){ touch[gr.lab[x]]=1; touch[gr.lab[(H-1)*W+x]]=1; } for(let y=0;y<H;y++){ touch[gr.lab[y*W]]=1; touch[gr.lab[y*W+W-1]]=1; }
   const pin=Math.max(3,Math.min(9,Math.round(2e-6*n))); let pins=0;
   for(let i=0;i<n;i++){ const k=gr.lab[i]; if(k&&!touch[k]&&gr.area[k]<=pin){ X[i]=1; pins++; } }
   /* holes: an enclosed ground-coloured region is a counter (cleared) when the ink around it is not much
      thicker than the hole is wide: thick ink around a small hole (white text on a badge) is design and is kept */
   const clear=new Uint8Array(gr.n+1);
-  if(holes&&gr.n){
+  let cand=0; if(holes) for(let g=1;g<=gr.n;g++) if(!touch[g]&&gr.area[g]>pin){ cand=1; break; }
+  if(cand){
     const dtI=chamfer(X,0,W,H),T=new Float32Array(gr.n+1),Tm=new Float32Array(ink.n+1);
     for(let i=0;i<n;i++){ const k=ink.lab[i]; if(k&&X[i]&&dtI[i]>Tm[k]) Tm[k]=dtI[i]; }
     const par=new Float32Array(gr.n+1);
@@ -220,13 +224,14 @@ function logo(bmp,o,id){
     for(let i=0;i<n;i++){ const g=gr.lab[i]; if(g&&!touch[g]&&!X[i]&&dtB[i]>T[g]) T[g]=dtB[i]; }
     const K=4.5, thin=.0035*Math.max(W,H); for(let g=1;g<=gr.n;g++) if(!touch[g]&&gr.area[g]>pin&&(T[g]*K>=par[g]||T[g]<=thin)) clear[g]=1;
   }
+  lap('holes');
   /* ground set = outside + cleared holes */
   const gs=new Uint8Array(n); for(let i=0;i<n;i++){ const g=gr.lab[i]; if(g&&!X[i]&&(touch[g]||clear[g])) gs[i]=1; }
-  const band=morph(gs,W,H,2,true);
+  const band=morph(gs,W,H,2,true); lap('band');
   /* strongest-ink neighbour (5x5) for the foreground colour reference */
   post(id,{progress:'Cleaning the edges…'});
   const hi=new Int32Array(n); for(let y=0;y<H;y++){ const row=y*W; for(let x=0;x<W;x++){ let bi=row+x,bd=d[bi]; const a=Math.max(0,x-2),b=Math.min(W-1,x+2); for(let q=a;q<=b;q++){ const j=row+q; if(d[j]>bd){ bd=d[j]; bi=j; } } hi[row+x]=bi; } }
-  const out=new Uint8ClampedArray(n*4), bg=[0,0,0], kRGB=1.73*kmin;
+  lap('hi');const out=new Uint8ClampedArray(n*4), bg=[0,0,0], kRGB=1.73*kmin;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const i=y*W+x,j=i*4; let al=1,sa,r=data[j],g=data[j+1],b=data[j+2];
     if(gs[i]) al=0;
@@ -244,7 +249,8 @@ function logo(bmp,o,id){
     } else if(d[i]<kmin) al=Math.max(d[i]/kmin,.35);
     out[j]=r; out[j+1]=g; out[j+2]=b; out[j+3]=al*255+.5;
   }
-  return {w:W,h:H,buf:out.buffer,info:{lo,kmin,noise,holes:gr.n,cleared:clear.reduce((a,v)=>a+v,0)}};
+  lap('alpha');
+  return {w:W,h:H,buf:out.buffer,info:{tm:tm.join(' '),lo,kmin,noise,holes:gr.n,cleared:clear.reduce((a,v)=>a+v,0)}};
 }
 
 /* ---------- photo mode ---------- */
