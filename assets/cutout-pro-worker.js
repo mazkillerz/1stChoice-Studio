@@ -107,9 +107,27 @@ function chamfer(mask,val,w,h){
 /* ---------- ground field: planes + a coarse residual grid grown from the smooth border-connected region ---------- */
 function groundField(lab,w,h,fp,progress){
   const n=w*h,{L,A,B}=lab,gL=new Float32Array(n),gA=new Float32Array(n),gB=new Float32Array(n),models=fp.models;
-  const fillPlanes=()=>{ for(let y=0;y<h;y++){ const yn=h>1?y/(h-1)*2-1:0; for(let x=0;x<w;x++){ const xn=w>1?x/(w-1)*2-1:0,i=y*w+x; let bi=0,bd=1e9,bl=0,ba=0,bb=0;
-      for(let k=0;k<models.length;k++){ const g=planeAt(models[k].m,xn,yn),dl=L[i]-g[0],da=A[i]-g[1],db=B[i]-g[2],d=dl*dl+da*da+db*db; if(d<bd){ bd=d; bl=g[0]; ba=g[1]; bb=g[2]; } }
-      gL[i]=bl; gA[i]=ba; gB[i]=bb; } } };
+  const planeVal=(k,x,y,xn,yn)=>planeAt(models[k].m,xn,yn);
+  const fillPlanes=()=>{
+    const K=models.length, mid=new Uint8Array(n);
+    if(K>1){
+      /* two ground colours: each pixel uses the model of the nearest border-connected ground region, so a grey edge pixel
+         next to the white half is not mistaken for the cream half */
+      const dk=(k,i,xn,yn)=>{ const g=planeAt(models[k].m,xn,yn),a=L[i]-g[0],b=A[i]-g[1],c=B[i]-g[2]; return Math.sqrt(a*a+b*b+c*c); };
+      const st=new Int32Array(n); let sp=0;
+      const seed=(x,y)=>{ const i=y*w+x; if(mid[i]) return; const xn=w>1?x/(w-1)*2-1:0,yn=h>1?y/(h-1)*2-1:0; let bk=0,bd=1e9; for(let k=0;k<K;k++){ const d=dk(k,i,xn,yn); if(d<bd){ bd=d; bk=k; } } if(bd<.05){ mid[i]=bk+1; st[sp++]=i; } };
+      for(let x=0;x<w;x++){ seed(x,0); seed(x,h-1); } for(let y=0;y<h;y++){ seed(0,y); seed(w-1,y); }
+      while(sp){ const p=st[--sp],k=mid[p]-1,x=p%w,y=(p/w)|0;
+        for(let q=0;q<4;q++){ let X=x,Y=y; if(q===0){ if(x===0) continue; X--; } else if(q===1){ if(x===w-1) continue; X++; } else if(q===2){ if(y===0) continue; Y--; } else { if(y===h-1) continue; Y++; }
+          const j=Y*w+X; if(mid[j]) continue; if(dk(k,j,w>1?X/(w-1)*2-1:0,h>1?Y/(h-1)*2-1:0)<.04){ mid[j]=k+1; st[sp++]=j; } } }
+      /* grow the assignment to every other pixel (nearest assigned neighbour) */
+      const qu=new Int32Array(n); let qh=0,qt=0; for(let i=0;i<n;i++) if(mid[i]) qu[qt++]=i;
+      if(qt===0){ for(let i=0;i<n;i++) mid[i]=1; }
+      else while(qh<qt){ const p=qu[qh++],k=mid[p],x=p%w,y=(p/w)|0;
+        if(x>0&&!mid[p-1]){ mid[p-1]=k; qu[qt++]=p-1; } if(x<w-1&&!mid[p+1]){ mid[p+1]=k; qu[qt++]=p+1; } if(y>0&&!mid[p-w]){ mid[p-w]=k; qu[qt++]=p-w; } if(y<h-1&&!mid[p+w]){ mid[p+w]=k; qu[qt++]=p+w; } }
+    }
+    for(let y=0;y<h;y++){ const yn=h>1?y/(h-1)*2-1:0; for(let x=0;x<w;x++){ const xn=w>1?x/(w-1)*2-1:0,i=y*w+x,g=planeAt(models[K>1?mid[i]-1:0].m,xn,yn); gL[i]=g[0]; gA[i]=g[1]; gB[i]=g[2]; } }
+  };
   fillPlanes();
   if(models.length>1) return {gL,gA,gB,cand:null};
   /* stage 1: smooth, border-connected region (follows soft gradients and uneven light, stops at edges) */
@@ -150,8 +168,13 @@ function analyse(bmp){
   let tr=0; for(let i=3;i<data.length;i+=4) if(data[i]<250) tr++;
   if(tr/n>.003) return {hasAlpha:true,flat:false,bg:null,suggest:'keep',w:ow,h:oh};
   const lab=toLab(data,n), fp=fitPlanes(lab,W,H), m=fp.models[0].m, c=planeAt(m,0,0), rgb=[0,0,0]; labToRgb(c[0],c[1],c[2],rgb);
-  const flat=fp.coverage>=.6&&fp.spread<=.035;
-  return {hasAlpha:false,flat,bg:flat||fp.coverage>=.5?rgb.map(v=>Math.round(v*255)):null,suggest:flat?'logo':'photo',w:ow,h:oh};
+  /* a logo has a handful of ink colours; a photo of something on a plain wall spreads over many */
+  const bins=new Int32Array(4096); let tot=0;
+  for(let y=0;y<H;y++){ const yn=H>1?y/(H-1)*2-1:0; for(let x=0;x<W;x++){ const xn=W>1?x/(W-1)*2-1:0,i=y*W+x; let bd=1e9; for(const mo of fp.models){ const g=planeAt(mo.m,xn,yn),e=Math.hypot(lab.L[i]-g[0],lab.A[i]-g[1],lab.B[i]-g[2]); if(e<bd) bd=e; }
+    if(bd>.1){ const j=i*4; bins[(data[j]>>4)<<8|(data[j+1]>>4)<<4|(data[j+2]>>4)]++; tot++; } } }
+  const top=Array.from(bins).sort((a,b)=>b-a).slice(0,6).reduce((a,v)=>a+v,0), conc=tot>.002*n?top/tot:1;
+  const flat=fp.coverage>=.6&&((fp.spread<=.07&&conc>=.5)||fp.spread<=.01);
+  return {conc:+conc.toFixed(2),spread:+fp.spread.toFixed(3),hasAlpha:false,flat,bg:flat||fp.coverage>=.5?rgb.map(v=>Math.round(v*255)):null,suggest:flat?'logo':'photo',w:ow,h:oh};
 }
 
 /* a pixel that is the ground darkened evenly in R, G and B is black at alpha 1-s (soft shadows stay translucent) */
@@ -195,7 +218,7 @@ function logo(bmp,o,id){
       if(y>0&&(q=ink.lab[i-W])&&X[i-W]&&Tm[q]>par[g]) par[g]=Tm[q]; if(y<H-1&&(q=ink.lab[i+W])&&X[i+W]&&Tm[q]>par[g]) par[g]=Tm[q]; }
     const dtB=chamfer(X,1,W,H);
     for(let i=0;i<n;i++){ const g=gr.lab[i]; if(g&&!touch[g]&&!X[i]&&dtB[i]>T[g]) T[g]=dtB[i]; }
-    const K=4.5; for(let g=1;g<=gr.n;g++) if(!touch[g]&&gr.area[g]>pin&&T[g]*K>=par[g]) clear[g]=1;
+    const K=4.5, thin=.0035*Math.max(W,H); for(let g=1;g<=gr.n;g++) if(!touch[g]&&gr.area[g]>pin&&(T[g]*K>=par[g]||T[g]<=thin)) clear[g]=1;
   }
   /* ground set = outside + cleared holes */
   const gs=new Uint8Array(n); for(let i=0;i<n;i++){ const g=gr.lab[i]; if(g&&!X[i]&&(touch[g]||clear[g])) gs[i]=1; }

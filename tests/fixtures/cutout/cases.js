@@ -33,11 +33,17 @@
     gradient:{base:'multi',ground:'grad',note:'colour logo on a soft gradient'},
     paper:{base:'wordmark',ground:'#efe8d8',paper:true,jpeg:.8,note:'wordmark photographed on paper (uneven light, noise)'},
     paperColour:{base:'multi',ground:'#efe8d8',paper:true,jpeg:.8,note:'colour logo on paper (uneven light, noise)'},
-    twoTone:{base:'wordmark',ground:'split',note:'wordmark across a two-colour ground'}
+    twoTone:{base:'wordmark',ground:'split',note:'wordmark across a two-colour ground'},
+    brandLogo:{brand:'logo.png',ground:'#ffffff',jpeg:.7,note:'the real brand logo on white, JPEG 0.7'},
+    brandLogoCream:{brand:'logo.png',ground:'#f3ead7',jpeg:.8,note:'the real brand logo on cream, JPEG 0.8'},
+    brandCan:{brand:'assets/classic_can.png',ground:'#2f8f8a',jpeg:.85,note:'the real can cut-out on a teal ground, JPEG 0.85'}
   };
+  const loadImg=u=>new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('no '+u)); i.src=u; });
   async function make(name){
     const sp=SPEC[name]; if(!sp) throw new Error('no case '+name);
-    const truth=mk(), tx=truth.getContext('2d'); draw[sp.base||name](tx);
+    const truth=mk(), tx=truth.getContext('2d');
+    if(sp.brand){ const im=await loadImg('../brands/1stchoice/'+sp.brand), k=Math.min((W-120)/im.naturalWidth,(H-80)/im.naturalHeight); tx.imageSmoothingQuality='high'; tx.drawImage(im,(W-im.naturalWidth*k)/2,(H-im.naturalHeight*k)/2,im.naturalWidth*k,im.naturalHeight*k); }
+    else draw[sp.base||name](tx);
     const img=mk(), x=img.getContext('2d');
     if(sp.ground==='grad'){ const gr=x.createLinearGradient(0,0,W,H); gr.addColorStop(0,'#bcd3f0'); gr.addColorStop(1,'#f8efe2'); x.fillStyle=gr; x.fillRect(0,0,W,H); }
     else if(sp.ground==='split'){ x.fillStyle='#ffffff'; x.fillRect(0,0,W/2,H); x.fillStyle='#ece3c8'; x.fillRect(W/2,0,W/2,H); }

@@ -31,7 +31,7 @@
     return new Promise((res,rej)=>{ const id=++seq; jobs.set(id,{res,rej,onProgress}); try{ ensure().postMessage({id,cmd,bmp,opts},[bmp]); }catch(err){ jobs.delete(id); rej(err); } });
   }
   async function analyse(source){ return call('analyse',await bitmap(source)); }
-  function toCanvas(r){ const c=document.createElement('canvas'); c.width=r.w; c.height=r.h; c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.w,r.h),0,0); return c; }
+  function toCanvas(r){ const c=document.createElement('canvas'); c.info=r.info; c.width=r.w; c.height=r.h; c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.buf),r.w,r.h),0,0); return c; }
   async function copy(source){
     const bmp=await bitmap(source), s=Math.min(1,MAX/Math.max(bmp.width,bmp.height)), c=document.createElement('canvas');
     c.width=Math.max(1,Math.round(bmp.width*s)); c.height=Math.max(1,Math.round(bmp.height*s));
