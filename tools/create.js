@@ -41,9 +41,10 @@ let toastT=0;
 function toast(t,ms){ const el=$('crToast'); el.textContent=t; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{ el.hidden=true; },ms||3200); }
 BD.toast=toast;
 function openMenu(anchor,entries){ const m=$('crMenuBox'); m.innerHTML=entries.map((e,i)=>e==='-'?'<div class="sep"></div>':e.head?`<div class="hd">${esc(e.head)}</div>`:`<button type="button" role="menuitem" data-i="${i}">${e.check!=null?(e.check?'✓ ':'<span style="width:12px;display:inline-block"></span>'):''}${esc(e.label)}</button>`).join('');
-  m.hidden=false; const r=anchor.getBoundingClientRect(), mr=m.getBoundingClientRect(); m.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; m.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-mr.height-8))+'px';
-  m.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; m.hidden=true; entries[+b.dataset.i].run(); };
-  setTimeout(()=>document.addEventListener('pointerdown',function off(e){ if(!m.contains(e.target)){ m.hidden=true; document.removeEventListener('pointerdown',off,true); } },true),0); }
+  const wasOpen=!m.hidden; m.hidden=false; if(!wasOpen) Studio.nav.push('crMenu',()=>{ m.hidden=true; });   /* r3-nav: Back closes the menu first */
+  const r=anchor.getBoundingClientRect(), mr=m.getBoundingClientRect(); m.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; m.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-mr.height-8))+'px';
+  m.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; m.hidden=true; Studio.nav.drop('crMenu'); entries[+b.dataset.i].run(); };
+  setTimeout(()=>document.addEventListener('pointerdown',function off(e){ if(!m.contains(e.target)){ m.hidden=true; Studio.nav.drop('crMenu'); document.removeEventListener('pointerdown',off,true); } },true),0); }
 
 /* ---------- sheets: tool sheets (the page stays usable) and big ones (Templates, Save, Add) ---------- */
 let sheet=null;   // {name,tool,onClose,sel}
@@ -51,8 +52,9 @@ function openSheet(name,title,html,opt){ opt=opt||{}; closeSheet(true); sheet={n
   const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.dataset.name=name; $('crSheetT').textContent=title;
   /* a fresh body each time, so a sheet's click handlers never stay behind for the next sheet (1.31.0: they piled up, one Add tap added several) */
   const ob=$('crSheetB'), nb=ob.cloneNode(false); ob.replaceWith(nb); nb.innerHTML=html; el.hidden=false; $('crScrim').hidden=!!opt.tool; $('crSheetB').scrollTop=0;
+  Studio.nav.push('crSheet',()=>{ if(st.saving&&sheet&&sheet.name==='save') return false; closeSheet(); });   /* r3-nav: Back closes the sheet (not while saving) */
   syncBar(); requestAnimationFrame(padForSheet); return $('crSheetB'); }
-function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
+function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; Studio.nav.drop('crSheet'); $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
 /* the page moves up (phone) or left (computer) so a tool sheet never covers it */
 function padForSheet(){ const el=$('crSheet'); if(!sheet||!sheet.tool||el.hidden){ BD.setPad({bottom:16,right:16}); return; }
   if(isPhone()){ const r=el.getBoundingClientRect(), m=$('crMain').getBoundingClientRect(); BD.setPad({bottom:Math.max(16,m.bottom-r.top+12),right:16}); } else BD.setPad({bottom:16,right:420}); }
@@ -339,9 +341,10 @@ $('crPick').addEventListener('change',async e=>{ const files=[...e.target.files]
   finally{ BD.busy(null); } });
 $('crReplace').addEventListener('change',async e=>{ const file=e.target.files[0]; e.target.value=''; const n=st.replaceTarget; st.replaceTarget=null; if(!file||!n||!n.getStage()) return;
   BD.busy('Replacing the photo…'); try{ const id=await BD.addPhotoFile(file), im=BD.IMGS.get(id); n.setAttrs({imgId:id,cropZ:1,focX:.5,focY:.5}); n.image(im.el); BD.applyCrop(n); BD.main.batchDraw(); BD.changed(); }catch(_){ toast('Could not open that photo.'); } finally{ BD.busy(null); } });
-function startCrop(n){ if(!n) return; closeSheet(true); BD.startCrop(n); $('crCrop').hidden=false; $('crCropZ').value=n.getAttr('cropZ')||1; paintCtx(); }
+function startCrop(n){ if(!n) return; closeSheet(true); Studio.nav.drop('crCrop'); Studio.nav.push('crCrop',()=>{ $('crCrop').hidden=true; BD.endCrop(); }); BD.startCrop(n); $('crCrop').hidden=false; $('crCropZ').value=n.getAttr('cropZ')||1; paintCtx(); }
 $('crCropZ').oninput=e=>BD.cropZoom(+e.target.value); BD.on('cropz',z=>{ $('crCropZ').value=z; });
-$('crCropDone').onclick=()=>{ $('crCrop').hidden=true; BD.endCrop(); };
+$('crCropDone').onclick=()=>{ $('crCrop').hidden=true; Studio.nav.drop('crCrop'); BD.endCrop(); };
+BD.on('crop',n=>{ if(!n){ $('crCrop').hidden=true; Studio.nav.drop('crCrop'); } });   // ended another way (Escape)
 
 /* Add sheet: elements, brand pictures, shapes, lines, icons, emoji */
 function openAdd(){ reopen=null; const as=L.listedAssets();

@@ -138,9 +138,17 @@ for(const scheme of ['light','dark']){
 
 /* ---- Create ---- */
 { const ctx=await mk('light'), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message));
-  await pg.goto(BASE+'tools/create.html'); await wait(pg,1500); const u0=pg.url();
-  const info=await pg.evaluate(()=>({nav:window.Studio&&!!Studio.nav,open:[...document.querySelectorAll('.sheet.open,.panel.open,dialog[open]')].length}));
-  ok('create: page loads with Studio.nav',info.nav,info);
+  await pg.goto(BASE+'tools/create.html?quick=1'); await pg.waitForSelector('#crBar'); await wait(pg,1500); const u0=pg.url().split('?')[0];
+  const crOpen=()=>pg.evaluate(()=>!document.getElementById('crSheet').hidden?document.getElementById('crSheet').dataset.name:'');
+  await pg.evaluate(()=>{ const s=document.getElementById('crSheet'); if(!s.hidden) document.getElementById('crSheetX').click(); }); await wait(pg,400);
+  const base=await pg.evaluate(()=>navigation.currentEntry.index);
+  await pg.tap('#crBar [data-cr="add"]'); await wait(pg,500); ok('create: Add opens its sheet',await crOpen()==='add',await crOpen());
+  if(SHOTS) await pg.screenshot({path:SHOTS+'/create-sheet.png'});
+  await back(pg); ok('create: Back closes the Add sheet, still in Create',await crOpen()===''&&pg.url().split('?')[0]===u0,[await crOpen(),pg.url()]);
+  await pg.tap('#crMenu'); await wait(pg,300); const menuOn=await pg.evaluate(()=>!document.getElementById('crMenuBox').hidden); ok('create: the menu opens',menuOn);
+  await back(pg); ok('create: Back closes the menu first',!await pg.evaluate(()=>!document.getElementById('crMenuBox').hidden)&&pg.url().split('?')[0]===u0);
+  await pg.tap('#crBar [data-cr="add"]'); await wait(pg,400); await pg.tap('#crSheetX'); await wait(pg,400);
+  ok('create: the sheet close button leaves no step behind',await crOpen()===''&&await pg.evaluate(()=>navigation.currentEntry.index)<=base+1);
   await ctx.close(); }
 
 console.log(res.join('\n')); const bad=res.filter(r=>r.startsWith('FAIL')).length;
