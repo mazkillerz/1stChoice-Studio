@@ -645,6 +645,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
     <div class="cr-team">
       ${st.design?'<button type="button" class="link" id="crAlt"></button>':''}
       <button type="button" class="link" id="crAsTpl">Save as a team template (words and layout, no personal photos)</button>
+      <button type="button" class="link" id="crPlan" hidden>Add to calendar</button>
       <a class="link" id="crSeeSaved" href="../index.html#saved" hidden>See it in Saved</a>
     </div></div>`);
   if(many) fs.forEach(f=>{ try{ const s=fsize(f), c=BD.renderFrame(f,112/s.w); body.querySelector(`[data-pth="${f.id()}"]`).src=c.toDataURL('image/jpeg',.7); c.width=c.height=0; }catch(_){} });
@@ -681,8 +682,13 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   /* "Update the template" (an opened team template) saves over the template itself; everything else follows the New / Update choice */
   const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').disabled?undefined:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:pickedNow()};
     if(isTplOpen()&&!wantsNew()){ o.kind='template'; o.asNew=false; } return o; };
-  const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; };
-  $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
+  const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; planShow(); };
+  /* 2.4.0: Add to calendar once something is saved (the team design is linked; its frame decides Post / Story) */
+  const planShow=()=>{ const p=$('crPlan'); if(p) p.hidden=false; };
+  $('crPlan').onclick=async()=>{ const p=$('crPlan'); p.disabled=true; try{ const fmt=docFormat(JSON.parse(BD.docJson()))||'story', d=st.design, im=body.querySelector('#crRes img');
+      const it=await Studio.planDesign(d?{id:d.id,name:d.name,tool:TOOL,format:fmt,thumb:im&&im.src||null,caption:d.caption||'',hashtags:d.hashtags||[]}:{title:$('crTName').value||defaultName(),format:fmt});
+      if(it) p.textContent='On the calendar ✓'; }finally{ p.disabled=false; } };
+  $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); planShow(); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
   if($('crAlt')) $('crAlt').onclick=async()=>{ altMode=wantsNew()?'upd':'new'; if(isTplOpen()&&altMode==='upd'&&!picked.size) (st.design.collections||[]).forEach(n=>{ if(n) picked.add(n); }); if(!(await setWhere('team'))) return; syncT(); $('crGo').click(); };
   $('crTeamOnly').onclick=()=>{ if(needCol()){ nudge(); return; } runTeam(opts()).then(seen); };
   $('crAsTpl').onclick=async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudge(); return; } await runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTName').value})); seen(); };
