@@ -133,3 +133,24 @@ body.wn .top{max-width:720px}
 .wn-msrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);margin:0 0 var(--sp-3)}
 .wn-msban .wn-msbadge{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
 .wn-msdate{font:500 var(--fs-s) var(--sans);color:rgba(255,255,255,.9)}
+
+/* 2.3.0: a lead line and an "In this update" list on a long latest card; a switch to try a preview */
+.wn-lintro{margin:var(--sp-3) 0 0;font:400 var(--fs-l)/1.5 var(--sans);color:var(--fg);max-width:52ch}
+.wn-toc{margin:var(--sp-4) 0 var(--sp-2);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-l,18px);background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid color-mix(in srgb,var(--fg) 8%,transparent)}
+.wn-toch{display:block;margin:0 0 var(--sp-1);color:var(--muted);font:600 var(--fs-xs)/1 var(--sans);letter-spacing:.08em;text-transform:uppercase}
+.wn-toc ol{list-style:none;margin:0;padding:0;counter-reset:wnt}
+.wn-toc li{counter-increment:wnt}
+.wn-toc li+li{border-top:1px solid color-mix(in srgb,var(--fg) 7%,transparent)}
+.wn-toc a{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--tap,48px);color:var(--fg);text-decoration:none;font:500 var(--fs-m)/1.3 var(--sans);border-radius:10px}
+.wn-toc a::before{content:counter(wnt);flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent-ink,var(--accent));font:600 var(--fs-xs)/1 var(--sans)}
+.wn-toc a:active{opacity:.6}
+.wn-toc a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wn-toc a:focus:not(:focus-visible){outline:none}
+.wn-trybox{margin-top:var(--sp-3);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-l,18px);background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.wn-try{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--tap,48px);cursor:pointer}
+.wn-trytxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wn-trytxt b{font:600 var(--fs-m)/1.3 var(--sans);color:var(--fg)}
+.wn-trytxt small{font:400 var(--fs-s)/1.4 var(--sans);color:var(--muted)}
+.wn-trygo{display:inline-flex;align-items:center;min-height:44px;margin-top:var(--sp-1);color:var(--accent-ink,var(--accent));font:600 var(--fs-m)/1 var(--sans);text-decoration:none}
+.wn-trygo[hidden]{display:none}
+.wn-trygo::after{content:"→";margin-inline-start:6px}

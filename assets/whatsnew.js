@@ -43,6 +43,8 @@
       if(/^\[try:[^\]]*\]/i.test(line))return;                      /* old "[try:...]" switch lines are ignored */
       var ty=/^type:\s*(\S+)\s*$/i.exec(line);
       if(ty){var t=ty[1].toLowerCase();t=ALIAS[t]||t;card.type=TYPES.some(function(x){return x.id===t;})?t:'feature';return;}
+      var fl=/^\[flag:([a-z0-9-]+)\]\s*(.*)$/i.exec(line);                 /* "[flag:next] Try the new look": a switch for a preview */
+      if(fl){card.flag={id:fl[1].toLowerCase(),label:(fl[2]||'Try it').trim()};return;}
       var m=/^!\[(before|after)\]\(([^)]+)\)$/i.exec(line);
       if(m){card[m[1].toLowerCase()]=m[2].trim();return;}
       card.note.push(line);
@@ -86,6 +88,7 @@
     card.appendChild(el('span','wn-tag',typeOf(c.type).tag));
     card.appendChild(el(level,'wn-ct',c.title));
     if(c.note.length)card.appendChild(rich(c.note.join(' ')));
+    if(c.flag)card.appendChild(flagRow(c.flag));
     if(c.before||c.after){
       var g=el('div','wn-shots'+(c.before&&c.after?' two':''));
       if(c.before)g.appendChild(fig('before',c.before,c.title));
@@ -93,6 +96,19 @@
       card.appendChild(g);
     }
     return card;
+  }
+  /* a preview switch: per device, the same key Settings → Previews uses (studio:flag:<id>) */
+  function flagOn(id){try{return localStorage.getItem('studio:flag:'+id)==='1';}catch(e){return false;}}
+  function flagRow(f){
+    var row=el('label','wn-try');
+    var txt=el('span','wn-trytxt');txt.appendChild(el('b',null,f.label));
+    var sub=el('small',null,'');txt.appendChild(sub);row.appendChild(txt);
+    var sw=el('input','switch');sw.type='checkbox';sw.setAttribute('role','switch');sw.checked=flagOn(f.id);row.appendChild(sw);
+    var go=el('a','wn-trygo','Open Studio');go.href='index.html';
+    var wrap=el('div','wn-trybox');wrap.appendChild(row);wrap.appendChild(go);
+    function paint(){sub.textContent=sw.checked?'On for this device. Switch it off any time, here or in Settings.':'A preview: off until you switch it on. Only this device changes.';go.hidden=!sw.checked;}
+    sw.addEventListener('change',function(){try{if(sw.checked)localStorage.setItem('studio:flag:'+f.id,'1');else localStorage.removeItem('studio:flag:'+f.id);}catch(e){sw.checked=false;}paint();});
+    paint();return wrap;
   }
   function parts(ver){var m=/^(\d+)\.(\d+)/.exec(ver);return m?{major:+m[1],minor:+m[2]}:null;}
   function groupVersions(older){
@@ -143,7 +159,15 @@
       lh.appendChild(badge);if(latest.date)lh.appendChild(el('span','wn-date',latest.date));
       hero.appendChild(lh);
     }
-    latest.cards.forEach(function(c){hero.appendChild(add(c,'h3',model.heroCards));});
+    if(!latest.milestone&&latest.intro.length)hero.appendChild(rich(latest.intro.join(' '),'wn-lintro'));
+    /* a long update gets a short "In this update" list that jumps to each card */
+    var toc=null;
+    if(latest.cards.length>3){toc=el('nav','wn-toc');toc.setAttribute('aria-label','In this update');toc.appendChild(el('span','wn-toch','In this update'));var ol=el('ol');toc.appendChild(ol);hero.appendChild(toc);}
+    latest.cards.forEach(function(c,i){var e=add(c,'h3',model.heroCards);e.id='wn-c'+i;hero.appendChild(e);
+      if(toc){var li=el('li'),a=el('a',null,c.title);a.href='#wn-c'+i;a.setAttribute('data-type',c.type);
+        a.addEventListener('click',function(ev){ev.preventDefault();e.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
+        li.appendChild(a);toc.lastChild.appendChild(li);model.toc=model.toc||[];model.toc.push({li:li,rec:model.heroCards[model.heroCards.length-1]});}});
+    model.tocEl=toc;
     model.hero=hero;list.appendChild(hero);
 
     /* older versions: closed groups of five minor versions */
@@ -207,6 +231,7 @@
       g.el.hidden=!k;g.count.textContent=plural(k);
     });
     model.hero.hidden=!model.heroCards.some(shown);
+    if(model.toc){model.toc.forEach(function(t){t.li.hidden=!shown(t.rec);});model.tocEl.hidden=model.heroCards.filter(shown).length<2;}
     if(model.sech)model.sech.hidden=!model.groups.some(function(g){return !g.el.hidden;});
     status.textContent=filter==='all'?'Showing all '+plural(n):'Showing '+plural(n)+': '+typeOf(filter).label;
   }
