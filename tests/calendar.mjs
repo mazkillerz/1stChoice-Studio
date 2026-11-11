@@ -100,12 +100,14 @@ async function phone(dark){
   await pg.fill('#calCap',CAP);
   await tap('[data-fmt="post"]'); await tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard');
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-full .cal-pcard img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
+  const nOpen=(await pg.$$('.cal-full .cal-pcard')).length;   /* r3-extras: the picker opens on All */
+  /* the picker: every design (opens on All; Stories and Posts narrow it, each chip shows a count), search, chips, no nested scroller */
+  ok(T+'picker opens full screen on All (chips All, Stories, Posts, each with a count)',await pg.evaluate(()=>{ const r=document.querySelector('dialog.cal-full').getBoundingClientRect(); return Math.abs(r.width-innerWidth)<=1&&Math.abs(r.height-innerHeight)<=2&&document.querySelector('[data-shape=""]').getAttribute('aria-pressed')==='true'&&[...document.querySelectorAll('[data-shape]')].map(x=>x.dataset.shape).join()===',story,post'&&[...document.querySelectorAll('.cp-shape .cp-n')].every(n=>/^[0-9]+$/.test(n.textContent)); }));
+  await pg.tap('[data-shape="post"]'); await pg.waitForTimeout(150);
   const nAll=(await pg.$$('.cal-full .cal-pcard')).length;
-  /* the picker: every design (the format chosen sets the shape chip, All shapes shows them all), search, chips, no nested scroller */
-  ok(T+'picker opens full screen with the Posts chip preset from the format',await pg.evaluate(()=>{ const r=document.querySelector('dialog.cal-full').getBoundingClientRect(); return Math.abs(r.width-innerWidth)<=1&&Math.abs(r.height-innerHeight)<=2&&document.querySelector('[data-shape="post"]').getAttribute('aria-pressed')==='true'; }));
   await pg.tap('[data-shape=""]'); await pg.waitForTimeout(150);
   const all=(await pg.$$('.cal-full .cal-pcard')).length;
-  ok(T+'All shapes shows ALL designs (templates included)',all===NDES,[all,NDES]);
+  ok(T+'All shows ALL designs (templates included), straight away',all===NDES&&nOpen===NDES,[all,nOpen,NDES]);
   ok(T+'Posts chip narrows to the post-shaped ones',nAll>0&&nAll<all,[nAll,all]);
   await pg.evaluate(()=>{ const g=document.querySelector('.cal-full .cal-pcard:last-child'); g.scrollIntoView({block:'end'}); });
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-full .cal-pcard:last-child img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});

@@ -1468,9 +1468,9 @@ body.on-calendar .fab{display:none}
 @media (max-height:700px){.tb-hint{display:none}}
 
 /* r3-backgrounds: the Background picker in labelled sideways rows (Plain alone, then Gradients, Patterns, Textures), and its Strength choice */
-.gsegs{display:flex;flex-direction:column;gap:4px}
-.gsegs .gl{font:500 var(--fs-s,13px) var(--sans);color:var(--muted);margin:8px 0 0}
-.gsegs .grow{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -16px;padding:4px 16px 6px;-webkit-overflow-scrolling:touch}
+.gsegs{display:flex;flex-direction:column;gap:2px}
+.gsegs .gl{font:500 var(--fs-s,13px) var(--sans);color:var(--muted);margin:4px 0 -2px}
+.gsegs .grow{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -16px;padding:2px 16px 2px;-webkit-overflow-scrolling:touch}
 .gsegs .grow::-webkit-scrollbar{display:none}
 .gsegs .grow.one{overflow:visible;padding-bottom:2px}
 .gsegs .seg.has-ic{flex:0 0 auto;flex-direction:row;align-items:center;gap:8px;min-height:var(--tap,48px);padding:6px 14px 6px 10px;scroll-snap-align:start;white-space:nowrap}
