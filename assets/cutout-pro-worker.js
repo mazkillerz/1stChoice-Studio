@@ -154,6 +154,11 @@ function analyse(bmp){
   return {hasAlpha:false,flat,bg:flat||fp.coverage>=.5?rgb.map(v=>Math.round(v*255)):null,suggest:flat?'logo':'photo',w:ow,h:oh};
 }
 
+/* a pixel that is the ground darkened evenly in R, G and B is black at alpha 1-s (soft shadows stay translucent) */
+function shade(data,j,l,a,b,bg){
+  labToRgb(l,a,b,bg); const sr=data[j]/255/Math.max(bg[0],.02),sg=data[j+1]/255/Math.max(bg[1],.02),sb=data[j+2]/255/Math.max(bg[2],.02),mx=Math.max(sr,sg,sb),mn=Math.min(sr,sg,sb);
+  if(mx-mn>.07) return -1; const s=(sr+sg+sb)/3; return s>1?0:s<.3?-1:1-s;
+}
 /* ---------- logo mode ---------- */
 function logo(bmp,o,id){
   const t=Math.max(0,Math.min(100,o.tolerance==null?50:o.tolerance))/100, holes=o.holes!==false;
@@ -200,9 +205,10 @@ function logo(bmp,o,id){
   const hi=new Int32Array(n); for(let y=0;y<H;y++){ const row=y*W; for(let x=0;x<W;x++){ let bi=row+x,bd=d[bi]; const a=Math.max(0,x-2),b=Math.min(W-1,x+2); for(let q=a;q<=b;q++){ const j=row+q; if(d[j]>bd){ bd=d[j]; bi=j; } } hi[row+x]=bi; } }
   const out=new Uint8ClampedArray(n*4), bg=[0,0,0], kRGB=1.73*kmin;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const i=y*W+x,j=i*4; let al=1,r=data[j],g=data[j+1],b=data[j+2];
+    const i=y*W+x,j=i*4; let al=1,sa,r=data[j],g=data[j+1],b=data[j+2];
     if(gs[i]) al=0;
     else if(!X[i]) al=1;
+    else if(x>1&&y>1&&x<W-2&&y<H-2&&Math.min(Math.abs(d[i+2]-d[i-2]),Math.abs(d[i+2*W]-d[i-2*W]))<=.06&&(sa=shade(data,j,gL[i],gA[i],gB[i],bg))>=0){ al=sa<.03?0:sa; r=g=b=0; }
     else if(band[i]){
       let bi=hi[i],bd=d[bi]; const y0=Math.max(0,y-2),y1=Math.min(H-1,y+2); for(let q=y0;q<=y1;q++){ const c=hi[q*W+x]; if(d[c]>bd){ bd=d[c]; bi=c; } }
       labToRgb(gL[i],gA[i],gB[i],bg); const fr=data[bi*4]/255,fg=data[bi*4+1]/255,fb=data[bi*4+2]/255,ux=fr-bg[0],uy=fg-bg[1],uz=fb-bg[2];
