@@ -187,3 +187,5 @@
 .cq-day:focus:not(:focus-visible){outline:none}
 .cq-day:focus-visible,.cq-more:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:1px}
 @media (max-width:370px){.cq-days{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cal-quick .cal-times{flex-wrap:nowrap;gap:6px}
+.cal-quick .cal-times .chip{flex:1 1 0;min-width:0;padding:0 6px;justify-content:center}

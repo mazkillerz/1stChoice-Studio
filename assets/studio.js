@@ -1125,7 +1125,7 @@ async function tool(cfg){
       </div>
     </div>
     <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
-    <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
+    <div class="save-foot"><button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button></div>
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="saveAlt" hidden></button>
     <button type="button" class="link" id="alsoTeam" hidden>Also save to the team…</button>
@@ -3597,7 +3597,7 @@ async function home(){
         catch(err){ st(err.message||'Could not redraw the cover.'); b.disabled=false; } return; }
       if(act==='ver'){ d.close(); versionsSheet(dsg); return; }
       if(act==='cap'||act==='capcopy'){ capSheet(act,dsg,P,st,d); return; }   // captions (mega)
-      if(act==='plan'){ d.close(); planDesign({...dsg,format:shapeOf(dsg)}); return; }   /* 2.4.0: Add to calendar */
+      if(act==='plan'){ d.close(); planDesign({...dsg,format:shapeOf(dsg),thumb:urls[dsg.thumb_path]||null,toast:hubToast}); return; }   /* 2.4.0: Add to calendar */
       if(act==='dup'){ st('Copying…'); b.disabled=true; try{ await C.duplicateDesign(dsg.id); d.close(); hubToast('Copied “'+dsg.name+'”.'); loadSaved(true); }catch(err){ st(err.message); b.disabled=false; } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
