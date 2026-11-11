@@ -226,6 +226,8 @@ const ICON={
   layers:svg('<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>'),
   download:svg('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'),
   share:svg('<path d="M12 3v13"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
+  device:svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',20),
+  users:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/>',20),
   bookmark:svg('<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
   check:svg('<path d="M20 6 9 17l-5-5"/>',24),
   rotate:svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',20),
@@ -964,12 +966,17 @@ async function tool(cfg){
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
     <div class="team-status" id="teamStatus" role="status" aria-live="polite" hidden></div>
     <div class="save-opts" id="saveOpts">
-      <label class="opt-row team-row"><span class="opt-ic">${ICON.bookmark}</span><span class="opt-txt"><b id="teamLbl">Save to the team</b><small id="teamSub">Your team finds it in Saved</small></span><input type="checkbox" class="switch" id="teamOn" role="switch"></label>
+      <!-- r3-save --><div class="save-where" id="saveWhere"><span class="lbl" id="saveWhereLbl">Save to</span>
+        <div class="sw-seg" role="radiogroup" aria-labelledby="saveWhereLbl">
+          <button type="button" class="sw-opt" role="radio" data-where="me" aria-checked="true"><span class="sw-ic">${ICON.device}</span><span class="sw-txt"><b>${devWord()==='phone'?'My phone':'This device'}</b><small>${devWord()==='phone'?'A picture in your Photos':'A picture in your downloads'}</small></span></button>
+          <button type="button" class="sw-opt" role="radio" data-where="team" aria-checked="false"><span class="sw-ic">${ICON.users}</span><span class="sw-txt"><b>Phone + Team</b><small>Also in Saved, for everyone</small></span></button>
+        </div>
+        <input type="checkbox" id="teamOn" hidden></div>
       <div class="team-box" id="teamBox" hidden>
         <div class="tb-field"><label class="lbl" for="teamName">Name</label><input type="text" id="teamName" dir="auto" maxlength="80" placeholder="Name, e.g. Restock – Al Khoud" enterkeyhint="done"></div>
-        <div class="tb-field"><span class="lbl" id="teamColsLbl">Collection <span class="lbl-opt">optional · tap to pick</span></span><div class="chips tb-cols" id="teamCols" role="group" aria-labelledby="teamColsLbl"></div>
+        <div class="tb-field"><span class="lbl" id="teamColsLbl">Collection <span class="lbl-req">required</span></span><div class="chips tb-cols" id="teamCols" role="group" aria-labelledby="teamColsLbl"></div>
           <div class="inline" id="teamNewRow" hidden><input type="text" id="teamNewCol" dir="auto" placeholder="Name the new collection" maxlength="40" aria-label="New collection" enterkeyhint="done"><button type="button" class="mini" id="teamAddCol">Add</button></div>
-          <small class="tb-hint" id="teamColsHint" dir="auto" aria-live="polite"></small></div>
+          <small class="tb-hint" id="teamColsHint" dir="auto" role="status" aria-live="polite"></small></div>
         <button type="button" class="link team-more" id="teamMore" aria-expanded="false" aria-controls="teamMoreBox">More options</button>
         <div class="team-more-box" id="teamMoreBox" hidden>
           <label class="check"><input type="checkbox" id="teamKeep"><span class="check-txt">Keep the photos<span class="small">Off: a template, layout and words only</span></span></label>
@@ -981,7 +988,9 @@ async function tool(cfg){
     <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="saveAlt" hidden></button>
+    <button type="button" class="link" id="alsoTeam" hidden>Also save to the team…</button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
+    <a class="link" id="seeSaved" href="${ROOT}index.html#saved" hidden>See it in Saved</a>
     ${flags.on('team')?'<button type="button" class="link rv-save" id="rvSend" hidden>Send for review</button>':''}<!-- review (mega) -->
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
     ${cfg.frameOnly?'<button type="button" class="link" id="saveFrame">Save the frame only (see-through PNG)</button>':''}
@@ -1474,7 +1483,10 @@ async function tool(cfg){
   let teamBusy=0;   // team saves still running: leaving the page now would cut them off half way (the collection link used to be lost)
   function teamSave(o){ teamBusy++; const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}).then(()=>{ teamBusy--; }); return run; }
   async function teamSave1(o){
-    o=o||{}; await designOpen; const C=await cloud();
+    o=o||{}; await designOpen;
+    /* r3-save: the team needs a collection: a new design, or an update of one that has none, is refused here too (the leave prompt may keep a legacy design as it is) */
+    if(!o.keepCols&&!(o.collections||(design?design.collections:[])||[]).some(n=>String(n).trim())) throw new Error('Pick a collection first.');
+    const C=await cloud();
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
     await whoOnce();
     if(!design&&designLost&&!o.asNew) throw new Error('That saved design did not open, so saving now would make a copy. Reload the page to open it first.');
@@ -1489,7 +1501,8 @@ async function tool(cfg){
     const lacks=()=>{ const have=new Set((fresh.collectionNames||[]).map(n=>String(n).trim())); return cols.map(n=>String(n).trim()).filter(n=>n&&!have.has(n)); };
     let colMiss=lacks();
     if(colMiss.length){ try{ await C.setDesignCollections(B.id,id,cols); fresh=await C.getDesign(id); colMiss=lacks(); }catch(_){} }
-    design={id,name,kind:keep?'design':'template',collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); showDesignBar(); clearDraft(); markSaved();
+    design={id,name,kind:keep?'design':'template',collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); teamCols=null;   // r3-save: the list is asked again (a new collection is now real)
+    showDesignBar(); clearDraft(); markSaved();
     await capSave(C,id,asNew);   // captions (mega)
     history.replaceState(null,'',location.pathname+'?design='+id);
     if(colMiss.length){ const e=new Error('Saved to the team, but not added to '+colMiss.map(n=>'“'+n+'”').join(', ')+'. Check the connection and tap Save again.'); e.partial=true; throw e; }
@@ -1513,56 +1526,87 @@ async function tool(cfg){
      opened from Templates starts as a NEW design, with "Update the template" as the other choice. altMode is the person's choice (null = the default). */
   const isTpl=()=>!!design&&design.kind==='template', wantsNew=()=>!design||(altMode?altMode==='new':isTpl());
   const short=n=>{ n=String(n||''); return n.length>22?n.slice(0,21)+'…':n; };
+  /* r3-save: the collections this save would use: the picked ones plus a new one typed but not yet added */
+  const typedCol=()=>$('teamNewCol').value.trim();
+  const pickedNow=()=>{ const l=[...teamPicked], t=typedCol(); if(t&&!l.includes(t)) l.push(t); return l; };
+  const needCol=()=>$('teamOn').checked&&!pickedNow().length;
+  let needHint=false;   // "Pick a collection first, then save." after a tap on the quiet button
+  const where=()=>$('teamOn').checked?'team':'me';
+  function mainLabel(){
+    const on=$('teamOn').checked, upd=!!design&&!wantsNew(), nm=short(design&&design.name), c=pickedNow();
+    if(!on) return imgDone?'Save again':saveAllLabel();
+    if(!c.length) return 'Pick a collection';
+    if(imgDone) return upd?'Update “'+nm+'”':'Add to '+(c.length>1?c.length+' collections':'“'+short(c[0])+'”');
+    return upd?'Update “'+nm+'”':c.length>1?'Save to '+c.length+' collections':'Save to “'+short(c[0])+'”'; }
   function syncSaveOpts(){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
+    document.querySelectorAll('#saveWhere [data-where]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.where===where())));
+    $('saveWhere').hidden=imgDone;   // after a picture: "Also save to the team…" is the way in
     const upd=!!design&&!wantsNew(), nm=short(design&&design.name);
-    $('teamLbl').textContent=upd?'Update in the team':design?'Save to the team as a new design':'Save to the team';
-    $('teamSub').textContent=teamMember===false&&!on?'Sign in to share it with your team':upd?'Saved designs keep your latest changes':design&&isTpl()?'The template stays as it is':'Your team finds it in Saved';
     $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
     const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template'||wantsNew():true); $('teamKeep').disabled=!hasPhotosNow();
-    $('saveTxt').textContent=imgDone?(on?(upd?'Update in the team':'Add to the team'):'Save again'):on?(upd?'Update “'+nm+'”':design?'Save as new design':'Save & add to team'):saveAllLabel();
-    $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||$('teamOnly').dataset.off==='1';
+    const need=needCol(); if(!need) needHint=false;
+    $('saveTxt').textContent=mainLabel();
+    $('save').setAttribute('aria-disabled',String(need)); $('save').classList.toggle('is-need',need);
+    const teamDone=$('teamOnly').dataset.off==='1';
+    $('photosRow').hidden=imgDone||on; $('teamOnly').hidden=imgDone||teamDone;
+    $('alsoTeam').hidden=!imgDone||on||teamDone; $('seeSaved').hidden=!teamDone;
     if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
-  function pickDefaultCols(){ teamPicked.clear(); const d=design?design.collections:store(LAST_COLS);
-    (Array.isArray(d)?d:[]).forEach(n=>{ if(!n) return; if(!design&&teamCols&&teamCols.length&&!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) return; teamPicked.add(n); }); }   // a remembered collection that no longer exists is dropped
+  function pickDefaultCols(){ teamPicked.clear(); if(!design) return;   // r3-save: a new design has nothing picked (the last-used one only comes first in the row); an opened design keeps its own
+    (Array.isArray(design.collections)?design.collections:[]).forEach(n=>{ if(n) teamPicked.add(n); }); }
   store('studio:teamSave',null);   // forget the old remembered setting
   $('teamOn').checked=false;
-  $('teamOn').addEventListener('change',async e=>{ const sw=e.target; sw.dataset.touched='1'; syncSaveOpts();
-    const m=sw.checked?await checkTeam():true;
+  let whereP=Promise.resolve();
+  async function teamChanged(){ const sw=$('teamOn'); sw.dataset.touched='1';
+    if(!sw.checked){ syncSaveOpts(); return; }
+    const m=await checkTeam();
     if(m===null){ try{ const C=await cloud(); if(C.signedInHere&&C.signedInHere()){ syncSaveOpts(); return; } }catch(_){} }   // offline but signed in here: keep it on; the team save says if it fails
-    if(sw.checked&&!m){ const ok=await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'); teamMember=ok;
-      if(!ok){ sw.checked=false; } else { teamCols=null; } syncSaveOpts(); } });
+    if(!m){ sw.checked=false; syncSaveOpts();   // signed out: sign in first; cancel = back to My phone
+      const ok=await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'); teamMember=ok;
+      if(ok){ teamCols=null; sw.checked=true; } }
+    syncSaveOpts(); }
+  $('teamOn').addEventListener('change',()=>{ whereP=teamChanged(); });
+  /* r3-save: the Save to control. Resolves to true when the team is chosen (signed in) */
+  async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP; return sw.checked; }
+  $('saveWhere').addEventListener('click',e=>{ const b=e.target.closest('[data-where]'); if(!b||b.dataset.where===where()) return; haptic('tick'); setWhere(b.dataset.where); });
+  $('saveWhere').addEventListener('keydown',e=>{ if(!/^Arrow/.test(e.key)) return; e.preventDefault(); const w=where()==='me'?'team':'me'; setWhere(w).then(()=>{ const b=$('saveWhere').querySelector('[data-where="'+where()+'"]'); if(b) b.focus(); }); });
+  function nudgeCols(){ needHint=true; const c=$('teamCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200);
+    haptic('warn'); paintTeamCols(); try{ c.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} }
   $('teamName').addEventListener('input',e=>{ e.target.dataset.touched='1'; });
   $('teamName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
   $('teamAsNew').addEventListener('change',e=>{ altMode=e.target.checked?'new':'upd'; syncSaveOpts(); });
-  $('saveAlt').addEventListener('click',()=>{ altMode=wantsNew()?'upd':'new'; $('teamOn').checked=true; $('teamOn').dataset.touched='1'; syncSaveOpts(); doSave(); });
-  let colsLoading=null, colsFailed=false;
+  $('saveAlt').addEventListener('click',async()=>{ altMode=wantsNew()?'upd':'new'; if(!(await setWhere('team'))){ syncSaveOpts(); return; } syncSaveOpts(); doSave(); });
+  let colsLoading=null, colsFailed=false, colsAutoOpened=false;
   async function paintTeamCols(){
     if(!teamCols){ if(!colsLoading){ $('teamCols').innerHTML='<span class="small tb-wait"><span class="spin" aria-hidden="true"></span> Loading collections…</span>'; $('teamColsHint').textContent='';
         colsLoading=(async()=>{ colsFailed=false; try{ teamCols=await checkTeam()?await (await cloud()).collections(B.id):[]; }catch(_){ teamCols=[]; colsFailed=true; }
         if(!design&&teamCols.length) [...teamPicked].forEach(n=>{ if(!typedCols.has(n)&&!teamCols.some(c=>c.name===n)) teamPicked.delete(n); }); })(); }
       await colsLoading; colsLoading=null; }
     if(!teamCols) return;
-    const all=[...new Set([...teamCols.map(c=>c.name),...teamPicked])].sort((a,b)=>a.localeCompare(b));
+    const last=store(LAST_COLS), lastL=Array.isArray(last)?last:[];   // the last-used collections come first (not picked)
+    const names=[...new Set([...teamCols.map(c=>c.name),...teamPicked])], all=[...lastL.filter(n=>names.includes(n)),...names.filter(n=>!lastL.includes(n)).sort((a,b)=>a.localeCompare(b))];
+    if(!all.length&&!colsAutoOpened){ colsAutoOpened=true; $('teamNewRow').hidden=false; }
     $('teamCols').innerHTML=all.map(n=>`<button type="button" class="chip col-pick" dir="auto" data-col="${esc(n)}" aria-pressed="${teamPicked.has(n)}">${teamPicked.has(n)?ICON.check:''}<span>${esc(n)}</span></button>`).join('')
       +`<button type="button" class="chip add" data-newcol aria-expanded="${!$('teamNewRow').hidden}">${ICON.plus}<span>New collection</span></button>`
       +(colsFailed?'<button type="button" class="link tb-retry" data-colretry>Couldn’t load collections · Try again</button>':'');
-    const on=[...teamPicked];
-    $('teamColsHint').textContent=on.length?'It goes in '+on.map(n=>'“'+n+'”').join(' and ')+'.':all.length?'Not in a collection. It still shows in Saved.':'No collections yet. Tap New collection to start one.';
+    const on=pickedNow(), h=$('teamColsHint');
+    h.textContent=on.length?'It goes in '+on.map(n=>'“'+n+'”').join(' and ')+'.':needHint?'Pick a collection first, then save.':all.length?'Choose where it goes in Saved.':'Name your first collection.';
+    h.classList.toggle('need',!on.length&&needHint);
+    $('saveTxt').textContent=mainLabel(); $('save').setAttribute('aria-disabled',String(!on.length)); $('save').classList.toggle('is-need',!on.length);
   }
   $('teamMore').addEventListener('click',()=>{ const open=$('teamMoreBox').hidden; $('teamMoreBox').hidden=!open; $('teamMore').setAttribute('aria-expanded',String(open)); $('teamMore').textContent=open?'Fewer options':'More options'; });
   $('teamCols').addEventListener('click',e=>{ if(e.target.closest('[data-colretry]')){ teamCols=null; paintTeamCols(); return; }
     if(e.target.closest('[data-newcol]')){ const r=$('teamNewRow'); r.hidden=!r.hidden; paintTeamCols(); if(!r.hidden) $('teamNewCol').focus(); return; }
-    const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); haptic('tick'); paintTeamCols(); });
+    const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; teamPicked.has(n)?teamPicked.delete(n):teamPicked.add(n); needHint=false; haptic('tick'); paintTeamCols(); });
   const addTeamCol=()=>{ const n=$('teamNewCol').value.trim(); if(n){ teamPicked.add(n); typedCols.add(n); $('teamNewCol').value=''; $('teamNewRow').hidden=true; paintTeamCols(); } };
   $('teamAddCol').onclick=addTeamCol; $('teamNewCol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTeamCol(); } });
-  $('teamNewCol').addEventListener('input',e=>{ const v=e.target.value.trim(); if(v) $('teamColsHint').textContent='“'+v+'” will be made when you save (or tap Add).'; else paintTeamCols(); });
+  $('teamNewCol').addEventListener('input',e=>{ const v=e.target.value.trim(); needHint=false; paintTeamCols(); if(v) $('teamColsHint').textContent='“'+v+'” will be made when you save (or tap Add).'; });
   function teamOpts(){ const typed=$('teamNewCol').value.trim();   // a new name typed without tapping Add still counts
     if(typed){ teamPicked.add(typed); typedCols.add(typed); }
     return {name:$('teamName').value,keep:$('teamKeep').checked,asNew:!!design&&wantsNew(),collections:[...teamPicked]}; }
@@ -1571,6 +1615,7 @@ async function tool(cfg){
   const teamErr=err=>{ const m=String(err&&err.message||''); return !m||err instanceof TypeError||/fetch|network|load failed|timed? ?out/i.test(m)?'Not saved to the team: no connection. Check it and try again.':m; };
   /* true when it saved; on a failure the switch stays on, so the next tap of the button tries the team again (1.41.0) */
   async function runTeamSave(afterPicture){
+    if(needCol()){ nudgeCols(); return false; }
     teamLine('Saving to the team…'); status('');   // an earlier failure's message goes
     try{ const r=await teamSave(teamOpts()); $('teamNewCol').value=''; $('teamNewRow').hidden=true;
       teamLine('Saved to the team as “'+r.name+'”'+(r.cols.length?' in '+r.cols.map(n=>'“'+n+'”').join(', '):''),true); if(!afterPicture) celebrate(); rvSaved(); return true; }
@@ -1611,7 +1656,9 @@ async function tool(cfg){
     try{ const R=await lazy('review',{css:1});
       await R.send({brand:B.id,cloud,ask:whoLib},design.id); b.textContent='Sent for review'; }
     catch(err){ b.disabled=false; status(teamErr(err)); } });
-  $('teamOnly').addEventListener('click',()=>{ if(!$('teamOn').checked){ $('teamOn').checked=true; syncSaveOpts(); } runTeamSave(); });
+  /* r3-save: "Only save to the team" and "Also save to the team…" choose Team first; a collection is still required */
+  $('teamOnly').addEventListener('click',async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudgeCols(); return; } runTeamSave(); });
+  $('alsoTeam').addEventListener('click',async()=>{ imgDone=false; if(!(await setWhere('team'))){ imgDone=true; syncSaveOpts(); return; } imgDone=true; syncSaveOpts(); $('saveWhere').hidden=true; if(needCol()) nudgeCols(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
   let baseJson=null;
@@ -1625,7 +1672,7 @@ async function tool(cfg){
     d.querySelector('#lvKeep').onclick=()=>d.close();
     d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-      try{ await teamSave({name:design.name}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+      try{ await teamSave({name:design.name,keepCols:true}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
   }
   let leaving=false;
   /* a link tapped while the team save is still running waits for it (a few seconds), then goes */
@@ -1645,7 +1692,7 @@ async function tool(cfg){
     const slots=[];
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
     await fontsOf(r); applyRecipe(r,slots);
-    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; pickDefaultCols(); showDesignBar(); status(''); markSaved(); capLoad(d);   // captions (mega)
+    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; if(!isTpl()) $('teamOn').checked=true; pickDefaultCols(); showDesignBar();   /* r3-save: an opened design starts on Phone + Team */ status(''); markSaved(); capLoad(d);   // captions (mega)
     if(d.kind!=='template'&&!RENDER_FRAME) healCover(C,d,thumbBlob);   // a blank cover is redrawn quietly (saved-versions, mega)
     if(ready&&d.kind!=='template'){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
@@ -2060,7 +2107,7 @@ async function tool(cfg){
   function done(title,txt){ $('doneBox').hidden=!title; if(title){ $('doneTitle').textContent=title; $('doneTxt').textContent=txt||''; } capDoneSync(); }   // capDoneSync: captions (mega)
   /* Save all pages (1.9.0): paged tools save every page in one go, named <design>-01.png, -02.png… (the design's name, else the
      tool and the time); a phone gets one share sheet with all of them, a computer one ZIP (assets/batch.js). Cancel stops before anything is saved. */
-  function saveAllLabel(){ return !PG?'Save story':pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
+  function saveAllLabel(){ return !PG?'Save to '+(devWord()==='phone'?'my phone':'this device'):pageCount()>1?'Save all '+pageCount()+' '+PN.many:'Save '+PN.one; }
   function syncSaveAll(){ if(!PG) return; if(!saving) $('saveThis').hidden=pageCount()<2||$('save').hidden; if(!imgDone&&!$('teamOn').checked) $('saveTxt').textContent=saveAllLabel();
     const zipped=!inClaude&&!matchMedia('(pointer:coarse)').matches&&!isPhone();   // a computer gets one ZIP (see save())
     $('photosRow').textContent=pageCount()>1?(zipped?'All '+pageCount()+' '+PN.many+' download at full quality in one ZIP, numbered in order.':'All '+pageCount()+' '+PN.many+' go to your Photos at full quality, one picture each.'):'Always a full-quality picture to your Photos.'; }
@@ -2203,8 +2250,9 @@ async function tool(cfg){
   function rulesRun(){ if(!window.StudioRules&&!rulesLoading) (rulesLoading=lazy('rules').catch(()=>{})).then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
   let rulesLoading=null;
   const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
-  function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; $('teamOn').checked=teamMember===true; pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue();
-    if(teamMember===null) checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched){ $('teamOn').checked=true; syncSaveOpts(); } }); }
+  function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; needHint=false;
+    $('teamOn').checked=!!design&&!isTpl();   // r3-save: a new design always starts on My phone; one opened from Saved starts on Phone + Team (so an edit is never only a picture)
+    pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue(); }
   async function doSave(only){
     hideReady();
     const miss=only!=null?(missingPhotos().includes(only+1)?[only+1]:[]):missingPhotos();
@@ -2214,13 +2262,12 @@ async function tool(cfg){
       return;
     }
     let team=$('teamOn').checked;
+    if(team&&needCol()){ nudgeCols(); return; }   // r3-save: the team needs a collection first
     /* the picture is already in Photos: the switch is on, so this tap only adds it to the team */
     if(imgDone&&team&&only==null){ $('save').disabled=true; const ok=await runTeamSave(); $('save').disabled=false; if(ok){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; } syncSaveOpts(); return; }
     /* the image first (phones only allow the share sheet straight after a tap), the team save right after */
     imgDone=false; $('saveOpts').hidden=true; $('teamOnly').hidden=true; $('save').hidden=true; if(PG) $('saveThis').hidden=true;
-    const asked=!$('teamOn').dataset.touched&&only==null&&teamMember===null;   // still checking the sign-in: decide after the picture
     if(await save(true,only)==='cancelled'){ $('save').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue(); return; }
-    if(!team&&asked&&await checkTeam()) team=true;
     if(team&&await runTeamSave(imgDone)){ $('teamOn').checked=false; $('teamOnly').dataset.off='1'; }
     $('save').hidden=false; if(PG) $('saveThis').hidden=false; $('saveOpts').hidden=false; syncSaveOpts(); syncQueue();
   }
@@ -2228,7 +2275,7 @@ async function tool(cfg){
   /* computer (1.15.0): the dock repeats the Save button while the Save card is out of sight; a click brings the card up
      (so its progress and tick show) and saves. It copies the button's words and state, so there is still one Save. */
   { const dock=$('saveDock'), dk=$('dockSave'), sv=$('save'); let seen=true;
-    const sync=()=>{ dk.innerHTML=sv.innerHTML.replace(/\sid="[^"]*"/g,''); dk.disabled=sv.disabled; dk.className=sv.className; dock.hidden=seen||sv.hidden||!$('sh-save').offsetParent; };
+    const sync=()=>{ dk.innerHTML=sv.innerHTML.replace(/\sid="[^"]*"/g,''); dk.disabled=sv.disabled; dk.className=sv.className; dk.setAttribute('aria-disabled',sv.getAttribute('aria-disabled')||'false'); dock.hidden=seen||sv.hidden||!$('sh-save').offsetParent; };
     new MutationObserver(sync).observe(sv,{attributes:true,childList:true,subtree:true,characterData:true});
     if('IntersectionObserver' in window) new IntersectionObserver(es=>{ seen=es[0].isIntersecting; sync(); }).observe(sv); else seen=true;
     const bring=()=>$('sh-save').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'end'});
@@ -2373,8 +2420,7 @@ async function tool(cfg){
       if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
-  /* quietly check whether this phone is signed in to the team, so Save to the team is ready (on) when the Save sheet opens */
-  setTimeout(()=>checkTeam().then(m=>{ if(m&&!imgDone&&!saving&&!$('teamOn').dataset.touched&&!$('teamOn').checked&&!$('teamOnly').dataset.off){ $('teamOn').checked=true; syncSaveOpts(); } }),1200);
+  /* r3-save: nothing turns the team on by itself any more; the person chooses on the Save sheet */
   /* photos still waiting from an earlier visit (1.8.0): the page reloaded on the story you were on (after the share sheet, or
      with ?draft=) picks the row up again as it was; anything else (a fresh visit, ?queue=1 from Home) offers or continues it */
   if(QUEUE&&q.get('quick')!=='1'&&!RENDER){ const k=await keptQueue();   // a hidden render frame leaves the waiting photos alone
