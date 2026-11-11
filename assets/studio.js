@@ -1684,7 +1684,7 @@ async function tool(cfg){
     $('saveTxt').textContent=mainLabel();
     $('save').setAttribute('aria-disabled',String(need)); $('save').classList.toggle('is-need',need);
     const teamDone=$('teamOnly').dataset.off==='1';
-    $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||teamDone;
+    $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||teamDone||!on;   // only offered once Phone + Team is chosen
     $('alsoTeam').hidden=!imgDone||on||teamDone; $('seeSaved').hidden=!teamDone;
     if(on) paintTeamCols(); syncSaveAll();
   }
