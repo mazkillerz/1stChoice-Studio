@@ -72,7 +72,7 @@ const toData=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result
 const tbl=d=>(d.team_assets=d.team_assets||[]);
 /* localStorage fakecloud-signedout=1: this phone is not signed in to the team */
 { const out=()=>localStorage.getItem('fakecloud-signedout')==='1', se=C.session, mem=C.isMember;
-  C.session=async()=>out()?null:se(); C.isMember=async()=>out()?false:mem(); C.checkMember=async()=>out()?false:mem(); }
+  C.session=async()=>out()?null:se(); C.isMember=async()=>out()?false:mem(); C.checkMember=async()=>out()?false:C.isMember();   /* asks the current isMember, so a suite that swaps it is followed */ }
 C.teamAssetsReady=async()=>!off();
 C.teamAssets=async brand=>off()?[]:tbl(db()).filter(x=>x.brand===brand).slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
 C.saveTeamAsset=async o=>{ const d=db(); const id='ta'+Math.random().toString(36).slice(2,10), base=o.brand+'/assets/'+id+'/';

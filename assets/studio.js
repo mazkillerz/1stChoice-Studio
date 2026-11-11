@@ -2104,7 +2104,7 @@ async function tool(cfg){
     /* r3-assets */
     const tm=e.target.closest('[data-team]'); if(tm){ addAsset('team:'+tm.dataset.team); return; }
     if(e.target.closest('[data-team-signin]')){ if(await ensureMember('Team assets are shared with the team. Sign in to use them.')){ teamMember=true; paintTeamGroup(); } return; }
-    if(e.target.closest('[data-team-browse]')){ try{ const T=await lazy('teamassets',{css:1,global:'StudioTeamAssets'}); T.open({brand:B.id,mode:'pick',onPick:addTeamAsset}); }catch(_){ status('Team assets did not open. Check your connection.'); } } });
+    if(e.target.closest('[data-team-browse]')){ try{ const T=await lazy('teamassets',{css:1,global:'StudioTeamAssets'}); const lib=await T.open({brand:B.id,mode:'pick',onPick:addTeamAsset}); if(lib&&lib.addEventListener) lib.addEventListener('close',()=>paintTeamGroup());   /* a picture added in the library shows in the Team group at once */ }catch(_){ status('Team assets did not open. Check your connection.'); } } });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
     /* the emoji shapes: started on press (and by the Layers sheet on a phone); the sheet opens with them, or after 1.5 s without */
     $('addSticker').addEventListener('pointerdown',()=>emojiStickers());
