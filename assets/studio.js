@@ -404,15 +404,20 @@ const NAV=(()=>{
   const stack=[], waiters=[]; let want=0, flight=null, pushQ=0, tmr=0, keepSearch=location.search;
   const rs=history.replaceState.bind(history), ps=history.pushState.bind(history);
   try{ history.replaceState=function(s,t,u){ if(u!=null){ try{ keepSearch=new URL(u,location.href).search; }catch(_){} } return rs(s,t,u); }; }catch(_){}
-  const doPush=()=>{ try{ ps(Object.assign({},history.state,{nav:stack.length}),''); }catch(_){} };
+  /* a layer's history steps must never move the page: the browser's own scroll restore is off while a layer is open (it put Saved back at
+     the top when a menu closed), and the place is put back by hand after a quiet step back */
+  const manual=on=>{ try{ history.scrollRestoration=on?'manual':'auto'; }catch(_){} };
+  const settle=()=>{ if(!stack.length&&!want&&!flight&&!pushQ) setTimeout(()=>{ if(!stack.length&&!want&&!flight&&!pushQ) manual(false); },80); };
+  let keepXY=null;
+  const doPush=()=>{ manual(true); try{ ps(Object.assign({},history.state,{nav:stack.length}),''); }catch(_){} manual(true); };
   /* the page may have changed its own address (draft / design id) while a layer was open: keep that when the layer's entry goes */
   const fixUrl=()=>{ if(location.search!==keepSearch){ try{ rs(history.state,'',location.pathname+keepSearch+location.hash); }catch(_){} } };
   function quiet(){ return !want&&!flight&&!pushQ; }
   function runWaiters(){ if(quiet()) waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); }
   /* the page is leaving (a link was tapped in the layer that just closed): never step back now, a history step would cancel that page load */
   let leaving=false; addEventListener('beforeunload',()=>{ leaving=true; setTimeout(()=>{ leaving=false; if(want&&!flight&&!tmr) tmr=setTimeout(flush,0); },1500); }); addEventListener('pageshow',()=>{ leaving=false; });
-  function flush(){ clearTimeout(tmr); tmr=0; if(leaving){ waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); return; } if(flight||!want){ runWaiters(); return; } const n=want; want=0; flight=setTimeout(landed,400); try{ history.go(-n); }catch(_){ landed(); } }
-  function landed(){ if(!flight) return; clearTimeout(flight); flight=null; fixUrl(); while(pushQ>0){ pushQ--; doPush(); } if(want) flush(); else runWaiters(); }
+  function flush(){ clearTimeout(tmr); tmr=0; if(leaving){ waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); return; } if(flight||!want){ runWaiters(); return; } const n=want; want=0; keepXY=[scrollX,scrollY]; manual(true); flight=setTimeout(landed,400); try{ history.go(-n); }catch(_){ landed(); } }
+  function landed(){ if(!flight) return; clearTimeout(flight); flight=null; fixUrl(); manual(true); if(keepXY){ const [x,y]=keepXY; keepXY=null; if(scrollX!==x||scrollY!==y) scrollTo(x,y); } settle(); while(pushQ>0){ pushQ--; doPush(); } if(want) flush(); else runWaiters(); }
   function push(key,onBack){
     stack.push({key,onBack});
     if(want>0) want--;   // a step is still waiting to go back: that same entry serves this layer
@@ -434,7 +439,7 @@ const NAV=(()=>{
     const top=stack.pop();
     if(!top){ if(history.state&&history.state.nav) try{ history.back(); }catch(_){} return; }   // reloaded with a layer open: never a dead Back
     let r; try{ r=top.onBack(); }catch(_){}
-    if(r===false){ stack.push(top); doPush(); } else fixUrl();
+    if(r===false){ stack.push(top); doPush(); } else fixUrl(); settle();
     if(stack.length===0&&history.state&&history.state.nav===undefined) runWaiters();
   });
   return {push,drop,idle,back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};

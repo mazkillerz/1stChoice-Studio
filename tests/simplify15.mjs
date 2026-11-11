@@ -57,6 +57,7 @@ for(const scheme of ['light','dark']){
       await pg.tap(`#bar [data-open="${sh}"]`).catch(()=>{}); await pg.waitForTimeout(350); }
     await pg.tap('#bar [data-open="words"]'); await pg.waitForTimeout(400); await pg.locator('#sh-words .chip[aria-pressed="false"]').first().tap(); await pg.waitForTimeout(400); await pg.tap('#bar [data-open="words"]'); await pg.waitForTimeout(350);
     await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{}); await pg.waitForTimeout(500);
+    await pg.evaluate(()=>{ const t=document.querySelector('#saveWhere [data-where="team"]'); if(t) t.click(); }); await pg.waitForTimeout(700);   /* 2.3.0: the sheet's text buttons show once Phone + Team is chosen */
     const sv=await pg.evaluate(()=>({acc:__s15.accent(),done:__s15.ratio(document.querySelector('#sh-save .done')),
       links:[...document.querySelectorAll('#sh-save .link')].filter(e=>__s15.vis(e)).map(e=>({t:e.textContent.trim(),u:getComputedStyle(e).textDecorationLine,r:+__s15.ratio(e).toFixed(2)})),
       dock:getComputedStyle(document.getElementById('saveDock')).display}));
