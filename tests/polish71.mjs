@@ -166,14 +166,14 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
 
   /* =========== design sheet header mirrors for an Arabic name =========== */
   if(part('saved')) { const {ctx,pg}=await mk(vp,scheme,eight()); await savedPage(pg);
-    await tap(pg,'#savedGrid .sv-card[data-id="seed0"] .sv-more'); await pg.waitForSelector('dialog.design-dlg[open] .ds-top',{timeout:5000}); await pg.waitForTimeout(400);
-    const ds=await pg.evaluate(()=>{ const t=document.querySelector('dialog.design-dlg[open] .ds-top'), h=t.querySelector('h3'), im=t.querySelector('img,.ds-ph'), c=r=>(r.left+r.right)/2;
-      return {dir:t.getAttribute('dir'),rtl:t.matches(':dir(rtl)'),name:h.textContent,picRightOfName:c(im.getBoundingClientRect())>c(h.getBoundingClientRect()),nameDir:getComputedStyle(h).direction}; });
-    ok(N+'design sheet header has dir=auto and is :dir(rtl) for an Arabic name, picture on the right',ds.dir==='auto'&&ds.rtl&&ds.name===AR&&ds.picRightOfName,ds);
+    await tap(pg,'#savedGrid .sv-card[data-id="seed0"] .sv-more'); await pg.waitForSelector('dialog.design-dlg[open] .ds-txt',{timeout:5000}); await pg.waitForTimeout(400);
+    const ds=await pg.evaluate(()=>{ const t=document.querySelector('dialog.design-dlg[open] .ds-txt'), h=t.querySelector('h3');
+      return {dir:t.getAttribute('dir'),rtl:t.matches(':dir(rtl)'),name:h.textContent}; });
+    ok(N+'design sheet name block has dir=auto and is :dir(rtl) for an Arabic name (2.4.0: big picture above it)',ds.dir==='auto'&&ds.rtl&&ds.name===AR,ds);
     await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
-    await tap(pg,'#savedGrid .sv-card[data-id="seed2"] .sv-more'); await pg.waitForSelector('dialog.design-dlg[open] .ds-top',{timeout:5000}); await pg.waitForTimeout(400);
-    const dsE=await pg.evaluate(()=>{ const t=document.querySelector('dialog.design-dlg[open] .ds-top'), h=t.querySelector('h3'), im=t.querySelector('img,.ds-ph'), c=r=>(r.left+r.right)/2; return {ltr:t.matches(':dir(ltr)'),picLeftOfName:c(im.getBoundingClientRect())<c(h.getBoundingClientRect())}; });
-    ok(N+'design sheet header stays left-to-right for an English name, picture on the left',dsE.ltr&&dsE.picLeftOfName,dsE);
+    await tap(pg,'#savedGrid .sv-card[data-id="seed2"] .sv-more'); await pg.waitForSelector('dialog.design-dlg[open] .ds-txt',{timeout:5000}); await pg.waitForTimeout(400);
+    const dsE=await pg.evaluate(()=>({ltr:document.querySelector('dialog.design-dlg[open] .ds-txt').matches(':dir(ltr)')}));
+    ok(N+'design sheet name block stays left-to-right for an English name',dsE.ltr,dsE);
     await ctx.close(); }
 
   /* =========== search: our own clear button, Arabic rows mirror =========== */

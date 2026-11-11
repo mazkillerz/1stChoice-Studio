@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.3.1';
+const VERSION='2.4.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -2937,8 +2937,8 @@ async function home(){
     pickDesign:async o2=>{ const Cal=await lazy('calendar',{css:1}); const c=await getCloud(); if(!loaded) await loadSaved(); return Cal.pick({brand:B.id,cloud:c,dialog,esc,icons:ICON,designs:all,urls,...(o2||{})}); },
     plan:o2=>planDesign(o2), designHref:d=>toolPage(d.tool)+'?design='+encodeURIComponent(d.id), newDesignHref:toolPage('create'), toolName});
   let ideasApi=null, goalsApi=null;
-  async function ideasLib(){ const I=await lazy('ideas',{css:1}); if(!ideasApi) ideasApi=I.init(planCtx('ideas')); return ideasApi; }
-  async function goalsLib(){ const K=await lazy('kpis',{css:1}); if(!goalsApi) goalsApi=K.init(planCtx('goals')); return goalsApi; }
+  async function ideasLib(){ lazyCss('calendar'); const I=await lazy('ideas',{css:1}); if(!ideasApi) ideasApi=I.init(planCtx('ideas')); return ideasApi; }
+  async function goalsLib(){ lazyCss('calendar'); const K=await lazy('kpis',{css:1}); if(!goalsApi) goalsApi=K.init(planCtx('goals')); return goalsApi; }
   const planFail=(root,fn,what)=>{ root.innerHTML=`<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>${what} did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" data-plan-retry>Try again</button></div>`; root.querySelector('[data-plan-retry]').onclick=fn; };
   async function showIdeas(){ const root=$('ideasView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await ideasLib()).show(); }catch(_){ planFail(root,showIdeas,'Ideas'); } }
   async function showGoals(){ const root=$('goalsView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
@@ -3257,7 +3257,7 @@ async function home(){
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); Object.keys(u).forEach(k=>{ urlAt[k]=Date.now(); }); keepSaved(); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
   const svCard=(d,i,page)=>svCardOld(d,i,page);   /* page: the Saved page's cards also name their first collection (2.4.0) */
   const svCardOld=(d,i,page)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span>${page&&d.collections.length&&colName(d.collections[0])?`<span class="sv-col">${esc(colName(d.collections[0]))}</span> · `:''}<bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi>${page&&d.collections.length&&colName(d.collections[0])?` · <bdi class="sv-col">${esc(colName(d.collections[0]))}</bdi>`:''}</span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
   function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); paintJump(); rvHome();   /* review (mega) hook */ campPaint(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */

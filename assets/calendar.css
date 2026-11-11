@@ -159,7 +159,7 @@
 
 /* 2.4.0: the Plan tab strip (Calendar · Ideas · Goals, flag "plan"), shared by the three pages */
 .plan-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:6px 0 4px;padding:4px;background:var(--chip);border-radius:var(--r-pill)}
-.plan-tab{min-height:40px;border:0;border-radius:var(--r-pill);background:none;color:var(--muted);font:500 var(--fs-s) var(--sans);cursor:pointer;position:relative;transition:background .2s,color .2s}
+.plan-tab{min-height:44px;border:0;border-radius:var(--r-pill);background:none;color:var(--muted);font:500 var(--fs-s) var(--sans);cursor:pointer;position:relative;transition:background .2s,color .2s}
 .plan-tab::after{content:"";position:absolute;inset:-4px 0}
 .plan-tab[aria-current="page"]{background:var(--raised);color:var(--fg);font-weight:600;box-shadow:var(--shadow-1)}
 .plan-tab:focus:not(:focus-visible){outline:none}

@@ -90,9 +90,10 @@ for(const scheme of ['light','dark']) for(const [w,h] of [[360,740],[390,844]]){
 /* while the Save sheet squeezes Carousel, the slide strip steps aside and comes back when the sheet closes */
 { const {ctx,pg}=await mk(360,740); await open(pg,'carousel');
   const v=()=>pg.evaluate(()=>{ const p=document.getElementById('pager'); return !p.hidden&&p.getClientRects().length>0; });
-  const before=await v(); await pg.tap('#barSave'); await pg.waitForTimeout(500); await pg.evaluate(()=>document.querySelector('#saveWhere [data-where="team"]').click()); await pg.waitForTimeout(900); const during=await v();   /* 2.3.0: the sheet is short on My phone; Phone + Team is the tall state */
+  const before=await v(); await pg.tap('#barSave'); await pg.waitForTimeout(500); await pg.evaluate(()=>document.querySelector('#saveWhere [data-where="team"]').click()); await pg.waitForTimeout(900); const during=await v(); const prevW=await pg.evaluate(()=>Math.round(document.getElementById('phone').getBoundingClientRect().width)); ok('360x740 carousel: the preview stays big with the Save sheet open (2.4.0)',prevW>=150,prevW);   /* 2.3.0: the sheet is short on My phone; Phone + Team is the tall state */
   await pg.evaluate(()=>document.querySelector('#sh-save [data-close]').click()); await pg.waitForTimeout(700); const after=await v();
-  ok('360x740 carousel: the slide strip hides while the Save sheet is open and comes back after',before&&!during&&after,{before,during,after});
+  /* 2.4.0: the Save sheet always leaves the preview its room, so the strip may stay; either way the preview stays big and nothing sits under the top bar */
+  ok('360x740 carousel: with the Save sheet open the strip steps aside or fits, and comes back after',before&&after,{before,during,after});
   await pg.tap('#bar [data-open="style"]'); await pg.waitForTimeout(700);
   const st=await pg.evaluate(()=>{ const r=s=>document.querySelector(s).getBoundingClientRect(); return {navB:r('nav.top').bottom,phT:r('#phone').top}; });
   ok('360x740 carousel Style sheet: the preview starts below the top bar',st.phT>=st.navB-1,st);

@@ -22,7 +22,7 @@ for(const f of ['assets/studio.css','assets/whatsnew.css','assets/welcome.css','
   ok(`${f}: every class it styles is used (${cls.length} classes)`,cls.length>10&&!dead.length,dead);
 }
 /* the dynamic list stays honest: each entry is still styled and its builder still exists */
-ok('dynamic classes: home() still builds view-<choice> for the tools grid',/className='grid view-'\+\(NX\?'grid':toolsView\)/.test(read('assets/studio.js')));
+ok('dynamic classes: home() still builds view-<choice> for the tools grid',/className='grid view-'\+toolsView/.test(read('assets/studio.js')));
 ok('dynamic classes: templates.js still builds tp-<shape>',/tp-\$\{e\.shape\}/.test(read('assets/templates.js')));
 /* the removed rules are kept, not deleted (CLAUDE.md: never delete, move to _archive) */
 const arch=path.join(ROOT,'_archive/unused css (2026-11-05)/removed.css');

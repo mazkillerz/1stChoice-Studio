@@ -95,20 +95,16 @@ async function phone(dark){
   await tap(`[data-add="${OTHER}"]`); await pg.waitForSelector('dialog.cal-dlg[open] #calCap');
   const sheet0=await pg.evaluate(()=>({title:!!document.querySelector('#calTitle'),tags:!!document.querySelector('#calTags'),st:[...document.querySelectorAll('[data-st]')].map(e=>e.textContent),
     fmt:[...document.querySelectorAll('[data-fmt]')].map(e=>e.textContent.trim()+':'+e.getAttribute('aria-pressed')),at:[...document.querySelectorAll('[data-at]')].map(e=>e.textContent.replace(/\s/g,' ')+':'+e.getAttribute('aria-pressed')),day:document.querySelector('#calDayTxt').textContent,ph:document.querySelector('#calCap').placeholder,cnt:document.querySelector('#calCount').textContent.replace(/\s+/g,' ')}));
-  ok(T+'the sheet has Post/Story (none chosen), a design tile, a day pill, time chips (7 pm on), caption, Draft/Ready/Posted; no title, hashtag or old status list',!sheet0.title&&!sheet0.tags&&sheet0.st.join()==='Draft,Ready,Posted'&&sheet0.fmt.join()==='Post:false,Story:false'&&sheet0.at.join()==='9 am:false,12 pm:false,7 pm:true,9 pm:false,Other:false'&&/^\w{3},? .*\d/.test(sheet0.day)&&sheet0.ph==='Write or paste the caption'&&/0 \/ 2,200/.test(sheet0.cnt),sheet0);
+  ok(T+'the sheet has Post/Story/Reel (none chosen), a design tile, a day pill, time chips (7 pm on), caption, Draft/Ready/Posted; no title, hashtag or old status list',!sheet0.title&&!sheet0.tags&&sheet0.st.join()==='Draft,Ready,Posted'&&sheet0.fmt.join()==='Post:false,Story:false,Reel:false'&&sheet0.at.join()==='9 am:false,12 pm:false,7 pm:true,9 pm:false,Other:false'&&/^\w{3},? .*\d/.test(sheet0.day)&&sheet0.ph==='Write or paste the caption'&&/0 \/ 2,200/.test(sheet0.cnt),sheet0);
   const CAP='Fresh batch is here #cold #brew\nCome and get it';
   await pg.fill('#calCap',CAP);
   await tap('[data-fmt="post"]'); await tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard');
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-full .cal-pcard img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
   const nOpen=(await pg.$$('.cal-full .cal-pcard')).length;   /* r3-extras: the picker opens on All */
   /* the picker: every design (opens on All; Stories and Posts narrow it, each chip shows a count), search, chips, no nested scroller */
-  ok(T+'picker opens full screen on All (chips All, Stories, Posts, each with a count)',await pg.evaluate(()=>{ const r=document.querySelector('dialog.cal-full').getBoundingClientRect(); return Math.abs(r.width-innerWidth)<=1&&Math.abs(r.height-innerHeight)<=2&&document.querySelector('[data-shape=""]').getAttribute('aria-pressed')==='true'&&[...document.querySelectorAll('[data-shape]')].map(x=>x.dataset.shape).join()===',story,post'&&[...document.querySelectorAll('.cp-shape .cp-n')].every(n=>/^[0-9]+$/.test(n.textContent)); }));
-  await pg.tap('[data-shape="post"]'); await pg.waitForTimeout(150);
-  const nAll=(await pg.$$('.cal-full .cal-pcard')).length;
-  await pg.tap('[data-shape=""]'); await pg.waitForTimeout(150);
+  ok(T+'picker opens full screen on All, with only the collection chips (2.4.0: no Stories / Posts row)',await pg.evaluate(()=>{ const r=document.querySelector('dialog.cal-full').getBoundingClientRect(); return Math.abs(r.width-innerWidth)<=1&&Math.abs(r.height-innerHeight)<=2&&!document.querySelector('.cp-shape')&&document.querySelector('[data-col=""]').getAttribute('aria-pressed')==='true'; }));
   const all=(await pg.$$('.cal-full .cal-pcard')).length;
   ok(T+'All shows ALL designs (templates included), straight away',all===NDES&&nOpen===NDES,[all,nOpen,NDES]);
-  ok(T+'Posts chip narrows to the post-shaped ones',nAll>0&&nAll<all,[nAll,all]);
   await pg.evaluate(()=>{ const g=document.querySelector('.cal-full .cal-pcard:last-child'); g.scrollIntoView({block:'end'}); });
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-full .cal-pcard:last-child img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
   ok(T+'the last design is reachable and its thumb loads when scrolled into view',await pg.evaluate(()=>{ const i=document.querySelector('.cal-full .cal-pcard:last-child img'); return !!i.getAttribute('src'); }));

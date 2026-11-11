@@ -13,6 +13,41 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.4.0 · 12 Nov 2026
+Plan your month in one place. Add any design to the calendar in a few taps, see what you are saving properly, and try the new Ideas board and monthly Goals as a preview.
+
+### Add to calendar from anywhere
+type: feature
+After you save, the Save sheet now offers **Add to calendar**, and every saved design has a **Calendar** button in its menu. One small sheet: pick the day (this week is right there, More for any other date), a time if you want one, Post, Story or Reel (already chosen from the design's size) and a caption if you have it. Tap **Add to Thursday** and it is on the calendar, linked to the design. Reels can now be planned too.
+
+### A home for every idea (preview)
+type: feature
+[flag:plan] Try Ideas and Goals
+Catch an idea in seconds from the + button or Home: type it, paste a link, add a screenshot or record a voice note (up to 2 minutes, saved small, the whole team can play it). New ideas land in the **Inbox**; one tap on Reel, Post, Story or Giveaway sorts it onto the **Board** (Idea, Planned, In progress, Posted). Each card can link to a design and to a calendar day, so an idea goes from voice note to design to scheduled post. On a computer, drag cards between columns.
+
+### Goals for every month (preview)
+type: feature
+[flag:plan] Try Ideas and Goals
+Set how many posts, stories, reels and giveaways you want this month. Anything marked as posted in the calendar counts by itself ("12 of 15"). Type in your reach, likes, saves and followers, and see at a glance whether you are growing: every number shows the change against last month, and a small chart shows the last 6 months. Ideas, Goals and Calendar sit side by side with tabs on top.
+
+### See what you are saving
+type: fix
+With **Phone + Team** chosen, the Save sheet used to squeeze your design into a thin sliver at the top. The preview now always stays big, the sheet scrolls inside, and the Save button is pinned where your thumb is. The green tick after saving is a proper circle again (on a small preview it was stretched into a tall pill).
+![before](assets/whatsnew/2.4.0-save-before.jpg)
+![after](assets/whatsnew/2.4.0-save-after.jpg)
+
+### Posts count as posts
+type: fix
+Posts made in Create (1080×1350) were counted as stories: "Post – 8 Nov" showed under Stories and Posts said 0. Every saved design now knows its real size, including the ones already saved, so the calendar shows the right Post or Story icon and picks the right format for you. The Pick a design screen is simpler too: just your collections on top, no second row of filters.
+![before](assets/whatsnew/2.4.0-pick-before.jpg)
+![after](assets/whatsnew/2.4.0-pick-after.jpg)
+
+### The best of the new look, in the main design
+type: design
+The preview "New Studio look" is retired, and its best parts joined the main design you know: a design's ⋯ menu opens with a big picture and four big buttons (Open, Save picture, Calendar, Collection); Saved cards show their collection; Saved opens instantly with the last list while it refreshes; and Home's Calendar row shows the time of today's post. Your bottom bar, sizes and the calendar at the top of Home stay as they are.
+![before](assets/whatsnew/2.4.0-menu-before.jpg)
+![after](assets/whatsnew/2.4.0-menu-after.jpg)
+
 ## 2.3.1 · 12 Nov 2026
 
 ### Planned posts arrive ready in Saved
@@ -55,7 +90,7 @@ Picking a design for a planned post now opens on All, so every saved design is t
 ### Preview: the new Studio look
 type: design
 A bigger change is ready for you to try, and it is off until you switch it on. **The bar** becomes Home, Saved, +, Plan and Templates, with the + in the middle and the calendar one tap away. **Saved** gets a search box that is always open, your collections as covers, two big columns with full names, and a sheet with Open, Save picture, Duplicate and Collection up front. **Home** opens on Jump back in: your drafts and newest designs first. Nothing is removed; switch it off any time.
-[flag:next] Try the new Studio look
+Retired in 2.4.0: its best parts joined the main design.
 ![before](assets/whatsnew/2.3.0-saved-before.jpg)
 ![after](assets/whatsnew/2.3.0-saved-after.jpg)
 

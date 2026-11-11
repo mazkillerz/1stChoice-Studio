@@ -60,7 +60,7 @@ async function pickSheet(o){
     const pending=new Set(); let ft=0;
     const flush=()=>{ ft=0; const need=[...pending].filter(p=>!urls[p]); pending.clear(); if(!need.length||!C||!C.fileUrls){ fill(); return; } C.fileUrls(need).then(u=>{ Object.assign(urls,u); fill(); }).catch(()=>{}); };
     const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>{ es.forEach(en=>{ if(!en.isIntersecting) return; const im=en.target; io.unobserve(im); const p=im.dataset.path; if(urls[p]) im.src=urls[p]; else if(p){ pending.add(p); clearTimeout(ft); ft=setTimeout(flush,40); } }); },{root:d,rootMargin:'400px 0px'}):null;
-    const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>g.kind!=='template'||o.templates).filter(g=>(!col||(g.collections||[]).includes(col))&&(!nq||hay.get(g.id).includes(nq)));
+    const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>(!col||(g.collections||[]).includes(col))&&(!nq||hay.get(g.id).includes(nq)));
       $('#calG').innerHTML=shown.map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" data-shape="${dShape(g)}" aria-pressed="${sel.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('');
       $('#calNone').hidden=!!shown.length; $('#calNoneT').textContent=list.length?'No designs match. Clear the search or pick All.':fail?'Could not load your saved designs.':'No saved designs yet. Save one from a tool and it shows here.'; $('#calRetry').hidden=!!list.length||!fail||!o.reload;
       d.querySelectorAll('.cal-pcard img').forEach(im=>{ if(im.getAttribute('src')) return; if(io) io.observe(im); else pending.add(im.dataset.path); }); if(!io) flush(); };

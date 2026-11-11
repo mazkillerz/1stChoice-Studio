@@ -343,8 +343,6 @@ body.sheet-open .cta-photo{display:none}
 .dlg-actions{display:flex;gap:10px;align-items:center;margin-top:var(--sp-1)}
 .dlg-actions .btn{flex:1;min-height:52px;font-size:var(--fs-l)}
 .dlg-actions .mini{min-height:52px}
-.design-sheet .ds-top{display:flex;gap:14px;align-items:flex-start}
-.design-sheet .ds-top img{width:64px;aspect-ratio:9/16;object-fit:cover;border-radius:var(--r-m);border:1px solid var(--line);flex-shrink:0}
 .ds-panel{display:flex;flex-direction:column;gap:10px}
 .ds-panel:empty{display:none}
 .team{list-style:none;margin:6px 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -1511,7 +1509,7 @@ body.on-calendar .fab{display:none}
 .ds-big:focus:not(:focus-visible){outline:none}
 .ds-big:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
 .ds-big:disabled{opacity:.5}
-.ds-sheet .act-row{min-height:46px}
+.ds-sheet .act-row{min-height:48px}
 /* Saved cards name their first collection */
 .sv-txt .sv-col{color:var(--fg);opacity:.8}
 
