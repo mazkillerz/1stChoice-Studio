@@ -58,6 +58,14 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 
 ## On a phone
 
+**Saving** (2.3.0): the Save sheet starts with **Save to**: My phone (always the start) or Phone + Team. Nothing reaches the team by itself. For the team a collection is required, and the button names it ("Save to “Restocks”"). A design opened from Saved starts on Phone + Team and reads Update “name”. Create and Video follow the same rule.
+
+**Back and Done** (2.3.0): every sheet, menu and pop-up is one step. In a story, Layers → Asset (or Sticker, Element, Text) → Back returns to Layers, then to the story. The same on Home, Saved, the calendar, Create, Video and Board.
+
+**Team assets** (2.3.0): Layers → Asset → **Add or browse** under Team (also Settings → Team assets, or search). Anyone on the team adds a picture; everyone gets it. Each has a name, a folder and tags; the library searches and sorts. Adding offers **Keep · Logo · Photo**: Logo cuts a logo off a plain ground with clean edges (on the phone, no download); Photo cuts out a can or a person (first use downloads about 15 MB). Removing an asset from the library never breaks stories that already use it.
+
+**Backgrounds** (2.3.0): Style → Background has Plain, Gradients (Fade, Glow, Sweep, Spot, Mesh), Patterns (Dots, Lines, Grid, Waves, Rings) and Textures (Grain, Paper, Linen), each Soft, Medium or Strong.
+
 **Several photos** (1.48.0): photos still waiting from an earlier row join a new Restock or Photo story after the new photos, so **Next photo** reaches them without going back to Home. Close the pick-a-tool sheet after sharing a photo and it waits on Home as **Your photo is in**.
 
 **No signal?** Home and Saved say “You’re offline” with Try again, load again by themselves when the signal is back, and say “Still loading…” on a slow connection; a tool's Save to the team stays on offline and the team save says if it fails (1.46.0). In All tools, drag a pinned tool to the sheet's top or bottom edge and the list scrolls with it.
@@ -84,6 +92,7 @@ The preview fills the screen. The bottom bar has **Photo, Words, Style, Layers, 
 
 ## Previews (Settings → Previews)
 New features wait here until the owner says yes. Each is off by default on every device; switching one on affects only this phone (`?flag-<id>=1` in a link does the same).
+- **New Studio look** (2.3.0): a bar with Home, Saved, +, Plan and Templates; a bigger Saved page (search always open, collections as covers, two columns with full names, a sheet with Open, Save picture, Duplicate and Collection); Home opens on Jump back in. Also switchable from its What's New card.
 - **Team workflow:** the calendar, reviews, captions, campaigns and the phrasebook (see the Saved, Home and Settings sections).
 - **Import a Claude Design board:** opens an exported board in Create with every piece as its own layer.
 - **Moving stories:** saves a Create story as a 5 to 8 second MP4 with entrance effects and an optional sound.

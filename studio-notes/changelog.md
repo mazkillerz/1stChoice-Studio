@@ -46,6 +46,13 @@ Eight new backgrounds in Style: Sweep, Spot and Mesh (soft gradients), Grid, Wav
 type: fix
 Picking a design for a planned post now opens on All, so every saved design is there, not only the ones shaped like the plan. Stories and Posts are one tap away, each with its count.
 
+### Preview: the new Studio look
+type: design
+A bigger change is ready for you to try, and it is off until you switch it on. **The bar** becomes Home, Saved, +, Plan and Templates, with the + in the middle and the calendar one tap away. **Saved** gets a search box that is always open, your collections as covers, two big columns with full names, and a sheet with Open, Save picture, Duplicate and Collection up front. **Home** opens on Jump back in: your drafts and newest designs first. Nothing is removed; switch it off any time.
+[flag:next] Try the new Studio look
+![before](assets/whatsnew/2.3.0-saved-before.jpg)
+![after](assets/whatsnew/2.3.0-saved-after.jpg)
+
 ## 2.2.1 · 10 Nov 2026
 
 ### Saving to a collection always works
