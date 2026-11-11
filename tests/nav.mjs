@@ -151,5 +151,17 @@ for(const scheme of ['light','dark']){
   ok('create: the sheet close button leaves no step behind',await crOpen()===''&&await pg.evaluate(()=>navigation.currentEntry.index)<=base+1);
   await ctx.close(); }
 
+/* ---- Video (phone): a sheet closes on Back, the page stays ---- */
+{ const ctx=await mk('light'), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message));
+  await pg.route(/fonts\.(googleapis|gstatic)/,r=>r.abort());
+  await pg.goto(BASE+'tools/video.html'); await pg.waitForFunction(()=>window.__video&&window.__video().ready,null,{timeout:60000}); await wait(pg,400); const u0=pg.url().split('?')[0];
+  await pg.evaluate(()=>VD.select({kind:'clip',id:VD.st.R.clips[0].id})); await pg.tap('#bar [data-open="mix"]'); await pg.waitForSelector('#vdShB .vd-row[data-id="hood"]',{timeout:20000}); await wait(pg,300);
+  ok('video: the Mix sheet is open',await pg.evaluate(()=>!document.getElementById('vdSheet').hidden));
+  await back(pg); ok('video: Back closes the sheet, still in Video',await pg.evaluate(()=>document.getElementById('vdSheet').hidden)&&pg.url().split('?')[0]===u0,pg.url());
+  await pg.evaluate(()=>VD.select({kind:'clip',id:VD.st.R.clips[0].id})); await pg.tap('#bar [data-open="mix"]'); await wait(pg,500);
+  const i0=await pg.evaluate(()=>navigation.currentEntry.index); await pg.tap('#vdShX'); await wait(pg,500);
+  ok('video: Done closes the sheet and leaves no history step behind',await pg.evaluate(()=>document.getElementById('vdSheet').hidden)&&await pg.evaluate(()=>navigation.currentEntry.index)<=i0,[i0]);
+  await ctx.close(); }
+
 console.log(res.join('\n')); const bad=res.filter(r=>r.startsWith('FAIL')).length;
 console.log((res.length-bad)+' passed, '+bad+' failed'+(errs.length?'; page errors: '+errs.slice(0,3).join(' | '):'')); await b.close(); process.exit(bad||errs.length?1:0);

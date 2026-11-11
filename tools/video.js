@@ -372,17 +372,19 @@ V.placeSel=placeSel;
 
 /* ---------- the name menu ---------- */
 (function(){
-  const box=$('vdMenuBox');
+  const box=$('vdMenuBox'); let menuNav=false;
+  const shut=()=>{ box.hidden=true; if(menuNav){ menuNav=false; Studio.nav.drop('vdMenu'); } };
   const items=()=>[{label:'New video',run:()=>newVideo()},{label:'All saved designs',run:()=>{ if(st.ready&&cur()!==st.clean&&st.design){ leavePrompt(L.ROOT+'index.html#saved'); } else { st.leaving=true; location.href=L.ROOT+'index.html#saved'; } }}];
   $('vdMenu').addEventListener('click',e=>{
     const its=items(); box.innerHTML=its.map((m,i)=>`<button type="button" role="menuitem" data-i="${i}">${esc(m.label)}</button>`).join(''); box.hidden=false;
+    if(!menuNav){ menuNav=true; Studio.nav.push('vdMenu',()=>{ menuNav=false; box.hidden=true; }); }   /* r3-nav */
     const r=e.currentTarget.getBoundingClientRect(), mr=box.getBoundingClientRect();
     box.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; box.style.top=Math.min(r.bottom+6,innerHeight-mr.height-8)+'px';
-    box.onclick=ev=>{ const b=ev.target.closest('[data-i]'); if(!b) return; box.hidden=true; its[+b.dataset.i].run(); };
+    box.onclick=ev=>{ const b=ev.target.closest('[data-i]'); if(!b) return; shut(); its[+b.dataset.i].run(); };
     box.querySelector('button').focus({preventScroll:true});
-    setTimeout(()=>document.addEventListener('pointerdown',function off(ev){ if(!box.contains(ev.target)){ box.hidden=true; document.removeEventListener('pointerdown',off,true); } },true),0);
+    setTimeout(()=>document.addEventListener('pointerdown',function off(ev){ if(!box.contains(ev.target)){ shut(); document.removeEventListener('pointerdown',off,true); } },true),0);
   });
-  box.addEventListener('keydown',e=>{ if(e.key==='Escape'){ box.hidden=true; $('vdMenu').focus(); } });
+  box.addEventListener('keydown',e=>{ if(e.key==='Escape'){ shut(); $('vdMenu').focus(); } });
 })();
 function newVideo(){
   const go=()=>{ draftNow(); st.leaving=true; location.href=location.pathname+'?new=1'; };
