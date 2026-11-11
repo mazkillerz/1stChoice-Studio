@@ -1,9 +1,9 @@
 /* Ideas (assets/ideas.js, behind the "plan" preview): capture (text, link, picture, voice), Inbox, Board, idea sheet, desktop drag.
-   Run: node tests/ideas.mjs (server on :8081, or BASE=...). Real MediaRecorder on Chromium's fake microphone. */
+   Run: node tests/ideas.mjs (server on :8080, or BASE=...). Real MediaRecorder on Chromium's fake microphone. */
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { seedDesigns } from './seed.js';
-const BASE=process.env.BASE||'http://127.0.0.1:8081/';
+const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']}), errs=[];
@@ -41,11 +41,11 @@ const txt=(pg,s)=>pg.$eval(s,e=>e.innerText.replace(/\s+/g,' ').trim()).catch(()
 const open=async(pg,hash='ideas')=>{ await pg.goto(BASE+'index.html#'+hash); await pg.waitForSelector('#ideasView .id-top',{timeout:10000}); await pg.waitForFunction(()=>!document.querySelector('#ideasView .id-skel'),null,{timeout:10000}); };
 const smalls=pg=>pg.evaluate(()=>{ const out=[]; document.querySelectorAll('#ideasView button:not(.plan-tab),#ideasView a,#ideasView input,dialog[open] button,dialog[open] a.link,dialog[open] input:not([type=hidden]):not([hidden])').forEach(e=>{ const r=e.getBoundingClientRect(); const cs=getComputedStyle(e); if(!r.width||!r.height||cs.visibility==='hidden'||e.hidden||e.closest('[hidden]')||cs.opacity==='0') return; if(r.height<43.5||r.width<43.5){ if(e.matches('a.id-lnk,.id-chip')&&r.height>=32&&false) return; out.push((e.className||e.tagName)+':'+Math.round(r.width)+'x'+Math.round(r.height)); } }); return out; });
 
-/* 1 flag off */
+/* 1 permanent since 2.4.1: with no preview switch, the page exists but its files load only when it opens */
 { const ctx=await mk(PH,base(),false); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('off: '+e.message));
   let req=0; pg.on('request',r=>{ if(/assets\/ideas\.(js|css)/.test(r.url())) req++; });
   await pg.goto(BASE+'index.html'); await pg.waitForSelector('#calRow',{timeout:8000}); await pg.waitForTimeout(400);
-  ok('1 flag off: no Ideas page, no ideas files requested',!(await pg.$('#ideasView'))&&req===0,req); await ctx.close(); }
+  ok('1 no switch needed: the Ideas page is there, its files load only when opened',!!(await pg.$('#ideasView'))&&req===0,req); await ctx.close(); }
 
 /* 2-9 phone, empty then capture flow */
 async function flow(dark){

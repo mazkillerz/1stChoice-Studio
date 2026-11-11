@@ -79,7 +79,7 @@ async function phone(dark){
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
   ok(T+'linked design thumb shows',await pg.evaluate(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return !!i&&!!i.getAttribute('src')&&i.complete&&i.naturalWidth>0; }));
   const hd=await pg.evaluate(()=>{ const top=document.querySelector('.cal-top').getBoundingClientRect(), seg=document.querySelector('.cal-seg').getBoundingClientRect(), nw=document.querySelector('.cal-new').getBoundingClientRect(); return {top:top.top,h:top.height,segIn:seg.top>=top.top&&seg.bottom<=top.bottom,newIn:nw.bottom<=top.bottom,segTapH:document.querySelector('[data-mode]').offsetHeight}; });
-  ok(T+'one compact header block holds Back, New, Week/Month and the arrows (switch fully visible)',hd.top===0&&hd.segIn&&hd.newIn&&hd.h<=130,hd);
+  ok(T+'one compact header block (2.4.1: with the Calendar · Ideas · Goals tabs) holds Back, New, Week/Month and the arrows (switch fully visible)',hd.top===0&&hd.segIn&&hd.newIn&&hd.h<=190,hd);
   const lg=await pg.$eval('.cal-item.ro',e=>e.innerText).catch(()=>'');
   ok(T+'old posted log entry shows as a read-only posted item',/Old posted story/.test(lg)&&/Posted/.test(lg),lg.replace(/\s+/g,' '));
   const t0=await txt(pg,'.cal-title'); await pg.tap('[data-nav="1"]'); await pg.waitForTimeout(350);

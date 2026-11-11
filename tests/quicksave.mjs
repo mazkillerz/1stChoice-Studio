@@ -42,12 +42,12 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     ok(N+'Save on the bar is finger-sized and on screen',sv.h>=44&&sv.fits,JSON.stringify(sv)); }
   const dls=[]; pg.on('download',d=>dls.push(d));
   await pg.waitForTimeout(500);   // the quiet "is this phone on the team" check (about a second after the page opens) has finished
-  await tap(vp.touch?'#barSave':'#save');
+  await tap(vp.touch?'#barSave':'#save'); if(vp.touch){ await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await tap('#save'); }
   for(let i=0;i<40&&!dls.length;i++) await pg.waitForTimeout(300);
   let size=''; if(dls[0]){ const f=os.tmpdir()+'/qs-'+dls[0].suggestedFilename(); await dls[0].saveAs(f); size=pngSize(f); }
-  ok(N+'one '+(vp.touch?'tap on the bar\'s Save':'click on Save')+' saves the full-size PNG',dls.length===1&&size==='2160x3840',size);
+  ok(N+(vp.touch?'Save, then Save to my phone':'one click on Save')+' saves the full-size PNG',dls.length===1&&size==='2160x3840',size);
   await pg.waitForTimeout(1500);
-  ok(N+'the same tap saves the picture only: nothing goes to the team by itself (even signed in)',!/design=/.test(pg.url())&&!/Saved to the team/.test(await pg.textContent('#teamStatus')||''),pg.url());
+  ok(N+'the same save is the picture only: nothing goes to the team by itself (even signed in)',!/design=/.test(pg.url())&&!/Saved to the team/.test(await pg.textContent('#teamStatus')||''),pg.url());
   if(!vp.touch) await pg.waitForFunction(()=>document.getElementById('readyBar').hidden,null,{timeout:4500}).catch(()=>{});   // computer: Save does not hide it, the timer does
   ok(N+'the card is gone after saving',!(await pg.isVisible('#readyBar')));
   /* it fades by itself */
@@ -101,10 +101,10 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   await Promise.all([pg.waitForURL(/restock\.html/),pg.setInputFiles('input[data-quick="restock"]',S+'pair.jpg')]);
   await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{});
   const before=await pg.evaluate(()=>document.getElementById('teamOn').checked);
-  await pg.tap('#barSave');
+  await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await pg.tap('#save');
   for(let i=0;i<40&&!dls.length;i++) await pg.waitForTimeout(300);
   await pg.waitForTimeout(6000);
-  ok('phone (slow sign-in check): Save tapped at once makes the picture and does not add it to the team',!before&&dls.length===1&&!/design=/.test(pg.url()),{switchOnAtTap:before,downloads:dls.length,url:pg.url()});
+  ok('phone (slow sign-in check): Save tapped at once, then Save to my phone, makes the picture and does not add it to the team',!before&&dls.length===1&&!/design=/.test(pg.url()),{switchOnAtTap:before,downloads:dls.length,url:pg.url()});
   await ctx.close(); }
 await b.close();
 ok('no page errors',!errs.length,errs.join(' | '));

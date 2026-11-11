@@ -2,7 +2,7 @@
    1. Phone sheets have a quiet Done (not accent-filled), so the Save sheet shows two blue buttons (its Save + the bar's), not three.
    2. Secondary actions (.link) are text buttons: no underline, readable colour, in light and dark.
    3. "Keep the photos" has its note on a line under it; the Photo sheet's note is one short sentence.
-   4. Offer starts from a photo in All tools: All tools, camera, Save = 3 taps (was 4) and a full-size PNG.
+   4. Offer starts from a photo in All tools: All tools, camera, Save, Save to my phone = 4 taps (2.4.1: Save asks where first) and a full-size PNG.
    5. Computer: the Save card no longer sticks over the steps; a slim dock with the same Save button shows while the card is out of
       sight, follows its words, hides when the card shows, and one click brings the card up and saves the full-size PNG.
    Phone 390x844 (touch) and desktop 1280x800, light and dark. Run: server on :8080 (or BASE=...), then node tests/simplify15.mjs. */
@@ -37,7 +37,7 @@ for(const scheme of ['light','dark']){
     const dls=[]; pg.on('download',d=>dls.push(d)); const waitDl=async n=>{ for(let i=0;i<60&&dls.length<n;i++) await pg.waitForTimeout(300); return dls[n-1]; };
     await pg.goto(BASE+'index.html'); await pg.evaluate(()=>{ localStorage.clear(); localStorage.setItem('studio:welcome','1'); }); await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1000);
 
-    /* 4. Offer from a photo in All tools: All tools (1), camera (2), Save (3) */
+    /* 4. Offer from a photo in All tools: All tools (1), camera (2), Save (3), Save to my phone (4; 2.4.1: Save asks where first) */
     let taps=0;
     await pg.tap('#allTools'); taps++; await pg.waitForSelector('dialog[open] .lib-row[data-id="offer"]',{timeout:5000}); await pg.waitForTimeout(400);
     const cam=await pg.evaluate(()=>{ const c=document.querySelector('dialog[open] .lib-row[data-id="offer"] .lib-cam'); return c?{label:c.querySelector('.sr-only').textContent,multi:!!c.querySelector('input[multiple]')}:null; });
@@ -45,9 +45,9 @@ for(const scheme of ['light','dark']){
     taps++; await Promise.all([pg.waitForURL(/offer\.html/,{timeout:10000}),pg.setInputFiles('dialog[open] .lib-row[data-id="offer"] input[data-quick="offer"]',S+'pair.jpg')]);
     await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{});
     ok(N+'the photo is in Offer and the ready note shows',await pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length)===1&&await pg.isVisible('#readyBar'));
-    await pg.tap('#barSave'); taps++;
+    await pg.tap('#barSave'); taps++; await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await pg.tap('#save'); taps++;
     const d1=await waitDl(1); const s1=d1?await pngSize(d1):'';
-    ok(N+'Offer from a photo: 3 taps to a full-size PNG (was 4)',s1==='2160x3840'&&taps===3,{png:s1,taps});
+    ok(N+'Offer from a photo: 4 taps to a full-size PNG (2.4.1: Save asks where first)',s1==='2160x3840'&&taps===4,{png:s1,taps});
 
     /* 1 + 2. the Save sheet after an edit: two blue buttons, a quiet Done, text buttons with no underline */
     await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1500); await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(800);

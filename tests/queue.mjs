@@ -25,7 +25,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{}); };
   const ready=()=>pg.evaluate(()=>document.getElementById('readyTxt').textContent);
   const saveOnce=async()=>{ const n=dls.length; await pg.waitForTimeout(300);
-    await tap(vp.touch?'#barSave':'#save'); for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
+    await tap(vp.touch?'#barSave':'#save'); if(vp.touch){ await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await tap('#save'); } for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
     let size=''; if(dls.length>n){ const f=os.tmpdir()+'/q-'+dls[n].suggestedFilename(); await dls[n].saveAs(f); size=pngSize(f); }
     await pg.waitForTimeout(500);   // 2.3.0: Quick start saves the picture only; nothing goes to the team
     await pg.waitForFunction(()=>!document.getElementById('queueNext').hidden||!document.getElementById('save').hidden,null,{timeout:5000}).catch(()=>{});
@@ -54,7 +54,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   const k1=await photoKey(), words1=await pg.evaluate(()=>JSON.stringify({s:Studio.debug.S.style,v:Studio.debug.S.values}));
   const before=await designs();
   let r=await saveOnce();
-  ok(N+'story 1: one tap saves the full-size PNG (picture only, nothing goes to the team)',r.got===1&&r.size==='2160x3840'&&!/design=/.test(r.url),JSON.stringify(r));
+  ok(N+'story 1: Save, then Save to my phone, saves the full-size PNG (picture only, nothing goes to the team)',r.got===1&&r.size==='2160x3840'&&!/design=/.test(r.url),JSON.stringify(r));
   const nx=await pg.evaluate(()=>{ const b=document.getElementById('queueNext'), rc=b.getBoundingClientRect(); return {hidden:b.hidden,txt:b.textContent.trim(),ghost:b.classList.contains('ghost'),h:Math.round(rc.height),vis:rc.width>0&&rc.bottom<=innerHeight+1}; });
   ok(N+'then "Next photo (2 of 3)" shows, filled and finger-sized',!nx.hidden&&nx.txt==='Next photo (2 of 3)'&&!nx.ghost&&nx.h>=44&&nx.vis,JSON.stringify(nx));
   ok(N+'Save again goes quiet (ghost) so only one main button shows',await pg.$eval('#save',e=>e.classList.contains('ghost')));
@@ -66,7 +66,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   ok(N+'same words and look as story 1',await pg.evaluate(()=>JSON.stringify({s:Studio.debug.S.style,v:Studio.debug.S.values}))===words1);
   ok(N+'Save is back to one tap, team switch back on',await pg.evaluate(()=>!document.getElementById('designBar')||document.getElementById('designBar').hidden));
   r=await saveOnce(); const id2=new URL(r.url).searchParams.get('design');
-  ok(N+'story 2: one tap, another picture, still no team design',r.got===1&&r.size==='2160x3840'&&!id2&&!id1&&(await designs())===before,JSON.stringify({r,id1,id2,n:await designs()-before}));
+  ok(N+'story 2: Save then Save to my phone, another picture, still no team design',r.got===1&&r.size==='2160x3840'&&!id2&&!id1&&(await designs())===before,JSON.stringify({r,id1,id2,n:await designs()-before}));
   ok(N+'"Next photo (3 of 3)"',(await pg.textContent('#queueNext')).trim()==='Next photo (3 of 3)');
   await tap('#queueNext'); await pg.waitForTimeout(900);
   ok(N+'the last one says "Last photo: 3 of 3"',await ready()==='Last photo: 3 of 3',await ready());

@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.4.0';
+const VERSION='2.4.1';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -98,8 +98,7 @@ const FLAGS=[
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'},   /* w3-stock */
-  {id:'plan',label:'Ideas and Goals',sub:'An ideas board and monthly goals next to the calendar'}   /* 2.4.0 */
+  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'}   /* w3-stock */
 ];
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -1674,7 +1673,7 @@ async function tool(cfg){
      updated in the team when you switch it on, so nobody overwrites a team design by accident). One tap on Save makes the picture and adds it to the team;
      every detail can still be changed first. */
   let imgDone=false;   // the picture as it is now is already in Photos: the team switch then only adds it to the team
-  let quickReady=false;   // just started from a photo on the home page and nothing edited yet: Save on the bar saves in one tap
+  let quickReady=false;   // just started from a photo on the home page and nothing edited yet (since 2.4.1 Save still opens the Save sheet first: owner's rule)
   /* several photos from Quick start in a one-photo tool (Restock, Photo story): a story from each, one after the other (1.6.0).
      The words and the look stay; Save, then Next photo brings in the next one as a new story, ready to save in one tap. */
   const QUEUE=!PG&&!!(TOOLS[cfg.id]&&TOOLS[cfg.id].queue); let queue=[], qPos=0, qTotal=0, qSaved=false, qCarry=0;   // qCarry: photos from an earlier row added after the new ones (1.48.0)
@@ -1734,7 +1733,9 @@ async function tool(cfg){
     syncSaveOpts(); }
   $('teamOn').addEventListener('change',()=>{ whereP=teamChanged(); });
   /* r3-save: the Save to control. Resolves to true when the team is chosen (signed in) */
-  async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP; return sw.checked; }
+  async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP;
+    if(sw.checked&&isPhone()) requestAnimationFrame(()=>{ try{ $('save').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} });   // 2.4.1: the collections and the Save button both in view
+    return sw.checked; }
   $('saveWhere').addEventListener('click',e=>{ const b=e.target.closest('[data-where]'); if(!b||b.dataset.where===where()) return; haptic('tick'); setWhere(b.dataset.where); });
   $('saveWhere').addEventListener('keydown',e=>{ if(!/^Arrow/.test(e.key)) return; e.preventDefault(); const w=where()==='me'?'team':'me'; setWhere(w).then(()=>{ const b=$('saveWhere').querySelector('[data-where="'+where()+'"]'); if(b) b.focus(); }); });
   function nudgeCols(){ needHint=true; const c=$('teamCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200);
@@ -1867,7 +1868,7 @@ async function tool(cfg){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
         <div class="dlg-actions"><button type="button" class="mini" id="rdEdit">Edit first</button><button type="button" class="btn" id="rdSave">Save story</button></div></div>`);
       dl.querySelector('#rdEdit').onclick=()=>dl.close();
-      dl.querySelector('#rdSave').onclick=()=>{ dl.close(); C.touchUsed(id); save(true); };
+      dl.querySelector('#rdSave').onclick=()=>{ dl.close(); C.touchUsed(id); if(isPhone()){ resetSaveSheet(); openSheet('save'); focusSheet('save'); } else save(true); };   // 2.4.1: choose where it goes first
     }
     return true;
   }
@@ -2415,10 +2416,9 @@ async function tool(cfg){
   $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; qCarry=0; kept=null; syncQueue();
     status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
-  /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   /* Save on the bar (phone) opens the small Save sheet, ready to go; Save in it (or Save on the bar again) saves */
   function saveTapped(){
-    if(quickReady&&!design){ quickReady=false; hideReady(true); resetSaveSheet(); doSave(); return; }   // Quick start, untouched: one tap, as before
+    if(quickReady&&!design){ quickReady=false; hideReady(true); }   // 2.4.1 (owner): no one-tap save any more; the Save sheet asks My phone or Phone + Team first
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }
@@ -2837,7 +2837,8 @@ async function home(){
   /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
   if(!$('calendarView')){   /* calendar: permanent since 2.2.0 (was the team preview) */ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
   /* 2.4.0 Plan (preview flag "plan"): Ideas (#ideas) and Goals (#goals) sit next to the calendar, one tab strip on top of the three */
-  const PLAN_ON=flags.on('plan');
+  const PLAN_ON=true;   /* 2.4.1: Ideas and Goals are permanent (owner); was the preview flag "plan" */
+  try{ localStorage.removeItem('studio:flag:plan'); }catch(_){}
   if(PLAN_ON) [['ideas','Ideas'],['goals','Goals']].forEach(([v,l])=>{ if($(v+'View')) return; const s=document.createElement('section'); s.id=v+'View'; s.className='cal-view plan-view '+v+'-view'; s.setAttribute('aria-label',l); s.hidden=true; $('calendarView').after(s); VIEWS[v]=v+'View'; });
   const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':$('ideasView')&&!$('ideasView').hidden?'ideas':$('goalsView')&&!$('goalsView').hidden?'goals':'home';
   const onSaved=()=>curView()==='saved';

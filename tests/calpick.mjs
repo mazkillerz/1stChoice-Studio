@@ -59,7 +59,7 @@ for(const dark of [false,true]){ const N=dark?'dark: ':'light: ';
   ok('tool: Add to calendar is hidden before saving',await pg.isHidden('#savePlan'));
   await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForTimeout(600);
   const prev=await pg.evaluate(()=>{ const p=document.getElementById('phone').getBoundingClientRect(), s=document.getElementById('save').getBoundingClientRect(); return {w:Math.round(p.width),saveVisible:s.bottom<=innerHeight&&s.top>0}; });
-  ok('tool: with Phone + Team the preview stays big (≥120px wide) and Save is on screen',prev.w>=120&&prev.saveVisible,prev);
+  ok('tool: with Phone + Team the preview stays big (≥100px wide; 2.4.1: Phone + Team takes a bit more room) and Save is on screen',prev.w>=100&&prev.saveVisible,prev);
   await pg.tap('#saveWhere [data-where="me"]'); await pg.waitForTimeout(400);
   await pg.tap('#save');
   const tick=await pg.waitForFunction(()=>{ const d=document.querySelector('.sb-dot'); if(!d) return null; const r=d.getBoundingClientRect(); return r.width>10?{w:Math.round(r.width),h:Math.round(r.height)}:null; },null,{timeout:10000}).then(h=>h.jsonValue()).catch(()=>null);
