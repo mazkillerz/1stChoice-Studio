@@ -351,7 +351,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
   const body=openSheet('add','Add',`${impRow()}<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
     <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span><span dir="auto">${esc(e.label)}</span></button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
-    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
+    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button><button type="button" class="cr-el" data-team="1"><span class="im">${I.photo}</span>Team assets</button></div>
     <span class="lbl" id="j-shapes">Shapes</span><div class="cr-icons">${BD.SHAPES.map(s=>`<button type="button" data-shape="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id]||native.rect)}</button>`).join('')}</div>
     <span class="lbl" id="j-lines">Lines</span><div class="cr-icons">${BD.STROKES.map(s=>`<button type="button" data-stroke="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id],true)}</button>`).join('')}</div>
     <span class="lbl" id="j-icons">Icons</span><div class="cr-icons">${CR.allIcons().map(i=>`<button type="button" data-icon="${i.id}" aria-label="${esc(i.id.replace(/-/g,' '))}" title="${esc(i.id.replace(/-/g,' '))}">${svg(`<path d="${i.d}"/>`,24)}</button>`).join('')}</div>
@@ -365,6 +365,8 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
     if(d.import){ impPick(); return; }
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
+    if(d.team){ closeSheet();   /* r3-assets: a team asset comes in as an ordinary image layer (stored like any photo) */
+      try{ const T=await Studio.lazy('teamassets',{css:1}); T.open({brand:B.id,mode:'pick',onPick:async r=>{ BD.busy('Adding the picture…'); try{ const blob=await T.blobOf(r); await BD.addPhotos([new File([blob],(r.name||'asset')+'.png',{type:'image/png'})]); }catch(_){ toast('Could not add that picture. Check your connection.'); } finally{ BD.busy(null); } }}); }catch(_){ toast('Team assets did not open.'); } return; }
     if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji||d.sticker)) return;
     closeSheet(true);
     if(d.el) await CR.addElement(d.el);

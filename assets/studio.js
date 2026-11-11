@@ -1898,10 +1898,26 @@ async function tool(cfg){
     const c=document.createElement('canvas'), k=56/Math.max(a.w,a.h); c.width=Math.ceil(a.w*k)+4; c.height=Math.ceil(a.h*k)+4; const x=c.getContext('2d'); x.translate(2,2); x.scale(k,k); drawShape(x,a,a.w,a.h,getComputedStyle(document.body).color||'#111');
     return `<img alt="" src="${c.toDataURL()}">`;
   }
+  /* r3-assets: the Team group (the team's own pictures) fills in after the brand assets, which paint at once */
+  let teamPaint=0;
+  async function paintTeamGroup(){
+    const host=$('assetTeam'); if(!host) return; const my=++teamPaint, quiet=()=>teamPaint!==my||!host.isConnected;
+    const tile=(r,u)=>`<button type="button" class="asset-tile" data-team="${esc(r.id)}" title="${esc(r.name)}"><img alt="" src="${esc(u||'')}"><span dir="auto">${esc(r.name)}</span></button>`;
+    const browse=`<button type="button" class="asset-tile" data-team-browse>${ICON.plus}<span>Add or browse</span></button>`;
+    try{ const m=await checkTeam(); if(quiet()||m===null) return;
+      if(!m){ host.innerHTML='<button type="button" class="link" data-team-signin>Team assets: sign in</button>'; return; }
+      const C=await cloud(); if(!(await C.teamAssetsReady())){ if(!quiet()) host.innerHTML=`<span class="lbl">Team</span><div class="asset-grid">${browse}</div>`; return; }
+      const rows=(await C.teamAssets(B.id)).slice(0,6), urls=rows.length?await C.fileUrls(rows.map(r=>r.prev_path||r.path)):{}; if(quiet()) return;
+      rows.forEach(r=>teamDef('team:'+r.id,r.path,r.name,r.prev_path));
+      host.innerHTML=`<span class="lbl">Team</span><div class="asset-grid">${rows.map(r=>tile(r,urls[r.prev_path||r.path])).join('')}${browse}</div>`;
+    }catch(_){ if(!quiet()) host.innerHTML=''; }
+  }
+  function addTeamAsset(r){ teamDef('team:'+r.id,r.path,r.name,r.prev_path); return addAsset('team:'+r.id); }
   function paintAssets(){
     const groups={}; listedAssets().forEach(a=>{ (groups[a.group||'Brand']=groups[a.group||'Brand']||[]).push(a); }); groups.Shapes=SHAPES;
-    $('assetList').innerHTML=Object.entries(groups).map(([g,list])=>`<span class="lbl">${esc(g)}</span><div class="asset-grid">${list.map(a=>`<button type="button" class="asset-tile" data-asset="${esc(a.id)}" title="${esc(a.file?a.label+' ('+a.file+')':a.label)}">${assetThumb(a)}<span>${esc(a.label)}</span><i class="miss-note">Not added yet</i></button>`).join('')}</div>`).join('')
+    $('assetList').innerHTML='<div id="assetTeam" class="asset-team"></div>'+Object.entries(groups).map(([g,list])=>`<span class="lbl">${esc(g)}</span><div class="asset-grid">${list.map(a=>`<button type="button" class="asset-tile" data-asset="${esc(a.id)}" title="${esc(a.file?a.label+' ('+a.file+')':a.label)}">${assetThumb(a)}<span>${esc(a.label)}</span><i class="miss-note">Not added yet</i></button>`).join('')}</div>`).join('')
       +(listedAssets().length?'':'<p class="small">This brand kit lists no asset files yet.</p>');
+    paintTeamGroup();
   }
   let assetN=0;
   async function addAsset(ref){
@@ -1914,7 +1930,11 @@ async function tool(cfg){
     closeSheet('assets'); select(id);
   }
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
-  $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
+  $('assetList').addEventListener('click',async e=>{ const t=e.target.closest('[data-asset]'); if(t){ addAsset(t.dataset.asset); return; }
+    /* r3-assets */
+    const tm=e.target.closest('[data-team]'); if(tm){ addAsset('team:'+tm.dataset.team); return; }
+    if(e.target.closest('[data-team-signin]')){ if(await ensureMember('Team assets are shared with the team. Sign in to use them.')){ teamMember=true; paintTeamGroup(); } return; }
+    if(e.target.closest('[data-team-browse]')){ try{ const T=await lazy('teamassets',{css:1}); T.open({brand:B.id,mode:'pick',onPick:addTeamAsset}); }catch(_){ status('Team assets did not open. Check your connection.'); } } });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
     /* the emoji shapes: started on press (and by the Layers sheet on a phone); the sheet opens with them, or after 1.5 s without */
     $('addSticker').addEventListener('pointerdown',()=>emojiStickers());
@@ -2823,6 +2843,8 @@ async function home(){
     const rulesOn=()=>{ try{ return localStorage.getItem('studio:rulesOff')!=='1'; }catch(_){ return true; } };   // rules (mega): Settings → Brand check
   /* phrasebook (mega): the screen is assets/phrasebook.js (lazy, preview flag "team") */
   async function pbOpen(){ try{ (await lazy('phrasebook',{css:1})).open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
+  /* r3-assets: the team's asset library from the hub (Settings and search), in manage mode */
+  async function taOpen(){ try{ (await lazy('teamassets',{css:1})).open({brand:B.id,mode:'manage'}); }catch(_){ hubToast('Team assets did not open. Check your connection.'); } }
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
@@ -2834,6 +2856,7 @@ async function home(){
       <div class="act-list set-list">${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings before you save</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
       ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
+      ${row('teamassets',ICON.photo,'Team assets','Logos and cut-outs everyone on the team can use')}   <!-- r3-assets -->
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
@@ -2849,7 +2872,7 @@ async function home(){
       if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
       if(a==='previews'){ openPreviews(b); return; }
       d.close();
-      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen();
+      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen();
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
   }
   /* Settings → Previews (mega): one switch per preview flag */
@@ -2890,6 +2913,7 @@ async function home(){
     flags.list().forEach(f=>a.push({kind:'action',id:'act:flag-'+f.id,title:(f.on?'Turn off preview: ':'Try preview: ')+f.label,sub:f.sub,keys:'preview try beta new feature '+f.label+' '+f.sub,icon:ICON.sparkle,run:()=>{ flags.set(f.id,!f.on); location.reload(); }}));
     if(flags.on('team')) a.push({kind:'action',id:'act:phrasebook',title:'Phrasebook',sub:'Approved lines, suggest a new one',keys:'phrasebook phrases words lines suggest approve arabic wording',icon:ICON.text||ICON.sparkle,run:pbOpen});
     a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
+    a.push({kind:'action',id:'act:team-assets',title:'Team assets',sub:'Logos and cut-outs shared with the team',keys:'team assets logo asset library cut out cutout remove background partner shared add picture',icon:ICON.photo,run:taOpen});   /* r3-assets */
     a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
              :{kind:'action',id:'act:signin',title:'Sign in',sub:'See and save your team’s designs',keys:'sign in log in login account team password saved designs',icon:ICON.user,run:()=>$('acct').click()});
