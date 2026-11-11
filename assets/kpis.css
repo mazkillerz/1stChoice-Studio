@@ -1,7 +1,4 @@
 /* Goals page (assets/kpis.js), behind the "plan" preview. Interface tokens only; reuses the calendar header and sheet styles. */
-.goals-view .plan-tabs{display:flex;gap:var(--sp-1);padding:2px 0 4px}
-.goals-view .plan-tab{min-height:44px;padding:0 14px;border:0;border-radius:var(--r-pill);background:none;color:var(--muted);font:500 var(--fs-m) var(--sans);cursor:pointer}
-.goals-view .plan-tab[aria-current="page"]{background:var(--chip);color:var(--fg);font-weight:600}
 .goals-view button:focus:not(:focus-visible),.kp-dlg button:focus:not(:focus-visible){outline:none}
 .goals-view button:focus-visible,.kp-dlg button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .kp-editbtn svg{width:18px;height:18px}
