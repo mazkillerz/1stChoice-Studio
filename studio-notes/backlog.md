@@ -26,7 +26,7 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 ## From round 3 (2.3.0, 11 Nov 2026)
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
 |---|------|-----:|-------:|----:|-------:|------:|-------|
-| 61 | Owner approves the `team_assets` table (Supabase prompt timed out twice): then test Team assets on the live site | 5 | 4 | 3 | 1 | 11 | Until then the library says it is switched on by the owner once. |
+| 61 | ~~Owner approves the `team_assets` table~~ done 11 Nov 2026 (applied with his approval; row counts unchanged). Next: try Team assets on the live site with a real logo | 5 | 4 | 3 | 1 | 11 | |
 | 62 | Owner's verdict on the New Studio look (flag `next`): make it the default, fold `next.css` in, archive the old bar and Saved | 4 | 5 | 5 | 2 | 12 | What's New card has the switch. |
 | 63 | Full test round (owner said testing comes later): `node tests/run.mjs --all`, contrast, tapscan, taste, RTL; suites not yet moved to the new Save flow show up here | 3 | 3 | 1 | 3 | 4 | `taste`, `simplify15`, `review`, `queue`, `highlight-emoji` were being updated when the save builder stopped. |
 | 64 | Campaigns "Save all" writes new team designs with no collection picker: ask for one collection for the set | 2 | 3 | 1 | 2 | 4 | The only writer left outside the new Save rule. |

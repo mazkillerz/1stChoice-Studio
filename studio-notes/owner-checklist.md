@@ -1,6 +1,6 @@
 # Owner checklist (round 3, Studio 2.3.0, 11 Nov 2026)
 
-1. **Approve the new table.** Claude asks Supabase to add `team_assets` (a new table only; nothing existing is touched). Approve the prompt when you are in the chat. Until then Team assets shows "switched on by the owner once".
+1. ~~Approve the new table~~ done: `team_assets` is live (you approved it on 11 Nov; nothing existing changed).
 2. **Try the New Studio look.** What's New → the last card → switch it on (only your phone changes). Tell Claude: keep it, change it, or drop it.
 3. **Save a story both ways** on your phone: My phone, then Phone + Team with a collection. Check it lands where the button said.
 4. **Add a partner's logo**: a story → Layers → Asset → Add or browse → Add. Try Logo on a real logo and tell Claude where the edges are not clean.
