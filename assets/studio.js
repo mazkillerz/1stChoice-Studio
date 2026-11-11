@@ -431,7 +431,7 @@ const NAV=(()=>{
     if(i<0) return new Promise(r=>idle(r));
     stack.splice(last,1);
     if(pushQ>0) pushQ--; else want++;
-    if(!tmr&&!flight) tmr=setTimeout(flush,0);
+    if(!tmr&&!flight) tmr=setTimeout(flush,250);   // not at once: a link tapped in the layer that just closed must start loading first (beforeunload then holds this step)
     return new Promise(r=>waiters.push(r));
   }
   function idle(fn){ if(quiet()){ fn(); return; } waiters.push(fn); if(!flight) flush(); }

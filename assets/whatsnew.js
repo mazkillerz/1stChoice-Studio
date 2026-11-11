@@ -105,12 +105,12 @@
   /* a preview switch: per device, the same key Settings → Previews uses (studio:flag:<id>) */
   function flagOn(id){try{return localStorage.getItem('studio:flag:'+id)==='1';}catch(e){return false;}}
   function flagRow(f){
-    var row=el('label','wn-try');
-    var txt=el('span','wn-trytxt');txt.appendChild(el('b',null,f.label));
+    var row=el('label','wn-prev');
+    var txt=el('span','wn-prevtxt');txt.appendChild(el('b',null,f.label));
     var sub=el('small',null,'');txt.appendChild(sub);row.appendChild(txt);
     var sw=el('input','switch');sw.type='checkbox';sw.setAttribute('role','switch');sw.checked=flagOn(f.id);row.appendChild(sw);
-    var go=el('a','wn-trygo','Open Studio');go.href='index.html';
-    var wrap=el('div','wn-trybox');wrap.appendChild(row);wrap.appendChild(go);
+    var go=el('a','wn-prevgo','Open Studio');go.href='index.html';
+    var wrap=el('div','wn-prevbox');wrap.appendChild(row);wrap.appendChild(go);
     function paint(){sub.textContent=sw.checked?'On for this device. Switch it off any time, here or in Settings.':'A preview: off until you switch it on. Only this device changes.';go.hidden=!sw.checked;}
     sw.addEventListener('change',function(){try{if(sw.checked)localStorage.setItem('studio:flag:'+f.id,'1');else localStorage.removeItem('studio:flag:'+f.id);}catch(e){sw.checked=false;}paint();});
     paint();return wrap;

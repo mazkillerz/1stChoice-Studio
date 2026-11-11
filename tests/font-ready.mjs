@@ -9,6 +9,7 @@
    Run: server on :8080 (or BASE=...), then node tests/font-ready.mjs. Exit 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const PHOTO=new URL('../brands/1stchoice/samples/pair.jpg',import.meta.url).pathname;
@@ -66,7 +67,7 @@ ok('slow fonts: the PNG is byte for byte the one saved with the fonts in',slow.h
     if(batch){ await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200); await pg.tap('[data-see-all]'); await pg.waitForTimeout(600); await pg.tap('#selBtn'); await pg.waitForTimeout(300);
       await pg.tap('#savedGrid .sv-card[data-id="fr1"] .sv-open'); await pg.waitForTimeout(200); await pg.tap('#selSave'); }
     else { await pg.goto(BASE+'tools/restock.html?design=fr1'); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{timeout:30000,polling:100});
-      await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(2500); await pg.tap('#barSave'); await pg.waitForTimeout(300); if(await pg.isVisible('#save')) await pg.tap('#save'); }
+      await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(2500); await pg.tap('#barSave'); await pg.waitForTimeout(300); if(await pg.isVisible('#save')){ await chooseMe(pg); await pg.waitForTimeout(200); await pg.tap('#save'); } }   /* 2.3.0: an opened design starts on Phone + Team; this check wants the picture */
     await pg.waitForFunction(()=>window.__shared,null,{timeout:90000}).catch(()=>{}); const h=await digest(pg); await ctx.close(); return h; };
   const want=await one('fast',false), got=await one('slow',true);
   ok('Save pictures, slow fonts: the picture is the same bytes as its own Save',got.length===1&&want.length===1&&got[0]===want[0],{got:(got[0]||'').slice(0,12),want:(want[0]||'').slice(0,12)});

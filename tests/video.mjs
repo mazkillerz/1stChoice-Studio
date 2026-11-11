@@ -162,8 +162,9 @@ for(const scheme of ['light','dark']){
   await pg.tap('#vdSave'); await pg.waitForSelector('dialog[open] #vsGo');
   const s0=await pg.evaluate(()=>({txt:document.querySelector('dialog[open]').innerText,go:document.getElementById('vsGo').disabled,filled:0}));
   const f0=await filled(pg);
-  ok(N+'Save sheet: Save video (MP4 · 1080×1920 · 10 s), team save, exactly one filled button',/Save video/.test(s0.txt)&&/MP4 · 1080×1920 · 10 s/.test(s0.txt)&&/Save edits to the team/.test(s0.txt)&&/Keeps your clips’ order, words and sound settings, not the video/.test(s0.txt)&&f0===1,{f0});
+  ok(N+'Save sheet: Save video (MP4 · 1080×1920 · 10 s), team save, exactly one filled button',/Save video/.test(s0.txt)&&/MP4 · 1080×1920 · 10 s/.test(s0.txt)&&/My phone/.test(s0.txt)&&/Phone \+ Team/.test(s0.txt)&&f0===1,{f0});
   /* team save from the sheet */
+  await pg.tap('#vsWhere [data-where="team"]'); await pg.waitForSelector('#vsTeamBox:not([hidden])'); await pg.fill('#vsCol','Suite');   /* 2.3.0: choose Phone + Team and a collection first */
   await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:15000});
   const saved=await pg.evaluate(()=>{ const d=JSON.parse(localStorage.getItem('fakecloud')||'{"designs":{}}').designs; const id=Object.keys(d)[0]; return {n:Object.keys(d).length,id,tool:d[id]&&d[id].tool,name:d[id]&&d[id].name,r:d[id]&&d[id].recipe,url:location.search,status:document.getElementById('vdStatus').textContent}; });
   ok(N+'team save stores tool video with a v2 recipe: the reel clip with its words and mix; URL has ?design=; status "Saved to the team"',saved.n===1&&saved.tool==='video'&&saved.name==='Winter test'&&saved.r.v===2&&saved.r.kind==='video'&&saved.r.clips.length===1&&saved.r.clips[0].reel==='winter-cat'&&saved.r.clips[0].texts.headline==='Cold all winter'&&saved.r.clips[0].mix.hood.mute===true&&saved.r.clips[0].mix.music.db===-6&&saved.r.clips[0].duck===true&&/design=/.test(saved.url)&&saved.status==='Saved to the team',{...saved,r:undefined});

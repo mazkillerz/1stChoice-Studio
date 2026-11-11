@@ -7,6 +7,7 @@
    Run like tests/stickers.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const SAMPLE=new URL('../brands/1stchoice/samples/pair.jpg',import.meta.url).pathname;
@@ -85,7 +86,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     if(await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
     const geo=await pg.evaluate(id=>{ const r=Studio.debug.reg().find(q=>q.id===id); return {x:r.x,y:r.y,w:r.w,h:r.h}; },id);
     await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-    const team=pg.locator('#sh-save input[type=checkbox]').first(); if(await team.count()&&!(await team.isChecked())) await team.check({force:true}).catch(()=>{});
+    if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await chooseTeam(pg,'Suite');
     if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await pg.tap('#save');
     for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
     const d=dls[0]; let size='', red=0;

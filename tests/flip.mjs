@@ -6,6 +6,7 @@
    Phone 390×844 touch (light + dark) and desktop 1280×800. Run like tests/stickers.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const SAMPLE=new URL('../brands/1stchoice/samples/pair.jpg',import.meta.url).pathname;
@@ -113,7 +114,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
       const gP=await sig(id), gPu=mirror(gP); const bx=await rbox(id);
       if(await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
       await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-      if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await pg.tap('#save');
+      if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))){ await chooseTeam(pg,'Suite'); await pg.tap('#save'); }
       for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
       const d=dls[0]; let size='', cmp=null;
       if(d){ const buf=fs.readFileSync(await d.path()); size=buf.readUInt32BE(16)+'x'+buf.readUInt32BE(20);
@@ -204,7 +205,7 @@ for(const theme of ['light','dark']){
     await tapFlip(); const gS=await lum(), bx=await top();
     if(await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
     await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-    if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await pg.tap('#save');
+    if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))){ await chooseTeam(pg,'Suite'); await pg.tap('#save'); }
     for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
     const d=dls[0]; let size='', gp=null;
     if(d){ const buf=fs.readFileSync(await d.path()); size=buf.readUInt32BE(16)+'x'+buf.readUInt32BE(20);
