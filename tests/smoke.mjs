@@ -43,15 +43,15 @@ for(const scheme of ['light','dark']){
   const real=()=>pg.evaluate(()=>Studio.debug.S.photos.filter(p=>p.img&&!p.sample).length);
   ok(N+'Restock from a photo: the photo is in and the note shows',await real()===1&&await pg.isVisible('#readyBar'));
 
-  /* 3. one tap saves the picture and the design */
-  await pg.tap('#barSave');
+  /* 3. Save, then Save to my phone (2.4.1: Save always asks where first) */
+  await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await pg.tap('#save');
   const d1=await waitDl(1); const s1=d1?await pngSize(d1):'';
   await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
   await pg.waitForTimeout(800);
-  ok(N+'one tap on Save: full-size PNG, picture only (nothing goes to the team by itself)',s1==='2160x3840'&&!/design=/.test(pg.url()),{png:s1,url:pg.url()});
+  ok(N+'Save, then Save to my phone: full-size PNG, picture only (nothing goes to the team by itself)',s1==='2160x3840'&&!/design=/.test(pg.url()),{png:s1,url:pg.url()});
 
   /* 4. after an edit, Save opens the Save sheet; Save in it makes the picture */
-  await pg.waitForTimeout(1500);   // the save tick and toast settle
+  await pg.waitForTimeout(1500); await pg.waitForFunction(()=>!document.getElementById('sh-save').classList.contains('open'),null,{timeout:5000}).catch(()=>{});   // the save tick and toast settle
   await pg.tap('#bar [data-open="words"]'); await pg.waitForTimeout(500);
   const chip=pg.locator('#sh-words .chip[aria-pressed="false"]').first(); if(await chip.count()) await chip.tap(); await pg.waitForTimeout(800);
   await pg.tap('#bar [data-open="words"]').catch(()=>{}); await pg.waitForTimeout(400);

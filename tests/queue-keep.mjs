@@ -33,7 +33,7 @@ for(const theme of ['light','dark']){
   const photoSize=()=>pg.evaluate(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img?p.img.width+'x'+p.img.height:''; });
   const kept=()=>pg.evaluate(k=>new Promise(res=>{ const r=indexedDB.open('studio',1); r.onsuccess=()=>{ const t=r.result.transaction('files'),s=t.objectStore('files'); const a=s.get(k), p=s.get(k+':pos'); t.oncomplete=()=>res({n:a.result&&a.result.files?a.result.files.length:0,total:a.result&&a.result.total||0,pos:p.result||null}); }; r.onerror=()=>res(null); }),QK);
   const waitKept=async(fn,ms=4000)=>{ let k; for(let t=0;t<ms;t+=200){ k=await kept(); if(fn(k)) return k; await pg.waitForTimeout(200); } return k; };
-  const save=async()=>{ const n=dls.length; await pg.tap('#barSave'); for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
+  const save=async()=>{ const n=dls.length; await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await pg.tap('#save'); for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
     let size=''; if(dls.length>n){ const f=os.tmpdir()+'/qk-'+dls[n].suggestedFilename(); await dls[n].saveAs(f); size=pngSize(f); }
     await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:1500}).catch(()=>{});
     return {got:dls.length-n,size}; };
