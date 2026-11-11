@@ -163,5 +163,20 @@ for(const scheme of ['light','dark']){
   ok('video: Done closes the sheet and leaves no history step behind',await pg.evaluate(()=>document.getElementById('vdSheet').hidden)&&await pg.evaluate(()=>navigation.currentEntry.index)<=i0,[i0]);
   await ctx.close(); }
 
+/* ---- Board (phone): panel, zoom menu and palette close on Back ---- */
+{ const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block'});
+  await ctx.addInitScript(()=>{ localStorage.setItem('studio:lab','"1"'); localStorage.setItem('studio:welcome','1'); });
+  await ctx.route(/supabase\.co|fonts\.(googleapis|gstatic)/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
+  const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message));
+  await pg.goto(BASE+'lab/board.html?preset=story'); await pg.waitForFunction(()=>window.BD&&BD.util&&BD.util.frames().length>0&&BD.UI); await wait(pg,600); const u0=pg.url();
+  const vis=sel=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e&&!e.hidden&&e.getClientRects().length>0; },sel);
+  await pg.evaluate(()=>document.getElementById('zoomB').click()); await wait(pg,300); ok('board: the zoom menu opens',await vis('#menu'));
+  await back(pg); ok('board: Back closes the menu, still on the board',!await vis('#menu')&&pg.url()===u0,pg.url());
+  await pg.evaluate(()=>document.getElementById('panelL').click()); await wait(pg,300); const open1=await pg.evaluate(()=>document.getElementById('left').classList.contains('open'));
+  await back(pg); ok('board: Back closes the side panel',open1&&!await pg.evaluate(()=>document.getElementById('left').classList.contains('open'))&&pg.url()===u0,[open1,pg.url()]);
+  await pg.evaluate(()=>document.getElementById('findB').click()); await wait(pg,300); ok('board: the command palette opens',await vis('#palette'));
+  await back(pg); ok('board: Back closes the palette',!await vis('#palette')&&pg.url()===u0);
+  await ctx.close(); }
+
 console.log(res.join('\n')); const bad=res.filter(r=>r.startsWith('FAIL')).length;
 console.log((res.length-bad)+' passed, '+bad+' failed'+(errs.length?'; page errors: '+errs.slice(0,3).join(' | '):'')); await b.close(); process.exit(bad||errs.length?1:0);
