@@ -30,12 +30,13 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{polling:100});
   await pg.setInputFiles('#pick',PHOTO); await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img&&!p.sample; },null,{polling:100});
   if(touch){ await tap('#barSave'); await pg.waitForTimeout(600); }
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000,polling:100}).catch(()=>{});
+  await tap('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamCols [data-newcol]',{timeout:8000}); await pg.waitForTimeout(300);
+  if(await pg.isHidden('#teamNewRow')) await tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol','Offline test');   // 2.3.0: the team is a choice and needs a collection
   await tap('#save'); await pg.waitForFunction(()=>/team/i.test(document.getElementById('status').textContent),null,{timeout:30000,polling:100}).catch(()=>{});
   let s=await st(pg); const pics=touch?s.shares:dls;
   ok(N+'offline: the picture is still saved once',pics===1,{pics});
   ok(N+'offline: the message is in words, not "Failed to fetch"',/^Not saved to the team: no connection\./.test(s.msg)&&!/fetch/i.test(s.msg+s.toast),s.msg);
-  ok(N+'offline: the team switch stays on and the button reads "Add to the team"',s.team&&s.btn==='Add to the team',{team:s.team,btn:s.btn});
+  ok(N+'offline: the team switch stays on and the button reads "Add to the team"',s.team&&s.btn==='Add to “Offline test”',{team:s.team,btn:s.btn});
   ok(N+'offline: nothing went to the team',s.saved===0,s.saved);
   /* back online: one tap */
   await pg.evaluate(()=>{ window.__offline=false; }); await tap('#save');
@@ -53,11 +54,13 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('member: '+e));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{polling:100});
   await pg.setInputFiles('#pick',PHOTO); await pg.waitForTimeout(1200);
-  await pg.tap('#barSave'); await pg.waitForTimeout(600); await pg.tap('#teamOnly');
-  await pg.waitForSelector('dialog[open]',{timeout:8000}).catch(()=>{}); await pg.keyboard.press('Escape');
-  await pg.waitForFunction(()=>/team/i.test(document.getElementById('status').textContent),null,{timeout:10000,polling:100}).catch(()=>{});
-  const m=await pg.$eval('#status',e=>e.textContent);
-  ok('not signed in: our own message is kept',/sign in first/.test(m),m);
+  await pg.tap('#barSave'); await pg.waitForTimeout(600); await pg.tap('#saveWhere [data-where="team"]');
+  await pg.waitForSelector('dialog[open]',{timeout:8000}).catch(()=>{}); await pg.keyboard.press('Escape'); await pg.waitForTimeout(600);
+  const back=await pg.evaluate(()=>({team:document.getElementById('teamOn').checked,where:document.querySelector('#saveWhere [aria-checked="true"]').dataset.where,box:!document.getElementById('teamBox').hidden}));
+  ok('not signed in: Phone + Team asks to sign in; cancel goes back to My phone',!back.team&&back.where==='me'&&!back.box,back);
+  /* and the engine refuses a team save that would skip the sign-in message path */
+  const em=await pg.evaluate(async()=>{ try{ await Studio.debug.teamSave({collections:[]}); return 'saved'; }catch(e){ return e.message; } }).catch(()=>'n/a');
+  ok('(engine) a team save without a collection is refused',/Pick a collection first/.test(em),em);
   await ctx.close(); }
 await b.close();
 ok('no page errors',errs.length===0,errs.slice(0,3));

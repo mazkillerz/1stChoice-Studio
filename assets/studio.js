@@ -2448,7 +2448,7 @@ async function tool(cfg){
   if(q.get('render')==='1') Studio.renderer={ok:design?design.kind!=='template':!!draftId,missing:cfg.allowSamples?[]:missingPhotos(),pages:pageCount(),W,H,
     async page(pg,max){ await assetsHD(); await saveFonts();   // the same waits as Save
       for(const K of [EXPORT_SCALE,1.5,1]){ if(max&&K>max) continue; const blob=await renderPage(pg,K,true); if(blob) return {blob,K}; } return null; }};   // the same steps down as Save
-  Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId,rulesDesign:a=>rulesDesign(a||[])};   // used by the automated tests
+  Studio.debug={S,reg:()=>reg,recipe,render,draftId:()=>draftId,rulesDesign:a=>rulesDesign(a||[]),teamSave:o=>teamSave(o)};   /* r3-save: teamSave for the engine-guard test */   // used by the automated tests
   // web fonts can finish after the first drawing: draw again so the preview uses the right font
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>render());
 }
