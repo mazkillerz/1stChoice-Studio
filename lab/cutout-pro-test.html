@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cutout Pro test</title>
+<style>
+body{margin:0;padding:16px;font:14px/1.4 system-ui,sans-serif;background:#f4f4f2;color:#1b1b1b}
+h1{font-size:18px;font-weight:600;margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+label{display:flex;gap:6px;align-items:center}
+button,select,input[type=file]{font:inherit;padding:8px 12px;min-height:44px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.cell{background:#fff;border:1px solid #ddd;padding:8px}
+.cell b{display:block;font-weight:600;margin-bottom:6px}
+canvas{max-width:100%;height:auto;display:block}
+.chk{background:#fff linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%),linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.blk{background:#000}.col{background:#ff2bd6}
+.zoom canvas{image-rendering:pixelated;width:100%}
+#msg{min-height:20px;color:#555}
+</style></head><body>
+<h1>Cutout Pro test page</h1>
+<div class="row">
+  <input type="file" id="file" accept="image/*">
+  <label>Case <select id="cs"></select></label>
+  <label>Mode <select id="mode"><option>auto</option><option>logo</option><option>photo</option></select></label>
+  <label>Tolerance <input type="range" id="tol" min="0" max="100" value="50"><span id="tolv">50</span></label>
+  <label><input type="checkbox" id="holes" checked> Clear holes</label>
+  <button id="go">Run</button>
+</div>
+<div id="msg"></div>
+<div class="grid" id="out"></div>
+<script src="../assets/cutout-pro.js"></script>
+<script src="../tests/fixtures/cutout/cases.js"></script>
+<script>
+const $=id=>document.getElementById(id), out=$('out'); let src=null, res=null, zc=null;
+CutoutCases.names.forEach(n=>$('cs').add(new Option(n,n))); $('cs').add(new Option('(own file)','file'),0); $('cs').value='file';
+$('tol').oninput=()=>$('tolv').textContent=$('tol').value;
+$('file').onchange=()=>{ src=$('file').files[0]; $('cs').value='file'; go(); };
+$('cs').onchange=async()=>{ if($('cs').value==='file') return; const c=await CutoutCases.make($('cs').value); src=c.img; go(); };
+$('go').onclick=go;
+function cell(title,cls,cv){ const d=document.createElement('div'); d.className='cell'; d.innerHTML='<b>'+title+'</b>'; const w=document.createElement('div'); w.className=cls; w.appendChild(cv); d.appendChild(w); out.appendChild(d); return d; }
+function bg(cv,color){ const c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height; const x=c.getContext('2d'); if(color){ x.fillStyle=color; x.fillRect(0,0,c.width,c.height); } x.drawImage(cv,0,0); return c; }
+async function go(){
+  if(!src) return; out.innerHTML=''; const t0=performance.now(); $('msg').textContent='Working…';
+  const a=await StudioCutoutPro.analyse(src);
+  try{ res=await StudioCutoutPro.run(src,{mode:$('mode').value,tolerance:+$('tol').value,holes:$('holes').checked,onProgress:t=>$('msg').textContent=t}); }catch(e){ $('msg').textContent='Error: '+e.message; return; }
+  window.__res=res; $('msg').textContent='Done in '+Math.round(performance.now()-t0)+' ms. Analyse: '+JSON.stringify(a)+'. Click a picture to zoom on that spot.';
+  const before=document.createElement('canvas'); const bm=await createImageBitmap(src); before.width=bm.width; before.height=bm.height; before.getContext('2d').drawImage(bm,0,0);
+  cell('Before','',before); cell('After (checkerboard)','chk',res); cell('On black','blk',bg(res,'#000')); cell('On bright colour','col',bg(res,'#ff2bd6'));
+  const z=document.createElement('div'); z.className='cell zoom'; z.innerHTML='<b>Edge zoom (8x): checker, black, colour</b>'; out.appendChild(z); zc=z;
+  zoom(null);
+  out.querySelectorAll('canvas').forEach(c=>{ if(!c.closest('.zoom')) c.onclick=e=>{ const r=c.getBoundingClientRect(); zoom([(e.clientX-r.left)/r.width*res.width,(e.clientY-r.top)/r.height*res.height]); }; });
+}
+function zoom(p){
+  if(!res||!zc) return; zc.querySelectorAll('canvas').forEach(c=>c.remove());
+  if(!p){ const d=res.getContext('2d').getImageData(0,0,res.width,res.height).data; let best=0; p=[res.width/2,res.height/2];
+    for(let y=4;y<res.height-4;y+=3) for(let x=4;x<res.width-4;x+=3){ const a=d[(y*res.width+x)*4+3]; if(a>40&&a<215){ best++; if(best===30){ p=[x,y]; y=1e9; break; } } } }
+  const w=64,h=48,sx=Math.max(0,Math.min(res.width-w,Math.round(p[0]-w/2))),sy=Math.max(0,Math.min(res.height-h,Math.round(p[1]-h/2)));
+  ['#e8e8e8','#000','#ff2bd6'].forEach((col,i)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle=col; x.fillRect(0,0,w,h); x.drawImage(res,sx,sy,w,h,0,0,w,h); zc.appendChild(c); });
+}
+</script></body></html>
