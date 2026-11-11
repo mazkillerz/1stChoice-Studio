@@ -366,7 +366,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
     if(d.team){ closeSheet();   /* r3-assets: a team asset comes in as an ordinary image layer (stored like any photo) */
-      try{ const T=await Studio.lazy('teamassets',{css:1}); T.open({brand:B.id,mode:'pick',onPick:async r=>{ BD.busy('Adding the picture…'); try{ const blob=await T.blobOf(r); await BD.addPhotos([new File([blob],(r.name||'asset')+'.png',{type:'image/png'})]); }catch(_){ toast('Could not add that picture. Check your connection.'); } finally{ BD.busy(null); } }}); }catch(_){ toast('Team assets did not open.'); } return; }
+      try{ const T=await Studio.lazy('teamassets',{css:1,global:'StudioTeamAssets'}); T.open({brand:B.id,mode:'pick',onPick:async r=>{ BD.busy('Adding the picture…'); try{ const blob=await T.blobOf(r); await BD.addPhotos([new File([blob],(r.name||'asset')+'.png',{type:'image/png'})]); }catch(_){ toast('Could not add that picture. Check your connection.'); } finally{ BD.busy(null); } }}); }catch(_){ toast('Team assets did not open.'); } return; }
     if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji||d.sticker)) return;
     closeSheet(true);
     if(d.el) await CR.addElement(d.el);

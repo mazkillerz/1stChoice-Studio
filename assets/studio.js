@@ -1934,7 +1934,7 @@ async function tool(cfg){
     /* r3-assets */
     const tm=e.target.closest('[data-team]'); if(tm){ addAsset('team:'+tm.dataset.team); return; }
     if(e.target.closest('[data-team-signin]')){ if(await ensureMember('Team assets are shared with the team. Sign in to use them.')){ teamMember=true; paintTeamGroup(); } return; }
-    if(e.target.closest('[data-team-browse]')){ try{ const T=await lazy('teamassets',{css:1}); T.open({brand:B.id,mode:'pick',onPick:addTeamAsset}); }catch(_){ status('Team assets did not open. Check your connection.'); } } });
+    if(e.target.closest('[data-team-browse]')){ try{ const T=await lazy('teamassets',{css:1,global:'StudioTeamAssets'}); T.open({brand:B.id,mode:'pick',onPick:addTeamAsset}); }catch(_){ status('Team assets did not open. Check your connection.'); } } });
   if(hasStickers){   /* stickers (assets/stickers.js): a sheet of previews; each one is added as a normal shape layer */
     /* the emoji shapes: started on press (and by the Layers sheet on a phone); the sheet opens with them, or after 1.5 s without */
     $('addSticker').addEventListener('pointerdown',()=>emojiStickers());
@@ -2844,7 +2844,7 @@ async function home(){
   /* phrasebook (mega): the screen is assets/phrasebook.js (lazy, preview flag "team") */
   async function pbOpen(){ try{ (await lazy('phrasebook',{css:1})).open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
   /* r3-assets: the team's asset library from the hub (Settings and search), in manage mode */
-  async function taOpen(){ try{ (await lazy('teamassets',{css:1})).open({brand:B.id,mode:'manage'}); }catch(_){ hubToast('Team assets did not open. Check your connection.'); } }
+  async function taOpen(){ try{ (await lazy('teamassets',{css:1,global:'StudioTeamAssets'})).open({brand:B.id,mode:'manage'}); }catch(_){ hubToast('Team assets did not open. Check your connection.'); } }
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
