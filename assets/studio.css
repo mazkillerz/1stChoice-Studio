@@ -1532,3 +1532,8 @@ body.on-calendar .fab{display:none}
   body.tool-page .save-sheet .save-foot:has(#save[hidden]){display:none}
 }
 .save-foot{display:contents}
+/* 2.4.1 (owner): with Phone + Team the sheet takes a bit more room (the preview keeps ~220px) and the collections scroll clear of the pinned Save */
+@media (max-width:820px){
+  body.tool-page .sheet.save-sheet:has(#teamBox:not([hidden])){max-height:min(66dvh,600px,calc(100dvh - var(--top-h) - var(--safe-t) - var(--bar-h) - var(--safe-b) - 220px))}
+  body.tool-page .save-sheet .tb-field{scroll-margin-bottom:96px}
+}

@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.4.0';
+const VERSION='2.4.1';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1674,7 +1674,7 @@ async function tool(cfg){
      updated in the team when you switch it on, so nobody overwrites a team design by accident). One tap on Save makes the picture and adds it to the team;
      every detail can still be changed first. */
   let imgDone=false;   // the picture as it is now is already in Photos: the team switch then only adds it to the team
-  let quickReady=false;   // just started from a photo on the home page and nothing edited yet: Save on the bar saves in one tap
+  let quickReady=false;   // just started from a photo on the home page and nothing edited yet (since 2.4.1 Save still opens the Save sheet first: owner's rule)
   /* several photos from Quick start in a one-photo tool (Restock, Photo story): a story from each, one after the other (1.6.0).
      The words and the look stay; Save, then Next photo brings in the next one as a new story, ready to save in one tap. */
   const QUEUE=!PG&&!!(TOOLS[cfg.id]&&TOOLS[cfg.id].queue); let queue=[], qPos=0, qTotal=0, qSaved=false, qCarry=0;   // qCarry: photos from an earlier row added after the new ones (1.48.0)
@@ -1734,7 +1734,9 @@ async function tool(cfg){
     syncSaveOpts(); }
   $('teamOn').addEventListener('change',()=>{ whereP=teamChanged(); });
   /* r3-save: the Save to control. Resolves to true when the team is chosen (signed in) */
-  async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP; return sw.checked; }
+  async function setWhere(w){ const sw=$('teamOn'); sw.checked=w==='team'; sw.dispatchEvent(new Event('change')); await whereP;
+    if(sw.checked&&isPhone()) requestAnimationFrame(()=>{ try{ $('teamCols').closest('.tb-field').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} });   // 2.4.1: the collections, not hidden under Save
+    return sw.checked; }
   $('saveWhere').addEventListener('click',e=>{ const b=e.target.closest('[data-where]'); if(!b||b.dataset.where===where()) return; haptic('tick'); setWhere(b.dataset.where); });
   $('saveWhere').addEventListener('keydown',e=>{ if(!/^Arrow/.test(e.key)) return; e.preventDefault(); const w=where()==='me'?'team':'me'; setWhere(w).then(()=>{ const b=$('saveWhere').querySelector('[data-where="'+where()+'"]'); if(b) b.focus(); }); });
   function nudgeCols(){ needHint=true; const c=$('teamCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200);
@@ -1867,7 +1869,7 @@ async function tool(cfg){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
         <div class="dlg-actions"><button type="button" class="mini" id="rdEdit">Edit first</button><button type="button" class="btn" id="rdSave">Save story</button></div></div>`);
       dl.querySelector('#rdEdit').onclick=()=>dl.close();
-      dl.querySelector('#rdSave').onclick=()=>{ dl.close(); C.touchUsed(id); save(true); };
+      dl.querySelector('#rdSave').onclick=()=>{ dl.close(); C.touchUsed(id); if(isPhone()){ resetSaveSheet(); openSheet('save'); focusSheet('save'); } else save(true); };   // 2.4.1: choose where it goes first
     }
     return true;
   }
@@ -2415,10 +2417,9 @@ async function tool(cfg){
   $('queueClear').addEventListener('click',()=>{ $('queueBar').hidden=true; dropQueue(); queue=[]; qTotal=0; qPos=0; qSaved=false; qCarry=0; kept=null; syncQueue();
     status(devWord()==='phone'?'The waiting photos are cleared here. They are still in your phone’s photos.':'The waiting photos are cleared here. Your photo files are not touched.',3500); });
   function missingPhotos(){ const miss=[]; const off=photoOffset(); for(let pg=0;pg<pageCount();pg++){ const n=pagePhotoCount(pg); if(!n) continue; const o=cfg.pages?pg*perPage:off; for(let i=0;i<n;i++){ const p=S.photos[o+i]; if(!p||!p.img||p.sample) miss.push(cfg.pages?pg+1:i+1); } } return [...new Set(miss)]; }
-  /* Save on the bar saves the picture straight away (one tap, like the computer); the Save sheet then offers "Add to the team" */
   /* Save on the bar (phone) opens the small Save sheet, ready to go; Save in it (or Save on the bar again) saves */
   function saveTapped(){
-    if(quickReady&&!design){ quickReady=false; hideReady(true); resetSaveSheet(); doSave(); return; }   // Quick start, untouched: one tap, as before
+    if(quickReady&&!design){ quickReady=false; hideReady(true); }   // 2.4.1 (owner): no one-tap save any more; the Save sheet asks My phone or Phone + Team first
     if(!isPhone()||openName==='save'){ doSave(); return; }
     resetSaveSheet(); openSheet('save'); focusSheet('save'); haptic('tick');
   }

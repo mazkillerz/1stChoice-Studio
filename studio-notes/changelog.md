@@ -13,6 +13,14 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.4.1 · 12 Nov 2026
+
+### Save always asks first
+type: fix
+Tapping Save never saves straight away any more, not even right after you start from a photo. The Save sheet opens first, on **My phone**, so you always choose: tap **Save to my phone**, or pick **Phone + Team** and a collection. With Phone + Team the sheet now has a little more room and scrolls your collections into view, so they are never hidden under the Save button. "Save picture" from a design's menu opens the same sheet.
+![before](assets/whatsnew/2.4.1-team-before.jpg)
+![after](assets/whatsnew/2.4.1-team-after.jpg)
+
 ## 2.4.0 · 12 Nov 2026
 Plan your month in one place. Add any design to the calendar in a few taps, see what you are saving properly, and try the new Ideas board and monthly Goals as a preview.
 

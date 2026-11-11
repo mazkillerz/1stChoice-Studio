@@ -64,6 +64,8 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 | 14 | Saves reaching the team by themselves, or with no collection | 2: 2.2.1 (collection lost), round 3 brief ("Save should no longer save straight to the team", collection required) | Team switch on by default; collection optional | Save starts on My phone; Team needs a collection; `saveflow` asserts a My phone save writes no design and a Team save lands in its collection. (Exists: saveflow, smoke) |
 
 ## Things he rejected (never do again)
+- **One-tap save** (Quick start's Save saving at once, 2.4.0 and before): "when I tap save, I should choose first whether to save and add to team or not" (12 Nov 2026). [S] Save on a phone always opens the Save sheet (My phone / Phone + Team) first; tap budgets are +1 because of it. Checked by smoke/taste/quicksave.
+- Anything hidden under a pinned button in a sheet (the collection chips under Save, 2.4.0 screenshot). [S]
 - The "New Studio look" as a whole (2.3.0 preview): felt less polished than the current design; keep the current sizing, the calendar at the top of Home and its polish (2.4.0 brief). [S] Only instant Saved, collection on cards, the bigger design menu and the calendar time were blended in.
 - A second filter row under the collection chips (All / Stories / Posts in Pick a design) (2.4.0 brief). [S]
 - Anything saved to the team without him choosing it, or a team save with no collection. [S 11 Nov]
