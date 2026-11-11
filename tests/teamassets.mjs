@@ -4,6 +4,7 @@
    Screenshots (390x844 light + dark) go to SHOTS (default /tmp/ta-shots). Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const SHOTS=process.env.SHOTS||'/tmp/ta-shots'; fs.mkdirSync(SHOTS,{recursive:true});
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
@@ -64,9 +65,9 @@ await pg.waitForTimeout(500); await pg.tap('#inspClose').catch(()=>{}); await pg
 await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:6000}).catch(()=>{});
 if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))){   /* the Save sheet: send it to the team too (works with the old switch or the new Phone / Team choice) */
   if(await pg.locator('#saveWhere [data-where="team"]').count()) await pg.tap('#saveWhere [data-where="team"]').catch(()=>{});
-  await pg.waitForTimeout(500); if(!(await pg.isChecked('#teamOn').catch(()=>true))) await pg.evaluate(()=>document.getElementById('teamOn').click());
+  await chooseTeam(pg,'Collabs');
   await pg.waitForSelector('#teamName',{timeout:6000}).catch(()=>{}); await pg.fill('#teamName','Collab story').catch(()=>{});
-  if(await pg.locator('#teamCols [data-newcol]').count()){ await pg.tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol','Collabs'); }
+
   await pg.tap('#save'); }
 const d1=await waitDl(1); const s1=d1?await pngSize(d1):'';
 let green=0; if(d1){ const b64=fs.readFileSync(await d1.path()).toString('base64'); green=await pg.evaluate(async b64=>{ const im=new Image(); im.src='data:image/png;base64,'+b64; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d'); x.drawImage(im,0,0); const d=x.getImageData(0,0,c.width,c.height).data; let n=0; for(let i=0;i<d.length;i+=16){ if(d[i]<40&&d[i+1]>170&&d[i+2]<90) n++; } return n; },b64); }

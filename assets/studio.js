@@ -409,7 +409,9 @@ const NAV=(()=>{
   const fixUrl=()=>{ if(location.search!==keepSearch){ try{ rs(history.state,'',location.pathname+keepSearch+location.hash); }catch(_){} } };
   function quiet(){ return !want&&!flight&&!pushQ; }
   function runWaiters(){ if(quiet()) waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); }
-  function flush(){ clearTimeout(tmr); tmr=0; if(flight||!want){ runWaiters(); return; } const n=want; want=0; flight=setTimeout(landed,400); try{ history.go(-n); }catch(_){ landed(); } }
+  /* the page is leaving (a link was tapped in the layer that just closed): never step back now, a history step would cancel that page load */
+  let leaving=false; addEventListener('beforeunload',()=>{ leaving=true; setTimeout(()=>{ leaving=false; if(want&&!flight&&!tmr) tmr=setTimeout(flush,0); },1500); }); addEventListener('pageshow',()=>{ leaving=false; });
+  function flush(){ clearTimeout(tmr); tmr=0; if(leaving){ waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); return; } if(flight||!want){ runWaiters(); return; } const n=want; want=0; flight=setTimeout(landed,400); try{ history.go(-n); }catch(_){ landed(); } }
   function landed(){ if(!flight) return; clearTimeout(flight); flight=null; fixUrl(); while(pushQ>0){ pushQ--; doPush(); } if(want) flush(); else runWaiters(); }
   function push(key,onBack){
     stack.push({key,onBack});
