@@ -385,7 +385,52 @@ async function cloud(){
    Several can be open at once (a confirm over a sheet), so each one holds its own key. */
 const LOCKS=new Set();
 function lockScroll(key,on){ if(on) LOCKS.add(key); else LOCKS.delete(key); document.documentElement.classList.toggle('scroll-lock',LOCKS.size>0); }
-function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
+/* r3-nav: ONE back stack for every layer (dialogs, tool sheets, menus, select mode, search). Each open layer holds one history entry
+   (same URL); Back (the phone gesture or Studio.nav.back()) pops the top entry and its onBack() closes that layer. A layer that closes
+   itself (Done, Cancel, d.close()) calls drop(key), and the matching history step is taken back quietly. History steps are done one
+   at a time (a back waits for its popstate), so closing one layer and opening the next in the same tick stays correct. onBack may
+   return false to stay open (busy dialog, save running): the entry is put back. */
+const nav=(()=>{
+  const stack=[], waiters=[]; let want=0, flight=null, pushQ=0, tmr=0, keepSearch=location.search;
+  const rs=history.replaceState.bind(history), ps=history.pushState.bind(history);
+  try{ history.replaceState=function(s,t,u){ if(u!=null){ try{ keepSearch=new URL(u,location.href).search; }catch(_){} } return rs(s,t,u); }; }catch(_){}
+  const doPush=()=>{ try{ ps(Object.assign({},history.state,{nav:stack.length}),''); }catch(_){} };
+  /* the page may have changed its own address (draft / design id) while a layer was open: keep that when the layer's entry goes */
+  const fixUrl=()=>{ if(location.search!==keepSearch){ try{ rs(history.state,'',location.pathname+keepSearch+location.hash); }catch(_){} } };
+  function quiet(){ return !want&&!flight&&!pushQ; }
+  function runWaiters(){ if(quiet()) waiters.splice(0).forEach(f=>{ try{ f(); }catch(_){} }); }
+  function flush(){ clearTimeout(tmr); tmr=0; if(flight||!want){ runWaiters(); return; } const n=want; want=0; flight=setTimeout(landed,400); try{ history.go(-n); }catch(_){ landed(); } }
+  function landed(){ if(!flight) return; clearTimeout(flight); flight=null; fixUrl(); while(pushQ>0){ pushQ--; doPush(); } if(want) flush(); else runWaiters(); }
+  function push(key,onBack){
+    stack.push({key,onBack});
+    if(want>0) want--;   // a step is still waiting to go back: that same entry serves this layer
+    else if(flight) pushQ++;
+    else doPush();
+  }
+  function drop(key){
+    const i=stack.findIndex(e=>e.key===key); const last=stack.map(e=>e.key).lastIndexOf(key);
+    if(i<0) return new Promise(r=>idle(r));
+    stack.splice(last,1);
+    if(pushQ>0) pushQ--; else want++;
+    if(!tmr&&!flight) tmr=setTimeout(flush,0);
+    return new Promise(r=>waiters.push(r));
+  }
+  function idle(fn){ if(quiet()){ fn(); return; } waiters.push(fn); if(!flight) flush(); }
+  addEventListener('popstate',()=>{
+    if(flight){ landed(); return; }
+    if(want>0){ want--; return; }   // Back landed on an entry that was already given up
+    const top=stack.pop();
+    if(!top){ if(history.state&&history.state.nav) try{ history.back(); }catch(_){} return; }   // reloaded with a layer open: never a dead Back
+    let r; try{ r=top.onBack(); }catch(_){}
+    if(r===false){ stack.push(top); doPush(); } else fixUrl();
+    if(stack.length===0&&history.state&&history.state.nav===undefined) runWaiters();
+  });
+  return {push,drop,idle,back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
+})();
+function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); nav.drop(d); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
+  /* r3-nav: Back closes it like Cancel (a busy dialog, or one whose cancel is refused, stays) */
+  nav.push(d,()=>{ const btns=[...d.querySelectorAll('button')].filter(b=>!b.hidden); if(btns.length&&btns.every(b=>b.disabled)) return false;
+    const ev=new Event('cancel',{cancelable:true}); d.dispatchEvent(ev); if(ev.defaultPrevented) return false; d.close(); });
   /* tapping the dimmed area outside closes it like Cancel; not while it's busy (buttons disabled = saving, deleting, signing in) */
   let downOutside=false;
   d.addEventListener('pointerdown',e=>{ downOutside=e.target===d&&outside(e); });
@@ -1005,6 +1050,17 @@ async function tool(cfg){
   const phoneUI=matchMedia('(max-width: 820px)');
   const isPhone=()=>phoneUI.matches;
   let openName=null;
+  /* r3-nav: sheets and the back stack. One history entry for the open sheet; a sheet opened from Layers (a picker, or the layer bar for
+     what was just added or tapped) is a child: a second entry, and Done / swipe / Escape / Back return to Layers. Tab switches and
+     picker -> layer bar swaps replace the sheet without a new entry. */
+  let parentName=null, sheetNavN=0;
+  const CHILD_SHEETS={assets:1,comps:1,stickers:1,insp:1};
+  function syncSheetNav(depth){
+    while(sheetNavN<depth){ const k=++sheetNavN; nav.push('sheet'+k,()=>sheetBack(k)); }
+    while(sheetNavN>depth){ nav.drop('sheet'+sheetNavN); sheetNavN--; }
+  }
+  function sheetBack(k){ if(k===1&&openName==='save'&&typeof saving!=='undefined'&&saving) return false;   // a save is running: keep its sheet
+    sheetNavN=k-1; closeSheet(); }
   const sheetEl=n=>$('sh-'+n);
   function openSheet(n,opt){
     const el=sheetEl(n); if(!el) return;
@@ -1013,7 +1069,11 @@ async function tool(cfg){
       if(!(opt&&opt.quiet)) el.scrollIntoView({block:el.offsetHeight>innerHeight*.8?'start':'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       return;
     }
-    if(openName&&openName!==n) sheetEl(openName)?.classList.remove('open');
+    if(openName&&openName!==n){ sheetEl(openName)?.classList.remove('open');
+      if(CHILD_SHEETS[n]&&openName==='layers') parentName='layers';
+      else if(!(n==='insp'&&parentName&&CHILD_SHEETS[openName])) parentName=null; }
+    else if(!openName) parentName=null;
+    syncSheetNav(parentName?2:1);
     openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
     if(n==='layers'){ paintLayers(); if(hasStickers) emojiStickers(); }   // the emoji stickers start loading before the Sticker tap
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
@@ -1021,24 +1081,27 @@ async function tool(cfg){
   }
   /* move focus into a sheet opened from the bar (screen readers land on its title), and back to the bar on close */
   function focusSheet(n){ const h=sheetEl(n)?.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); setTimeout(()=>h.focus({preventScroll:true}),60); } }
-  function closeSheet(n){
+  function closeSheet(n,opt){
     if(!isPhone()){ if(n==='assets'||n==='comps'||n==='stickers'||n==='insp') sheetEl(n)?.classList.remove('active'); return; }
     if(n&&n!==openName) return; if(!openName) return;
+    const back=!(opt&&opt.all)&&parentName?parentName:null;   // r3-nav: a child goes back to the sheet it came from
     const el=sheetEl(openName); el.classList.remove('open'); el.setAttribute('inert',''); el.style.transform='';
     if(openName==='insp'&&S.sel){ S.sel=null; render(); }
     const was=openName; openName=null; document.body.classList.remove('sheet-open');
+    if(back){ openSheet(back); return; }
+    parentName=null; syncSheetNav(0);
     if(el.contains(document.activeElement)){ const tab=document.querySelector(`#bar [data-open="${was}"]`); if(tab) tab.focus({preventScroll:true}); else view.focus({preventScroll:true}); }
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ b.setAttribute('aria-expanded','false'); b.classList.remove('on'); });
     fit();
   }
   function syncSheetMode(){
     document.querySelectorAll('.sheet').forEach(el=>{ if(isPhone()&&!el.classList.contains('open')) el.setAttribute('inert',''); else el.removeAttribute('inert'); });
-    if(!isPhone()){ openName=null; document.body.classList.remove('sheet-open'); document.querySelectorAll('.sheet.open').forEach(el=>el.classList.remove('open')); }
+    if(!isPhone()){ openName=null; parentName=null; syncSheetNav(0); document.body.classList.remove('sheet-open'); document.querySelectorAll('.sheet.open').forEach(el=>el.classList.remove('open')); }
     fit();
   }
   phoneUI.addEventListener('change',syncSheetMode);
   /* tapping the space around the preview closes the open panel too */
-  $('stage').addEventListener('click',e=>{ if(isPhone()&&openName&&(e.target===$('stage')||e.target.classList.contains('phone'))) closeSheet(); });
+  $('stage').addEventListener('click',e=>{ if(isPhone()&&openName&&(e.target===$('stage')||e.target.classList.contains('phone'))) closeSheet(undefined,{all:true}); });
   $('bar').addEventListener('click',e=>{
     const t=e.target.closest('[data-open]'); if(t){ const n=t.dataset.open; if(openName===n) closeSheet(); else { if(S.sel&&n!=='insp'){ S.sel=null; render(); } openSheet(n); focusSheet(n); } return; }
     if(e.target.closest('#barSave')) saveTapped();
@@ -1873,7 +1936,7 @@ async function tool(cfg){
       const fake={layers:{},photos:[]}, hh=makeHelpers(cx,fake,true,[],.75,0,1); drawComp(hh,{id:'p',comp:c.id,text:c.text?c.text():null,x:360,y:160}); });
   }
   function addComp(cid){
-    const c=COMP(cid); if(!c) return; closeSheet('comps');
+    const c=COMP(cid); if(!c) return; if(!isPhone()) closeSheet('comps');   /* r3-nav: on a phone the layer bar replaces the picker */
     if(c.asset) return addAsset(c.asset);
     const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='comp'+n;
     S.extras.push({id,type:'comp',comp:cid,text:c.text?c.text():null,x:W/2,y:H/2+(S.extras.length%4)*90});
@@ -1902,7 +1965,7 @@ async function tool(cfg){
     let w=a.w0; if(!w){ if(a.file){ const im=ASSET_IMG.get(ref).img; w=a.tint||a.group==='Logo'?320:Math.min(960,Math.round(700*im.width/im.height)); } else w=a.free?a.w:a.w>a.h*2?420:260; }
     const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const id='asset'+n;
     const ch=a.free?a.h:undefined; S.extras.push({id,type:'asset',ref,w,...(ch?{h:ch}:{}),x:W/2,y:H/2+(S.extras.length%4)*60,color:a.file||a.emoji?null:((a.color&&B.colors[a.color])||B.colors.ink)});
-    closeSheet('assets'); select(id);
+    if(!isPhone()) closeSheet('assets'); select(id);   // r3-nav
   }
   $('addAsset').addEventListener('click',()=>{ paintAssets(); openSheet('assets'); });
   $('assetList').addEventListener('click',e=>{ const t=e.target.closest('[data-asset]'); if(t) addAsset(t.dataset.asset); });
@@ -1912,7 +1975,7 @@ async function tool(cfg){
     $('addSticker').addEventListener('click',async()=>{ const late=emojiStickers().then(ok=>{ if(ok) paintStickers($('stickerList')); });
       if(!hasEmojiStickers()) await Promise.race([late,new Promise(r=>setTimeout(r,1500))]);
       paintStickers($('stickerList')); openSheet('stickers'); });
-    $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
+    $('stickerList').addEventListener('click',e=>{ const t=e.target.closest('[data-sticker]'); if(t){ if(!isPhone()) closeSheet('stickers'); addAsset(t.dataset.sticker); } }); }
   function moveExtra(d){ const x=extra(S.sel); if(!x) return; const i=S.extras.indexOf(x), j=i+d; if(j<0||j>=S.extras.length) return; S.extras.splice(i,1); S.extras.splice(j,0,x); syncInspector(); render(); }
   $('inspBack').addEventListener('click',()=>moveExtra(-1)); $('inspFwd').addEventListener('click',()=>moveExtra(1));
   onAssetLoad=()=>render();
@@ -1967,7 +2030,7 @@ async function tool(cfg){
       view.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); snapshot(); return;
     }
     target=hit(pt); moved=false; keepSel=S.sel&&!(target&&target.layer===S.sel)?S.sel:null;
-    if(!target&&!keepSel){ select(null); if(openName&&openName!=='insp') closeSheet(); return; }   // tapping an empty spot closes the open panel
+    if(!target&&!keepSel){ select(null); if(openName&&openName!=='insp') closeSheet(undefined,{all:true}); return; }   // tapping an empty spot closes the open panel
     if(target&&target.photo!=null){ const p=S.photos[target.photo];
       if(!p.img||p.sample){ S.active=target.photo; target.pick=true; }   // an empty photo box opens the picker when you lift your finger
       else { S.active=target.photo; syncZoom();
@@ -2026,7 +2089,7 @@ async function tool(cfg){
     if(!pts.size){
       view.classList.remove('dragging'); guides=[]; dragging=false; document.body.classList.remove('dragging-layer');
       if(target&&target.layer&&!moved){ const already=S.sel===target.layer; select(target.layer); if(already&&layerText(target.layer)!==null){ inspPart='text'; syncInspector(); setTimeout(()=>$('inspText').focus(),30); } }
-      else if(!moved&&(!target||!target.layer)){ if(S.sel) select(null); if(!target&&openName&&openName!=='insp') closeSheet(); if(target&&target.pick) pickPhoto(target.photo); }
+      else if(!moved&&(!target||!target.layer)){ if(S.sel) select(null); if(!target&&openName&&openName!=='insp') closeSheet(undefined,{all:true}); if(target&&target.pick) pickPhoto(target.photo); }
       keepSel=null;
       target=null; st=null; render();
     } else snapshot();
@@ -2615,14 +2678,15 @@ async function home(){
     if(v==='templates') showTemplates();
     if(v==='calendar') showCalendar(); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
-  function openView(v){ if(curView()===v) return; try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }
+  function openView(v){ if(curView()===v) return; nav.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
   function openSaved(){ openView('saved'); }
   function goHome(){ if(curView()==='home'){ window.scrollTo({top:0,behavior:reduce()?'auto':'smooth'}); return; }
-    if(history.state&&history.state.sp) history.back(); else { try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} showView('home'); } }
+    if(sel) endSelect(true);   // r3-nav
+    nav.idle(()=>{ if(history.state&&history.state.sp) history.back(); else { try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} showView('home'); } }); }
   addEventListener('popstate',()=>{ const want=hashView(); if(want!==curView()) showView(want); });
   tabs.forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); haptic('tick'); if(a.dataset.tab==='home') goHome(); else openView(a.dataset.tab); }));
   document.addEventListener('click',e=>{ const a=e.target.closest('[data-see-all]'); if(a){ e.preventDefault(); openSaved(); } });
-  $('savedBack').onclick=()=>{ if(sel) return history.state&&history.state.sel?history.back():endSelect(); goHome(); };
+  $('savedBack').onclick=()=>{ if(sel) return endSelect(); goHome(); };
   /* ---------- Templates (assets/templates.js): every ready-made start in one place, by kind, with real previews.
      Tool presets (brand kit `presets`: a tool with a style and words), Create templates (brand kit `create.templates`) and the
      team's own templates (Saved designs of kind "template"). A tap starts it at once. Previews: assets/thumbs/<brand>/tpl/<id>.jpg ---------- */
@@ -3062,7 +3126,7 @@ async function home(){
       try{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }catch(err){ d.querySelector('#cdSt').textContent=err.message||String(err); b.disabled=false; } }; };
   /* a small menu under a button: arrow keys move, Escape / a tap outside / scrolling closes it, focus goes back to the button */
   function popMenu(btn,items){
-    const old=document.querySelector('.pop-menu'); if(old) old.remove();
+    const old=document.querySelector('.pop-menu'); if(old){ if(old._close) old._close(false); else old.remove(); }
     const m=document.createElement('div'); m.className='pop-menu'; m.setAttribute('role','menu'); m.setAttribute('aria-label',btn.getAttribute('aria-label')||'Options');
     m.innerHTML=items.map(it=>`<button type="button" role="menuitem" class="pm-item${it.danger?' danger':''}" id="${it.id}">${it.icon}<span>${esc(it.label)}</span></button>`).join('');
     document.body.appendChild(m);
@@ -3071,7 +3135,9 @@ async function home(){
     m.style.left=x+'px'; m.style.top=y+'px'; m.style.transformOrigin=`${rtl?'left':'right'} ${y<r.top?'bottom':'top'}`;
     btn.setAttribute('aria-expanded','true');
     const btns=[...m.querySelectorAll('[role=menuitem]')];
-    const close=back=>{ m.remove(); btn.setAttribute('aria-expanded','false'); removeEventListener('pointerdown',out,true); removeEventListener('scroll',shut,true); removeEventListener('resize',shut); document.removeEventListener('keydown',key,true); if(back&&btn.isConnected) btn.focus({preventScroll:true}); };
+    nav.push(m,()=>close(true));   // r3-nav: Back closes the menu first
+    const close=back=>{ m.remove(); nav.drop(m); btn.setAttribute('aria-expanded','false'); removeEventListener('pointerdown',out,true); removeEventListener('scroll',shut,true); removeEventListener('resize',shut); document.removeEventListener('keydown',key,true); if(back&&btn.isConnected) btn.focus({preventScroll:true}); };
+    m._close=close;
     const out=e=>{ if(!m.contains(e.target)&&!btn.contains(e.target)) close(false); };
     const shut=e=>{ if(!e||!m.contains(e.target)) close(false); };
     const key=e=>{ const i=btns.indexOf(document.activeElement);
@@ -3090,10 +3156,10 @@ async function home(){
      or delete them, in one go. The bottom bar swaps for the actions; ✕, Escape, Back or leaving the page stops selecting. */
   const plural=(n,w)=>n+' '+w+(n===1?'':'s');
   function startSelect(id,keep){ sel=new Set(id?[id]:[]); document.body.classList.add('selecting'); $('selBar').hidden=false; haptic('tick');
-    try{ history.pushState({sp:1,sel:1},'',location.hash||'#saved'); }catch(_){}
+    nav.push('select',()=>endSelect(false,true));   // r3-nav: Back ends select first
     if(keep) paintSel(); else paintPage(); }   // keep: the grid stays as it is (a finger is still on one of its cards)
-  function endSelect(quiet){ if(!sel) return; sel=null; document.body.classList.remove('selecting'); $('selBar').hidden=true;
-    if(history.state&&history.state.sel) history.back();   // drop the select step from history, so Back goes home next
+  function endSelect(quiet,fromBack){ if(!sel) return; sel=null; document.body.classList.remove('selecting'); $('selBar').hidden=true;
+    if(!fromBack) nav.drop('select');   // drop the select step from history, so Back goes home next
     if(quiet) paintSel(); else paintPage(); }
   function paintSel(){
     const on=!!sel, n=on?sel.size:0, back=$('savedBack');
@@ -3131,8 +3197,7 @@ async function home(){
   function toggleSel(id){ if(!sel) return; sel.has(id)?sel.delete(id):sel.add(id); haptic('tick'); paintSel(); }
   $('selBtn').addEventListener('click',()=>{ if(!sel) return startSelect();
     if(shown.length&&sel.size===shown.length) sel.clear(); else shown.forEach(d=>sel.add(d.id)); haptic('tick'); paintSel(); });
-  addEventListener('popstate',()=>{ if(sel&&!(history.state&&history.state.sel)) endSelect(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sel&&!document.querySelector('dialog[open],.pop-menu')){ e.preventDefault(); history.state&&history.state.sel?history.back():endSelect(); } });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sel&&!document.querySelector('dialog[open],.pop-menu')){ e.preventDefault(); endSelect(); } });
   /* "/" on a computer jumps into search, like many web apps: Saved → its own search, Home → the Studio search. Never while typing or with a pop-up open */
   document.addEventListener('keydown',e=>{ if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey) return; const t=e.target;
     if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))||document.querySelector('dialog[open],.pop-menu')) return;
@@ -3390,5 +3455,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={nav,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
