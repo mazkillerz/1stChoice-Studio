@@ -47,8 +47,8 @@ for(const scheme of ['light','dark']){
   await pg.tap('#barSave');
   const d1=await waitDl(1); const s1=d1?await pngSize(d1):'';
   await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
-  const did=new URL(pg.url()).searchParams.get('design');
-  ok(N+'one tap on Save: full-size PNG + saved to the team',s1==='2160x3840'&&!!did,{png:s1,design:did});
+  await pg.waitForTimeout(800);
+  ok(N+'one tap on Save: full-size PNG, picture only (nothing goes to the team by itself)',s1==='2160x3840'&&!/design=/.test(pg.url()),{png:s1,url:pg.url()});
 
   /* 4. after an edit, Save opens the Save sheet; Save in it makes the picture */
   await pg.waitForTimeout(1500);   // the save tick and toast settle
@@ -57,9 +57,14 @@ for(const scheme of ['light','dark']){
   await pg.tap('#bar [data-open="words"]').catch(()=>{}); await pg.waitForTimeout(400);
   await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
   const sheet=await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'));
-  if(sheet) await pg.tap('#save');
+  /* the sheet starts on My phone; choose Phone + Team, name a new collection, Save: the picture and the design */
+  if(sheet){ const first=await pg.getAttribute('#saveWhere [data-where="me"]','aria-checked'); await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamBox:not([hidden])');
+    await pg.waitForSelector('#teamCols [data-newcol]'); if(await pg.isHidden('#teamNewRow')) await pg.tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol','Smoke'); await pg.tap('#save');
+    ok(N+'the Save sheet starts on My phone',first==='true'); }
   const d2=await waitDl(2); const s2=d2?await pngSize(d2):'';
-  ok(N+'after an edit: Save opens the Save sheet, Save in it makes the full-size PNG',sheet&&s2==='2160x3840',{sheet,png:s2});
+  await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
+  const did=new URL(pg.url()).searchParams.get('design');
+  ok(N+'after an edit: Save opens the Save sheet; Phone + Team makes the full-size PNG and the design',sheet&&s2==='2160x3840'&&!!did,{sheet,png:s2,design:did});
 
   /* 5. search: the tool and saved designs, English and Arabic */
   await pg.goto(BASE+'index.html?s=1'); await pg.waitForTimeout(1200);
