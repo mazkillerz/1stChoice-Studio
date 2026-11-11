@@ -125,7 +125,7 @@ Studio.tool({
       return;
     }
 
-    h.ground(ground,o.value('gfx'));
+    h.ground(ground,o.value('gfx'),o.value('gfxs'));
     if(st==='caption'){
       /* the photo fills the top, a calm band below holds the words (kept above the story's bottom safe zone) */
       const ww=psWords(h,{head,small,hp:'start',vp:'bottom',size,color:ink,sub:soft,shadow:false,tone,logo,at:bh=>Math.round(1620-bh-128)+64});

@@ -582,13 +582,31 @@ const GROUNDS=[
   {v:'glow',l:'Glow',ic:gIc('glow','<defs><radialGradient id="gfxg" cx=".5" cy=".3" r=".75"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor" stop-opacity=".6"/></radialGradient></defs><rect width="30" height="46" fill="url(#gfxg)"/>')},
   {v:'dots',l:'Dots',ic:gIc('dots',Array.from({length:30},(_,i)=>`<circle cx="${3.5+(i%5)*5.75}" cy="${4+Math.floor(i/5)*7.6}" r="1.3" fill="currentColor" opacity=".7"/>`).join(''))},
   {v:'lines',l:'Lines',ic:gIc('lines',Array.from({length:12},(_,i)=>`<path d="M${-46+i*7.5} 46 L${i*7.5} 0" stroke="currentColor" stroke-width="1.4" opacity=".55"/>`).join(''))},
-  {v:'grain',l:'Grain',ic:gIc('grain',GRAIN_IC.map(([x,y])=>`<rect x="${x}" y="${y}" width="1.6" height="1.6" fill="currentColor" opacity=".75"/>`).join(''))}
+  {v:'grain',l:'Grain',ic:gIc('grain',GRAIN_IC.map(([x,y])=>`<rect x="${x}" y="${y}" width="1.6" height="1.6" fill="currentColor" opacity=".75"/>`).join(''))},
+  /* r3-backgrounds: more finishes, in three groups (g) for the picker; the six above keep drawing exactly as before */
+  {v:'sweep',l:'Sweep',ic:gIc('sweep','<defs><linearGradient id="gfxw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".05"/><stop offset="1" stop-color="currentColor" stop-opacity=".6"/></linearGradient></defs><rect width="30" height="46" fill="url(#gfxw)"/>')},
+  {v:'spot',l:'Spot',ic:gIc('spot','<defs><radialGradient id="gfxs" cx=".5" cy=".46" r=".6"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset=".45" stop-color="currentColor" stop-opacity=".12"/><stop offset="1" stop-color="currentColor" stop-opacity=".65"/></radialGradient></defs><rect width="30" height="46" fill="url(#gfxs)"/>')},
+  {v:'mesh',l:'Mesh',ic:gIc('mesh','<defs><radialGradient id="gfxm1"><stop offset="0" stop-color="currentColor" stop-opacity=".55"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient><radialGradient id="gfxm2"><stop offset="0" stop-color="currentColor" stop-opacity=".4"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs><circle cx="4" cy="8" r="20" fill="url(#gfxm1)"/><circle cx="29" cy="24" r="18" fill="url(#gfxm2)"/><circle cx="7" cy="42" r="19" fill="url(#gfxm1)"/>')},
+  {v:'grid',l:'Grid',ic:gIc('grid',Array.from({length:6},(_,i)=>`<path d="M${3+i*5.2} 0V46" stroke="currentColor" stroke-width="1" opacity=".5"/>`).join('')+Array.from({length:9},(_,i)=>`<path d="M0 ${3+i*5.2}H30" stroke="currentColor" stroke-width="1" opacity=".5"/>`).join(''))},
+  {v:'waves',l:'Waves',ic:gIc('waves',Array.from({length:6},(_,i)=>`<path d="M-2 ${6+i*7.5} q4.5 -4 8.5 0 t8.5 0 t8.5 0 t8.5 0" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>`).join(''))},
+  {v:'rings',l:'Rings',ic:gIc('rings',[9,17,25,33,41,49].map(r=>`<circle cx="0" cy="46" r="${r}" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>`).join(''))},
+  {v:'paper',l:'Paper',ic:gIc('paper',Array.from({length:16},(_,i)=>{ const x=3+(i*11)%25, y=3+(i*17)%40; return `<path d="M${x} ${y} q3 -1.4 6 ${(i%3)-1}" fill="none" stroke="currentColor" stroke-width=".9" opacity=".6"/>`; }).join(''))},
+  {v:'linen',l:'Linen',ic:gIc('linen',Array.from({length:12},(_,i)=>`<path d="M0 ${2+i*3.9}H30" stroke="currentColor" stroke-width=".9" opacity=".45"/>`).join('')+Array.from({length:8},(_,i)=>`<path d="M${2+i*3.9} 0V46" stroke="currentColor" stroke-width=".9" opacity=".45"/>`).join(''))}
 ];
+const GROUND_GROUPS=[['Gradients',['fade','glow','sweep','spot','mesh']],['Patterns',['dots','lines','grid','waves','rings']],['Textures',['grain','paper','linen']]];
+GROUNDS.forEach(g=>{ const gr=GROUND_GROUPS.find(x=>x[1].includes(g.v)); if(gr) g.g=gr[0]; });
+const GROUND_K={soft:.6,medium:1,strong:1.6};   // Strength: Medium is exactly the original drawing
+const mkRand=seed=>{ let s=seed; return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; };
+let DITHER=null;   // a tiny seeded noise tile that breaks up banding in the soft gradients
+const ditherTile=()=>{ if(DITHER) return DITHER; const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d'), im=x.createImageData(128,128), r=mkRand(77031);
+  for(let i=0;i<128*128;i++){ const v=r()<.5?0:255; im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v; im.data[i*4+3]=Math.round(3+r()*4); } x.putImageData(im,0,0); return DITHER=c; };
+const dither=(ctx,W,H)=>{ try{ const p=ctx.createPattern(ditherTile(),'repeat'); ctx.save(); ctx.fillStyle=p; ctx.fillRect(0,0,W,H); ctx.restore(); }catch(_){} };
+const PAPER=(()=>{ const r=mkRand(20261111); return Array.from({length:2600},()=>[r(),r(),r()*Math.PI*2,14+r()*30,(r()-.5)*.9,r()]); })();   // x, y, angle, length, bend, tone
 const GRAIN=(()=>{ let s=20261029; const r=()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
   return Array.from({length:9000},()=>[r(),r(),r()]); })();   // the same speckles every time: a design reopens exactly as it was
-function groundFx(ctx,kind,color,W,H){
+function groundFx(ctx,kind,color,W,H,strength){   /* r3-backgrounds: strength = soft | medium | strong (nothing = medium) */
   if(!kind||kind==='plain'||!GROUNDS.some(g=>g.v===kind)) return;
-  const dk=!isLight(color), tone=dk?'255,255,255':'0,0,0', a=(l,d)=>`rgba(${tone},${dk?d:l})`;
+  const dk=!isLight(color), tone=dk?'255,255,255':'0,0,0', k=GROUND_K[strength]||1, m=x=>k===1?x:Math.min(1,+(x*k).toFixed(4)), a=(l,d)=>`rgba(${tone},${m(dk?d:l)})`;
   ctx.save();
   if(kind==='fade'){   // light grounds deepen toward the bottom; dark grounds lift toward the top
     const g=ctx.createLinearGradient(0,0,0,H);
@@ -596,7 +614,7 @@ function groundFx(ctx,kind,color,W,H){
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   } else if(kind==='glow'){   // a soft light high up, gently darker at the edges
     const g=ctx.createRadialGradient(W/2,H*.3,0,W/2,H*.3,H*.82);
-    g.addColorStop(0,dk?'rgba(255,255,255,.13)':'rgba(255,255,255,.55)'); g.addColorStop(.38,dk?'rgba(255,255,255,.04)':'rgba(255,255,255,0)'); g.addColorStop(1,dk?'rgba(0,0,0,.2)':'rgba(0,0,0,.15)');
+    g.addColorStop(0,`rgba(255,255,255,${m(dk?.13:.55)})`); g.addColorStop(.38,`rgba(255,255,255,${m(dk?.04:0)})`); g.addColorStop(1,`rgba(0,0,0,${m(dk?.2:.15)})`);
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   } else if(kind==='dots'){
     const sp=40; ctx.fillStyle=a(.09,.1); ctx.beginPath();
@@ -608,12 +626,50 @@ function groundFx(ctx,kind,color,W,H){
     ctx.stroke();
   } else if(kind==='grain'){   // paper-like speckles: mostly the ground's shadow tone, a few light ones
     ctx.fillStyle=a(.085,.09); ctx.beginPath(); GRAIN.forEach(([x,y,z],i)=>{ if(i%3) ctx.rect(x*W,y*H,1.6+z*1.6,1.6+z*1.6); }); ctx.fill();
-    ctx.fillStyle=dk?'rgba(0,0,0,.18)':'rgba(255,255,255,.5)'; ctx.beginPath(); GRAIN.forEach(([x,y,z],i)=>{ if(!(i%3)) ctx.rect(x*W,y*H,1.6+z*1.6,1.6+z*1.6); }); ctx.fill();
+    ctx.fillStyle=dk?`rgba(0,0,0,${m(.18)})`:`rgba(255,255,255,${m(.5)})`; ctx.beginPath(); GRAIN.forEach(([x,y,z],i)=>{ if(!(i%3)) ctx.rect(x*W,y*H,1.6+z*1.6,1.6+z*1.6); }); ctx.fill();
+
+  } else if(kind==='sweep'){   // a soft diagonal: light one corner, shade the other
+    const g=ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,`rgba(255,255,255,${m(dk?.1:.5)})`); g.addColorStop(.5,`rgba(255,255,255,0)`); g.addColorStop(1,`rgba(0,0,0,${m(dk?.26:.13)})`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H); dither(ctx,W,H);
+  } else if(kind==='spot'){   // a pool of light in the middle, a quiet vignette round it
+    const g=ctx.createRadialGradient(W/2,H*.46,0,W/2,H*.46,H*.66);
+    g.addColorStop(0,`rgba(255,255,255,${m(dk?.12:.6)})`); g.addColorStop(.4,`rgba(255,255,255,${m(dk?.03:.12)})`); g.addColorStop(1,`rgba(0,0,0,${m(dk?.34:.18)})`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H); dither(ctx,W,H);
+  } else if(kind==='mesh'){   // three big soft blobs: light, shade, light
+    [[.1,.1,.95,255,dk?.1:.55],[1,.52,.9,0,dk?.3:.12],[.12,.95,.85,255,dk?.08:.4],[.9,.05,.6,0,dk?.2:.07]].forEach(([x,y,r,c,al])=>{
+      const g=ctx.createRadialGradient(x*W,y*H,0,x*W,y*H,r*H*.72); g.addColorStop(0,`rgba(${c},${c},${c},${m(al)})`); g.addColorStop(1,`rgba(${c},${c},${c},0)`);
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H); });
+    dither(ctx,W,H);
+  } else if(kind==='grid'){   // a fine square grid
+    const sp=60; ctx.fillStyle=a(.065,.075);
+    for(let x=sp/2;x<W;x+=sp) ctx.fillRect(x-1,0,2,H);
+    for(let y=sp/2;y<H;y+=sp) ctx.fillRect(0,y-1,W,2);
+  } else if(kind==='waves'){   // calm wavy lines
+    ctx.strokeStyle=a(.07,.08); ctx.lineWidth=3; ctx.lineJoin='round'; ctx.beginPath();
+    for(let y=-20;y<H+60;y+=56){ ctx.moveTo(-10,y); for(let x=-10;x<=W+10;x+=10) ctx.lineTo(x,y+Math.sin(x/W*Math.PI*4+y*.004)*22); }
+    ctx.stroke();
+  } else if(kind==='rings'){   // wide arcs rising from the bottom-left corner, fading as they go
+    const R=Math.hypot(W,H);
+    for(let r=130,i=0;r<R;r+=110,i++){ ctx.strokeStyle=a(.085*(1-r/R*.75),.1*(1-r/R*.75)); ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,H,r,-Math.PI/2,0); ctx.stroke(); }
+  } else if(kind==='paper'){   // fine fibres and a faint shade at the edges
+    ctx.lineWidth=1.6; ctx.lineCap='round';
+    [[a(.075,.08),i=>i%4],[dk?'rgba(0,0,0,'+m(.2)+')':'rgba(255,255,255,'+m(.55)+')',i=>!(i%4)]].forEach(([c,t],j)=>{ ctx.strokeStyle=c; ctx.beginPath();
+      PAPER.forEach(([x,y,an,len,bend],i)=>{ if(!t(i)) return; const x0=x*W,y0=y*H,dx=Math.cos(an)*len,dy=Math.sin(an)*len; ctx.moveTo(x0,y0); ctx.quadraticCurveTo(x0+dx/2-dy*bend,y0+dy/2+dx*bend,x0+dx,y0+dy); }); ctx.stroke(); });
+    const g=ctx.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.85); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(0,0,0,${m(dk?.2:.07)})`); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  } else if(kind==='linen'){   // woven cross-hatch: threads over and under
+    const sp=6;
+    for(let y=0,i=0;y<H;y+=sp,i++){ ctx.fillStyle=a(i%3?.03:.05,i%3?.035:.06); ctx.fillRect(0,y,W,2.4); }
+    for(let x=0,i=0;x<W;x+=sp,i++){ ctx.fillStyle=a(i%3?.03:.05,i%3?.035:.06); ctx.fillRect(x,0,2.4,H); }
+    ctx.fillStyle=dk?'rgba(0,0,0,'+m(.1)+')':'rgba(255,255,255,'+m(.3)+')';
+    for(let y=0,i=0;y<H;y+=sp*2,i++) for(let x=(i%2)*sp;x<W;x+=sp*2) ctx.fillRect(x+1,y+1,sp-2,sp-2);
   }
   ctx.restore();
 }
 /* the Background picker a tool puts in its Style sheet: Studio.groundField({style:[...]}) (when = the styles that have a ground) */
-const groundField=(when,label)=>({id:'gfx',type:'seg',in:'style',label:label||'Background',default:'plain',cols:3,...(when?{when}:{}),options:GROUNDS.map(({v,l,ic})=>({v,l,ic}))});
+const groundField=(when,label)=>({id:'gfx',type:'seg',in:'style',label:label||'Background',default:'plain',cols:3,...(when?{when}:{}),options:GROUNDS.map(({v,l,ic,g})=>({v,l,ic,g})),
+  /* r3-backgrounds: the Strength choice rides along as a second field (shown once a finish is chosen) */
+  more:[{id:'gfxs',type:'seg',in:'style',label:'Strength',default:'medium',cols:3,when:{...(when||{}),field:'gfx',is:GROUNDS.filter(g=>g.v!=='plain').map(g=>g.v)},options:[{v:'soft',l:'Soft'},{v:'medium',l:'Medium'},{v:'strong',l:'Strong'}]}]});
 const BLURS=new WeakMap();   // photo -> blurred tiny copies for h.backdrop
 let framePass=false;   // set by renderPage() while it draws a frame-only PNG (see the end of makeHelpers)
 function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
@@ -637,7 +693,7 @@ function makeHelpers(ctx,S,preview,reg,scale,off,perPage){
     get tok(){ return tokens(tokFormat(W,H)); },   // tokens (mega w1): the brand's design tokens for this canvas, read-only
     phrase(key){ return (B.phrases&&B.phrases[key])||''; },
     /* fill the whole story with a ground colour and its Background finish (groundFx); kind 'plain' = just the colour */
-    ground(color,kind){ (reg.grounds||(reg.grounds=[])).push(color); ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H); },
+    ground(color,kind,strength){ (reg.grounds||(reg.grounds=[])).push(color); ctx.fillStyle=color; ctx.fillRect(0,0,W,H); groundFx(ctx,kind,color,W,H,strength); },
     photoAspect(i,opt){const p=S.photos[ix(i,opt)];return p&&p.img?p.img.width/p.img.height:1.5;},
     photo(i,x,y,w,hh,opt){
       opt=opt||{}; const p=S.photos[ix(i,opt)], rot=(opt.rot||0)*Math.PI/180;   // rot: degrees, around the box centre
@@ -843,7 +899,7 @@ async function tool(cfg){
   if(!Studio.comp) await loadScript(ROOT+'assets/components.js');   // shared design components (mega w2)
   const opts=v=>typeof v==='function'?v(B):v;
   const clone=o=>JSON.parse(JSON.stringify(o));
-  const fields=(cfg.fields||[]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));
+  const fields=(cfg.fields||[]).flatMap(f=>f.more?[f,...f.more.map(x=>({...x,global:f.global}))]:[f]).map(f=>({...f,options:opts(f.options),default:opts(f.default)}));   // r3-backgrounds: f.more = fields that ride along
   if(cfg.size){ W=cfg.size.w; H=cfg.size.h; }
   const PG=cfg.pages||null;   // carousels: {min,max,start}
   const PN=Object.assign({one:'slide',many:'slides',set:'carousel'},cfg.pageNoun||{}), UC=t=>t.charAt(0).toUpperCase()+t.slice(1);   // what a page is called: a carousel's slide, a highlight cover
@@ -1086,6 +1142,8 @@ async function tool(cfg){
     box.innerHTML=list.map(f=>{
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
+      else if(f.type==='seg'&&f.options.some(o=>o.g)){ const sb=o=>`<button type="button" class="seg has-ic" data-v="${o.v}" aria-pressed="false"><span class="seg-ic" aria-hidden="true">${o.ic}</span>${esc(o.l)}</button>`, grp=[...new Set(f.options.filter(o=>o.g).map(o=>o.g))];   /* r3-backgrounds: choices in labelled sideways rows, the first (no group) alone */
+        inner=`<span class="lbl">${esc(f.label)}</span><div class="gsegs" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}"><div class="grow one">${f.options.filter(o=>!o.g).map(sb).join('')}</div>${grp.map(gn=>`<div class="gl">${esc(gn)}</div><div class="grow" role="group" aria-label="${esc(gn)}">${f.options.filter(o=>o.g===gn).map(sb).join('')}</div>`).join('')}</div>`; }
       else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid${segOdd(f.options,f.cols)}" style="--c:${f.cols||segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
@@ -1106,7 +1164,7 @@ async function tool(cfg){
         else if(b.dataset.none) v.pick='__none'; else v.pick=b.dataset.v;
         if(S.layers[id]) S.layers[id].hidden=false;
         syncUI(); remember(); render(); return; }
-      const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.parentNode.dataset.seg]=s.dataset.v; syncUI(); remember(); render(); return; }
+      const s=e.target.closest('[data-seg] .seg'); if(s){ S.values[s.closest('[data-seg]').dataset.seg]=s.dataset.v; syncUI(); remember(); render(); return; }
       const pp=e.target.closest('[data-place] .pp'); if(pp){ S.values[pp.parentNode.dataset.place]=pp.dataset.v; syncUI(); remember(); render(); return; }
       const m=e.target.closest('[data-mf] .chip'); if(m){ const id=m.parentNode.dataset.mf, v=S.values[id], k=v.picks.indexOf(m.dataset.v); if(k>=0) v.picks.splice(k,1); else v.picks.push(m.dataset.v); if(S.layers[id]) S.layers[id].hidden=false; syncUI(); remember(); render(); return; }
       const at=e.target.closest('[data-addtile]'); if(at){ const f=fields.find(x=>x.id===at.dataset.addtile), v=S.values[f.id]; if(v.length<(f.max||3)){ v.push({small:'',big:''}); syncUI(); render(); const ins=document.querySelectorAll(`[data-tiles="${f.id}"] input`); if(ins.length) ins[ins.length-2].focus(); } return; }

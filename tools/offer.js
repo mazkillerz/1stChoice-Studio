@@ -59,7 +59,7 @@ Studio.tool({
       h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,{bg:C.paper,fg:C.ink}));
       return;
     }
-    h.ground(ground,o.value('gfx'));
+    h.ground(ground,o.value('gfx'),o.value('gfxs'));
     const ar=h.photoAspect(0), pw=880; let ph=Math.round(pw/ar); ph=Math.max(480,Math.min(640,ph));
     const lw=220, lh=h.logoH(lw);
     const rest=(hh,sr,dr)=>lh+50+hh+40+44+(n?th+40:0)+dr+sr+(pill?76+30:0);
