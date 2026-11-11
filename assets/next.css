@@ -191,3 +191,21 @@
 :root[data-next] .install{border:0;border-radius:var(--nx-r);box-shadow:var(--nx-e1)}
 :root[data-next] #homeView>.pack-banner{width:calc(100% - var(--gutter) - var(--gutter-r));margin:var(--sp-5) var(--gutter-r) 0 var(--gutter);max-width:calc(1080px - var(--gutter) - var(--gutter-r))}
 @media (min-width:1100px){:root[data-next] #homeView>.pack-banner{margin-inline:auto}}
+
+/* ---------- 4. polish round ---------- */
+:root[data-next] .nx-peek{background:none;height:200px;box-shadow:none;border-radius:0;overflow:visible}
+:root[data-next] .nx-peek img{border-radius:14px;box-shadow:var(--nx-e3)}
+:root[data-next] .nx-peek .ds-ph{width:113px;border-radius:14px;box-shadow:var(--nx-e2)}
+:root[data-next] .nx-meta{text-align:start}
+/* Create tiles: the camera sits in the footer, beside the name */
+:root[data-next] .grid.view-grid .row-cam{top:auto;bottom:8px;inset-inline-end:8px;margin-top:0;background:color-mix(in srgb,var(--accent) 12%,var(--surface));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+:root[data-next] .grid.view-grid .tool-item.has-cam .ttxt{padding-inline-end:56px}
+:root[data-next] .grid.view-grid .tool-item.has-cam .tool-row{min-height:0}
+:root[data-next] .grid.view-grid .tool-item .ttxt{min-height:60px;justify-content:center}
+/* Templates and Plan wear the Saved header: a large title and no back arrow (they are tabs) */
+:root[data-next] .tp-back,:root[data-next] [data-cal-back]{display:none}
+:root[data-next] .cal-head{margin-inline-start:0;padding-top:calc(10px + var(--safe-t))}
+:root[data-next] .cal-head h1,:root[data-next] .tpl-view h1{font:600 32px/1.1 var(--sans);letter-spacing:-.02em}
+:root[data-next] .tpl-view{padding-bottom:calc(var(--nx-bar) + var(--safe-b) + 32px)}
+:root[data-next] .cal-view{padding-bottom:calc(var(--nx-bar) + var(--safe-b) + 32px)}
+:root[data-next] .hubbar a,:root[data-next] .hubbar a span{text-decoration:none}

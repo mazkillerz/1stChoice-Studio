@@ -76,7 +76,7 @@ NX.card=function(d,i,H,o){ o=o||{};
   NX._H=H;
   return '<div class="sv-card nx-card'+(o.mini?' nx-jcard':'')+(H.sel&&H.sel.has(d.id)?' picked':'')+'" data-kind="saved" data-id="'+E(d.id)+'" style="--i:'+Math.min(i,12)+'"><a class="sv-open" href="'+H.toolPage(d.tool)+'?design='+encodeURIComponent(d.id)+'" draggable="false" aria-label="'+E(d.name)+', '+E(H.toolName(d.tool))+(tpl?', template':'')+'. Press and hold for more.">'
     +'<span class="sv-thumb nx-thumb" data-shape="'+H.toolShape(d.tool)+'">'+img(d,H)+(tpl?'<em class="sv-badge nx-tag">Template</em>':'')+H.rvChip(d)+'<span class="sv-check" aria-hidden="true">'+H.ICON.check+'</span></span>'
-    +'<span class="sv-txt nx-txt" dir="auto"><b class="nx-name" title="'+E(d.name)+'">'+E(d.name)+'</b><span class="nx-meta">'+(where?'<span class="nx-where">'+where+'</span><i aria-hidden="true">·</i>':'')+'<bdi>'+E(H.ago(H.lastUse(d)))+'</bdi>'+(by?'<u class="nx-by" title="'+E(d.author)+'" aria-label="'+E(d.author)+'">'+E(by)+'</u>':'')+'</span></span></a>'
+    +'<span class="sv-txt nx-txt"><b class="nx-name" dir="auto" title="'+E(d.name)+'">'+E(d.name)+'</b><span class="nx-meta">'+(where?'<span class="nx-where">'+where+'</span><i aria-hidden="true">·</i>':'')+'<bdi>'+E(H.ago(H.lastUse(d)))+'</bdi>'+(by?'<u class="nx-by" title="'+E(d.author)+'" aria-label="'+E(d.author)+'">'+E(by)+'</u>':'')+'</span></span></a>'
     +(o.mini?'':'<button type="button" class="sv-more" data-dmore="'+E(d.id)+'" aria-label="More for '+E(d.name)+'">'+H.ICON.more+'</button>')+'</div>';
 };
 
@@ -113,7 +113,7 @@ NX.jump=function(H,o){
     const x=it.draft;
     return '<div class="sv-card nx-card nx-jcard" data-kind="draft" data-draft="'+E(x.key)+'"><a class="nx-dopen" href="'+H.toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)+'" draggable="false" aria-label="'+E(x.title)+', unfinished story">'
       +'<span class="sv-thumb nx-thumb">'+(x.thumb?'<img class="nx-img" alt="" src="'+x.thumb+'" onload="this.classList.add(\'in\')">':'')+'<em class="nx-tag">Draft</em></span>'
-      +'<span class="sv-txt nx-txt" dir="auto"><b class="nx-name">'+E(x.title)+'</b><span class="nx-meta"><bdi>'+E(H.ago(x.at))+'</bdi></span></span></a></div>'; }).join('');
+      +'<span class="sv-txt nx-txt"><b class="nx-name" dir="auto">'+E(x.title)+'</b><span class="nx-meta"><bdi>'+E(H.ago(x.at))+'</bdi></span></span></a></div>'; }).join('');
   return shown;
 };
 
