@@ -36,7 +36,7 @@ const MAP=[
   [/^lab\/(board|lab)\.css$/,['fixes54']],
   [/^assets\/fonts\/|^assets\/studio\.css$|^brands\/[\w-]+\/fonts\/|^brands\/[\w-]+\/brand\.js$|^lab\/board\.html$/,['fonts-local']],
   [/^assets\/who\./,['who']],
-  [/^assets\/cloud\.js$|^tests\/fakecloud\.js$/,['cloud-api']],
+  [/^assets\/cloud\.js$|^tests\/fakecloud\.js$/,['cloud-api','planned']],
   [/^tools\/create\.js$|^assets\/cloud\.js$/,['saved-versions']],
   [/^brands\/|^tests\/fixtures\/brands\//,['tokens']],
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers','nd-templates','text-fill','goldens']],
