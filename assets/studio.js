@@ -98,7 +98,8 @@ const FLAGS=[
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'}   /* w3-stock */
+  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'},   /* w3-stock */
+  {id:'next',label:'New Studio look',sub:'New bottom bar, a bigger Saved page and a faster Home'}   /* r3-next */
 ];
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -107,6 +108,7 @@ const flags={
   set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
 };
 try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
+try{ if(flags.on('next')) document.documentElement.dataset.next='1'; else delete document.documentElement.dataset.next; }catch(_){}   /* r3-next: the preview's switch for assets/next.css (index.html sets it early too) */
 
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
 /* the hub lists tools in this order, under their group's heading: the most used first */
@@ -2620,6 +2622,7 @@ function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) retur
 async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
+  let NX=null; if(flags.on('next')){ try{ NX=await lazy('next'); }catch(_){ delete document.documentElement.dataset.next; } }   /* r3-next: the New Studio look (assets/next.js) loads only with its preview on */
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null, cloudNote='', loadRun=0, slowT=0;   // cloudNote: the offline / slow note on show (1.46.0)
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
@@ -2791,6 +2794,7 @@ async function home(){
   const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening'; }
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
      The bottom bar (phone) lights the one you're on; its highlight is sized from the tab itself, so icon and label sit in its middle. */
+  if(NX) NX.bar($('fab'));   /* r3-next: five places, the + docked in the middle */
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
   /* three places since 1.0.0: Home, Templates (#templates) and Saved (#saved); each page has its own Back entry */
   const VIEWS={home:'homeView',templates:'templatesView',saved:'saved'};
@@ -2799,9 +2803,9 @@ async function home(){
   const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':'home';
   const onSaved=()=>curView()==='saved';
   const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':'home';
-  function setTab(v){ if(v==='calendar') v='home';   // calendar (mega): a page under Home
+  function setTab(v){ if(v==='calendar'&&!NX) v='home';   // calendar (mega): a page under Home (r3-next: its own tab, Plan)
     tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
-    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
+    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&NX){ NX.pill(pill,on); } else if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);

@@ -1,0 +1,37 @@
+/* The "New Studio look" preview (flag "next"). Every rule needs :root[data-next], so with the flag off none of this matches.
+   Elevation scale: 1 cards, 2 raised, 3 floating. */
+:root[data-next]{
+  --nx-e1:0 1px 2px rgba(28,22,16,.05),0 2px 10px -2px rgba(28,22,16,.08);
+  --nx-e2:0 2px 6px rgba(28,22,16,.06),0 10px 26px -10px rgba(28,22,16,.2);
+  --nx-e3:0 4px 10px rgba(28,22,16,.08),0 18px 40px -12px rgba(28,22,16,.32);
+  --nx-r:20px; --nx-bar:64px;
+}
+@media (prefers-color-scheme:dark){:root[data-next]:not([data-theme="light"]){--nx-e1:0 1px 2px rgba(0,0,0,.4),0 2px 10px -2px rgba(0,0,0,.4);--nx-e2:0 2px 6px rgba(0,0,0,.4),0 10px 26px -10px rgba(0,0,0,.6);--nx-e3:0 4px 10px rgba(0,0,0,.45),0 18px 40px -12px rgba(0,0,0,.7)}}
+:root[data-theme="dark"][data-next]{--nx-e1:0 1px 2px rgba(0,0,0,.4),0 2px 10px -2px rgba(0,0,0,.4);--nx-e2:0 2px 6px rgba(0,0,0,.4),0 10px 26px -10px rgba(0,0,0,.6);--nx-e3:0 4px 10px rgba(0,0,0,.45),0 18px 40px -12px rgba(0,0,0,.7)}
+
+/* ---------- 1. the bottom bar ---------- */
+:root[data-next] .hubbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;position:fixed;left:0;right:0;bottom:0;margin:0;gap:0;
+  min-height:calc(var(--nx-bar) + var(--safe-b));padding:4px max(4px,var(--safe-r)) var(--safe-b) max(4px,var(--safe-l));border:0;border-top:.5px solid color-mix(in srgb,var(--fg) 14%,transparent);border-radius:0;box-shadow:none;
+  background:color-mix(in srgb,var(--raised) 86%,transparent);-webkit-backdrop-filter:saturate(1.8) blur(22px);backdrop-filter:saturate(1.8) blur(22px);z-index:40}
+:root[data-next] .hubbar::after{display:none}
+:root[data-next] .hubbar a{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:var(--tap);padding:0;border-radius:0;background:none;color:var(--muted);font:500 11px/1 var(--sans);letter-spacing:.01em;-webkit-tap-highlight-color:transparent}
+:root[data-next] .hubbar a[aria-current="true"]{color:var(--accent);background:none;font-weight:600}
+:root[data-next] .hubbar a:active{transform:scale(.92)}
+:root[data-next] .hubbar a:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:12px}
+:root[data-next] .hubbar .pill{display:block;position:absolute;top:0;left:0;height:3px;width:28px;border-radius:0 0 4px 4px;background:var(--accent);z-index:2;pointer-events:none;
+  transition:transform .42s var(--spring),width .3s var(--ease)}
+:root[data-next] .nb-slot{display:flex;align-items:flex-start;justify-content:center;position:relative}
+:root[data-next] .hubbar .fab{position:relative;inset:auto;margin:-20px 0 0;width:56px;height:56px;flex:none;z-index:3;box-shadow:var(--glow),var(--nx-e3);animation:none}
+:root[data-next] .hubbar .fab svg{width:26px;height:26px}
+:root[data-next] body.us-open .fab{display:flex;visibility:hidden}
+:root[data-next] body.hub{padding-bottom:calc(var(--nx-bar) + var(--safe-b) + 24px)}
+:root[data-next] .dlg.fab-dlg{inset:auto 0 calc(var(--nx-bar) + var(--safe-b) + 16px) 0;margin-inline:auto;width:min(340px,calc(100vw - 24px))}
+:root[data-next] .dlg.fab-dlg[open]{align-items:center}
+@media (min-width:821px){
+  :root[data-next] .hubbar{left:50%;right:auto;bottom:16px;width:min(520px,calc(100vw - 48px));transform:translateX(-50%);border:.5px solid color-mix(in srgb,var(--fg) 12%,transparent);border-radius:30px;min-height:var(--nx-bar);padding:4px 8px;box-shadow:var(--nx-e3)}
+  :root[data-next] .hubbar .pill{top:-.5px}
+  :root[data-next] body.hub{padding-bottom:110px}
+  :root[data-next] .dlg.fab-dlg{inset:auto 0 100px 0}
+}
+:root[data-next] body.selecting .hubbar{display:none}
+:root[data-next] body.on-calendar .fab{display:flex}
