@@ -22,7 +22,7 @@ window.StudioCloud={
     for(let i=0;i<(o.photos||[]).length;i++){ const p=o.photos[i]; if(!p){paths.push(null);continue;} if(p.path&&!p.blob){paths.push(p.path);continue;} const path=o.brand+'/'+id+'/photo-'+i+'-'+uid()+'.jpg'; d.files[path]=await toData(p.blob); paths.push(path); }
     if(prev) keepVersion(d,prev,o.author);   /* an update keeps the row it replaces as a version (newest 20) */
     const thumb=o.brand+'/'+id+'/'+(prev?'thumb-'+uid()+'.jpg':'thumb.jpg'); d.files[thumb]=await toData(o.thumb);
-    const extra={}; if(prev) ['review','review_by','review_at','caption','hashtags','campaign_id','author'].forEach(k=>{ if(prev[k]!==undefined) extra[k]=prev[k]; }); if(o.author) extra.author=o.author;
+    const extra={}; if(prev) ['review','review_by','review_at','caption','hashtags','campaign_id','author'].forEach(k=>{ if(prev[k]!==undefined) extra[k]=prev[k]; }); if(o.author) extra.author=o.author; if(o.format) extra.format=o.format;
     d.designs[id]={...extra,id,brand:o.brand,tool:o.tool,name:o.name,kind:o.kind,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,cols:o.collections||[],updated_at:new Date().toISOString()};
     if(prev) tidy(d,id);
     (o.collections||[]).forEach(n=>{ d.cols[n]={id:n,name:n,brand:o.brand}; }); put(d); return id; },
@@ -81,4 +81,22 @@ C.saveTeamAsset=async o=>{ const d=db(); const id='ta'+Math.random().toString(36
   tbl(d).push(row); put(d); return row; };
 C.updateTeamAsset=async(id,patch)=>{ const d=db(), r=tbl(d).find(x=>x.id===id); if(!r) return; ['name','tags','folder'].forEach(k=>{ if(patch&&k in patch) r[k]=patch[k]; }); r.updated_at=new Date().toISOString(); put(d); };
 C.removeTeamAsset=async id=>{ const d=db(); d.team_assets=tbl(d).filter(x=>x.id!==id); put(d); };
+})();
+/* 2.4.0 Plan round: ideas, monthly KPIs, design format (localStorage fakecloud-noplan=1 simulates the missing tables) */
+(function(){
+const C=window.StudioCloud, K='fakecloud';
+const db=()=>JSON.parse(localStorage.getItem(K)||'{"designs":{},"files":{},"cols":{}}'), put=d=>localStorage.setItem(K,JSON.stringify(d));
+const off=()=>localStorage.getItem('fakecloud-noplan')==='1', now=()=>new Date().toISOString();
+const toData=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});
+const t=(d,n)=>(d[n]=d[n]||[]), uid=()=>'i'+Math.random().toString(36).slice(2,10);
+C.ideas=async brand=>off()?[]:t(db(),'ideas').filter(x=>x.brand===brand).slice().sort((a,b)=>(a.sort-b.sort)||String(b.created_at).localeCompare(String(a.created_at)));
+C.saveIdea=async o=>{ if(off()) throw new Error('Save idea: the ideas table is not there yet'); const d=db(); const id=o.id||uid(); const row={title:'',note:'',type:'post',stage:'inbox',sort:0,...o,id}; delete row.image; delete row.audio; delete row.image_path_old; delete row.audio_path_old;
+  if(o.image){ const p=o.brand+'/ideas/'+id+'/pic-'+uid()+'.jpg'; d.files[p]=await toData(o.image); row.image_path=p; }
+  if(o.audio){ const p=o.brand+'/ideas/'+id+'/voice-'+uid()+'.webm'; d.files[p]=await toData(o.audio); row.audio_path=p; }
+  const L=t(d,'ideas'), i=L.findIndex(x=>x.id===id); const full={...(i>=0?L[i]:{created_at:now()}),...row,updated_at:now()}; if(i>=0) L[i]=full; else L.push(full); put(d); return full; };
+C.updateIdea=async(id,patch)=>{ const d=db(), r=t(d,'ideas').find(x=>x.id===id); if(!r) throw new Error('Idea: not found'); Object.assign(r,patch,{updated_at:now()}); put(d); return r; };
+C.deleteIdea=async id=>{ const d=db(), r=t(d,'ideas').find(x=>x.id===id); d.ideas=t(d,'ideas').filter(x=>x.id!==id); if(r) [r.image_path,r.audio_path].forEach(p=>{ if(p) delete d.files[p]; }); put(d); };
+C.kpiMonths=async(brand,from,to)=>off()?[]:t(db(),'kpi_months').filter(x=>x.brand===brand&&(!from||x.month>=from)&&(!to||x.month<=to)).sort((a,b)=>a.month.localeCompare(b.month));
+C.saveKpiMonth=async o=>{ if(off()) throw new Error('Save goals: the table is not there yet'); const d=db(), L=t(d,'kpi_months'), i=L.findIndex(x=>x.brand===o.brand&&x.month===o.month); const row={targets:{},engagement:{},note:'',...(i>=0?L[i]:{id:uid()}),...o,updated_at:now()}; if(i>=0) L[i]=row; else L.push(row); put(d); return row; };
+C.setFormat=async(id,format)=>{ const d=db(); if(d.designs[id]){ d.designs[id].format=format; put(d); } };
 })();

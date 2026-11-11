@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.3.1';
+const VERSION='2.4.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -99,7 +99,7 @@ const FLAGS=[
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
   {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'},   /* w3-stock */
-  {id:'next',label:'New Studio look',sub:'New bottom bar, a bigger Saved page and a faster Home'}   /* r3-next */
+  {id:'plan',label:'Ideas and Goals',sub:'An ideas board and monthly goals next to the calendar'}   /* 2.4.0 */
 ];
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -108,8 +108,11 @@ const flags={
   set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
 };
 try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
-try{ if(flags.on('next')) document.documentElement.dataset.next='1'; else delete document.documentElement.dataset.next; }catch(_){}   /* r3-next: the preview's switch for assets/next.css (index.html sets it early too) */
+try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
 
+/* a design's shape (2.4.0): the stored format wins (Create posts are 1080×1350), else what its tool makes. 'post'|'story'|'square'|'cover' */
+const fmtFromSize=(w,h)=>!w||!h?null:w===h?'square':h/w<1.5?'post':'story';
+const shapeOf=d=>!d?null:(d.format&&/^(post|story|square|cover)$/.test(d.format))?d.format:d.tool==='highlight'?'cover':d.tool==='carousel'?'post':'story';
 /* ---------- tools (for the hub and for opening saved designs) ---------- */
 /* the hub lists tools in this order, under their group's heading: the most used first */
 const TOOL_GROUPS={story:'Stories',post:'Posts and covers',free:'Make anything'};
@@ -163,7 +166,7 @@ function haptic(kind){
 /* a satisfying "saved": a check that pops over the preview with a soft ring, plus a haptic */
 function celebrate(){ haptic('success');
   const host=document.querySelector('.phone')||document.querySelector('.cr-stage')||document.body, b=document.createElement('div');
-  b.className='save-burst'+(host===document.body?' fixed':''); b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+  b.className='save-burst'+(host===document.body?' fixed':''); { const w=host===document.body?innerWidth:host.clientWidth, h=host===document.body?innerHeight:host.clientHeight; b.style.setProperty('--sb',Math.round(Math.max(56,Math.min(104,Math.min(w,h)*.6)))+'px'); }   /* 2.4.0: sized to the preview, so the tick is always a circle */ b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
   host.appendChild(b); setTimeout(()=>b.remove(),1500); }
 
 /* ---------- fonts: the brand's fonts first (used by default), then a hand-picked list ---------- */
@@ -218,6 +221,9 @@ async function ensureFont(fam){
 
 /* ---------- icons (inline SVG, follow the text colour) ---------- */
 const svg=(d,w)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const CAL_SVG='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg>';
+const IDEA_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>';
+const GOAL_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>';
 const ICON={
   camera:svg('<path d="M14.5 4h-5L7.5 6.5H5A2 2 0 0 0 3 8.5v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2.5z"/><circle cx="12" cy="13" r="3.5"/>'),
   undo:svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'),
@@ -458,6 +464,21 @@ function dialog(html,cls){ const d=document.createElement('dialog'); d.className
     const ev=new Event('cancel',{cancelable:true}); d.dispatchEvent(ev); if(!ev.defaultPrevented) d.close(); });
   function outside(e){ const r=d.getBoundingClientRect(); return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom; }
   return d; }
+/* ---------- 2.4.0: Add to calendar from anywhere (the Save sheet, a design's menu, an idea). One fast sheet in assets/calendar.js:
+   day (this week first), optional time, Post / Story / Reel, optional caption. Resolves with the saved calendar item, or null. ---------- */
+const PLAN_VIEWS=['calendar','ideas','goals'];
+function planToast(msg){ let t=document.getElementById('planToast'); if(!t){ t=document.createElement('div'); t.id='planToast'; t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
+async function planDesign(o){ o=o||{};
+  try{
+    if(!(await ensureMember('The calendar is shared with your team.'))) return null;
+    const Cal=await lazy('calendar',{css:1}), C=await cloud();
+    return await Cal.quick({brand:BRAND&&BRAND.id||o.brand,cloud:C,dialog,esc,icons:ICON,haptic,toast:o.toast||planToast,
+      who:()=>{ try{ return window.StudioWho?StudioWho.author():(JSON.parse(localStorage.getItem('studio:who')||'{}').name||'').trim()||null; }catch(_){ return null; } },
+      design:o.id?{id:o.id,name:o.name,tool:o.tool,thumb_path:o.thumb_path,thumb:o.thumb,caption:o.caption,hashtags:o.hashtags}:null,
+      format:o.format==='post'||o.format==='square'||o.format==='cover'?'post':o.format==='reel'?'reel':o.format?'story':null,caption:o.caption||'',title:o.title||'',day:o.day||null});
+  }catch(err){ (o.toast||planToast)('Could not open the calendar: '+(err&&err.message||err)); return null; }
+}
 async function ensureMember(reason){
   const C=await cloud();
   if(await C.session()){ if(await C.isMember()) return true; }
@@ -1104,11 +1125,12 @@ async function tool(cfg){
       </div>
     </div>
     <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
-    <button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button>
+    <div class="save-foot"><button type="button" class="btn" id="save">${ICON.download}<span id="saveTxt">Save</span></button></div>
     <p class="small save-note" id="photosRow">Always a full-quality picture to your Photos${cfg.pages?', one per '+PN.one:''}.</p>
     <button type="button" class="link" id="saveAlt" hidden></button>
     <button type="button" class="link" id="alsoTeam" hidden>Also save to the team…</button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
+    <button type="button" class="link save-plan" id="savePlan" hidden>${CAL_SVG}<span>Add to calendar</span></button><!-- 2.4.0 -->
     <a class="link" id="seeSaved" href="${ROOT}index.html#saved" hidden>See it in Saved</a>
     ${flags.on('team')?'<button type="button" class="link rv-save" id="rvSend" hidden>Send for review</button>':''}<!-- review (mega) -->
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
@@ -1634,7 +1656,7 @@ async function tool(cfg){
     const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
     const thumb=await thumbBlob();
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow()});
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow(),format:cfg.id==='highlight'?'cover':fmtFromSize(W,H)});
     let fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     /* the collections are checked on the saved design itself: any that did not go in are tried once more */
     const lacks=()=>{ const have=new Set((fresh.collectionNames||[]).map(n=>String(n).trim())); return cols.map(n=>String(n).trim()).filter(n=>n&&!have.has(n)); };
@@ -1693,6 +1715,7 @@ async function tool(cfg){
     const teamDone=$('teamOnly').dataset.off==='1';
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||teamDone||!on;   // only offered once Phone + Team is chosen
     $('alsoTeam').hidden=!imgDone||on||teamDone; $('seeSaved').hidden=!teamDone;
+    $('savePlan').hidden=!(imgDone||teamDone);   // 2.4.0: once something is saved, one tap puts it on the calendar
     if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
@@ -1797,6 +1820,13 @@ async function tool(cfg){
     catch(err){ b.disabled=false; status(teamErr(err)); } });
   /* r3-save: "Only save to the team" and "Also save to the team…" choose Team first; a collection is still required */
   $('teamOnly').addEventListener('click',async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudgeCols(); return; } runTeamSave(); });
+  /* 2.4.0: Add to calendar from the Save sheet: the saved team design is linked (its shape picks Post / Story); a phone-only save plans a post without a design */
+  $('savePlan').addEventListener('click',async()=>{ const b=$('savePlan'); b.disabled=true; haptic('tick');
+    try{ let thumb=null; try{ thumb=$('resultImg').src||null; }catch(_){}
+      const fmt=cfg.id==='highlight'?'post':fmtFromSize(W,H);
+      const item=await planDesign(design?{id:design.id,name:design.name,tool:cfg.id,format:fmt,thumb,caption:design.caption||'',hashtags:design.hashtags||[],toast}:{title:defaultName(),format:fmt,toast});
+      if(item){ b.querySelector('span').textContent='On the calendar ✓'; } }
+    finally{ b.disabled=false; } });
   $('alsoTeam').addEventListener('click',async()=>{ imgDone=false; if(!(await setWhere('team'))){ imgDone=true; syncSaveOpts(); return; } imgDone=true; syncSaveOpts(); if(needCol()) nudgeCols(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
@@ -2409,7 +2439,7 @@ async function tool(cfg){
   function rulesRun(){ if(!window.StudioRules&&!rulesLoading) (rulesLoading=lazy('rules').catch(()=>{})).then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
   let rulesLoading=null;
   const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
-  function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; needHint=false;
+  function resetSaveSheet(){ rulesRun(); imgDone=false; { const sp=$('savePlan'); if(sp) sp.querySelector('span').textContent='Add to calendar'; } if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; needHint=false;
     $('teamOn').checked=!!design&&!isTpl();   // r3-save: a new design always starts on My phone; one opened from Saved starts on Phone + Team (so an edit is never only a picture)
     pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue(); }
   async function doSave(only){
@@ -2627,7 +2657,7 @@ function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) retur
 async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
-  let NX=null, NXH=null, nxKind='all'; if(flags.on('next')){ try{ NX=await lazy('next'); }catch(_){ delete document.documentElement.dataset.next; } }   /* r3-next: the New Studio look (assets/next.js) loads only with its preview on */
+  const NX=null;   /* 2.4.0: the New Studio look preview was archived (_archive/next-preview); kept as null so old hooks read as off */
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null, cloudNote='', loadRun=0, slowT=0;   // cloudNote: the offline / slow note on show (1.46.0)
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
@@ -2661,7 +2691,7 @@ async function home(){
   paintTools();
   /* how your tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
   let toolsView=store('studio:toolsView')==='list'||!store('studio:toolsView')?'list':'grid';
-  function paintToolsView(){ $('toolGrid').className='grid view-'+(NX?'grid':toolsView);   /* r3-next: Create is always the big-tile grid */
+  function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView;
     document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
   paintToolsView();
   /* a photo picked in any Quick start button (home or search) goes to its tool through IndexedDB */
@@ -2734,10 +2764,11 @@ async function home(){
   const lastTag=id=>store('studio:lastQuick')===id?' <em class="fi-tag">Last time</em>':'';
   function openNew(){
     const q=quickTools().filter(([,t])=>(t.qi||9)<=3), fab=$('fab');   // the three photo tools; Carousel and Highlight covers are in All tools
-    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i+1}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}<span class="fab-sep" aria-hidden="true"></span>${TOOLS.create?`<a class="fab-item" href="${toolPage('create')}" style="--i:1"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Start from a blank page</span></span></a>`:''}<button type="button" class="fab-more" data-fab-more style="--i:0">More tools ›</button></div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
+    const d=dialog(`<div class="fab-menu"><p class="fab-h" id="fabH">Start from a photo</p>${q.map(([id,t],i)=>`<label class="fab-item" style="--i:${q.length-i+1}"><span class="fi-ic">${ICON[t.icon]||ICON.camera}</span><span class="fi-txt"><b>${esc(t.title)}${lastTag(id)}</b><span>${esc(t.quick)}</span></span>${quickInput(id,t)}</label>`).join('')}<span class="fab-sep" aria-hidden="true"></span>${PLAN_ON?`<button type="button" class="fab-item" data-new-idea style="--i:2"><span class="fi-ic new">${IDEA_SVG}</span><span class="fi-txt"><b>New idea</b><span>Type it, paste a link, add a picture or a voice note</span></span></button>`:''}${TOOLS.create?`<a class="fab-item" href="${toolPage('create')}" style="--i:1"><span class="fi-ic new">${ICON.plus}</span><span class="fi-txt"><b>New design</b><span>Start from a blank page</span></span></a>`:''}<button type="button" class="fab-more" data-fab-more style="--i:0">More tools ›</button></div><button type="button" class="fab fab-x" aria-label="Close">${ICON.plus}</button>`,'fab-dlg');
     d.setAttribute('aria-labelledby','fabH'); fab.setAttribute('aria-expanded','true'); haptic('tick');
     d.querySelector('.fab-x').onclick=()=>d.close();
     d.querySelector('[data-fab-more]').onclick=()=>{ d.close(); openLibrary(); };
+    { const ni=d.querySelector('[data-new-idea]'); if(ni) ni.addEventListener('click',()=>d.close()); }
     d.addEventListener('click',e=>{ if(e.target===d) d.close(); });   // the clear space around the menu
     d.addEventListener('close',()=>fab.setAttribute('aria-expanded','false'));
   }
@@ -2800,28 +2831,32 @@ async function home(){
   const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening'; }
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
      The bottom bar (phone) lights the one you're on; its highlight is sized from the tab itself, so icon and label sit in its middle. */
-  if(NX) NX.bar($('fab'));   /* r3-next: five places, the + docked in the middle */
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
   /* three places since 1.0.0: Home, Templates (#templates) and Saved (#saved); each page has its own Back entry */
   const VIEWS={home:'homeView',templates:'templatesView',saved:'saved'};
   /* calendar (mega): a fourth page, only with the "team" preview on; its section is made here so with the flag off nothing is added */
   if(!$('calendarView')){   /* calendar: permanent since 2.2.0 (was the team preview) */ const s=document.createElement('section'); s.id='calendarView'; s.className='cal-view'; s.setAttribute('aria-label','Calendar'); s.hidden=true; $('templatesView').after(s); VIEWS.calendar='calendarView'; }
-  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':'home';
+  /* 2.4.0 Plan (preview flag "plan"): Ideas (#ideas) and Goals (#goals) sit next to the calendar, one tab strip on top of the three */
+  const PLAN_ON=flags.on('plan');
+  if(PLAN_ON) [['ideas','Ideas'],['goals','Goals']].forEach(([v,l])=>{ if($(v+'View')) return; const s=document.createElement('section'); s.id=v+'View'; s.className='cal-view plan-view '+v+'-view'; s.setAttribute('aria-label',l); s.hidden=true; $('calendarView').after(s); VIEWS[v]=v+'View'; });
+  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':$('ideasView')&&!$('ideasView').hidden?'ideas':$('goalsView')&&!$('goalsView').hidden?'goals':'home';
   const onSaved=()=>curView()==='saved';
-  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':'home';
-  function setTab(v){ if(v==='calendar'&&!NX) v='home';   // calendar (mega): a page under Home (r3-next: its own tab, Plan)
+  const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':location.hash==='#ideas'&&$('ideasView')?'ideas':location.hash==='#goals'&&$('goalsView')?'goals':'home';
+  function setTab(v){ if(PLAN_VIEWS.includes(v)) v='home';   // the Plan pages (calendar, ideas, goals) sit under Home
     tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
-    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&NX){ NX.pill(pill,on); } else if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
+    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
     if(was==='home') homeY=scrollY;
     Object.entries(VIEWS).forEach(([k,id])=>{ const el=$(id); if(el) el.hidden=k!==v; });
-    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates'); document.body.classList.toggle('on-calendar',v==='calendar');
+    document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates'); document.body.classList.toggle('on-calendar',v==='calendar'); document.body.classList.toggle('on-plan',PLAN_VIEWS.includes(v));
     window.scrollTo({top:v==='home'?homeY:0,behavior:'instant'});
     if(v==='saved'){ paintPage(); const h=$('savedH'); h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
     if(v==='templates') showTemplates();
-    if(v==='calendar') showCalendar(); }
+    if(v==='calendar') showCalendar();
+    if(v==='ideas') showIdeas();
+    if(v==='goals') showGoals(); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
   function openView(v){ if(curView()===v) return; NAV.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
   function openSaved(){ openView('saved'); }
@@ -2869,7 +2904,7 @@ async function home(){
     const today=calToday; calToday=false;
     try{
       const Cal=await lazy('calendar',{css:1});
-      if(!calApi) calApi=Cal.init({root,brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
+      if(!calApi) calApi=Cal.init({root,brand:B.id,tabs:PLAN_ON?planTabs('calendar'):'',esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
         cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
         netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null,ask:   /* who.js may still be loading: read the stored name meanwhile, or a fast save lost its author */ async o2=>(await whoLib()).ask(o2)}});
       if(window.StudioWho===undefined) whoLib().catch(()=>{});
@@ -2882,12 +2917,46 @@ async function home(){
     let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row);   /* first thing on Home (2.2.0) */
       row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
     const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
-      row.innerHTML=(NX?'<div class="sec-head"><h2>Today</h2></div>':'')+`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):NX?'Nothing planned today':'Calendar'}</b><small>${t?(NX&&t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':NX?'Plan a post':'Plan and see your team’s posts'}</small></span></button>`; };
+      row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
     if(!row.firstChild) paintRow(null);
-    if(!member||!C||!C.calendar) return;
+    if(!member||!C||!C.calendar){ planHome(); return; }
     try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const list=(await C.calendar(B.id,{from:k,to:k})).filter(x=>x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')); paintRow(list); }catch(_){}
+    finally{ planHome(); }
   }
+
+  /* ---------- 2.4.0 Plan (flag "plan"): Ideas board (assets/ideas.js) and monthly Goals (assets/kpis.js), lazy like the calendar.
+     Both get the same context: cloud, member, dialogs, the saved designs, a design picker and Add to calendar. ---------- */
+  function planTabs(on){ return `<nav class="plan-tabs" aria-label="Plan">${[['calendar','Calendar'],['ideas','Ideas'],['goals','Goals']].map(([k,l])=>`<button type="button" class="plan-tab" data-plan-tab="${k}" aria-current="${k===on?'page':'false'}">${l}</button>`).join('')}</nav>`; }
+  document.addEventListener('click',e=>{ const b=e.target.closest('[data-plan-tab],[data-plan-go]'); if(!b||!PLAN_ON) return; const v=b.dataset.planTab||b.dataset.planGo; if(v===curView()) return; haptic('tick'); if(v==='calendar') calOpen(false); else openView(v); });
+  const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:planTabs(v),
+    cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
+    netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null},
+    designs:async()=>{ if(!loaded) await loadSaved(); return all; }, shapeOf,
+    thumbs:async ps=>{ ps=[...new Set((ps||[]).filter(Boolean))]; const need=ps.filter(p=>!urls[p]); if(need.length){ try{ const c=await getCloud(); Object.assign(urls,await c.fileUrls(need)); }catch(_){} } const o={}; ps.forEach(p=>{ if(urls[p]) o[p]=urls[p]; }); return o; },
+    pickDesign:async o2=>{ const Cal=await lazy('calendar',{css:1}); const c=await getCloud(); if(!loaded) await loadSaved(); return Cal.pick({brand:B.id,cloud:c,dialog,esc,icons:ICON,designs:all,urls,...(o2||{})}); },
+    plan:o2=>planDesign(o2), designHref:d=>toolPage(d.tool)+'?design='+encodeURIComponent(d.id), newDesignHref:toolPage('create'), toolName});
+  let ideasApi=null, goalsApi=null;
+  async function ideasLib(){ lazyCss('calendar'); const I=await lazy('ideas',{css:1}); if(!ideasApi) ideasApi=I.init(planCtx('ideas')); return ideasApi; }
+  async function goalsLib(){ lazyCss('calendar'); const K=await lazy('kpis',{css:1}); if(!goalsApi) goalsApi=K.init(planCtx('goals')); return goalsApi; }
+  const planFail=(root,fn,what)=>{ root.innerHTML=`<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>${what} did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" data-plan-retry>Try again</button></div>`; root.querySelector('[data-plan-retry]').onclick=fn; };
+  async function showIdeas(){ const root=$('ideasView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await ideasLib()).show(); }catch(_){ planFail(root,showIdeas,'Ideas'); } }
+  async function showGoals(){ const root=$('goalsView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
+  /* quick capture from anywhere on the hub: the + menu, search, Home's Ideas button. mode: 'text' | 'voice' | 'image' | 'link' */
+  async function newIdea(mode){ try{ (await ideasLib()).capture({mode:mode||'text'}); }catch(err){ hubToast('Ideas did not open: '+(err.message||err)); } }
+  /* Home: two small buttons under the Calendar row (Ideas with the inbox count, Goals with this month's posts) */
+  async function planHome(){ const row=$('calRow'); if(!PLAN_ON||!row) return;
+    let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
+    const paintMini=(inbox,goal)=>{ mini.innerHTML=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span>Ideas${inbox?` <em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span>Goals${goal?` <em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span>Idea</span></button>`; };
+    if(!mini.firstChild) paintMini(0,'');
+    if(!member||!C||!C.ideas) return;
+    try{ const d=new Date(), m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+      const [ids,km,cal]=await Promise.all([C.ideas(B.id),C.kpiMonths(B.id,m,m),C.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})]);
+      const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted');
+      const keyK=['post','story','reel'].find(k=>+t[k]>0), goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):'';
+      paintMini(ids.filter(x=>x.stage==='inbox').length,goal); }catch(_){}
+  }
+  document.addEventListener('click',e=>{ if(e.target.closest('[data-new-idea]')){ e.preventDefault(); haptic('tick'); newIdea('text'); } });
 
   /* ---------- review (mega): approvals and comments behind the "team" preview (assets/review.js + review.css, lazy). Hooks: svCard chip, paint(),
      the design menu rows, and the Save sheet's "Send for review". With the flag off none of it runs and nothing is added. ---------- */
@@ -2957,9 +3026,9 @@ async function home(){
   /* continue editing: every unfinished story kept on this phone, newest first (several per tool) */
   const allDrafts=()=>Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
   let cont=allDrafts();
-  /* r3-next: Jump back in = unfinished stories and the newest saved designs in one row */
+  /* a calendar time as "7 pm" / "9:30 am" (Home's Calendar row; from the archived preview) */
   const nxTime=t=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(t||'')); if(!m) return ''; const h=+m[1]; return h>=12?((h%12)||12)+(m[2]==='00'?'':':'+m[2])+' pm':h+(m[2]==='00'?'':':'+m[2])+' am'; };
-  function paintJump(){ if(!NX||!NXH) return; const g=NX.jump(NXH,{drafts:cont.filter(x=>!x.gone).map(x=>({key:x.key,tool:x.tool,id:x.id,at:x.d.at||0,title:draftTitle(x),thumb:thumbs[tk(x)]||''})),saved:loaded&&member?[...all].sort((a,b)=>lastUse(b)-lastUse(a)):[]}); if(g&&g.length) fillThumbs(g); }
+  function paintJump(){}   /* 2.4.0: the preview's Jump back in row was not kept */
   const thumbs={}, tk=x=>x.key+'@'+(x.d.at||0);   // a preview per edit: a story edited since shows its new picture
   /* a Video editor draft has its own name (default "Video"); the other tools show the tool's name */
   const draftTitle=x=>x.tool==='video'&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
@@ -3106,6 +3175,9 @@ async function home(){
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
     a.push({kind:'action',id:'act:templates',title:'Templates',sub:'Ready-made stories, posts and covers',keys:'templates ready made start restock story post highlight cover library',icon:ICON.template,run:()=>openView('templates')});
+    if(PLAN_ON){ a.push({kind:'action',id:'act:new-idea',title:'New idea',sub:'Type it, paste a link, a picture or a voice note',keys:'idea ideas new capture note voice record reel post story giveaway inbox',icon:IDEA_SVG,run:()=>newIdea('text')});
+      a.push({kind:'action',id:'act:ideas',title:'Ideas board',sub:'Every marketing idea, from inbox to posted',keys:'ideas board inbox kanban reel post story giveaway',icon:IDEA_SVG,run:()=>openView('ideas')});
+      a.push({kind:'action',id:'act:goals',title:'Monthly goals',sub:'Targets for posts, stories, reels and your numbers',keys:'goals kpi kpis targets month monthly reach likes saves followers growth',icon:GOAL_SVG,run:()=>openView('goals')}); }
     if($('calendarView')) a.push({kind:'action',id:'act:calendar',title:'Calendar',sub:'Plan and see your team’s posts',keys:'calendar content plan schedule posting posted week month',icon:ICON.clock,run:()=>calOpen(true)});
     a.push({kind:'action',id:'act:settings',title:'Settings',sub:'Account, your tools, welcome tour',keys:'settings preferences options account gear',icon:ICON.settings,run:openSettings});
     a.push({kind:'action',id:'act:welcome',title:'Welcome tour',sub:'The quick intro to Studio',keys:'welcome tour intro introduction help how onboarding tutorial guide start',icon:ICON.play,run:openWelcome});
@@ -3163,7 +3235,7 @@ async function home(){
       if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
       if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
       const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
-      [all,cols]=got; cloudNote=''; loaded=true; paint(); calHome(); if(NX) nxSave();
+      [all,cols]=got; cloudNote=''; loaded=true; paint(); calHome(); keepSaved();
     }catch(err){ if(run!==loadRun) return;
       const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
@@ -3173,7 +3245,7 @@ async function home(){
   addEventListener('online',()=>{ if(cloudNote) loadSaved(true); });   // back online: load again without a tap
   function signedOut(){
     const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
-    showNote(h); cloudNote=''; if(NX) NX.cacheClear(B.id);
+    showNote(h); cloudNote=''; keptClear();
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
   const lastUse=d=>Math.max(+new Date(d.used_at||0),+new Date(d.updated_at||0));
@@ -3182,10 +3254,10 @@ async function home(){
   const cardName=d=>{ const m=/^(.+) – (\d{1,2} [A-Z][a-z]{2})$/.exec(d.name||''); return m&&m[1]===toolName(d.tool)&&m[2]===dayTag(lastUse(d)).replace(/ \d{4}$/,'')?m[1]:d.name; };
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" draggable="false" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
-    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); if(NX){ Object.keys(u).forEach(k=>{ urlAt[k]=Date.now(); }); nxSave(); } apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
-  const svCard=(d,i,page)=>NX&&page?NX.card(d,i,NXH):svCardOld(d,i);   /* r3-next: the Saved page's bigger card */
-  const svCardOld=(d,i)=>{ const tpl=d.kind==='template';
-    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
+    if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); Object.keys(u).forEach(k=>{ urlAt[k]=Date.now(); }); keepSaved(); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
+  const svCard=(d,i,page)=>svCardOld(d,i,page);   /* page: the Saved page's cards also name their first collection (2.4.0) */
+  const svCardOld=(d,i,page)=>{ const tpl=d.kind==='template';
+    return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi>${page&&d.collections.length&&colName(d.collections[0])?` · <bdi class="sv-col">${esc(colName(d.collections[0]))}</bdi>`:''}</span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
   function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); paintJump(); rvHome();   /* review (mega) hook */ campPaint(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */
@@ -3204,13 +3276,12 @@ async function home(){
     if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
     $('sortLbl').textContent=sortBy==='name'?'A to Z':SORTS[sortBy]; $('sortBtn').setAttribute('aria-label','Sort: '+SORTS[sortBy]); $('sortBtn').hidden=!has||!!sel;
     $('colChips').hidden=!has||!cols.length;
-    let covers=[]; if(NX){ NX.paintKinds(NXH); const sh=NX.shelf(NXH); $('colChips').innerHTML=sh.html; covers=sh.designs; $('findRow').hidden=!has; }   /* r3-next: collections shelf */
-    else $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
+    $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
       return on?`<span class="col-sel">${chip}<button type="button" class="col-more" id="colMore" aria-haspopup="menu" aria-expanded="false" aria-label="Options for the ${esc(c.name)} collection">${ICON.more}</button></span>`:chip; }).join('');
     { const box=$('colChips'), keep=()=>{ const on=box.querySelector('.col-sel'); if(!on||box.hidden) return; const br=box.getBoundingClientRect(), r=on.getBoundingClientRect();   // the chosen collection (and its ⋯) stays in view
       if(r.right>br.right-36) box.scrollLeft+=r.right-br.right+36; else if(r.left<br.left+8) box.scrollLeft-=br.left+8-r.left; };
       keep(); clearTimeout(box._keep); box._keep=setTimeout(keep,450); }   // 1.46.0: again once the chip has grown (its ⋯ slid under the end fade)
-    const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&findHit(d)&&(!NX||nxKind==='all'||NX.kindOf(d,NXH)===nxKind));
+    const list=all.filter(d=>(filter==='all'||d.collections.includes(filter.slice(2)))&&findHit(d));
     list.sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name):sortBy==='oldest'?(a,b)=>lastUse(a)-lastUse(b):(a,b)=>lastUse(b)-lastUse(a));
     $('findBtn').hidden=!has||!!sel||!$('findRow').hidden;
     $('spCount').textContent=has?(list.length===all.length?all.length+' design'+(all.length===1?'':'s'):list.length+' of '+all.length):'';
@@ -3225,22 +3296,20 @@ async function home(){
       ?note(ICON.folder,'“'+esc(colOn.name)+'” is empty','Tap ⋯ on a design, then Collections, to add it here.','<button type="button" class="btn slim ghost" data-showall>Show all designs</button>')
       :note(ICON.search,'No saved design matches that','Try another collection.','<button type="button" class="btn slim ghost" data-showall>Show all</button>');
     $('savedGrid').innerHTML=list.map((d,i)=>svCard(d,i,true)).join('');
-    fillThumbs(NX?list.concat(covers):list); paintSel();
+    fillThumbs(list); paintSel();
   }
   /* Sort: a small sheet in Studio's style (not the browser's list), a tick on the choice; picking one closes it */
-  /* r3-next: the New Studio look's hooks into Saved (assets/next.js draws; this is the state it reads) */
-  const nxSave=()=>{ if(!NX||!loaded||!member) return; clearTimeout(nxSave.t); nxSave.t=setTimeout(()=>NX.cacheSave(B.id,all,cols,urls,urlAt),500); };
-  if(NX){ NXH={ get all(){ return all; }, get cols(){ return cols; }, urls, get filter(){ return filter; }, get kind(){ return nxKind; }, get sel(){ return sel; }, ICON, toolPage, toolName, toolShape, colName, lastUse, ago, rvChip, haptic,
-      setKind(k){ nxKind=k; haptic('tick'); paintPage(); }, resetKind(){ nxKind='all'; },
-      refetch(path){ delete urls[path]; delete urlAt[path]; if(C) C.fileUrls([path]).then(u=>{ Object.assign(urls,u); document.querySelectorAll('img[data-path]').forEach(i=>{ if(i.dataset.path===path&&urls[path]) i.src=urls[path]; }); }).catch(()=>{}); } };
-    NX.savedInit(NXH); NX.homeInit(NXH); paintJump();
-    /* press and hold a collection card: choose it and open its menu (Rename, Delete), like ⋯ */
-    { const box=$('colChips'); let t=0, held=false; const stop=()=>{ clearTimeout(t); t=0; };
-      box.addEventListener('pointerdown',e=>{ const b=e.target.closest('.nx-col'); held=false; stop(); if(!b||b.dataset.f==='all'||e.button>0) return; const f=b.dataset.f;
-        t=setTimeout(()=>{ t=0; held=true; filter=f; haptic('tick'); paintPage(); const m=$('colMore'); if(m) m.click(); },520); });
-      ['pointerup','pointercancel'].forEach(n=>box.addEventListener(n,stop)); box.addEventListener('pointermove',e=>{ if(t&&Math.hypot(e.movementX,e.movementY)>3) stop(); }); box.addEventListener('scroll',stop,{passive:true});
-      box.addEventListener('contextmenu',e=>{ if(e.target.closest('.nx-col')) e.preventDefault(); });
-      box.addEventListener('click',e=>{ if(held){ held=false; e.preventDefault(); e.stopPropagation(); } },true); } }
+  /* instant Saved (2.4.0, from the archived preview): the last list is kept on this device per brand (names, tools, collections,
+     picture paths, times; picture links only while fresh), so Home and Saved paint at once and then refresh quietly */
+  const KEPT='studio:saved:kept:'+B.id, KEPT_FRESH=40*60e3;
+  function keepSaved(){ if(!loaded||!member) return; clearTimeout(keepSaved.t); keepSaved.t=setTimeout(()=>{ try{
+    const keys=['id','name','tool','kind','format','thumb_path','updated_at','used_at','collections','author','review','review_by','review_at','campaign_id','caption','hashtags'], u={}, now=Date.now();
+    all.slice(0,80).forEach(d=>{ if(d.thumb_path&&urls[d.thumb_path]&&now-(urlAt[d.thumb_path]||0)<KEPT_FRESH) u[d.thumb_path]=[urls[d.thumb_path],urlAt[d.thumb_path]]; });
+    localStorage.setItem(KEPT,JSON.stringify({at:now,all:all.map(d=>{ const o={}; keys.forEach(k=>{ if(d[k]!==undefined) o[k]=d[k]; }); return o; }),cols:cols.map(c=>({id:c.id,name:c.name,count:c.count,cover_design:c.cover_design})),u})); }catch(_){} },500); }
+  function keptLoad(){ try{ const r=JSON.parse(localStorage.getItem(KEPT)||'null'); if(!r||!Array.isArray(r.all)||!r.all.length) return null; const now=Date.now();
+    Object.entries(r.u||{}).forEach(([k,v])=>{ if(Array.isArray(v)&&now-v[1]<KEPT_FRESH){ urls[k]=v[0]; urlAt[k]=v[1]; } });
+    return {all:r.all.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,format:null,collections:[],...d})),cols:r.cols||[]}; }catch(_){ return null; } }
+  function keptClear(){ try{ localStorage.removeItem(KEPT); localStorage.removeItem('studio:next:saved:'+B.id); }catch(_){} }
   $('sortBtn').addEventListener('click',()=>{ const btn=$('sortBtn'); haptic('tick');
     const d=dialog(`<div class="dlg-body sort-sheet"><h3 id="sortH">Sort by</h3><div class="sort-opts" role="radiogroup" aria-labelledby="sortH">${Object.entries(SORTS).map(([k,l])=>`<button type="button" class="sort-opt" role="radio" data-sort="${k}" aria-checked="${k===sortBy}"><span>${l}</span>${ICON.check}</button>`).join('')}</div></div>`,'sort-dlg');
     btn.setAttribute('aria-expanded','true'); d.setAttribute('aria-labelledby','sortH');
@@ -3265,13 +3334,13 @@ async function home(){
     const back=n=>{ const x=new Date(day); x.setDate(x.getDate()-n); return +x; };
     return k==='today'?t>=+day:k==='yesterday'?t>=back(1)&&t<+day:t>=back(6); }
   function findHit(d){ if(!findQ.trim()) return true;
-    const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName),...(NX&&d.author?[d.author]:[])].join(' '));
+    const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName),...(d.author?[d.author]:[])].join(' '));
     let q=' '+normText(findQ)+' ';
     for(const [k,w] of getDayWords()) while(q.includes(' '+w+' ')){ if(!hay.includes(w)&&!onDay(d,k)) return false; q=q.replace(' '+w+' ',' '); }
     return q.split(' ').filter(Boolean).every(w=>hay.includes(w)); }
   function setFind(v,focus){ findQ=v; const i=$('findIn'); if(i.value!==v) i.value=v; $('findClr').hidden=!v; paintPage(); if(focus) i.focus({preventScroll:true}); }
   function openFind(){ haptic('tick'); $('findRow').hidden=false; $('findBtn').hidden=true; $('findBtn').setAttribute('aria-expanded','true'); $('findIn').focus({preventScroll:true}); }
-  function closeFind(quiet){ const was=!$('findRow').hidden||findQ; $('findRow').hidden=!NX; $('findBtn').setAttribute('aria-expanded','false'); $('findIn').value=''; $('findClr').hidden=true; findQ='';
+  function closeFind(quiet){ const was=!$('findRow').hidden||findQ; $('findRow').hidden=true; $('findBtn').setAttribute('aria-expanded','false'); $('findIn').value=''; $('findClr').hidden=true; findQ='';
     if(!quiet&&was){ paintPage(); $('findBtn').focus({preventScroll:true}); } }
   $('findBtn').addEventListener('click',openFind);
   $('findIn').addEventListener('input',e=>setFind(e.target.value));
@@ -3331,7 +3400,7 @@ async function home(){
     if(quiet) paintSel(); else paintPage(); }
   function paintSel(){
     const on=!!sel, n=on?sel.size:0, back=$('savedBack');
-    $('savedH').textContent=on?(n?n+' selected':'Select designs'):NX?'Saved':'Saved designs';
+    $('savedH').textContent=on?(n?n+' selected':'Select designs'):'Saved designs';
     if(on) $('spCount').textContent=n?'Tap more, or pick what to do below':'Tap the designs you want';
     back.innerHTML=on?ICON.close:ICON.back; back.setAttribute('aria-label',on?'Stop selecting':'Back to home');
     const sb=$('selBtn'), every=on&&shown.length&&n===shown.length;
@@ -3495,10 +3564,12 @@ async function home(){
       /* team rows (mega): with the "team" preview on, Caption, Send for review, Comments and Campaign live behind one Team row (a second list in the same sheet),
          so the menu stays short; each feature adds its rows here and nothing else changes with the flag off */
       const teamRows=flags.on('team')?capRows(dsg,row)+rvRows(dsg,row):'';
-      const d=dialog(`<div class="dlg-body design-sheet${NX?' nx-sheet':''}">
-      ${NX?NX.sheetHead(NXH,dsg,open):`<div class="ds-top" dir="auto"><button type="button" class="ds-peek" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button><div><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template (add new photos)':''} · ${esc(ago(dsg.updated_at))}</bdi><br>${names.length?esc(names.join(' · ')):'No collection'}</p></div></div>
-      <a class="btn" href="${open}" autofocus>${tpl?'Use template':'Open'}</a>`}
-      <div id="dsLists">${NX?NX.sheetTiles(NXH,dsg,open):''}<div class="act-list" id="dsMain">${tpl||NX?'':`<a class="act-row" href="${open}&go=1">${ICON.download}<span>Save the picture again</span></a>`}${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${teamRows?row('team',ICON.user,'Team'):''}${NX?'':row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${NX?'':row('cols',ICON.folder,'Collections')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
+      /* 2.4.0 (from the archived preview): a big picture, the name and one line, four big actions; the other rows follow */
+      const d=dialog(`<div class="dlg-body design-sheet ds-sheet">
+      <button type="button" class="ds-peek ds-hero" aria-label="See it big">${url?`<img src="${url}" alt="">`:'<span class="ds-ph"></span>'}</button>
+      <div class="ds-txt" dir="auto"><h3>${esc(dsg.name)}</h3><p class="small"><bdi>${esc(toolName(dsg.tool))}${tpl?' · template':''}</bdi> · ${names.length?esc(names.join(', ')):'No collection'} · <bdi>${esc(ago(dsg.updated_at))}</bdi></p></div>
+      <div id="dsLists"><div class="ds-bigs" role="group" aria-label="Actions"><a class="ds-big go" href="${open}" autofocus><span>${ICON.pencil}</span>${tpl?'Use':'Open'}</a>${tpl?'':`<a class="ds-big" href="${open}&go=1"><span>${ICON.download}</span>Save picture</a><button type="button" class="ds-big" data-act="plan"><span>${CAL_SVG}</span>Calendar</button>`}<button type="button" class="ds-big" data-act="cols"><span>${ICON.folder}</span>Collection</button>${tpl?`<button type="button" class="ds-big" data-act="dup"><span>${ICON.copy}</span>Duplicate</button>`:''}</div>
+      <div class="act-list" id="dsMain">${!tpl&&C.setThumb?row('cover',ICON.rotate,'Redraw cover'):''}${C.versions?row('ver',ICON.clock,'Versions'):''}${teamRows?row('team',ICON.user,'Team'):''}${tpl?'':row('dup',ICON.copy,'Duplicate')}${row('rename',ICON.pencil,'Rename')}${onSaved()?row('sel',ICON.check,'Select more'):''}${row('del',ICON.trash,'Delete','danger')}</div>
       ${teamRows?`<div class="act-list" id="dsTeam" hidden>${row('teamback',ICON.back,'Back')}${teamRows}</div>`:''}</div>
       <div class="ds-panel" id="dsPanel"></div><div class="status" id="dsSt" role="status"></div>
       <button type="button" class="link" id="dsClose">Close</button></div>`,'design-dlg');
@@ -3526,6 +3597,7 @@ async function home(){
         catch(err){ st(err.message||'Could not redraw the cover.'); b.disabled=false; } return; }
       if(act==='ver'){ d.close(); versionsSheet(dsg); return; }
       if(act==='cap'||act==='capcopy'){ capSheet(act,dsg,P,st,d); return; }   // captions (mega)
+      if(act==='plan'){ d.close(); planDesign({...dsg,format:shapeOf(dsg),thumb:urls[dsg.thumb_path]||null,toast:hubToast}); return; }   /* 2.4.0: Add to calendar */
       if(act==='dup'){ st('Copying…'); b.disabled=true; try{ await C.duplicateDesign(dsg.id); d.close(); hubToast('Copied “'+dsg.name+'”.'); loadSaved(true); }catch(err){ st(err.message); b.disabled=false; } }
       if(act==='cols'){ const picked=new Set(names); const draw=()=>{ const allN=[...new Set([...cols.map(c=>c.name),...picked])].sort((a,b)=>a.localeCompare(b));
           P.innerHTML=`<div class="chips">${allN.map(n=>`<button type="button" class="chip" dir="auto" data-n="${esc(n)}" aria-pressed="${picked.has(n)}">${esc(n)}</button>`).join('')}</div><div class="inline"><input type="text" id="nc" dir="auto" placeholder="New collection…" maxlength="40" aria-label="New collection"><button type="button" class="mini" id="ncAdd">Add</button></div><button type="button" class="btn slim" id="colsGo">Save collections</button>`;
@@ -3588,7 +3660,7 @@ async function home(){
     const d=dialog(`<div class="dlg-body"><h3>Account</h3><p class="small">${me.email===C.teamEmail?'Signed in with the team login. You stay signed in on this '+devWord()+' until you sign out.':'Signed in as<br><b>'+esc(me.email||'')+'</b>'}</p>
       <div id="teamBox"></div><div class="dlg-actions"><button type="button" class="mini" id="acSignOut">Sign out</button><button type="button" class="btn" id="acClose">Done</button></div></div>`);
     d.querySelector('#acClose').onclick=()=>d.close();
-    d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); if(NX) NX.cacheClear(B.id); d.close(); loadSaved(true); };
+    d.querySelector('#acSignOut').onclick=async ev=>{ const b=ev.currentTarget; if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to sign out'; return; } await C.signOut(); keptClear(); d.close(); loadSaved(true); };
     if(owner){ const box=d.querySelector('#teamBox');
       const drawTeam=async()=>{ let m; try{ m=await C.members(); }catch(err){ box.innerHTML=`<div class="status" role="status">${esc(err.message||String(err))}</div>`; return; } box.innerHTML=`<span class="lbl">Team</span><ul class="team">${m.map(x=>`<li><span>${esc(x.name||'')} <span class="small">${esc(x.email)}</span></span>${x.role==='owner'?'<span class="small">owner</span>':`<button type="button" class="mini danger" data-rm="${esc(x.email)}">Remove</button>`}</li>`).join('')}</ul>
         <form class="inline" id="addForm"><input type="email" id="addEmail" placeholder="Add a teammate's email" required><button type="submit" class="mini solid">Add</button></form><div class="status" id="tmSt"></div>`;
@@ -3615,14 +3687,14 @@ async function home(){
   }
   const labBtn=$('labBtn'); if(labBtn) labBtn.onclick=openLab;
   if(location.hash==='#lab') setTimeout(openLab,200);
-  if(NX){ const c=NX.cacheLoad(B.id); if(c&&c.all.length){ all=c.all; cols=c.cols; Object.assign(urls,c.urls); Object.assign(urlAt,c.stamps); member=true; loaded=true; paint(); } }   /* r3-next: the last list paints at once, then refreshes quietly */
+  { const k=keptLoad(); if(k){ all=k.all; cols=k.cols; member=true; loaded=true; paint(); } }   /* instant Saved: the last list paints at once, then loadSaved() refreshes it */
   loadSaved();
-  calReady=true; calHome(); if(calPend&&curView()==='calendar') showCalendar();
+  calReady=true; calHome(); if(calPend){ const v=curView(); if(v==='calendar') showCalendar(); else if(v==='ideas') showIdeas(); else if(v==='goals') showGoals(); }
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={shapeOf,fmtFromSize,planDesign,nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

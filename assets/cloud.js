@@ -120,10 +120,10 @@ function missing(e){ return !!e&&(['42P01','42703','PGRST204','PGRST205'].includ
 const DESIGN_COLS='id,tool,name,kind,thumb_path,updated_at,used_at,created_at';
 async function designs(brand){
   const c=await client();
-  let r=await c.from('designs').select(DESIGN_COLS+',author,review,review_by,review_at,caption,hashtags,campaign_id,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
+  let r=await c.from('designs').select(DESIGN_COLS+',author,review,review_by,review_at,caption,hashtags,campaign_id,format,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
   if(r.error&&missing(r.error)) r=await c.from('designs').select(DESIGN_COLS+',design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
   fail(r.error,'Saved designs');
-  return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
+  return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,format:null,...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
 }
 async function getDesign(id){ const c=await client(); const {data,error}=await c.from('designs').select('*,design_collections(collection_id,collections(name))').eq('id',id).single(); fail(error,'Open design'); await siteDoc(data.recipe); data.collectionNames=(data.design_collections||[]).map(x=>x.collections&&x.collections.name).filter(Boolean); return data; }
 async function upload(path,blob){ const c=await client(); const {error}=await c.storage.from(CFG.bucket).upload(path,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'}); fail(error,'Upload'); return path; }
@@ -184,8 +184,9 @@ async function saveDesign(o){
     const row={id,brand:o.brand,tool:o.tool,name:o.name.trim(),kind:o.kind||'design',schema_version:o.recipe.v||1,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,photo_paths:paths.filter(Boolean)};
     if(o.id){ const {data:prev}=await c.from('designs').select('id,name,recipe,thumb_path,photo_paths,author').eq('id',id).maybeSingle();
       if(prev) verId=await keepAsVersion(prev,o.author); }
-    let {error}=await c.from('designs').upsert(o.author?{...row,author:o.author}:row);
-    if(error&&o.author&&missing(error)) ({error}=await c.from('designs').upsert(row));   // the migration is not applied yet: save as before
+    const extra={}; if(o.author) extra.author=o.author; if(o.format) extra.format=o.format;   // format: a design's shape (2.4.0)
+    let {error}=await c.from('designs').upsert({...row,...extra});
+    if(error&&Object.keys(extra).length&&missing(error)) ({error}=await c.from('designs').upsert(row));   // a migration is not applied yet: save as before   // the migration is not applied yet: save as before
     fail(error,'Save design');
     // collections straight after the row (not after the slow tidy below), so they are in before anyone leaves the page
     if(o.collections){ try{ await setDesignCollections(o.brand,id,o.collections); }catch(e){ colErr=e; } }
@@ -314,8 +315,37 @@ async function updateTeamAsset(id,patch){
 /* removes the ROW only: the files stay, so designs that used the asset keep opening */
 async function removeTeamAsset(id){ const c=await client(); const {error}=await c.from('team_assets').delete().eq('id',id); fail(error,'Team asset'); }
 
+/* ---------- 2.4.0 Plan round: ideas, monthly KPIs (tables ideas, kpi_months; reads give [] while a table is missing) ---------- */
+async function ideas(brand){ const c=await client(); return rows(c.from('ideas').select('*').eq('brand',brand).order('sort').order('created_at',{ascending:false}),'Ideas'); }
+/* save (new or update). o.image / o.audio: a Blob to upload now (replaces the stored file; the old one is removed after the row is saved) */
+async function saveIdea(o){
+  const c=await client(); const id=o.id||uid(), base=o.brand+'/ideas/'+id+'/', fresh=[], old=[];
+  const row={...o}; delete row.image; delete row.audio; row.id=id; row.updated_at=new Date().toISOString();
+  try{
+    if(o.image){ const ext=o.image.type==='image/png'?'.png':o.image.type==='image/webp'?'.webp':'.jpg'; const p=await upload(base+'pic-'+uid().slice(0,8)+ext,o.image); fresh.push(p); if(o.image_path_old) old.push(o.image_path_old); row.image_path=p; }
+    if(o.audio){ const t=(o.audio.type||'audio/webm').split(';')[0], ext=t.includes('mp4')||t.includes('aac')?'.m4a':t.includes('ogg')?'.ogg':t.includes('mpeg')?'.mp3':'.webm';
+      const p=await upload(base+'voice-'+uid().slice(0,8)+ext,o.audio.type&&o.audio.type!==t?new Blob([o.audio],{type:t}):o.audio); fresh.push(p); if(o.audio_path_old) old.push(o.audio_path_old); row.audio_path=p; }
+    delete row.image_path_old; delete row.audio_path_old;
+    const {data,error}=await c.from('ideas').upsert(row).select().single(); fail(error,'Save idea');
+    if(old.length){ try{ await removeFiles(old); }catch(_){} }
+    return data;
+  }catch(err){ try{ await removeFiles(fresh); }catch(_){} throw err; }
+}
+async function updateIdea(id,patch){ const c=await client(); const {data,error}=await c.from('ideas').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select().single(); fail(error,'Idea'); return data; }
+/* delete = the row and its own files (picture, voice note) */
+async function deleteIdea(id){
+  const c=await client(); const {data}=await c.from('ideas').select('brand,image_path,audio_path').eq('id',id).maybeSingle();
+  const {error}=await c.from('ideas').delete().eq('id',id); fail(error,'Delete idea');
+  if(data){ try{ await removeFiles([data.image_path,data.audio_path].filter(Boolean)); }catch(_){} }
+}
+async function kpiMonths(brand,from,to){ const c=await client(); let q=c.from('kpi_months').select('*').eq('brand',brand); if(from) q=q.gte('month',from); if(to) q=q.lte('month',to); return rows(q.order('month'),'Goals'); }
+async function saveKpiMonth(o){ const c=await client(); const row={...o,updated_at:new Date().toISOString()}; delete row.id;
+  const {data,error}=await c.from('kpi_months').upsert(row,{onConflict:'brand,month'}).select().single(); fail(error,'Save goals'); return data; }
+/* a design's shape (post / story / square / cover), stored since 2.4.0 so lists can tell posts from stories without the recipe */
+async function setFormat(id,format){ const c=await client(); const {error}=await c.from('designs').update({format}).eq('id',id); if(missing(error)) return; fail(error,'Format'); }
+
 window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
-  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset};
+  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset,ideas,saveIdea,updateIdea,deleteIdea,kpiMonths,saveKpiMonth,setFormat};
 })();

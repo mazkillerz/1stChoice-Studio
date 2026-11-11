@@ -543,6 +543,8 @@ let teamQ=Promise.resolve(), altMode=null;
 const whoNow=()=>{ try{ return window.StudioWho&&StudioWho.author?StudioWho.author():undefined; }catch(_){ return undefined; } };
 const isTplOpen=()=>!!st.design&&st.design.kind==='template', wantsNew=()=>!st.design||(altMode?altMode==='new':isTplOpen());
 function teamSave(o){ const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}); return run; }
+/* 2.4.0: the board's shape from its first frame (post 1080×1350, story, square), stored with the design so lists tell posts from stories */
+function docFormat(doc){ try{ const f=(doc.nodes||[]).map(n=>n&&n.a).find(a=>a&&a.kind==='frame'); return f?Studio.fmtFromSize(+f.fw||+f.clipWidth,+f.fh||+f.clipHeight):null; }catch(_){ return null; } }
 async function teamSave1(o){ o=o||{};
   /* r3-save: the team needs a collection (an update of a design that has none is refused too; the leave prompt may keep a legacy design as it is) */
   if(!o.keepCols&&!(o.collections||(st.design&&!o.asNew?st.design.collections:[])||[]).some(n=>String(n).trim())) throw new Error('Pick a collection first.');
@@ -558,7 +560,7 @@ async function teamSave1(o){ o=o||{};
   const imgs=tpl?[]:imgs0, name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName());
   const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&!asNew) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));
   const cols=o.collections||(st.design&&!asNew?st.design.collections:[])||[];
-  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow()});
+  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow(),format:docFormat(doc)});
   if(tpl&&o.kind==='template'&&!st.design) return {id,name,kind:kindOut};   // a template saved from a draft: keep working on the draft
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }
@@ -643,6 +645,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
     <div class="cr-team">
       ${st.design?'<button type="button" class="link" id="crAlt"></button>':''}
       <button type="button" class="link" id="crAsTpl">Save as a team template (words and layout, no personal photos)</button>
+      <button type="button" class="link" id="crPlan" hidden>Add to calendar</button>
       <a class="link" id="crSeeSaved" href="../index.html#saved" hidden>See it in Saved</a>
     </div></div>`);
   if(many) fs.forEach(f=>{ try{ const s=fsize(f), c=BD.renderFrame(f,112/s.w); body.querySelector(`[data-pth="${f.id()}"]`).src=c.toDataURL('image/jpeg',.7); c.width=c.height=0; }catch(_){} });
@@ -679,8 +682,13 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   /* "Update the template" (an opened team template) saves over the template itself; everything else follows the New / Update choice */
   const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').disabled?undefined:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:pickedNow()};
     if(isTplOpen()&&!wantsNew()){ o.kind='template'; o.asNew=false; } return o; };
-  const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; };
-  $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
+  const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; planShow(); };
+  /* 2.4.0: Add to calendar once something is saved (the team design is linked; its frame decides Post / Story) */
+  const planShow=()=>{ const p=$('crPlan'); if(p) p.hidden=false; };
+  $('crPlan').onclick=async()=>{ const p=$('crPlan'); p.disabled=true; try{ const fmt=docFormat(JSON.parse(BD.docJson()))||'story', d=st.design, im=body.querySelector('#crRes img');
+      const it=await Studio.planDesign(d?{id:d.id,name:d.name,tool:TOOL,format:fmt,thumb:im&&im.src||null,caption:d.caption||'',hashtags:d.hashtags||[]}:{title:$('crTName').value||defaultName(),format:fmt});
+      if(it) p.textContent='On the calendar ✓'; }finally{ p.disabled=false; } };
+  $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); planShow(); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
   if($('crAlt')) $('crAlt').onclick=async()=>{ altMode=wantsNew()?'upd':'new'; if(isTplOpen()&&altMode==='upd'&&!picked.size) (st.design.collections||[]).forEach(n=>{ if(n) picked.add(n); }); if(!(await setWhere('team'))) return; syncT(); $('crGo').click(); };
   $('crTeamOnly').onclick=()=>{ if(needCol()){ nudge(); return; } runTeam(opts()).then(seen); };
   $('crAsTpl').onclick=async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudge(); return; } await runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTName').value})); seen(); };
