@@ -306,7 +306,8 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   const dls=[]; pg.on('download',d=>dls.push(d));
   const savedNow=async()=>Object.values((await fdb(pg)).designs).filter(d=>!/^seed\d/.test(d.id));
   const sheetOpen=async()=>{ await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(500); };
-  const teamReady=()=>pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).then(()=>true,()=>false);
+  /* 2.3.0: the sheet starts on My phone; "teamReady" chooses Phone + Team and waits for the collection chips */
+  const teamReady=async()=>{ if(!(await pg.isChecked('#teamOn'))) await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamCols [data-col],#teamCols [data-newcol]',{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(300); return await pg.isChecked('#teamOn'); };
   await fresh(pg); await pg.evaluate(()=>localStorage.setItem('studio:lastCols:1stchoice','["Restocks"]'));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900);
   await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1500);
@@ -314,12 +315,14 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   await sheetOpen();
   ok(N+'bar Save opens the Save sheet',await pg.isVisible('#sh-save'));
   ok(N+'...without making a picture',!dls.length&&!(await pg.isVisible('#doneBox'))&&!(await pg.isVisible('#progress'))&&!(await pg.isVisible('#result')));
-  ok(N+'the team switch is on (signed in)',await teamReady()&&await pg.isChecked('#teamOn'));
+  ok(N+'the sheet starts on My phone (signed in too), Save to my phone',!(await pg.isChecked('#teamOn'))&&(await pg.textContent('#saveTxt')).trim()==='Save to my phone'&&await pg.getAttribute('#saveWhere [data-where="me"]','aria-checked')==='true');
+  ok(N+'choosing Phone + Team opens the panel',await teamReady()&&await pg.isChecked('#teamOn'));
   const nm=await pg.inputValue('#teamName');
   ok(N+'the name is filled in: tool title – day month',/^Restock – \d{1,2} [A-Z][a-z]{2}$/.test(nm),nm);
-  ok(N+'the button reads "Save & add to team"',(await pg.textContent('#saveTxt')).trim()==='Save & add to team',await pg.textContent('#saveTxt'));
-  const chips=await pg.$$eval('#teamCols .chip[data-col]',l=>l.map(c=>c.dataset.col+':'+c.getAttribute('aria-pressed')).sort());
-  ok(N+'collections: the one used last (Restocks) is preselected, Offers is not',JSON.stringify(chips)==='["Offers:false","Restocks:true"]',chips);
+  ok(N+'with nothing picked the button reads "Pick a collection"',(await pg.textContent('#saveTxt')).trim()==='Pick a collection',await pg.textContent('#saveTxt'));
+  const chips=await pg.$$eval('#teamCols .chip[data-col]',l=>l.map(c=>c.dataset.col+':'+c.getAttribute('aria-pressed')));
+  ok(N+'collections: the one used last (Restocks) comes first but nothing is preselected',JSON.stringify(chips)==='["Restocks:false","Offers:false"]',chips);
+  await pg.tap('#teamCols [data-col="Restocks"]');
   ok(N+'collections sit in the sheet, not under More options',await pg.isVisible('#teamCols')&&!(await pg.isVisible('#teamMoreBox'))&&!(await pg.$('#teamMoreBox #teamCols')));
   await pg.tap('#teamMore'); await pg.waitForTimeout(300);
   ok(N+'More options holds only "Keep the photos" and "Save as new"',await pg.isVisible('#teamMoreBox #teamKeep')&&(await pg.$$eval('#teamMoreBox input',l=>l.map(x=>x.id))).join()==='teamKeep,teamAsNew');
@@ -327,6 +330,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   ok(N+'"New" reveals a field to type a collection',await pg.isVisible('#teamNewRow')&&await pg.isVisible('#teamNewCol')&&await pg.isVisible('#teamAddCol'));
   await pg.fill('#teamNewCol','Spring'); await pg.tap('#teamAddCol'); await pg.waitForTimeout(300);
   ok(N+'the new collection joins the chips, picked',await pg.getAttribute('#teamCols .chip[data-col="Spring"]','aria-pressed')==='true'&&!(await pg.isVisible('#teamNewRow')));
+  ok(N+'two picked: the button reads "Save to 2 collections"',(await pg.textContent('#saveTxt')).trim()==='Save to 2 collections',await pg.textContent('#saveTxt'));
   await pg.tap('#save');
   for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
   await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:20000}).catch(()=>{});
@@ -348,7 +352,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   ok(N+'...also when the sheet opens: on, button Update “name”, Save as new under it',await pg.isChecked('#teamOn')&&/^Update “/.test((await pg.textContent('#saveTxt')).trim())&&(await pg.textContent('#saveAlt')).trim()==='Save as new',await pg.textContent('#saveTxt'));
   ok(N+'...with the design\'s own name in the name field',await pg.inputValue('#teamName')===nm,await pg.inputValue('#teamName'));
   await pg.waitForTimeout(300);
-  ok(N+'the team row reads Update in the team',/^Update in the team/.test((await pg.textContent('#teamLbl')).trim()),await pg.textContent('#teamLbl'));
+  ok(N+'the sheet starts on Phone + Team for an opened design',await pg.getAttribute('#saveWhere [data-where="team"]','aria-checked')==='true');
   ok(N+'the design\'s own collections are preselected',JSON.stringify(await pg.$$eval('#teamCols .chip[data-col][aria-pressed="true"]',l=>l.map(c=>c.dataset.col).sort()))==='["Restocks","Spring"]');
   const nBefore=Object.keys((await fdb(pg)).designs).length; dls.length=0;
   await pg.tap('#save'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
@@ -356,7 +360,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   ok(N+'Save & update changes the same design (no extra one) and makes a picture',Object.keys((await fdb(pg)).designs).length===nBefore&&dls.length===1&&/Saved to the team/.test(await pg.textContent('#teamStatus')||''));
   /* the bar Save, tapped again while the sheet is open, saves */
   await fresh(pg,'tools/restock.html'); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1500); dls.length=0;
-  await sheetOpen(); await teamReady();
+  await sheetOpen(); await teamReady(); await pg.tap('#teamCols [data-col="Restocks"]');
   await pg.tap('#barSave'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
   await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:20000}).catch(()=>{});
   ok(N+'bar Save again while the sheet is open saves (picture + team)',dls.length===1&&await pg.isVisible('#doneBox')&&/Saved to the team/.test(await pg.textContent('#teamStatus')||''));
@@ -365,18 +369,19 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   await sheetOpen(); await teamReady();
   const before=Object.keys((await fdb(pg)).designs).length;
   ok(N+'"Only save to the team" is offered',await pg.isVisible('#teamOnly'));
+  await pg.tap('#teamCols [data-col="Restocks"]');
   await pg.tap('#teamOnly'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:20000}).catch(()=>{}); await pg.waitForTimeout(500);
   ok(N+'"Only save to the team" saves the design and makes no picture',Object.keys((await fdb(pg)).designs).length===before+1&&!dls.length&&!(await pg.isVisible('#doneBox'))&&/\?design=/.test(pg.url()));
   /* a remembered collection that is gone is dropped (the team has collections); a team without collections keeps it */
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.setItem('studio:lastCols:1stchoice','["Gone","Offers"]'));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1500); await sheetOpen(); await teamReady(); await pg.waitForTimeout(500);
   const ch2=await pg.$$eval('#teamCols .chip[data-col]',l=>l.map(c=>c.dataset.col+':'+c.getAttribute('aria-pressed')).sort());
-  ok(N+'a remembered collection that no longer exists is dropped; the one that does stays picked',JSON.stringify(ch2)==='["Offers:true","Restocks:false"]',ch2);
+  ok(N+'a remembered collection that no longer exists is not shown; the one that does comes first, not picked',JSON.stringify(ch2)==='["Offers:false","Restocks:false"]',ch2);
   await ctx.close();
   const ctx2=await mk(vp,{seed:false}); const p2=await page(ctx2,'save sheet, no collections');
   await p2.goto(BASE+'index.html'); await p2.evaluate(()=>localStorage.setItem('studio:lastCols:1stchoice','["Gone"]'));
-  await p2.goto(BASE+'tools/restock.html'); await p2.waitForTimeout(1500); await p2.tap('#barSave'); await p2.waitForSelector('#sh-save.open'); await p2.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{}); await p2.waitForTimeout(600);
-  ok(N+'when the team has no collections at all, the remembered one stays picked',await p2.getAttribute('#teamCols .chip[data-col="Gone"]','aria-pressed')==='true');
+  await p2.goto(BASE+'tools/restock.html'); await p2.waitForTimeout(1500); await p2.tap('#barSave'); await p2.waitForSelector('#sh-save.open'); await p2.tap('#saveWhere [data-where="team"]'); await p2.waitForSelector('#teamCols [data-newcol]'); await p2.waitForTimeout(600);
+  ok(N+'when the team has no collections at all: only New collection, opened, "Name your first collection"',!(await p2.$('#teamCols [data-col]'))&&await p2.isVisible('#teamNewRow')&&/Name your first collection/.test(await p2.textContent('#teamColsHint')));
   await ctx2.close();
 }
 
@@ -386,8 +391,10 @@ if(part('save')) { const vp=DESK, N='desktop: ', ctx=await mk(vp); const pg=awai
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900);
   await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1800);
   ok(N+'the Save card is always visible',await pg.isVisible('#sh-save')&&await pg.isVisible('#save'));
-  ok(N+'the team switch is on, name and collection are ready',await pg.isChecked('#teamOn')&&/^Restock – /.test(await pg.inputValue('#teamName'))&&await pg.getAttribute('#teamCols .chip[data-col="Restocks"]','aria-pressed')==='true');
-  ok(N+'the button reads "Save & add to team"',(await pg.textContent('#saveTxt')).trim()==='Save & add to team');
+  ok(N+'the card starts on This device (the team is a choice)',!(await pg.isChecked('#teamOn'))&&(await pg.textContent('#saveTxt')).trim()==='Save to this device');
+  await pg.click('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamCols [data-col]'); await pg.click('#teamCols [data-col="Restocks"]');
+  ok(N+'Phone + Team: name ready, Restocks picked',await pg.isChecked('#teamOn')&&/^Restock – /.test(await pg.inputValue('#teamName'))&&await pg.getAttribute('#teamCols .chip[data-col="Restocks"]','aria-pressed')==='true');
+  ok(N+'the button reads Save to “Restocks”',(await pg.textContent('#saveTxt')).trim()==='Save to “Restocks”');
   await pg.click('#save'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
   await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:20000}).catch(()=>{});
   let size=''; if(dls[0]){ const f=os.tmpdir()+'/h7d-'+dls[0].suggestedFilename(); await dls[0].saveAs(f); size=pngSize(f); }
