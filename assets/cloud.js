@@ -284,8 +284,32 @@ async function deleteCampaign(id){ const c=await client(); const {error}=await c
 /* campaigns (mega w2): which campaign a design belongs to (saveDesign does not pass campaign_id through) */
 async function setCampaign(designId,campaignId){ const c=await client(); const {error}=await c.from('designs').update({campaign_id:campaignId||null}).eq('id',designId); fail(error,'Campaign'); }
 
+/* ---------- r3-assets: team assets (table team_assets; every call is safe while the table is missing) ---------- */
+let taReady=false;
+async function teamAssetsReady(){
+  if(taReady) return true; const c=await client(); const {error}=await c.from('team_assets').select('id').limit(1);
+  if(error){ if(missing(error)) return false; fail(error,'Team assets'); return false; }
+  return taReady=true;
+}
+async function teamAssets(brand){ const c=await client(); return rows(c.from('team_assets').select('*').eq('brand',brand).order('created_at',{ascending:false}),'Team assets'); }
+async function saveTeamAsset(o){
+  const c=await client(); const id=uid(), base=o.brand+'/assets/'+id+'/', fresh=[];
+  try{
+    const path=await upload(base+'full.png',o.blob); fresh.push(path);
+    let prev=null; if(o.prevBlob){ prev=await upload(base+'prev.png',o.prevBlob); fresh.push(prev); }
+    const row={id,brand:o.brand,name:String(o.name||'').trim(),tags:o.tags||[],folder:o.folder||null,path,prev_path:prev,w:o.w||null,h:o.h||null,cutout:!!o.cutout,author:o.author||null};
+    const {data,error}=await c.from('team_assets').insert(row).select().single(); fail(error,'Add team asset'); return data;
+  }catch(err){ try{ await removeFiles(fresh); }catch(_){} throw err; }
+}
+async function updateTeamAsset(id,patch){
+  const c=await client(); const p={updated_at:new Date().toISOString()}; ['name','tags','folder'].forEach(k=>{ if(patch&&k in patch) p[k]=patch[k]; });
+  const {error}=await c.from('team_assets').update(p).eq('id',id); fail(error,'Team asset');
+}
+/* removes the ROW only: the files stay, so designs that used the asset keep opening */
+async function removeTeamAsset(id){ const c=await client(); const {error}=await c.from('team_assets').delete().eq('id',id); fail(error,'Team asset'); }
+
 window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
-  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign};
+  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset};
 })();

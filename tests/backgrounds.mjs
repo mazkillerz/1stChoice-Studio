@@ -24,7 +24,7 @@ const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&
 const pngSize=async d=>{ const p=await d.path(); const x=fs.readFileSync(p); return x.readUInt32BE(16)+'x'+x.readUInt32BE(20); };
 const t0=Date.now(), b=await chromium.launch(), errs=[];
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n')[0]); process.exit(1); });
-const KINDS=['plain','fade','glow','dots','lines','grain'], LABELS=['Plain','Fade','Glow','Dots','Lines','Grain'];
+const KINDS=['plain','fade','glow','dots','lines','grain'], NEWK=['sweep','spot','mesh','grid','waves','rings','paper','linen'], LABELS=['Plain','Fade','Glow','Sweep','Spot','Mesh','Dots','Lines','Grid','Waves','Rings','Grain','Paper','Linen'];
 
 /* a fresh phone on a tool; style = the remembered Restock style (the key Restock keeps) */
 const mk=async({tool='restock',style,theme='light'}={})=>{
@@ -59,9 +59,9 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   const {ctx,pg}=await mk({style:'white'});
   await settle(pg); await openStyle(pg);
   const bs=await btns(pg);
-  ok('Restock: Background group has Plain, Fade, Glow, Dots, Lines, Grain (in this order)',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS),bs.map(x=>x.l));
-  ok('Restock: Plain is pressed by default, the others are not',bs.length===6&&bs[0].p==='true'&&bs.slice(1).every(x=>x.p==='false'),bs.map(x=>x.p));
-  ok('Restock: every Background button is at least 44x44',bs.length===6&&bs.every(x=>x.w>=44&&x.h>=44),bs.map(x=>Math.round(x.w)+'x'+Math.round(x.h)));
+  ok('Restock: Background group has the 14 finishes (grouped, Plain first)',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS),bs.map(x=>x.l));
+  ok('Restock: Plain is pressed by default, the others are not',bs.length===14&&bs[0].p==='true'&&bs.slice(1).every(x=>x.p==='false'),bs.map(x=>x.p));
+  ok('Restock: every Background button is at least 44x44',bs.length===14&&bs.every(x=>x.w>=44&&x.h>=44),bs.map(x=>Math.round(x.w)+'x'+Math.round(x.h)));
   const lbl=await pg.evaluate(()=>{ const f=document.querySelector('[data-fw="gfx"]'); return f&&f.querySelector('.lbl').textContent.trim(); });
   ok('Restock: the group is labelled Background',lbl==='Background',lbl);
 
@@ -192,7 +192,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   const {ctx,pg}=await mk({style:'white',theme:'dark'});
   await settle(pg); await openStyle(pg);
   const dk=await pg.evaluate(()=>[...document.querySelectorAll('[data-seg="gfx"] .seg')].map(x=>{ const c=getComputedStyle(x), r=x.getBoundingClientRect(); return {p:x.getAttribute('aria-pressed'),bg:c.backgroundColor,bc:c.borderColor,col:c.color,w:r.width,h:r.height}; }));
-  ok('Dark theme: 6 Background buttons render with a size',dk.length===6&&dk.every(x=>x.w>=44&&x.h>=44),dk.length);
+  ok('Dark theme: 14 Background buttons render with a size',dk.length===14&&dk.every(x=>x.w>=44&&x.h>=44),dk.length);
   const on=dk.find(x=>x.p==='true'), off=dk.find(x=>x.p==='false');
   ok('Dark theme: the pressed button looks different from an unpressed one',!!on&&!!off&&(on.bg!==off.bg||on.bc!==off.bc||on.col!==off.col),{on,off});
   await ctx.close();
@@ -205,7 +205,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
   await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(300);
   await set(pg,null,{kind:'words'}); await settle(pg); await openStyle(pg);
   const bs=await btns(pg);
-  ok('Carousel: Background group has the 6 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs);
+  ok('Carousel: Background group has the 14 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs);
   const order=await pg.evaluate(()=>{ const fw=[...document.querySelectorAll('#sh-style [data-fw]')].map(x=>x.dataset.fw); return {bg:fw.indexOf('bg'),gfx:fw.indexOf('gfx'),gThis:fw.indexOf('gThis')}; });
   ok('Carousel: Background sits right under Background colour, in All slides (after This slide, which comes first since 1.40.0)',order.gfx===order.bg+1&&order.gfx>order.gThis,order);
   const h0=await gfxHash(pg,undefined), hp=await gfxHash(pg,'plain');
@@ -234,7 +234,7 @@ for(const [tool,{on,off}] of Object.entries(T13)){
   await pg.waitForFunction(()=>Studio.debug.S.photos.every(p=>!p||p.img),null,{timeout:20000}).catch(()=>{});
   await openStyle(pg);
   const bs=await btns(pg);
-  ok(tool+': Background group has the 6 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs.map(x=>x.l+':'+x.p));
+  ok(tool+': Background group has the 14 finishes, Plain pressed, all at least 44x44',JSON.stringify(bs.map(x=>x.l))===JSON.stringify(LABELS)&&bs[0].p==='true'&&bs.every(x=>x.w>=44&&x.h>=44),bs.map(x=>x.l+':'+x.p));
   const order=await pg.evaluate(()=>{ const fw=[...document.querySelectorAll('#sh-style [data-fw]')].map(x=>x.dataset.fw); return {bg:fw.indexOf('bg'),gfx:fw.indexOf('gfx')}; });
   ok(tool+': Background sits right under the background colour',order.gfx===order.bg+1,order);
   const vis={};
@@ -292,6 +292,43 @@ for(const [id,tool,st,k] of [['rs-glow','restock','cans','glow'],['of-dots','off
   await pg.waitForFunction(()=>window.Studio&&Studio.debug&&Studio.debug.S,null,{timeout:15000}); await pg.waitForTimeout(800);
   const r=await pg.evaluate(()=>({st:Studio.debug.S.style,gfx:Studio.debug.S.values.gfx,p:(document.querySelector('[data-seg="gfx"] .seg[aria-pressed="true"]')||{}).dataset?.v}));
   ok('Template '+id+' opens '+tool+' '+st+' with '+k+' chosen',r.st===st&&r.gfx===k&&r.p===k,r);
+  await ctx.close();
+}
+
+/* r3-backgrounds (2.3.0): eight new finishes, a Strength choice, old designs unchanged */
+{
+  const BASE_H={"light:plain":4265569260,"light:fade":4058999808,"light:glow":3713539796,"light:dots":556123429,"light:lines":727896472,"light:grain":758800660,"dark:plain":2122782880,"dark:fade":3746603295,"dark:glow":2808377080,"dark:dots":2664701895,"dark:lines":3508124102,"dark:grain":1750200072};   /* the hashes of Restock Cans (preview pixels) for the old finishes, taken before the new ones existed */
+  const {ctx,pg}=await mk({style:'cans'}); await settle(pg);
+  for(const [name,vals] of [['light',{bg:undefined}],['dark',{bg:'#1a1a1a'}]]){
+    const old={}; for(const k of KINDS){ await set(pg,null,{gfx:k,gfxs:undefined,...vals}); old[name+':'+k]=await settle(pg); }
+    ok('Old designs unchanged ('+name+'): plain, fade, glow, dots, lines, grain with no strength draw the pixels they always did',KINDS.every(k=>old[name+':'+k]===BASE_H[name+':'+k]),old);
+    const med={}; for(const k of KINDS){ await set(pg,null,{gfx:k,gfxs:'medium',...vals}); med[k]=await settle(pg); }
+    ok('Medium strength = the old drawing ('+name+')',KINDS.every(k=>med[k]===BASE_H[name+':'+k]),med);
+    await set(pg,null,{gfx:'plain',gfxs:undefined,...vals}); const plain=await settle(pg);
+    const nh={}; for(const k of NEWK){ await set(pg,null,{gfx:k,gfxs:undefined,...vals}); nh[k]=await settle(pg); }
+    ok('New finishes ('+name+'): each differs from Plain and from each other',NEWK.every(k=>nh[k]!==plain)&&new Set(Object.values(nh)).size===NEWK.length,nh);
+    const sh={}; for(const k of ['glow','mesh','paper','grid']){ await set(pg,null,{gfx:k,gfxs:'medium',...vals}); const m=await settle(pg); await set(pg,null,{gfxs:'soft'}); const so=await settle(pg); await set(pg,null,{gfxs:'strong'}); const st=await settle(pg); sh[k]=[m,so,st]; }
+    ok('Strength ('+name+'): Soft, Medium and Strong all differ',Object.values(sh).every(a=>new Set(a).size===3),sh);
+    await set(pg,null,{gfx:'mesh',gfxs:undefined,...vals}); const miss=await settle(pg); await set(pg,null,{gfxs:'medium'});
+    ok('A missing strength draws as Medium ('+name+')',miss===await settle(pg));
+  }
+  /* the picker: groups, Strength hidden on Plain, shown otherwise; the recipe keeps gfx + gfxs; reopening draws the same */
+  await set(pg,null,{bg:undefined,gfx:'plain',gfxs:undefined}); await openStyle(pg);
+  const grp=await pg.$$eval('[data-seg="gfx"] .gl',e=>e.map(x=>x.textContent));
+  ok('Picker: labelled groups Gradients, Patterns, Textures',JSON.stringify(grp)==='["Gradients","Patterns","Textures"]',grp);
+  ok('Picker: Strength is hidden while Plain is chosen',!(await pg.locator('[data-seg="gfxs"]').isVisible()));
+  await pg.evaluate(()=>document.querySelector('[data-seg="gfx"] .seg[data-v="waves"]').scrollIntoView({block:'center'}));
+  await pg.tap('[data-seg="gfx"] .seg[data-v="waves"]'); await pg.waitForTimeout(300);
+  ok('Picker: Strength shows (Soft, Medium, Strong; Medium pressed) once a finish is chosen',await pg.evaluate(()=>{ const g=document.querySelector('[data-seg="gfxs"]'); return !!g&&!g.closest('[data-fw]').hidden&&[...g.querySelectorAll('.seg')].map(x=>x.textContent.trim()+':'+x.getAttribute('aria-pressed')).join()==='Soft:false,Medium:true,Strong:false'; }));
+  await pg.evaluate(()=>document.querySelector('[data-seg="gfxs"] .seg[data-v="strong"]').scrollIntoView({block:'center'}));
+  await pg.tap('[data-seg="gfxs"] .seg[data-v="strong"]'); await pg.waitForTimeout(300);
+  const rv=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); return {gfx:r.values.gfx,gfxs:r.values.gfxs}; });
+  ok('The recipe keeps gfx waves and gfxs strong',rv.gfx==='waves'&&rv.gfxs==='strong',rv);
+  const before=await settle(pg);
+  const rec=await pg.evaluate(()=>JSON.stringify(Studio.debug.recipe().values));
+  await set(pg,null,{gfx:'plain'}); await settle(pg);
+  await pg.evaluate(v=>{ const S=Studio.debug.S, o=JSON.parse(v); S.values.gfx=o.gfx; S.values.gfxs=o.gfxs; Studio.debug.render(); },rec);
+  ok('Reopening that recipe draws the same pixels',await settle(pg)===before);
   await ctx.close();
 }
 

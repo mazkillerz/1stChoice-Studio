@@ -131,7 +131,7 @@ function make(cfg){
       isOpen=true;
       if(phone()){
         spacer=document.createElement('div'); spacer.className='us-spacer'; const cs=getComputedStyle(root); spacer.style.height=(root.offsetHeight+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0))+'px'; root.after(spacer);   // the page behind doesn't jump
-        if(!pushed){ try{ history.pushState({us:1},''); pushed=true; }catch(_){} }
+        if(!pushed){ try{ if(window.Studio&&Studio.nav) Studio.nav.push('search',()=>{ pushed=false; hide(); }); else history.pushState({us:1},''); pushed=true; }catch(_){} }   /* r3-nav */
       }
       root.classList.add('on'); document.body.classList.add('us-open'); panel.hidden=false; cancel.hidden=false; input.setAttribute('aria-expanded','true'); sync();
     }
@@ -153,6 +153,7 @@ function make(cfg){
     hide();
     if(!pushed) return Promise.resolve();
     pushed=false;
+    if(window.Studio&&Studio.nav){ closing=Studio.nav.drop('search').then(()=>{ closing=null; }); return closing; }   // r3-nav
     closing=new Promise(res=>{ popRes=res; popT=setTimeout(finishPop,300); try{ history.back(); }catch(_){ finishPop(); } }).then(()=>{ closing=null; });
     return closing;
   }
@@ -185,7 +186,7 @@ function make(cfg){
   on(document,'keydown',e=>{ if(e.key==='Escape'&&isOpen){ e.preventDefault(); close(); } });
   on(document,'pointerdown',e=>{ if(isOpen&&!phone()&&!root.contains(e.target)) close(); });
   on(root,'focusout',e=>{ if(isOpen&&!phone()&&e.relatedTarget&&!root.contains(e.relatedTarget)) close(); });
-  on(window,'popstate',()=>{ if(popRes){ finishPop(); return; } if(isOpen&&pushed){ pushed=false; hide(); } });   // Android Back closes the search
+  on(window,'popstate',()=>{ if(window.Studio&&Studio.nav) return; if(popRes){ finishPop(); return; } if(isOpen&&pushed){ pushed=false; hide(); } });   // Android Back closes the search
   on(window,'pageshow',e=>{ if(!e.persisted) return; pushed=false; finishPop(); if(isOpen) hide(); else{ input.value=''; syncX(); } });   // restored from the back/forward cache: start clean
   if(window.visualViewport){ on(window.visualViewport,'resize',sync); on(window.visualViewport,'scroll',sync); }
   /* a photo picked from a quick row: the page's own listener does the work, we just get out of the way */

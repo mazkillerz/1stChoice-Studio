@@ -35,7 +35,7 @@ for(const theme of ['light','dark']){
   const waitKept=async(fn,ms=4000)=>{ let k; for(let t=0;t<ms;t+=200){ k=await kept(); if(fn(k)) return k; await pg.waitForTimeout(200); } return k; };
   const save=async()=>{ const n=dls.length; await pg.tap('#barSave'); for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
     let size=''; if(dls.length>n){ const f=os.tmpdir()+'/qk-'+dls[n].suggestedFilename(); await dls[n].saveAs(f); size=pngSize(f); }
-    await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
+    await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:1500}).catch(()=>{});
     return {got:dls.length-n,size}; };
   /* filled accent buttons that show: background equals the accent */
   const filled=()=>pg.evaluate(()=>{ const acc=getComputedStyle(document.querySelector('.mini.solid,.btn')||document.body).getPropertyValue('--accent').trim();
@@ -81,8 +81,8 @@ for(const theme of ['light','dark']){
   ok(N+'Save after the reload: one tap, full size',r.got===1&&r.size==='2160x3840',JSON.stringify(r));
   await pg.waitForFunction(()=>!document.getElementById('queueNext').hidden,null,{timeout:6000}).catch(()=>{});
   ok(N+'then "Next photo (3 of 3)" as before',(await pg.textContent('#queueNext')).trim()==='Next photo (3 of 3)');
-  k=await waitKept(k=>k.pos&&k.pos.saved&&k.pos.design);
-  ok(N+'saved, with its team design, is remembered',k.pos&&k.pos.saved===true&&!!k.pos.design,JSON.stringify(k.pos));
+  k=await waitKept(k=>k.pos&&k.pos.saved);
+  ok(N+'saved is remembered; one tap makes no team design (2.3.0)',k.pos&&k.pos.saved===true&&!k.pos.design,JSON.stringify(k.pos));
 
   /* reload after the share sheet (the page is on ?design=): offer the last one */
   await pg.reload(); await pg.waitForTimeout(2000);

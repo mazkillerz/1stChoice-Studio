@@ -122,10 +122,12 @@ $('vdEmptyAdd').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ')
 
 /* ---------- sheets ---------- */
 let cur=null;   // {name, h:{input,change,click,focusin}}
+let sheetNav=false;   /* r3-nav: a phone sheet holds one back-stack entry; Back closes it */
 const SHEETS={};
 V.openSheet=function(name,arg){
   const def=SHEETS[name]; if(!def) return;
   if(V.stopSolo) V.stopSolo();
+  if(!desk()&&!sheetNav){ sheetNav=true; Studio.nav.push('vdSheet',()=>{ sheetNav=false; V.closeSheet(); }); }
   st.sheet={name,arg}; main.classList.add('sheeted'); sheetEl.hidden=false; sheetEl.dataset.name=name; sheetEl.classList.remove('idle'); $('vdShX').hidden=false;
   const r=def(arg)||{}; cur=r; shT.textContent=r.title||''; shB.innerHTML=r.html||''; shB.scrollTop=0;
   if(r.bind) r.bind(shB); V.renderBar&&V.renderBar();
@@ -134,6 +136,7 @@ V.openSheet=function(name,arg){
 };
 V.refreshSheet=()=>{ if(st.sheet) V.openSheet(st.sheet.name,st.sheet.arg); };
 V.closeSheet=function(quiet){
+  if(sheetNav){ sheetNav=false; Studio.nav.drop('vdSheet'); }
   if(V.stopSolo) V.stopSolo();
   st.sheet=null; cur=null; main.classList.remove('sheeted');
   if(desk()) idle(); else sheetEl.hidden=true;

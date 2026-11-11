@@ -4,6 +4,7 @@
    Also: older cover kinds draw the same without highlight-emoji.js (and then there is no Emoji option, and no errors); Quick start still works.
    Phone 390×844 touch (light + dark) and desktop 1280×800. Run like tests/highlight.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 import fs from 'fs'; import os from 'os';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const SAMPLES=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
@@ -102,7 +103,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
       await pg.evaluate(()=>{ const l=Studio.debug.S.layers.emoji; delete l.flip; l.color=null; Studio.debug.render(); }); await pg.waitForTimeout(300);
       const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
       await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-      await pg.waitForFunction(()=>document.getElementById('teamOn')?.checked,null,{timeout:8000}).catch(()=>{});
+      await chooseTeam(pg,'Suite');   // 2.3.0: the saved set goes to the team on purpose
       await pg.fill('#teamName','Emoji covers').catch(()=>{}); await pg.tap('#save');
       for(let i=0;i<60&&dls.length<4;i++) await pg.waitForTimeout(300);
       const files=[]; for(const d of dls){ const f=os.tmpdir()+'/hle-'+Date.now()+'-'+d.suggestedFilename(); await d.saveAs(f); files.push(f); }

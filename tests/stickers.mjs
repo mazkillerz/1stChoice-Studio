@@ -7,6 +7,7 @@
    cannot load (no Sticker button, a saved sticker stays in the design).
    Run like tests/full.mjs (server on :8080, or BASE=...). Exit code 1 on any FAIL. */
 import { chromium } from 'playwright';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
@@ -118,7 +119,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
       const geo=await pg.evaluate(id=>{ const r=Studio.debug.reg().find(q=>q.id===id); return {x:r.x+r.w/2,y:r.y+r.h/2,w:r.w}; },id);
       if(vp.touch&&await pg.evaluate(()=>!!document.querySelector('.sheet.open'))){ await pg.evaluate(()=>document.querySelector('.sheet.open .done')?.click()); await pg.waitForTimeout(300); }
       await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-      const team=pg.locator('#sh-save input[type=checkbox]').first(); if(await team.count()&&!(await team.isChecked())) await team.check({force:true}).catch(()=>{});
+      if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await chooseTeam(pg,'Suite');   /* 2.3.0: choose Phone + Team and a collection first */
       if(await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))) await pg.tap('#save');
       for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
       const d=dls[0]; let size='', px=null;

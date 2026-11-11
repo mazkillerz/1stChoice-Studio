@@ -13,6 +13,46 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.3.0 · 11 Nov 2026
+Save asks where your story goes, Back goes one step back everywhere, and the team can add its own assets. A new look for the bottom bar, Saved and Home is waiting as a preview.
+
+### Choose where Save goes
+type: feature
+Save no longer sends anything to the team by itself. The Save sheet starts with one choice: **My phone** or **Phone + Team**. My phone is always the start, so a quick save is still two taps and stays yours. For the team you pick a collection first (it is required now), and the big button tells you exactly where the story will go, like Save to “Restocks”. Until you pick one it reads Pick a collection and nothing is saved. Create and Video work the same way.
+![before](assets/whatsnew/2.3.0-save-before.jpg)
+![after](assets/whatsnew/2.3.0-save-after.jpg)
+
+### Back and Done go one step back
+type: fix
+In a story, opening Layers and then Asset, Sticker, Text or Element used to end badly: the phone's Back jumped straight to Home, and Done closed everything. Now every panel, menu and pop-up is one step: Back or Done returns to the panel you came from, then to your story. The same rule holds on Home, Saved, the calendar, Create, Video and Board.
+
+### Team assets: add your own
+type: feature
+Anyone on the team can add a picture to the asset library, a partner's logo for a collab story for example, and everyone gets it. In a story open Layers, Asset, then **Add or browse** under Team. Give it a name, a folder and tags; search and sort the library later. You can also open it from Settings or by searching "Team assets".
+![before](assets/whatsnew/2.3.0-assets-before.jpg)
+![after](assets/whatsnew/2.3.0-assets-after.jpg)
+
+### Remove background, made for logos
+type: feature
+When you add an asset, Studio can cut it out on your phone, free and without sending the picture anywhere. **Logo** is new and made for logos on a plain ground: clean edges, thin lines kept, the insides of letters cleared, and no white fringe on a dark story. **Photo** cuts out a can or a person with a sharper outline than before. Keep leaves the picture as it is.
+![after](assets/whatsnew/2.3.0-cutout-after.jpg)
+
+### More backgrounds
+type: feature
+Eight new backgrounds in Style: Sweep, Spot and Mesh (soft gradients), Grid, Waves and Rings (patterns), Paper and Linen (textures), next to the ones you had. A new Strength choice makes any of them Soft, Medium or Strong. They follow your background colour, and stories you already saved look exactly as before.
+![after](assets/whatsnew/2.3.0-grounds-after.jpg)
+
+### Calendar: every saved design in the picker
+type: fix
+Picking a design for a planned post now opens on All, so every saved design is there, not only the ones shaped like the plan. Stories and Posts are one tap away, each with its count.
+
+### Preview: the new Studio look
+type: design
+A bigger change is ready for you to try, and it is off until you switch it on. **The bar** becomes Home, Saved, +, Plan and Templates, with the + in the middle and the calendar one tap away. **Saved** gets a search box that is always open, your collections as covers, two big columns with full names, and a sheet with Open, Save picture, Duplicate and Collection up front. **Home** opens on Jump back in: your drafts and newest designs first. Nothing is removed; switch it off any time.
+[flag:next] Try the new Studio look
+![before](assets/whatsnew/2.3.0-saved-before.jpg)
+![after](assets/whatsnew/2.3.0-saved-after.jpg)
+
 ## 2.2.1 · 10 Nov 2026
 
 ### Saving to a collection always works

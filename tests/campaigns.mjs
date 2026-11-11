@@ -107,7 +107,7 @@ async function cell(name,vp,opt){
     /* override: edit the headline inside the Create post, save */
     t=await headOfCreate('cPost'); ok('the Create post opens with the campaign headline',t.includes(HEAD1),t.slice(0,4));
     await pg.evaluate(h=>{ const n=BD.main.find('Text').find(x=>x.text()===h); n.text('My own line'); BD.changed(); },HEAD1); await pg.waitForTimeout(400);
-    await tap('#crBar [data-cr="save"]'); await pg.waitForSelector('#crGo'); await pg.waitForTimeout(400); await tap('#crTeamOnly');
+    await tap('#crBar [data-cr="save"]'); await pg.waitForSelector('#crGo'); await pg.waitForTimeout(400); await pg.fill('#crCol','Campaign'); await tap('#crTeamOnly');
     await pg.waitForFunction(()=>{ const d=JSON.parse(localStorage.getItem('fakecloud')).designs.cPost; return d&&d.recipe.camp&&d.recipe.camp.over&&d.recipe.camp.over.headline; },null,{timeout:20000}).catch(()=>{}); await pg.waitForTimeout(500);
     d=await dbOf(pg); ok('saving the edited post marks its headline as an override',!!(d.designs.cPost.recipe.camp&&d.designs.cPost.recipe.camp.over.headline),d.designs.cPost.recipe.camp);
     /* change the headline again from the campaign view */

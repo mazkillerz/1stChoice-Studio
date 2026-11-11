@@ -132,7 +132,8 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   await more();
   ok(N+'a shape hides Text styles and Save this style',!(await vis('#inspTStyles'))&&!(await vis('#inspSaveStyle')));
   // remove
-  await tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(150);
+  await tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(250);
+  await pg.evaluate(()=>{ const d=document.querySelector('.sheet.open [data-close]'); if(d) d.click(); }); await pg.waitForTimeout(250);   /* 2.3.0: Done returns to Layers first */
   ok(N+'tap the headline for remove test',(await pick(src))===src); await more();
   // persist into a new story
   await open(); await pick(src); await more();

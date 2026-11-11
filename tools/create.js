@@ -33,6 +33,8 @@ const I={
   dh:svg('<rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="10" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/>'),dv:svg('<rect x="7" y="3" width="10" height="4" rx="1"/><rect x="7" y="10" width="10" height="4" rx="1"/><rect x="7" y="17" width="10" height="4" rx="1"/>'),
   text:svg('<path d="M4 7V5h16v2"/><path d="M12 5v14"/>'),shape:svg('<circle cx="8" cy="8" r="5"/><rect x="12" y="12" width="9" height="9" rx="2"/>'),img:svg('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'),
   line:svg('<path d="M4 20 20 4"/>'),grp:svg('<rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/>'),plus:svg('<path d="M12 5v14M5 12h14"/>'),
+  device:svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>'),
+  users:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/>'),
   bookmark:svg('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>')
 };
 
@@ -41,9 +43,10 @@ let toastT=0;
 function toast(t,ms){ const el=$('crToast'); el.textContent=t; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{ el.hidden=true; },ms||3200); }
 BD.toast=toast;
 function openMenu(anchor,entries){ const m=$('crMenuBox'); m.innerHTML=entries.map((e,i)=>e==='-'?'<div class="sep"></div>':e.head?`<div class="hd">${esc(e.head)}</div>`:`<button type="button" role="menuitem" data-i="${i}">${e.check!=null?(e.check?'✓ ':'<span style="width:12px;display:inline-block"></span>'):''}${esc(e.label)}</button>`).join('');
-  m.hidden=false; const r=anchor.getBoundingClientRect(), mr=m.getBoundingClientRect(); m.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; m.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-mr.height-8))+'px';
-  m.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; m.hidden=true; entries[+b.dataset.i].run(); };
-  setTimeout(()=>document.addEventListener('pointerdown',function off(e){ if(!m.contains(e.target)){ m.hidden=true; document.removeEventListener('pointerdown',off,true); } },true),0); }
+  const wasOpen=!m.hidden; m.hidden=false; if(!wasOpen) Studio.nav.push('crMenu',()=>{ m.hidden=true; });   /* r3-nav: Back closes the menu first */
+  const r=anchor.getBoundingClientRect(), mr=m.getBoundingClientRect(); m.style.left=Math.max(8,Math.min(r.left,innerWidth-mr.width-8))+'px'; m.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-mr.height-8))+'px';
+  m.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; m.hidden=true; Studio.nav.drop('crMenu'); entries[+b.dataset.i].run(); };
+  setTimeout(()=>document.addEventListener('pointerdown',function off(e){ if(!m.contains(e.target)){ m.hidden=true; Studio.nav.drop('crMenu'); document.removeEventListener('pointerdown',off,true); } },true),0); }
 
 /* ---------- sheets: tool sheets (the page stays usable) and big ones (Templates, Save, Add) ---------- */
 let sheet=null;   // {name,tool,onClose,sel}
@@ -51,8 +54,9 @@ function openSheet(name,title,html,opt){ opt=opt||{}; closeSheet(true); sheet={n
   const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.dataset.name=name; $('crSheetT').textContent=title;
   /* a fresh body each time, so a sheet's click handlers never stay behind for the next sheet (1.31.0: they piled up, one Add tap added several) */
   const ob=$('crSheetB'), nb=ob.cloneNode(false); ob.replaceWith(nb); nb.innerHTML=html; el.hidden=false; $('crScrim').hidden=!!opt.tool; $('crSheetB').scrollTop=0;
+  Studio.nav.push('crSheet',()=>{ if(st.saving&&sheet&&sheet.name==='save') return false; closeSheet(); });   /* r3-nav: Back closes the sheet (not while saving) */
   syncBar(); requestAnimationFrame(padForSheet); return $('crSheetB'); }
-function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
+function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; Studio.nav.drop('crSheet'); $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
 /* the page moves up (phone) or left (computer) so a tool sheet never covers it */
 function padForSheet(){ const el=$('crSheet'); if(!sheet||!sheet.tool||el.hidden){ BD.setPad({bottom:16,right:16}); return; }
   if(isPhone()){ const r=el.getBoundingClientRect(), m=$('crMain').getBoundingClientRect(); BD.setPad({bottom:Math.max(16,m.bottom-r.top+12),right:16}); } else BD.setPad({bottom:16,right:420}); }
@@ -339,9 +343,10 @@ $('crPick').addEventListener('change',async e=>{ const files=[...e.target.files]
   finally{ BD.busy(null); } });
 $('crReplace').addEventListener('change',async e=>{ const file=e.target.files[0]; e.target.value=''; const n=st.replaceTarget; st.replaceTarget=null; if(!file||!n||!n.getStage()) return;
   BD.busy('Replacing the photo…'); try{ const id=await BD.addPhotoFile(file), im=BD.IMGS.get(id); n.setAttrs({imgId:id,cropZ:1,focX:.5,focY:.5}); n.image(im.el); BD.applyCrop(n); BD.main.batchDraw(); BD.changed(); }catch(_){ toast('Could not open that photo.'); } finally{ BD.busy(null); } });
-function startCrop(n){ if(!n) return; closeSheet(true); BD.startCrop(n); $('crCrop').hidden=false; $('crCropZ').value=n.getAttr('cropZ')||1; paintCtx(); }
+function startCrop(n){ if(!n) return; closeSheet(true); Studio.nav.drop('crCrop'); Studio.nav.push('crCrop',()=>{ $('crCrop').hidden=true; BD.endCrop(); }); BD.startCrop(n); $('crCrop').hidden=false; $('crCropZ').value=n.getAttr('cropZ')||1; paintCtx(); }
 $('crCropZ').oninput=e=>BD.cropZoom(+e.target.value); BD.on('cropz',z=>{ $('crCropZ').value=z; });
-$('crCropDone').onclick=()=>{ $('crCrop').hidden=true; BD.endCrop(); };
+$('crCropDone').onclick=()=>{ $('crCrop').hidden=true; Studio.nav.drop('crCrop'); BD.endCrop(); };
+BD.on('crop',n=>{ if(!n){ $('crCrop').hidden=true; Studio.nav.drop('crCrop'); } });   // ended another way (Escape)
 
 /* Add sheet: elements, brand pictures, shapes, lines, icons, emoji */
 function openAdd(){ reopen=null; const as=L.listedAssets();
@@ -351,7 +356,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
   const body=openSheet('add','Add',`${impRow()}<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
     <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span><span dir="auto">${esc(e.label)}</span></button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
-    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button></div>
+    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button><button type="button" class="cr-el" data-team="1"><span class="im">${I.photo}</span>Team assets</button></div>
     <span class="lbl" id="j-shapes">Shapes</span><div class="cr-icons">${BD.SHAPES.map(s=>`<button type="button" data-shape="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id]||native.rect)}</button>`).join('')}</div>
     <span class="lbl" id="j-lines">Lines</span><div class="cr-icons">${BD.STROKES.map(s=>`<button type="button" data-stroke="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id],true)}</button>`).join('')}</div>
     <span class="lbl" id="j-icons">Icons</span><div class="cr-icons">${CR.allIcons().map(i=>`<button type="button" data-icon="${i.id}" aria-label="${esc(i.id.replace(/-/g,' '))}" title="${esc(i.id.replace(/-/g,' '))}">${svg(`<path d="${i.d}"/>`,24)}</button>`).join('')}</div>
@@ -365,6 +370,8 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
     if(d.import){ impPick(); return; }
     if(d.j){ const t=body.querySelector('#j-'+d.j); if(t) body.scrollTo({top:t.offsetTop-56,behavior:'smooth'}); return; }
     if(d.photo){ closeSheet(); photoTapped(); return; }
+    if(d.team){ closeSheet();   /* r3-assets: a team asset comes in as an ordinary image layer (stored like any photo) */
+      try{ const T=await Studio.lazy('teamassets',{css:1,global:'StudioTeamAssets'}); T.open({brand:B.id,mode:'pick',onPick:async r=>{ BD.busy('Adding the picture…'); try{ const blob=await T.blobOf(r); await BD.addPhotos([new File([blob],(r.name||'asset')+'.png',{type:'image/png'})]); }catch(_){ toast('Could not add that picture. Check your connection.'); } finally{ BD.busy(null); } }}); }catch(_){ toast('Team assets did not open.'); } return; }
     if(!(d.el||d.asset||d.shape||d.stroke||d.icon||d.emoji||d.sticker)) return;
     closeSheet(true);
     if(d.el) await CR.addElement(d.el);
@@ -536,7 +543,10 @@ let teamQ=Promise.resolve(), altMode=null;
 const whoNow=()=>{ try{ return window.StudioWho&&StudioWho.author?StudioWho.author():undefined; }catch(_){ return undefined; } };
 const isTplOpen=()=>!!st.design&&st.design.kind==='template', wantsNew=()=>!st.design||(altMode?altMode==='new':isTplOpen());
 function teamSave(o){ const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}); return run; }
-async function teamSave1(o){ o=o||{}; const C=await L.cloud();
+async function teamSave1(o){ o=o||{};
+  /* r3-save: the team needs a collection (an update of a design that has none is refused too; the leave prompt may keep a legacy design as it is) */
+  if(!o.keepCols&&!(o.collections||(st.design&&!o.asNew?st.design.collections:[])||[]).some(n=>String(n).trim())) throw new Error('Pick a collection first.');
+  const C=await L.cloud();
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
   let doc=JSON.parse(BD.docJson()); const imgs0=usedImgs(doc);
   /* an opened design whose photos were all removed is still that design: update it, not a new template */
@@ -565,7 +575,7 @@ function leavePrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3 dir="aut
   d.querySelector('#lvKeep').onclick=()=>d.close();
   d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-    try{ await teamSave({name:st.design.name,kind:st.design.kind}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } }; }
+    try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } }; }
 document.querySelector('.cr-back').addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
 addEventListener('pagehide',()=>{ if(S.id&&!st.design) BD.saveNow(); });
@@ -611,46 +621,75 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   const many=fs.length>1; altMode=null;
   const body=openSheet('save','Save',`<div class="cr-save" style="display:flex;flex-direction:column;gap:14px">
     ${many?`<div><span class="lbl">Pages</span><div class="cr-pagepick" id="crPP">${fs.map((f,i)=>`<label><input type="checkbox" data-f="${f.id()}" checked><img alt="" data-pth="${f.id()}">${i+1}</label>`).join('')}</div></div>`:''}
+    <!-- r3-save --><div class="save-where"><span class="lbl" id="crWhereLbl">Save to</span>
+      <div class="sw-seg" id="crWhere" role="radiogroup" aria-labelledby="crWhereLbl">
+        <button type="button" class="sw-opt" role="radio" data-where="me" aria-checked="true"><span class="sw-ic">${I.device}</span><span class="sw-txt"><b>${matchMedia('(pointer:coarse)').matches?'My phone':'This device'}</b><small>${matchMedia('(pointer:coarse)').matches?'A picture in your Photos':'A picture in your downloads'}</small></span></button>
+        <button type="button" class="sw-opt" role="radio" data-where="team" aria-checked="false"><span class="sw-ic">${I.users}</span><span class="sw-txt"><b>Phone + Team</b><small>Also in Saved, for everyone</small></span></button>
+      </div><input type="checkbox" id="crTeamOn" hidden></div>
+    <div id="crTeamBox" class="team-box" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="tb-field"><label class="lbl" for="crTName">Name</label><input type="text" id="crTName" dir="auto" maxlength="80"></div>
+      <div class="tb-field"><span class="lbl" id="crColsLbl">Collection <span class="lbl-req">required</span></span><div class="chips tb-cols" id="crCols" role="group" aria-labelledby="crColsLbl"></div>
+        <input type="text" id="crCol" dir="auto" maxlength="60" placeholder="Or name a new collection" aria-label="New collection">
+        <small class="tb-hint" id="crHint" dir="auto" role="status" aria-live="polite"></small></div>
+      <label class="check"><input type="checkbox" id="crKeep" checked> Keep the photos (off = a template)</label>
+      ${st.design?'<label class="check"><input type="checkbox" id="crAsNew"> Save as a new design instead of updating</label>':''}
+      <button type="button" class="mini" id="crTeamOnly">Only save to the team</button>
+    </div>
     <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
     <button type="button" class="btn" id="crGo">${many?'Save '+fs.length+' pages':'Save image'}</button>
     <p class="small">Full quality: ${fs.map(f=>fsize(f)).map(s=>s.w*2+'×'+s.h*2).filter((v,i,a)=>a.indexOf(v)===i).join(', ')} PNG, lossless.</p>
     <div class="cr-status" id="crSt" role="status" aria-live="polite"></div>
     <div class="cr-result" id="crRes" hidden></div>
     <div class="cr-team">
-      <label class="opt-row"><span class="opt-ic">${I.bookmark}</span><span class="opt-txt"><b id="crTeamLbl">Also save to the team</b><small id="crTeamSub">Find and reuse it in Saved</small></span><input type="checkbox" class="switch" id="crTeamOn" role="switch"></label>
-      <div id="crTeamBox" hidden style="display:flex;flex-direction:column;gap:10px">
-        <label class="lbl" for="crTName">Name</label><input type="text" id="crTName" dir="auto" maxlength="80">
-        <label class="lbl" for="crCol">Collection (optional)</label><input type="text" id="crCol" dir="auto" maxlength="60" placeholder="e.g. Ramadan">
-        <label class="check"><input type="checkbox" id="crKeep" checked> Keep the photos (off = a template)</label>
-        ${st.design?'<label class="check"><input type="checkbox" id="crAsNew"> Save as a new design instead of updating</label>':''}
-        <button type="button" class="mini" id="crTeamOnly">Only save to the team</button>
-      </div>
       ${st.design?'<button type="button" class="link" id="crAlt"></button>':''}
       <button type="button" class="link" id="crAsTpl">Save as a team template (words and layout, no personal photos)</button>
+      <a class="link" id="crSeeSaved" href="../index.html#saved" hidden>See it in Saved</a>
     </div></div>`);
   if(many) fs.forEach(f=>{ try{ const s=fsize(f), c=BD.renderFrame(f,112/s.w); body.querySelector(`[data-pth="${f.id()}"]`).src=c.toDataURL('image/jpeg',.7); c.width=c.height=0; }catch(_){} });
-  const hasPhotos=usedImgs(JSON.parse(BD.docJson())).length>0; $('crKeep').checked=hasPhotos; $('crKeep').disabled=!hasPhotos; if(st.design) $('crTeamOn').checked=true;   // an opened saved design is updated by default (the button says so)
-  $('crTName').value=st.design?st.design.name:defaultName(); if(st.design&&st.design.collections&&st.design.collections[0]) $('crCol').value=st.design.collections[0];
+  const hasPhotos=usedImgs(JSON.parse(BD.docJson())).length>0; $('crKeep').checked=hasPhotos; $('crKeep').disabled=!hasPhotos; if(st.design&&!isTplOpen()) $('crTeamOn').checked=true;   // r3-save: a new design starts on My phone; an opened saved design starts on Phone + Team (Update)
+  $('crTName').value=st.design?st.design.name:defaultName();
+  const picked=new Set(st.design&&!isTplOpen()?(st.design.collections||[]).filter(Boolean):[]); let teamCols=null, needHint=false;
   const checked=()=>many?[...body.querySelectorAll('#crPP input:checked')].map(i=>BD.main.findOne('#'+i.dataset.f)).filter(Boolean):fs;
   const short=n=>{ n=String(n||''); return n.length>22?n.slice(0,21)+'…':n; };
-  const syncT=()=>{ const on=$('crTeamOn').checked, d=st.design, nw=wantsNew(), upd=!!d&&!nw; $('crTeamBox').hidden=!on;
-    $('crTeamLbl').textContent=upd?'Update in the team':d?'Save to the team as a new design':'Also save to the team';
-    $('crTeamSub').textContent=upd?'Saved designs keep your latest changes':d&&isTplOpen()?'The template stays as it is':'Find and reuse it in Saved';
+  const pickedNow=()=>{ const l=[...picked], t=$('crCol').value.trim(); if(t&&!l.includes(t)) l.push(t); return l; };
+  const needCol=()=>$('crTeamOn').checked&&!pickedNow().length;
+  const paintCols=()=>{ if(!$('crCols')) return; const last=(()=>{ try{ return JSON.parse(localStorage.getItem('studio:lastCols:'+B.id))||[]; }catch(_){ return []; } })();
+    const names=[...new Set([...(teamCols||[]),...picked])], all=[...last.filter(n=>names.includes(n)),...names.filter(n=>!last.includes(n)).sort((a,b)=>a.localeCompare(b))];
+    $('crCols').innerHTML=all.map(n=>`<button type="button" class="chip col-pick" dir="auto" data-col="${esc(n)}" aria-pressed="${picked.has(n)}">${picked.has(n)?I.check:''}<span>${esc(n)}</span></button>`).join('');
+    $('crCols').hidden=!all.length; const on=pickedNow();
+    $('crHint').textContent=on.length?'It goes in '+on.map(n=>'“'+n+'”').join(' and ')+'.':needHint?'Pick a collection first, then save.':all.length?'Choose where it goes in Saved, or name a new one.':'Name your first collection.';
+    $('crHint').classList.toggle('need',!on.length&&needHint); };
+  const syncT=()=>{ const on=$('crTeamOn').checked, d=st.design, nw=wantsNew(), upd=!!d&&!nw, c=pickedNow(); $('crTeamBox').hidden=!on; if(!c.length) ; else needHint=false;
+    document.querySelectorAll('#crWhere [data-where]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.where===(on?'team':'me'))));
     if($('crAsNew')) $('crAsNew').checked=nw;
     if($('crAlt')) $('crAlt').textContent=nw?(isTplOpen()?'Update the template':'Update “'+short(d.name)+'”'):'Save as new';
-    $('crGo').textContent=on?(upd?'Update “'+short(d.name)+'”':d?'Save as new design':'Save & add to team'):(many?'Save '+checked().length+' pages':'Save image'); };
+    $('crGo').textContent=!on?(many?'Save '+checked().length+' pages':'Save image'):!c.length?'Pick a collection':upd?'Update “'+short(d.name)+'”':c.length>1?'Save to '+c.length+' collections':'Save to “'+short(c[0])+'”';
+    $('crGo').setAttribute('aria-disabled',String(needCol())); $('crGo').classList.toggle('is-need',needCol()); paintCols(); };
+  const nudge=()=>{ needHint=true; syncT(); const c=$('crCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200); try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){}
+    try{ $('crHint').scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(_){} };
+  /* choosing the team while signed out runs the sign-in; cancel = back to My phone */
+  const setWhere=async w=>{ const sw=$('crTeamOn'); if(w!=='team'){ sw.checked=false; syncT(); return false; }
+    sw.checked=false; if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))){ syncT(); return false; }
+    sw.checked=true; syncT(); loadCols(); return true; };
+  const loadCols=async()=>{ if(teamCols) return; try{ teamCols=((await (await L.cloud()).collections(B.id))||[]).map(c=>c.name); }catch(_){ teamCols=[]; } syncT(); };
+  $('crWhere').addEventListener('click',e=>{ const b=e.target.closest('[data-where]'); if(b&&b.dataset.where!==($('crTeamOn').checked?'team':'me')) setWhere(b.dataset.where); });
+  $('crCols').addEventListener('click',e=>{ const b=e.target.closest('[data-col]'); if(!b) return; const n=b.dataset.col; picked.has(n)?picked.delete(n):picked.add(n); syncT(); });
+  $('crCol').addEventListener('input',()=>{ needHint=false; syncT(); });
   $('crTeamOn').onchange=syncT; if($('crAsNew')) $('crAsNew').onchange=()=>{ altMode=$('crAsNew').checked?'new':'upd'; syncT(); }; body.querySelectorAll('#crPP input').forEach(i=>i.onchange=syncT);
   /* "Update the template" (an opened team template) saves over the template itself; everything else follows the New / Update choice */
-  const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').disabled?undefined:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:$('crCol').value.trim()?[$('crCol').value.trim()]:(st.design?st.design.collections:[])};
+  const opts=()=>{ const o={name:$('crTName').value,keep:$('crKeep').disabled?undefined:$('crKeep').checked,asNew:!!st.design&&wantsNew(),collections:pickedNow()};
     if(isTplOpen()&&!wantsNew()){ o.kind='template'; o.asNew=false; } return o; };
-  $('crGo').onclick=async()=>{ const list=checked(); if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked) await runTeam(opts()); };
-  if($('crAlt')) $('crAlt').onclick=()=>{ altMode=wantsNew()?'upd':'new'; $('crTeamOn').checked=true; syncT(); $('crGo').click(); };
-  $('crTeamOnly').onclick=()=>runTeam(opts());
-  $('crAsTpl').onclick=()=>runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTeamOn').checked?$('crTName').value:defaultName()}));
+  const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; };
+  $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
+  if($('crAlt')) $('crAlt').onclick=async()=>{ altMode=wantsNew()?'upd':'new'; if(isTplOpen()&&altMode==='upd'&&!picked.size) (st.design.collections||[]).forEach(n=>{ if(n) picked.add(n); }); if(!(await setWhere('team'))) return; syncT(); $('crGo').click(); };
+  $('crTeamOnly').onclick=()=>{ if(needCol()){ nudge(); return; } runTeam(opts()).then(seen); };
+  $('crAsTpl').onclick=async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudge(); return; } await runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTName').value})); seen(); };
+  if($('crTeamOn').checked) loadCols();
   syncT(); rulesRun(); }
 function line(t,ok,spin){ const el=$('crSt'); if(!el) return; el.classList.toggle('ok',!!ok); el.innerHTML=t?(spin?'<span class="spin" aria-hidden="true"></span>':'')+'<span>'+esc(t)+'</span>':''; }
 async function runTeam(o){ st.saving=true; line(o.kind==='template'?'Saving the team template…':'Saving to the team…',false,true);
-  try{ const r=await teamSave(o); line(r.kind==='template'?'Saved as a team template: “'+r.name+'”':'Saved to the team as “'+r.name+'”',true); L.celebrate&&L.celebrate(); }
+  try{ const r=await teamSave(o); try{ localStorage.setItem('studio:lastCols:'+B.id,JSON.stringify(o.collections||[])); }catch(_){}
+    line(r.kind==='template'?'Saved as a team template: “'+r.name+'”':'Saved to the team as “'+r.name+'”'+((o.collections||[]).length?' in '+o.collections.map(n=>'“'+n+'”').join(', '):''),true); L.celebrate&&L.celebrate(); }
   catch(err){ line(err.message||'Could not save to the team.'); } finally{ st.saving=false; } }
 async function saveImages(list){ if(st.saving) return; st.saving=true; const btn=$('crGo'); if(btn) btn.disabled=true; const keep=S.sel.slice(); BD.select([],{quiet:true});
   const files=[], stamp=new Date(); let low=false;

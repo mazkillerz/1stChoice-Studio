@@ -1,3 +1,13 @@
+# Owner checklist (round 3, Studio 2.3.0, 11 Nov 2026)
+
+1. ~~Approve the new table~~ done: `team_assets` is live (you approved it on 11 Nov; nothing existing changed).
+2. **Try the New Studio look.** What's New → the last card → switch it on (only your phone changes). Tell Claude: keep it, change it, or drop it.
+3. **Save a story both ways** on your phone: My phone, then Phone + Team with a collection. Check it lands where the button said.
+4. **Add a partner's logo**: a story → Layers → Asset → Add or browse → Add. Try Logo on a real logo and tell Claude where the edges are not clean.
+5. **Back gesture**: Layers → Asset → Back should return to Layers, then to the story.
+
+---
+
 # Owner checklist (mega round, Studio 2.0.0, 8 Nov 2026)
 
 ## On each phone (yours and your 2 partners')

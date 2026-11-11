@@ -1,5 +1,6 @@
 /* Highlight covers: a set of round covers, one per page. Phone, touch. */
 import { chromium } from 'playwright';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 import fs from 'fs'; import os from 'os';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const SAMPLES=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
@@ -40,8 +41,8 @@ const dls=[]; pg.on('download',d=>dls.push(d));
 const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
 await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
 ok('bar Save opens the Save sheet, nothing saved yet',!dls.length&&!(await pg.isVisible('#doneBox')));
-await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
-ok('team switch is on and the button says Save & add to team',await pg.isChecked('#teamOn')&&/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+await chooseTeam(pg,'Suite');
+ok('Phone + Team with a collection: the button says Save to “Suite”',await pg.isChecked('#teamOn')&&/Save to “Suite”/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
 await pg.fill('#teamName','Test covers'); await pg.tap('#save');
 for(let i=0;i<60&&dls.length<5;i++) await pg.waitForTimeout(300);
 const sizes=[]; for(const d of dls){ const f=os.tmpdir()+'/hl-'+d.suggestedFilename(); await d.saveAs(f); sizes.push(pngSize(f)); }

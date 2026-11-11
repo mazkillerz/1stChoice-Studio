@@ -9,6 +9,7 @@
    5. Highlight covers: adding a cover updates the count on Save.
    Run: server on :8080, then node tests/batch.mjs (BASE=... to change). Exit 1 on any FAIL. */
 import { chromium } from 'playwright';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const S=new URL('../brands/1stchoice/samples/',import.meta.url).pathname;
@@ -56,10 +57,10 @@ for(const [view,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wi
 
   /* 1. first view */
   await openSave();
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
-  ok('team on: the note names every slide',(await pg.textContent('#photosRow')).includes('All '+n+' slides'),await pg.textContent('#photosRow'));
-  ok('team on: the button still says Save & add to team',/Save & add to team/.test(await pg.textContent('#saveTxt')));
-  await tap('#teamOn'); await pg.waitForTimeout(200);
+  ok('My phone (the default): the note names every slide',(await pg.textContent('#photosRow')).includes('All '+n+' slides'),await pg.textContent('#photosRow'));
+  await chooseTeam(pg,'Suite');
+  ok('team on: the button names the collection',/Save to “Suite”/.test(await pg.textContent('#saveTxt')));
+  await chooseMe(pg); await pg.waitForTimeout(200);
   ok('team off: the button says "Save all '+n+' slides"',(await pg.textContent('#saveTxt')).trim()==='Save all '+n+' slides',await pg.textContent('#saveTxt'));
   ok('"Save this slide only" is there',await pg.isVisible('#saveThis'));
   const f1=await filled(); ok('first view: at most two filled buttons',f1.length<=2,f1.join(' | '));
@@ -98,8 +99,8 @@ for(const [view,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wi
 
   /* 3. cancel: a fresh carousel, team on, slow PNGs, stop after the first slide */
   await setup(pg); await openSave();
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
-  ok('cancel run starts with the team switch on',await pg.isChecked('#teamOn'));
+  await chooseTeam(pg,'Suite');
+  ok('cancel run: Phone + Team chosen',await pg.isChecked('#teamOn'));
   await pg.evaluate(slowPng,700);
   const before={sh:mob?await pg.evaluate(()=>window.__shares.length):0,dl:dls.length,url:pg.url()};
   await tap('#save');
@@ -122,8 +123,7 @@ for(const [view,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wi
     await p2.evaluate(()=>document.getElementById('draftFresh')?.click()); await p2.evaluate(watchProgress);
     const hn=await p2.evaluate(()=>Studio.debug.S.P.length);
     if(mob){ await p2.tap('#barSave'); await p2.waitForSelector('#sh-save.open',{timeout:5000}); await p2.waitForTimeout(300); }
-    await p2.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
-    if(await p2.isChecked('#teamOn')){ mob?await p2.tap('#teamOn'):await p2.click('#teamOn'); await p2.waitForTimeout(200); }
+    await p2.waitForTimeout(300);
     ok('highlight: "Save all '+hn+' covers"',(await p2.textContent('#saveTxt')).trim()==='Save all '+hn+' covers',await p2.textContent('#saveTxt'));
     await p2.evaluate(()=>document.querySelector('#pager [data-pg="add"]').click()); await p2.waitForTimeout(400);
     ok('adding a cover updates the count',(await p2.textContent('#saveTxt')).trim()==='Save all '+(hn+1)+' covers',await p2.textContent('#saveTxt'));

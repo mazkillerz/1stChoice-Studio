@@ -46,20 +46,23 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   const tool=async(url,photo)=>{ await pg.goto(BASE+url); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{polling:100});
     if(photo){ await pg.setInputFiles('#pick',PHOTO); await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img&&!p.sample; },null,{polling:100}); } else await pg.waitForTimeout(700); };
   const sheet=async()=>{ if(touch){ await tap('#barSave'); await pg.waitForTimeout(600); } await pg.waitForFunction(()=>document.getElementById('teamOn'),null,{polling:100}); await pg.waitForTimeout(1500); };
-  const lab=()=>pg.evaluate(()=>({btn:document.getElementById('saveTxt').textContent.trim(),alt:(a=>!a||a.hidden?'':a.textContent.trim())(document.getElementById('saveAlt')),team:document.getElementById('teamOn').checked,lbl:document.getElementById('teamLbl').textContent.trim()}));
+  /* 2.3.0: the sheet starts on My phone; tm() chooses Phone + Team and types a new collection (a team save needs one) */
+  const tm=async(n='Versions')=>{ await tap('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamCols [data-newcol]',{timeout:15000}); await pg.waitForTimeout(300); if(await pg.isHidden('#teamNewRow')) await tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol',n); };
+  const lab=()=>pg.evaluate(()=>({btn:document.getElementById('saveTxt').textContent.trim(),alt:(a=>!a||a.hidden?'':a.textContent.trim())(document.getElementById('saveAlt')),team:document.getElementById('teamOn').checked,where:document.querySelector('#saveWhere [aria-checked="true"]').dataset.where}));
   const moreOf=id=>pg.waitForFunction(id=>[...document.querySelectorAll('.sv-more[data-dmore="'+id+'"]')].some(x=>x.offsetParent),id,{timeout:15000,polling:100});
   const seedClear=()=>pg.evaluate(()=>{ localStorage.clear(); });
 
   /* 1. new design, then Update / Save as new */
   await pg.goto(BASE+'index.html'); await seedClear();
   await tool('tools/restock.html',true); await sheet();
-  let L=await lab(); ok(N+'new design: the button reads "Save & add to team", no Save as new yet',L.btn==='Save & add to team'&&L.alt==='',L);
+  let L=await lab(); ok(N+'new design: starts on My phone, the button reads "Save to my phone", no Save as new yet',/^Save to (my phone|this device)$/.test(L.btn)&&L.alt===''&&!L.team,L);
+  await tm(); L=await lab(); ok(N+'Phone + Team with a collection: the button names it',L.btn==='Save to “Versions”',L);
   await tap('#save'); await waitCalls(pg,1); await pg.waitForTimeout(800);
   let db=await dbOf(pg), ids=Object.keys(db.designs); const id=ids[0], c1=await calls(pg);
   ok(N+'the first save makes one design with a real cover',ids.length===1&&c1.length===1&&c1[0].id===null&&(await flatOf(pg,id))===false,{n:ids.length,calls:c1});
   const upd0=db.designs[id].updated_at;
   await tool('tools/restock.html?design='+id); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
-  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, team switch on',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&/^Update in the team/.test(L.lbl),L);
+  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, Phone + Team chosen',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&L.where==='team',L);
   const filled=await pg.evaluate(()=>[...document.querySelectorAll('#sh-save .btn:not(.ghost)')].filter(x=>x.offsetParent&&!x.hidden).length); ok(N+'at most two filled buttons in the Save sheet',filled<=2,filled);
   await tap('#save'); await waitCalls(pg,2); await pg.waitForTimeout(800);
   db=await dbOf(pg); let cc=await calls(pg);
@@ -73,7 +76,8 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   /* 2. a team template: starts as a new design; Update the template is the other choice */
   await pg.evaluate(id=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); d.designs.tplX={...d.designs[id],id:'tplX',kind:'template',name:'Team template',recipe:{...d.designs[id].recipe,photoPaths:[]}}; d.files[d.designs[id].thumb_path]=d.files[d.designs[id].thumb_path]; d.designs.tplX.thumb_path=d.designs[id].thumb_path; localStorage.setItem('fakecloud',JSON.stringify(d)); },id);
   await tool('tools/restock.html?design=tplX',true); await sheet();
-  L=await lab(); ok(N+'template opened: main button "Save as new design", other choice "Update the template"',L.btn==='Save as new design'&&L.alt==='Update the template'&&L.team,L);
+  L=await lab(); ok(N+'template opened: starts on My phone, other choice "Update the template"',/^Save to (my phone|this device)$/.test(L.btn)&&L.alt==='Update the template'&&!L.team,L);
+  await tm('Versions'); L=await lab(); ok(N+'template + Phone + Team: the button names the collection (a NEW design)',L.btn==='Save to “Versions”',L);
   const n0=Object.keys((await dbOf(pg)).designs).length, k0=(await calls(pg)).length;
   await tap('#save'); await waitCalls(pg,k0+1); await pg.waitForTimeout(800);
   db=await dbOf(pg); cc=await calls(pg);
@@ -85,7 +89,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
 
   /* 3. slow upload, two taps: one design */
   await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); localStorage.setItem('__calls','[]'); });
-  await tool('tools/restock.html',true); await sheet(); await pg.evaluate(()=>{ window.__slow=1200; });
+  await tool('tools/restock.html',true); await sheet(); await tm(); await pg.evaluate(()=>{ window.__slow=1200; });
   await pg.evaluate(()=>{ const o=document.getElementById('teamOnly'); o.click(); o.click(); });
   await waitCalls(pg,2); await pg.waitForTimeout(1200);
   db=await dbOf(pg); cc=await calls(pg);
@@ -94,7 +98,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
 
   /* 4. the cover waits for a photo that is still decoding */
   await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); localStorage.setItem('__calls','[]'); });
-  await tool('tools/restock.html',true); await sheet();
+  await tool('tools/restock.html',true); await sheet(); await tm();
   await pg.evaluate(()=>{ const im=new Image(); window.__im=im; window.__dec=false; window.__early=0; im.src='/brands/1stchoice/samples/slowpic.jpg?'+Math.random(); im.decode=()=>new Promise(r=>{ const t=setInterval(()=>{ if(im.complete&&im.naturalWidth){ clearInterval(t); setTimeout(()=>{ window.__dec=true; r(); },200); } },50); });
     const dI=CanvasRenderingContext2D.prototype.drawImage; CanvasRenderingContext2D.prototype.drawImage=function(...a){ if(a[0]===im&&this.canvas.width===360&&!window.__dec) window.__early++; return dI.apply(this,a); };
     Studio.debug.S.photos[0].img=im; });
@@ -151,16 +155,17 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); localStorage.setItem('__calls','[]'); });
     const cready=async()=>{ await pg.waitForFunction(()=>window.CRUI&&BD.util.frames().length>0,null,{timeout:20000}); await pg.waitForTimeout(500); };
     const csave=async()=>{ await tap('#crBar [data-cr="save"]'); await pg.waitForSelector('#crGo'); await pg.waitForTimeout(400); };
-    const clab=()=>pg.evaluate(()=>({go:document.getElementById('crGo').textContent.trim(),alt:(a=>a?a.textContent.trim():'')(document.getElementById('crAlt')),on:document.getElementById('crTeamOn').checked,lbl:document.getElementById('crTeamLbl').textContent.trim()}));
+    const clab=()=>pg.evaluate(()=>({go:document.getElementById('crGo').textContent.trim(),alt:(a=>a?a.textContent.trim():'')(document.getElementById('crAlt')),on:document.getElementById('crTeamOn').checked}));
     await pg.goto(BASE+'tools/create.html?tpl=ice-cold'); await cready();
     await pg.evaluate(()=>CR.addElement('slot')); await pg.waitForTimeout(300);
     const [fc]=await Promise.all([pg.waitForEvent('filechooser'),tap('#crCtx [data-x="slot"]')]); await fc.setFiles(PHOTO); await pg.waitForTimeout(1200);
-    await csave(); let C=await clab(); ok(N+'Create, new design: "Also save to the team" / "Save image"',C.lbl==='Also save to the team'&&C.go==='Save image'&&!C.alt,C);
-    await tap('#crTeamOn'); await pg.waitForTimeout(200); ok(N+'Create, team on for a new design: "Save & add to team"',(await clab()).go==='Save & add to team');
+    await csave(); let C=await clab(); ok(N+'Create, new design: starts on My phone, "Save image"',C.go==='Save image'&&!C.alt&&!C.on,C);
+    await tap('#crWhere [data-where="team"]'); await pg.waitForTimeout(300); ok(N+'Create, Phone + Team for a new design: "Pick a collection" until one is named',(await clab()).go==='Pick a collection');
+    await pg.fill('#crCol','Versions'); ok(N+'Create: a collection is named: the button says where it goes',(await clab()).go==='Save to “Versions”');
     await tap('#crTeamOnly'); await waitCalls(pg,1); await pg.waitForTimeout(800);
     const cd=Object.keys((await dbOf(pg)).designs)[0]; db=await dbOf(pg); ok(N+'Create saved a design (with the photo)',db.designs[cd].kind==='design'&&(await flatOf(pg,cd))===false,db.designs[cd]&&db.designs[cd].kind);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); C=await clab();
-    ok(N+'Create, opened design: Update “name”, Save as new, switch on, label says Update',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on&&/^Update in the team/.test(C.lbl),C);
+    ok(N+'Create, opened design: Update “name”, Save as new, Phone + Team chosen',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on,C);
     await tap('#crTeamOnly'); await waitCalls(pg,2); await pg.waitForTimeout(800); cc=await calls(pg);
     ok(N+'Create: Update keeps the same design',cc[1].id===cd&&Object.keys((await dbOf(pg)).designs).length===1,cc[1]);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); await tap('#crAlt'); await waitCalls(pg,3); await pg.waitForTimeout(1200); cc=await calls(pg);
@@ -174,7 +179,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); const k4=(await calls(pg)).length; await tap('#crAsTpl'); await waitCalls(pg,k4+1); await pg.waitForTimeout(800);
     const tid=Object.values((await dbOf(pg)).designs).find(d=>d.kind==='template'); ok(N+'Create: Save as a team template makes a template',!!tid);
     if(tid){ await pg.goto(BASE+'tools/create.html?design='+tid.id); await cready(); await csave(); C=await clab();
-      ok(N+'Create, opened template: "Save as new design" (default) and "Update the template"',C.go==='Save as new design'&&C.alt==='Update the template'&&/new design/.test(C.lbl),C);
+      ok(N+'Create, opened template: starts on My phone ("Save image") with "Update the template" as the other choice',C.go==='Save image'&&C.alt==='Update the template'&&!C.on,C);
       const k5=(await calls(pg)).length; await tap('#crAlt'); await waitCalls(pg,k5+1); await pg.waitForTimeout(1200); cc=await calls(pg);
       ok(N+'Create: Update the template saves over the template',cc[k5].id===tid.id&&cc[k5].kind==='template',cc[k5]); }
   }

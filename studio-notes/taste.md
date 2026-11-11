@@ -58,7 +58,11 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 | 11 | Shared-CSS slip makes a control look wrong **(settled 1.10.0)** | 2: 0.6.0 (tick), 0.7.1 (chip), both specificity | `.chip.col{background}` beat `.chip[aria-pressed]`. | Compare computed styles, not only screenshots; a variant class that sets colours needs its own selected-state rule. (Exists: contrast.mjs after a CSS change) |
 | 12 | Browser-native controls and stuck focus rings **(settled 1.15.0)** | 1: 1.5.0 brief (the native Sort dropdown; a blue ring stuck on it) | The Sort `<select>` | Use Studio sheets, not `<select>`, on hub pages; `:focus:not(:focus-visible){outline:none}` on new buttons; home7 (Saved part) checks the sort button has no outline after a tap. (Exists: home7-saved) |
 
+| 13 | Back / Done not going one step back | 1: round 3 brief (11 Nov 2026): Layers → Asset, Back jumped to Home, Done closed everything | Tool sheets kept no history | Every overlay registers with `Studio.nav`; `nav` suite walks sheets, dialogs, menus and views with the phone's Back. (Exists: nav) |
+| 14 | Saves reaching the team by themselves, or with no collection | 2: 2.2.1 (collection lost), round 3 brief ("Save should no longer save straight to the team", collection required) | Team switch on by default; collection optional | Save starts on My phone; Team needs a collection; `saveflow` asserts a My phone save writes no design and a Team save lands in its collection. (Exists: saveflow, smoke) |
+
 ## Things he rejected (never do again)
+- Anything saved to the team without him choosing it, or a team save with no collection. [S 11 Nov]
 - Losing or overwriting work: Start fresh deleting a draft; team save on by default for an opened design. [S/C 22 Oct, 25 Oct]
 - Polaroid frames; the "New" label on hub tools. [S 22 Oct PLAN]
 - The engine choosing a 1st Choice word, colour or font by itself: everything brand-specific comes from the brand kit. [S CLAUDE.md; checked by brandkit.mjs since 1.20.0]
@@ -86,7 +90,11 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 
 - His own Studio logo: the black dragon (25 Oct 2026, 1.2.0). Studio's mark, not the brand's: it never goes on designs. [C 25 Oct]
 
+- (11 Nov 2026) He asks for bold, full creative freedom rounds ("surprise me"), upgrades over testing, and a ranked plan first; big UI still behind a toggle for his approval. [S]
+
 ## Open questions to ask him
+- New Studio look (preview `next`, 2.3.0): keep the bar Home · Saved · + · Plan · Templates? Two columns in Saved by default?
+- Save: should a phone remember the last collection (still one tap to confirm), or always start empty as now?
 - Backgrounds (1.21.0): are the finishes strong enough on white on a real phone? Carousel has them since 1.22.0; Highlight covers left out on purpose (no room on a small cover). Which other tools want them (Cinematic, New place, Offer, Collage gaps)?
 - Saved cards align captions with each name's direction, so a mixed grid has captions on both sides. One side for all?
 - The "Your photo is in" note fades after about 3 s. Long enough to read and notice the Save pulse?

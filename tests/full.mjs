@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 import fs from 'fs'; import os from 'os';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const TOOLS=['new-place','photo-story','cinematic','collage','split','restock','offer','carousel'];
@@ -59,8 +60,9 @@ for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{wid
       await pg.tap('#barSave'); await pg.waitForTimeout(600);
       ok('bar Save opens the Save sheet without saving',await pg.evaluate(()=>document.getElementById('sh-save').classList.contains('open'))&&!(await pg.isVisible('#doneBox'))&&!dls.length);
     }
-    await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{});
-    ok('team switch is on (signed in) and the button offers Save & add to team',await pg.isChecked('#teamOn')&&/Save & add to team/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
+    ok('the sheet starts on My phone (signed in too)',!(await pg.isChecked('#teamOn'))&&/^Save (to my phone|to this device|all|story)/.test((await pg.textContent('#saveTxt')).trim()),await pg.textContent('#saveTxt'));
+    await chooseTeam(pg,'Suite');
+    ok('Phone + Team with a collection: the button names it',await pg.isChecked('#teamOn')&&/Save to “Suite”/.test(await pg.textContent('#saveTxt')),await pg.textContent('#saveTxt'));
     const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
     await pg.fill('#teamName','Test '+t); await tap('#save');   // one tap: the 2× PNG(s), then the team
     const zipped=pages>1&&!mob;   // 1.9.0: a computer gets every page in one ZIP

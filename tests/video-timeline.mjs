@@ -270,7 +270,7 @@ for(const scheme of ['light','dark']){
   await pg.evaluate(()=>VD.select(null)); await pg.fill('#vdName','Timeline test'); await pg.tap('#vdSave'); await pg.waitForSelector('dialog[open] #vsGo');
   const note=await pg.evaluate(()=>document.querySelector('dialog[open]').innerText);
   ok(N+'Save sheet notes that your clips and sounds stay on this phone',/Your clips, photos and sounds stay on this phone; the team gets your edits/.test(note),note.replace(/\s+/g,' ').slice(0,200));
-  await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:15000});
+  await pg.tap('#vsTeam'); await pg.waitForSelector('#vsCol'); await pg.fill('#vsCol','Videos'); await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:15000});
   const saved=await pg.evaluate(()=>{ const d=JSON.parse(localStorage.getItem('fakecloud')||'{"designs":{}}').designs; const id=Object.keys(d)[0]; return {id,tool:d[id].tool,name:d[id].name,r:d[id].recipe,thumb:!!JSON.parse(localStorage.getItem('fakecloud')).files[d[id].thumb_path]}; });
   ok(N+'team save stores a v2 video recipe with clips, text, audio and media names',saved.tool==='video'&&saved.r.v===2&&saved.r.kind==='video'&&saved.r.clips.length===3&&saved.r.texts.length===1&&saved.r.audio.length===2&&Object.keys(saved.r.media).length===3&&saved.thumb,{v:saved.r.v,c:saved.r.clips.length,t:saved.r.texts.length,a:saved.r.audio.length});
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);

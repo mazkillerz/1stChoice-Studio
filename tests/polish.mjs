@@ -78,7 +78,7 @@ const HD=/brands\/1stchoice\/assets\/[^/]+\.png$/;
   ok('#resetLayout is after #layerList, not in .add-row',!lay.inAddRow&&lay.after,lay);
   await pg.tap('#addText'); await pg.waitForTimeout(500);
   await pg.tap('#inspClose').catch(()=>{}); await pg.waitForTimeout(300);
-  await pg.tap('#bar [data-open="layers"]').catch(()=>{}); await pg.waitForTimeout(400);
+  if(!(await pg.evaluate(()=>document.getElementById('sh-layers').classList.contains('open')))) await pg.tap('#bar [data-open="layers"]').catch(()=>{}); await pg.waitForTimeout(400);   /* 2.3.0: Done on the layer bar already returns to Layers */
   /* move the headline (as a drag would), let the edit be recorded, then reset */
   const lid=await pg.evaluate(()=>{ const d=Studio.debug, r=d.reg().find(x=>x.id&&!x.empty&&!x.hidden&&x.kind!=='logo'); d.S.layers[r.id]={...(d.S.layers[r.id]||{}),dx:40,dy:30,k:1}; d.render(); return r.id; });
   await pg.waitForTimeout(900);

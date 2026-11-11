@@ -33,7 +33,7 @@ const isAccent=(pg,sel)=>pg.evaluate(s=>{ const e=document.querySelector(s); if(
   await pg.evaluate(()=>{ navigator.canShare=()=>false; });
   await pg.setInputFiles('#pick',SM+'hands.jpg'); await pg.waitForFunction(()=>Studio.debug.S.photos[0]&&Studio.debug.S.photos[0].img&&!Studio.debug.S.photos[0].sample,null,{timeout:10000}).catch(()=>{});
   await pg.waitForTimeout(800);
-  const order=await pg.evaluate(()=>{ const f=document.getElementById('saveFrame'); return f&&f.previousElementSibling?f.previousElementSibling.id:null; });
+  const order=await pg.evaluate(()=>{ const f=document.getElementById('saveFrame'); let e=f&&f.previousElementSibling; while(e&&e.id!=='teamOnly'&&(e.hidden||e.id==='alsoTeam'||e.id==='seeSaved')) e=e.previousElementSibling; return e?e.id:null; });   /* 2.3.0: the after-save links sit between them and are hidden until used */
   ok('New place: "Save the frame only" sits right under "Only save to the team"',order==='teamOnly',order);
   const grab=async(click)=>{ const n=dls.length; await pg.evaluate(c=>document.getElementById(c).click(),click);
     for(let i=0;i<80&&dls.length===n;i++) await pg.waitForTimeout(300);

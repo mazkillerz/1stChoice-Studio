@@ -1,6 +1,7 @@
 /* Extra checks: HEIC photos, swapping photos by dragging, Saved collection chips + tool menu.
    Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const S=new URL('../brands/1stchoice/samples/',import.meta.url).pathname, HEIC=new URL('fixtures/sample.heic',import.meta.url).pathname;
@@ -29,12 +30,11 @@ const k1=await keys(); ok('hold + drag swaps photos',k1[0]===k0[1]&&k1[1]===k0[0
 // Saved: collections as chips (new collection typed in the Save sheet), the page filters by them
 for(const [t,n,col] of [['new-place','Shop A',''],['restock','Restock Oct','Ramadan']]){ await pg.goto(BASE+'tools/'+t+'.html'); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(500);
   await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});   // opens the Save sheet (team switch is on when signed in)
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}); await pg.fill('#teamName',n);
-  if(col){ await pg.waitForSelector('#teamCols [data-newcol]'); await pg.tap('#teamCols [data-newcol]'); await pg.waitForTimeout(300); await pg.fill('#teamNewCol',col); await pg.tap('#teamAddCol'); }
+  await chooseTeam(pg,col||'General'); await pg.fill('#teamName',n);
   await pg.tap('#save'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:30000}); }
 await pg.goto(BASE+'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(500);
 const chips=await pg.$$eval('#colChips .chip',cs=>cs.map(c=>c.textContent.replace(/\s+\d+$/,'').trim()));
-ok('chips are All + collections',JSON.stringify(chips)==='["All","Ramadan"]',chips.join(', '));
+ok('chips are All + collections',JSON.stringify(chips)==='["All","General","Ramadan"]',chips.join(', '));
 const all2=await pg.$$eval('#savedGrid .sv-txt b',bs=>bs.map(b=>b.textContent).sort());
 ok('both designs are listed before filtering',JSON.stringify(all2)==='["Restock Oct","Shop A"]',all2.join(', '));
 await pg.tap('#colChips .chip[data-f="c:Ramadan"]'); await pg.waitForTimeout(300);
