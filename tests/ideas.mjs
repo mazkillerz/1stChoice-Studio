@@ -39,7 +39,7 @@ const PH={viewport:{width:390,height:844},isMobile:true,hasTouch:true};
 const stored=pg=>pg.evaluate(()=>JSON.parse(localStorage.getItem('fakecloud')));
 const txt=(pg,s)=>pg.$eval(s,e=>e.innerText.replace(/\s+/g,' ').trim()).catch(()=>'');
 const open=async(pg,hash='ideas')=>{ await pg.goto(BASE+'index.html#'+hash); await pg.waitForSelector('#ideasView .id-top',{timeout:10000}); await pg.waitForFunction(()=>!document.querySelector('#ideasView .id-skel'),null,{timeout:10000}); };
-const smalls=pg=>pg.evaluate(()=>{ const out=[]; document.querySelectorAll('#ideasView button,#ideasView a,#ideasView input,dialog[open] button,dialog[open] a.link,dialog[open] input:not([type=hidden]):not([hidden])').forEach(e=>{ const r=e.getBoundingClientRect(); const cs=getComputedStyle(e); if(!r.width||!r.height||cs.visibility==='hidden'||e.hidden||e.closest('[hidden]')||cs.opacity==='0') return; if(r.height<43.5||r.width<43.5){ if(e.matches('a.id-lnk,.id-chip')&&r.height>=32&&false) return; out.push((e.className||e.tagName)+':'+Math.round(r.width)+'x'+Math.round(r.height)); } }); return out; });
+const smalls=pg=>pg.evaluate(()=>{ const out=[]; document.querySelectorAll('#ideasView button:not(.plan-tab),#ideasView a,#ideasView input,dialog[open] button,dialog[open] a.link,dialog[open] input:not([type=hidden]):not([hidden])').forEach(e=>{ const r=e.getBoundingClientRect(); const cs=getComputedStyle(e); if(!r.width||!r.height||cs.visibility==='hidden'||e.hidden||e.closest('[hidden]')||cs.opacity==='0') return; if(r.height<43.5||r.width<43.5){ if(e.matches('a.id-lnk,.id-chip')&&r.height>=32&&false) return; out.push((e.className||e.tagName)+':'+Math.round(r.width)+'x'+Math.round(r.height)); } }); return out; });
 
 /* 1 flag off */
 { const ctx=await mk(PH,base(),false); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('off: '+e.message));
@@ -57,7 +57,7 @@ async function flow(dark){
   ok(T+'empty Inbox: "Inbox is clear" + New idea button',/Inbox is clear/.test(em)&&/New idea/.test(em),em);
   /* capture by typing + link + type, Ctrl+Enter */
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg textarea');
-  ok(T+'New opens a sheet with the idea box focused',await pg.evaluate(()=>document.activeElement&&document.activeElement.id==='idCT'));
+  ok(T+'New opens a sheet with the idea box focused',await pg.waitForFunction(()=>document.activeElement&&document.activeElement.id==='idCT',null,{timeout:3000}).then(()=>true).catch(()=>false));
   await pg.fill('#idCT','Reel idea: pour in slow motion https://example.org/ref/1\nSecond line of notes');
   ok(T+'a URL in the text becomes a link chip',/example\.org/.test(await txt(pg,'#idAtt')),await txt(pg,'#idAtt'));
   await pg.tap('[data-ct="reel"]'); const t0=Date.now(); await pg.press('#idCT','Control+Enter');

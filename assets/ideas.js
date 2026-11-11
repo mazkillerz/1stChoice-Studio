@@ -160,7 +160,7 @@ function make(o){
         :`<div class="id-foot">${nxt?`<button type="button" class="id-next" data-next="${esc(it.id)}">Move to ${esc(nxt[1])}<span aria-hidden="true">›</span></button>`:'<span></span>'}</div>`}
       ${pending(it)?'':`<button type="button" class="id-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(t)}">${ic('more')}</button>`}</article>`;
   }
-  const newBtn=`<button type="button" class="btn slim" data-new>${ic('plus')}<span>New idea</span></button>`;
+  const newBtn=`<button type="button" class="btn slim" data-idea-new>${ic('plus')}<span>New idea</span></button>`;
   function inboxHtml(){
     const list=inbox().filter(matches);
     if(!list.length) return q?`<div class="id-empty"><p>No inbox ideas match “<bdi>${esc(q)}</bdi>”.</p></div>`
@@ -178,7 +178,7 @@ function make(o){
   }
   function drawTop(){
     const n=inbox().length, el=root.querySelector('.id-top'); if(!el) return;
-    el.innerHTML=`<div class="id-head"><button type="button" class="sp-back" data-back aria-label="Back to home">${ic('back')}</button><div class="sp-title"><h1 id="idH" tabindex="-1">Ideas</h1></div><button type="button" class="mini solid id-new" data-new>${ic('plus')}<span>New</span></button></div>${o.tabs||''}
+    el.innerHTML=`<div class="id-head"><button type="button" class="sp-back" data-back aria-label="Back to home">${ic('back')}</button><div class="sp-title"><h1 id="idH" tabindex="-1">Ideas</h1></div><button type="button" class="mini solid id-new" data-idea-new>${ic('plus')}<span>New</span></button></div>${o.tabs||''}
       <div class="id-bar"><div class="id-seg" role="group" aria-label="View"><button type="button" class="chip" data-tab="inbox" aria-pressed="${tab==='inbox'}">Inbox${n?`<i><bdi>${n}</bdi></i>`:''}</button><button type="button" class="chip" data-tab="board" aria-pressed="${tab==='board'}">Board</button></div>
         <button type="button" class="id-sbtn" data-search aria-label="Search ideas" aria-expanded="${searchOpen}">${searchOpen?IC.x:ic('search')}</button></div>
       ${searchOpen?`<label class="id-search"><span class="sr-only">Search ideas</span>${ic('search')}<input type="search" id="idQ" dir="auto" autocomplete="off" enterkeyhint="search" placeholder="Search ideas, notes and links" value="${esc(q)}"></label>`:''}`;
@@ -296,7 +296,7 @@ function make(o){
     const S={img:null,aud:null,link:'',linkManual:false,type:'',linkField:false}; let rec=null;
     const d=o.dialog(`<form class="dlg-body id-cap" action="#" novalidate>
       <div class="id-sh-head"><h3 id="idCH">New idea</h3><button type="button" class="cs-x" data-x aria-label="Close">${ic('close')}</button></div>
-      <textarea class="id-in id-ta id-big" id="idCT" dir="auto" rows="4" enterkeyhint="done" aria-label="What’s the idea?" placeholder="What’s the idea?"></textarea>
+      <textarea class="id-in id-ta id-big" id="idCT" autofocus dir="auto" rows="4" enterkeyhint="done" aria-label="What’s the idea?" placeholder="What’s the idea?"></textarea>
       <div id="idAtt" class="id-atts"></div><div id="idRecHost" hidden></div>
       <div class="id-tools" role="group" aria-label="Add to this idea">
         <button type="button" class="id-tool" data-tool="voice" aria-label="Record a voice note"><span>${IC.mic}</span><small>Voice</small></button>
@@ -371,7 +371,7 @@ function make(o){
     if(t.closest('[data-back]')) return o.onBack();
     if(t.closest('[data-reload]')) return load();
     if(t.closest('[data-signin]')){ o.signIn().then(ok=>{ if(ok) load(); }); return; }
-    if(t.closest('[data-new]')){ hap('tick'); capture({mode:'text'}); return; }
+    if(t.closest('[data-idea-new]')){ hap('tick'); capture({mode:'text'}); return; }
     if((b=t.closest('[data-tab]'))){ tab=b.dataset.tab; wr('studio:ideasTab',tab); hap('tick'); drawTop(); drawBody(); return; }
     if(t.closest('[data-search]')){ searchOpen=!searchOpen; if(!searchOpen) q=''; drawTop(); drawBody(); if(searchOpen){ const i=root.querySelector('#idQ'); if(i) i.focus(); } return; }
     if((b=t.closest('[data-type]'))){ typeF=b.dataset.type; hap('tick'); drawBody(); return; }
