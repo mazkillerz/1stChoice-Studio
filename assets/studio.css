@@ -1481,8 +1481,8 @@ body.on-calendar .fab{display:none}
 .sw-opt:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .lbl .lbl-req{font-size:var(--fs-xs);font-weight:600;color:var(--fg);background:var(--chip);border:1px solid var(--line);border-radius:var(--r-pill);padding:1px 8px;margin-inline-start:6px}
 .tb-hint.need{display:block;color:var(--fg);font-weight:500}
-.btn.is-need,.btn.is-need:hover{background:var(--chip);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
-.btn.is-need svg{opacity:.7}
+:root .save-sheet .btn.is-need,:root .save-sheet .btn.is-need:hover,:root .save-dock .btn.is-need{background:var(--chip);background-image:none;color:var(--fg);box-shadow:inset 0 0 0 1px var(--line);filter:none}
+:root .btn.is-need svg{opacity:.7}
 .tb-cols.nudge{animation:col-nudge .5s var(--ease) 2}
 @keyframes col-nudge{0%,100%{transform:none}30%{transform:translateX(-5px)}60%{transform:translateX(5px)}}
 .team-box{animation-duration:.18s}
