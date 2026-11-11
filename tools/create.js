@@ -543,6 +543,8 @@ let teamQ=Promise.resolve(), altMode=null;
 const whoNow=()=>{ try{ return window.StudioWho&&StudioWho.author?StudioWho.author():undefined; }catch(_){ return undefined; } };
 const isTplOpen=()=>!!st.design&&st.design.kind==='template', wantsNew=()=>!st.design||(altMode?altMode==='new':isTplOpen());
 function teamSave(o){ const run=teamQ.then(()=>teamSave1(o)); teamQ=run.catch(()=>{}); return run; }
+/* 2.4.0: the board's shape from its first frame (post 1080×1350, story, square), stored with the design so lists tell posts from stories */
+function docFormat(doc){ try{ const f=(doc.nodes||[]).map(n=>n&&n.a).find(a=>a&&a.kind==='frame'); return f?Studio.fmtFromSize(+f.fw||+f.clipWidth,+f.fh||+f.clipHeight):null; }catch(_){ return null; } }
 async function teamSave1(o){ o=o||{};
   /* r3-save: the team needs a collection (an update of a design that has none is refused too; the leave prompt may keep a legacy design as it is) */
   if(!o.keepCols&&!(o.collections||(st.design&&!o.asNew?st.design.collections:[])||[]).some(n=>String(n).trim())) throw new Error('Pick a collection first.');
@@ -558,7 +560,7 @@ async function teamSave1(o){ o=o||{};
   const imgs=tpl?[]:imgs0, name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName());
   const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&!asNew) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));
   const cols=o.collections||(st.design&&!asNew?st.design.collections:[])||[];
-  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow()});
+  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow(),format:docFormat(doc)});
   if(tpl&&o.kind==='template'&&!st.design) return {id,name,kind:kindOut};   // a template saved from a draft: keep working on the draft
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }

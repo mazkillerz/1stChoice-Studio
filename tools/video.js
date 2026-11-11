@@ -430,7 +430,7 @@ async function teamSave(o){
   const C=await L.cloud();
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
   const name=nameNow(), recipe=clone(st.R); recipe.v=2; recipe.kind='video'; recipe.brand=st.B.id;
-  const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob(),collections:cols});
+  const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob(),collections:cols,format:'story'});
   st.design={id,name,collections:cols}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus(); if(st.draftId) writeDraft(true);
   return id;
 }
