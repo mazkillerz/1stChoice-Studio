@@ -110,7 +110,7 @@ const selLabels=pg=>pg.evaluate(()=>BD.S.sel.map(n=>n.getAttr('label')||BD.util.
   /* team save, reopen */
   await pg.tap('#crBar [data-cr="save"]'); await pg.waitForTimeout(400);
   ok('Save sheet with a page picker',await pg.evaluate(()=>document.getElementById('crSheet').dataset.name==='save'&&document.querySelectorAll('#crPP input').length===4));
-  await pg.tap('#crTeamOn'); await pg.fill('#crTName','Test carousel'); await pg.tap('#crTeamOnly');
+  await pg.tap('#crWhere [data-where="team"]'); await pg.fill('#crTName','Test carousel'); await pg.fill('#crCol','Tests'); await pg.tap('#crTeamOnly');
   await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('crSt').textContent),null,{timeout:15000});
   const id=await pg.evaluate(()=>new URLSearchParams(location.search).get('design'));
   ok('saved to the team (URL is the design, draft gone)',!!id&&await pg.evaluate(()=>!Object.keys(localStorage).some(k=>k.startsWith('studio:draft:1stchoice:create:'))));
@@ -140,7 +140,8 @@ const selLabels=pg=>pg.evaluate(()=>BD.S.sel.map(n=>n.getAttr('label')||BD.util.
   await pg.click('#crBar [data-cr="save"]'); await pg.waitForTimeout(300);
   const [dl]=await Promise.all([pg.waitForEvent('download'),pg.click('#crGo')]); const f=OUT+'/'+dl.suggestedFilename(); await dl.saveAs(f);
   ok('Save image = 2160×3840 lossless PNG',JSON.stringify(pngSize(f))==='[2160,3840]'&&/\.png$/.test(f),pngSize(f));
-  await pg.click('#crAsTpl'); await pg.waitForFunction(()=>/Saved as a team template/.test(document.getElementById('crSt').textContent),null,{timeout:15000});
+  await pg.click('#crAsTpl'); await pg.waitForTimeout(300); ok('a team template without a collection is not saved: it asks for one',!(await pg.evaluate(()=>/Saved as a team template/.test(document.getElementById('crSt').textContent)))&&/Pick a collection first/.test(await pg.textContent('#crHint')));
+  await pg.fill('#crCol','Templates'); await pg.click('#crAsTpl'); await pg.waitForFunction(()=>/Saved as a team template/.test(document.getElementById('crSt').textContent),null,{timeout:15000});
   await pg.click('#crSheetX'); await pg.click('#crBar [data-cr="templates"]'); await pg.waitForTimeout(900);
   ok('the team template is listed in Templates',await pg.evaluate(()=>document.querySelectorAll('#crTeamT [data-team]').length===1));
   await ctx.close(); }

@@ -296,3 +296,9 @@ span.vt-th{background:transparent}
   .vd-toast{left:var(--sp-5);right:404px;bottom:96px}
 }
 @media (prefers-reduced-motion:reduce){.vd-load,.vd-sheet{animation:none}}
+/* r3-save: Save to = My phone | Phone + Team in the video Save sheet (the shared .sw-seg / .team-box / .tb-hint styles are in studio.css) */
+.vd-save-d .save-where{margin-bottom:var(--sp-2)}
+.vd-save-d .sw-opt .sw-txt small{font-size:var(--fs-xs)}
+.vd-save-d .btn.is-need small{opacity:.7}
+.vd-save-d #vsTeam{align-self:center;min-height:44px}
+.vd-note.ok{color:var(--ok)}
