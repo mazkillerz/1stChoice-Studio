@@ -102,7 +102,6 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
       await pg.evaluate(()=>{ const l=Studio.debug.S.layers.emoji; delete l.flip; l.color=null; Studio.debug.render(); }); await pg.waitForTimeout(300);
       const before=await pg.evaluate(()=>{ const r=Studio.debug.recipe(); delete r.page; return JSON.stringify(r); });
       await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{});
-      await pg.waitForFunction(()=>document.getElementById('teamOn')?.checked,null,{timeout:8000}).catch(()=>{});
       await pg.fill('#teamName','Emoji covers').catch(()=>{}); await pg.tap('#save');
       for(let i=0;i<60&&dls.length<4;i++) await pg.waitForTimeout(300);
       const files=[]; for(const d of dls){ const f=os.tmpdir()+'/hle-'+Date.now()+'-'+d.suggestedFilename(); await d.saveAs(f); files.push(f); }

@@ -966,8 +966,8 @@ async function tool(cfg){
     <div class="result" id="result" hidden><img id="resultImg" alt="Your finished image"><button type="button" class="btn ghost" id="shareAgain" hidden>${ICON.share}<span>Save to Photos</span></button><span class="small" id="resultNote">Press and hold the image (or right-click) to save it.</span></div>
     <div class="team-status" id="teamStatus" role="status" aria-live="polite" hidden></div>
     <div class="save-opts" id="saveOpts">
-      <!-- r3-save --><div class="save-where" id="saveWhere"><span class="lbl" id="saveWhereLbl">Save to</span>
-        <div class="sw-seg" role="radiogroup" aria-labelledby="saveWhereLbl">
+      <!-- r3-save --><div class="save-where" id="saveWhereBox"><span class="lbl" id="saveWhereLbl">Save to</span>
+        <div class="sw-seg" id="saveWhere" role="radiogroup" aria-labelledby="saveWhereLbl">
           <button type="button" class="sw-opt" role="radio" data-where="me" aria-checked="true"><span class="sw-ic">${ICON.device}</span><span class="sw-txt"><b>${devWord()==='phone'?'My phone':'This device'}</b><small>${devWord()==='phone'?'A picture in your Photos':'A picture in your downloads'}</small></span></button>
           <button type="button" class="sw-opt" role="radio" data-where="team" aria-checked="false"><span class="sw-ic">${ICON.users}</span><span class="sw-txt"><b>Phone + Team</b><small>Also in Saved, for everyone</small></span></button>
         </div>
@@ -1542,7 +1542,7 @@ async function tool(cfg){
     const on=$('teamOn').checked;
     $('teamBox').hidden=!on;
     document.querySelectorAll('#saveWhere [data-where]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.where===where())));
-    $('saveWhere').hidden=imgDone;   // after a picture: "Also save to the team…" is the way in
+    $('saveWhereBox').hidden=imgDone;   // after a picture: "Also save to the team…" is the way in
     const upd=!!design&&!wantsNew(), nm=short(design&&design.name);
     $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
     const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';
@@ -1658,7 +1658,7 @@ async function tool(cfg){
     catch(err){ b.disabled=false; status(teamErr(err)); } });
   /* r3-save: "Only save to the team" and "Also save to the team…" choose Team first; a collection is still required */
   $('teamOnly').addEventListener('click',async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudgeCols(); return; } runTeamSave(); });
-  $('alsoTeam').addEventListener('click',async()=>{ imgDone=false; if(!(await setWhere('team'))){ imgDone=true; syncSaveOpts(); return; } imgDone=true; syncSaveOpts(); $('saveWhere').hidden=true; if(needCol()) nudgeCols(); });
+  $('alsoTeam').addEventListener('click',async()=>{ imgDone=false; if(!(await setWhere('team'))){ imgDone=true; syncSaveOpts(); return; } imgDone=true; syncSaveOpts(); if(needCol()) nudgeCols(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
   let baseJson=null;

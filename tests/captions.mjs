@@ -8,6 +8,7 @@
    6 phone dark + desktop: targets >= 44, no sideways scroll, no page errors
    Run: BASE=http://127.0.0.1:8282/ node tests/captions.mjs */
 import { chromium } from 'playwright';
+import { chooseTeam, chooseMe } from './_saveflow-helpers.mjs';
 import fs from 'fs';
 import { seedDesigns } from './seed.js';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
@@ -34,7 +35,7 @@ const PHONE={viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceS
 const fdb=pg=>pg.evaluate(()=>JSON.parse(localStorage.getItem('fakecloud')));
 const mine=async pg=>Object.values((await fdb(pg)).designs).filter(d=>!/^seed\d/.test(d.id));
 const clip=pg=>pg.evaluate(()=>navigator.clipboard.readText());
-const openSave=async pg=>{ await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(400); };
+const openSave=async pg=>{ await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await chooseTeam(pg,'Suite'); await pg.waitForTimeout(400); };
 const start=async(pg,url)=>{ await pg.goto(BASE+(url||'tools/restock.html')); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1500); };
 const small=async(pg,sel,T)=>{ const bad=await pg.$$eval(sel,l=>l.filter(e=>e.offsetParent&&(e.getBoundingClientRect().height<43.5||e.getBoundingClientRect().width<43.5)).map(e=>e.className+':'+Math.round(e.getBoundingClientRect().width)+'x'+Math.round(e.getBoundingClientRect().height))); return bad; };
 
@@ -139,7 +140,7 @@ await phone(false);
 await phone(true);
 { const ctx=await mk({viewport:{width:1280,height:800}},true), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('desk: '+e.message));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1500);
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(400);
+  await chooseTeam(pg,'Suite'); await pg.waitForTimeout(400);
   await pg.click('#capOpen'); await pg.waitForSelector('#capBox .cap-ta'); await pg.click('#capBox [data-ins]'); await pg.waitForTimeout(200);
   ok('desktop: the editor opens and a chip inserts',(await pg.inputValue('#capBox .cap-ta')).length>0&&await pg.isVisible('#capOpen'));
   ok('desktop: targets >= 44 and no sideways scroll',(await small(pg,'#capBox button, #capBox input, #capOpen')).length===0&&await pg.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),await small(pg,'#capBox button, #capBox input, #capOpen'));

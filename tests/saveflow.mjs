@@ -31,7 +31,7 @@ await seed(['Restocks','Collabs']);
 
 /* 1. default = My phone, even signed in */
 await sheet();
-ok('the Save sheet has a Save to control with two choices',(await pg.$$('#saveWhere [role=radio]')).length===2&&(await pg.getAttribute('#saveWhere [role=radiogroup]','role'))==='radiogroup');
+ok('the Save sheet has a Save to control with two choices',(await pg.$$('#saveWhere [role=radio]')).length===2&&(await pg.getAttribute('#saveWhere','role'))==='radiogroup');
 ok('it starts on My phone (signed in too)',(await pg.getAttribute('#saveWhere [data-where="me"]','aria-checked'))==='true'&&!(await pg.$eval('#teamOn',e=>e.checked))&&!(await pg.isVisible('#teamBox')));
 ok('the choices are 56px tall and name the picture / the team',(await pg.$eval('#saveWhere [data-where="me"]',e=>e.getBoundingClientRect().height))>=56&&/My phone/.test(await txt('#saveWhere [data-where="me"]'))&&/Phone \+ Team/.test(await txt('#saveWhere [data-where="team"]')));
 ok('the main button says Save to my phone',await txt('#saveTxt')==='Save to my phone',await txt('#saveTxt'));

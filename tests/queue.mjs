@@ -24,10 +24,10 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
     await Promise.all([pg.waitForURL(/restock\.html/),pg.setInputFiles('input[data-quick="restock"]',files.map(f=>S+f))]);
     await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{}); };
   const ready=()=>pg.evaluate(()=>document.getElementById('readyTxt').textContent);
-  const saveOnce=async()=>{ const n=dls.length; await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:4000}).catch(()=>{});
+  const saveOnce=async()=>{ const n=dls.length; await pg.waitForTimeout(300);
     await tap(vp.touch?'#barSave':'#save'); for(let i=0;i<40&&dls.length===n;i++) await pg.waitForTimeout(300);
     let size=''; if(dls.length>n){ const f=os.tmpdir()+'/q-'+dls[n].suggestedFilename(); await dls[n].saveAs(f); size=pngSize(f); }
-    await pg.waitForFunction(()=>/design=/.test(location.search),null,{timeout:15000}).catch(()=>{});
+    await pg.waitForTimeout(500);   // 2.3.0: Quick start saves the picture only; nothing goes to the team
     await pg.waitForFunction(()=>!document.getElementById('queueNext').hidden||!document.getElementById('save').hidden,null,{timeout:5000}).catch(()=>{});
     return {got:dls.length-n,size,url:pg.url()}; };
   const photoKey=()=>pg.evaluate(()=>Studio.debug.S.photos[0].key);
