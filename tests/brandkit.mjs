@@ -112,7 +112,7 @@ async function toolPass(pg,id,tag,styles=true){
   await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200);
   const inp=await pg.$('input[data-quick="restock"]');
   if(inp){ await Promise.all([pg.waitForURL(/restock\.html/,{timeout:10000}).catch(()=>{}),pg.setInputFiles('input[data-quick="restock"]',FIX+'samples/c.jpg')]);
-    await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{}); await pg.tap('#barSave').catch(()=>{});
+    await pg.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{}); await pg.tap('#barSave').catch(()=>{}); await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{}); if(await pg.isVisible('#save').catch(()=>false)) await pg.tap('#save').catch(()=>{});   /* 2.4.1: Save asks where first */
     for(let i=0;i<50&&!dls.length;i++) await pg.waitForTimeout(300); saveInfo=dls.length?await pngSize(dls[0]):'no download'; await inspect(pg,'phone restock after save'); }
   await ctx.close(); }
 /* phone, dark */

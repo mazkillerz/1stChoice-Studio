@@ -51,7 +51,7 @@ if(part('hub')) for(const vp of [PHONE,DESK]){
   await tap(pg,'#fab'); await pg.waitForTimeout(600);
   ok(N+'the + button opens a menu',await pg.isVisible('dialog.fab-dlg[open]')&&await pg.getAttribute('#fab','aria-expanded')==='true');
   const items=await pg.$$eval('dialog.fab-dlg .fab-item',l=>l.map(x=>({t:x.querySelector('b').textContent,a:x.tagName==='A',h:x.getBoundingClientRect().height,inside:x.getBoundingClientRect().right<=innerWidth&&x.getBoundingClientRect().bottom<=innerHeight})));
-  ok(N+'menu: Restock first, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items.length===4,items.map(x=>x.t).join(' / '));
+  ok(N+'menu: Restock first, New idea, New design last',items[0]&&items[0].t==='Restock'&&items[items.length-1].t==='New design'&&items.length===5&&items[3].t==='New idea',items.map(x=>x.t).join(' / '));
   ok(N+'menu: Photo story and Collage between them',items.slice(1,3).map(x=>x.t).join()==='Photo story,Collage');
   ok(N+'menu: More tools link at the end',await pg.isVisible('dialog.fab-dlg .fab-more[data-fab-more]'));
   ok(N+'menu: every item is finger-sized and on screen',items.every(x=>x.h>=48&&x.inside),items.map(x=>Math.round(x.h)).join());

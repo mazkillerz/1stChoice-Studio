@@ -2,11 +2,11 @@
    1 permanent (2.4.1): #goalsView exists with no switch   2 counts from posted calendar items ("12 of 15"), giveaways from ideas, "+3 vs Oct"
    3 Edit goals saves to the cloud, Same as last month   4 Update numbers: % change vs last month, src manual
    5 month switch, This month   6 chart: 6 bars   7 empty month note   8 signed out / missing tables   9 phone light + dark, tap sizes, no sideways scroll
-   Run: node tests/kpis.mjs (server on :8082 or BASE=...). */
+   Run: node tests/kpis.mjs (server on :8080 or BASE=...). */
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { seedDesigns } from './seed.js';
-const BASE=process.env.BASE||'http://127.0.0.1:8082/';
+const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 const pad=n=>(n<10?'0':'')+n, now=new Date();

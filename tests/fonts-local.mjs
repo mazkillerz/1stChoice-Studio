@@ -43,7 +43,7 @@ async function fontsOf(p,label){
   await p.goto(BASE+'index.html'); await p.evaluate(()=>localStorage.clear()); await p.goto(BASE+'index.html'); await p.waitForTimeout(1200);
   await Promise.all([p.waitForURL(/restock\.html/,{timeout:10000}),p.setInputFiles('input[data-quick="restock"]',S+'pair.jpg')]);
   await p.waitForSelector('#readyBar:not([hidden])',{timeout:10000}).catch(()=>{});
-  await p.tap('#barSave'); for(let i=0;i<60&&!dls.length;i++) await p.waitForTimeout(300);
+  await p.tap('#barSave'); await p.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{}); if(await p.isVisible('#save')) await p.tap('#save');   /* 2.4.1: Save asks where first */ for(let i=0;i<60&&!dls.length;i++) await p.waitForTimeout(300);
   if(dls[0]){ const x=fs.readFileSync(await dls[0].path()); const w=x.readUInt32BE(16),h=x.readUInt32BE(20);
     ok(x.slice(1,4).toString()==='PNG'&&w===2160&&h===3840,`restock save with Google blocked: PNG ${w}x${h}`); } else ok(false,'restock save produced no download');
   await c.close(); }

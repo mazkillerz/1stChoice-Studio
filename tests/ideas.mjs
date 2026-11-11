@@ -1,9 +1,9 @@
 /* Ideas (assets/ideas.js, behind the "plan" preview): capture (text, link, picture, voice), Inbox, Board, idea sheet, desktop drag.
-   Run: node tests/ideas.mjs (server on :8081, or BASE=...). Real MediaRecorder on Chromium's fake microphone. */
+   Run: node tests/ideas.mjs (server on :8080, or BASE=...). Real MediaRecorder on Chromium's fake microphone. */
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { seedDesigns } from './seed.js';
-const BASE=process.env.BASE||'http://127.0.0.1:8081/';
+const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']}), errs=[];
