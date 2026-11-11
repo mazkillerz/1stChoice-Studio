@@ -119,6 +119,39 @@ const n0=(await designs()).length; await pg.tap('#save'); await teamDone();
 ok('Update keeps the same design id (no copy)',(await designs()).length===n0&&!!(await byName('Flow one'))&&(await byName('Flow one')).id===did);
 ok('and it is still in its collection with its photos',((await byName('Flow one')).cols||[]).includes('Restocks')&&(await byName('Flow one')).recipe.photoPaths.filter(Boolean).length>0);
 
+/* 8. Create: same rules (its own sheet) */
+await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); }); await seed(['Restocks','Collabs']);
+await open('tools/create.html?tpl=ice-cold'); await pg.waitForFunction(()=>window.CRUI&&BD.util.frames().length>0,null,{timeout:20000}); await pg.waitForTimeout(500);
+await pg.tap('#crBar [data-cr="save"]'); await pg.waitForSelector('#crGo'); await pg.waitForTimeout(400);
+ok('Create: starts on My phone and the button says Save image',(await pg.getAttribute('#crWhere [data-where="me"]','aria-checked'))==='true'&&/^Save image/.test(await txt('#crGo'))&&!(await pg.isVisible('#crTeamBox')),await txt('#crGo'));
+await shot('c1-create-me');
+await pg.tap('#crWhere [data-where="team"]'); await pg.waitForSelector('#crTeamBox:not([hidden])'); await pg.waitForSelector('#crCols [data-col]');
+ok('Create: Phone + Team, nothing picked: "Pick a collection", aria-disabled',await txt('#crGo')==='Pick a collection'&&(await pg.getAttribute('#crGo','aria-disabled'))==='true');
+await pg.tap('#crGo',{force:true}); await pg.waitForTimeout(400);
+ok('Create: a tap saves nothing and says so',(await designs()).length===0&&/Pick a collection first, then save/.test(await txt('#crHint')));
+await shot('c2-create-need');
+await pg.tap('#crCols [data-col="Collabs"]');
+ok('Create: the button names the collection',await txt('#crGo')==='Save to “Collabs”',await txt('#crGo'));
+await pg.fill('#crTName','Create flow'); await pg.tap('#crTeamOnly'); await pg.waitForFunction(()=>/Saved (to the team|as a team)/.test(document.getElementById('crSt').textContent),null,{timeout:20000});
+d=await byName('Create flow');
+ok('Create: the design is in the collection with its cover',d&&(d.cols||[]).includes('Collabs')&&!!(await fdb()).files[d.thumb_path],d&&d.cols);
+ok('Create: a typed new collection counts',await (async()=>{ await pg.fill('#crCol','Typed in create'); return await txt('#crGo')==='Save to 2 collections' && /Typed in create/.test(await txt('#crHint')); })());
+
+/* 9. Video: same rules */
+await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); }); await seed(['Restocks']);
+await open('tools/video.html'); await pg.waitForFunction(()=>window.__video&&window.__video().ready,null,{timeout:60000}); await pg.waitForTimeout(400);
+await pg.tap('#vdSave'); await pg.waitForSelector('dialog[open] #vsGo'); await pg.waitForTimeout(300);
+ok('Video: starts on My phone, the button names where the file goes',(await pg.getAttribute('#vsWhere [data-where="me"]','aria-checked'))==='true'&&/Save video to my phone/.test(await txt('#vsGoTxt')),await txt('#vsGoTxt'));
+await shot('v1-video-me');
+await pg.tap('#vsWhere [data-where="team"]'); await pg.waitForSelector('#vsTeamBox:not([hidden])'); await pg.waitForSelector('#vsCols [data-col]');
+ok('Video: Phone + Team, nothing picked: Pick a collection, aria-disabled',await txt('#vsGoTxt')==='Pick a collection'&&(await pg.getAttribute('#vsGo','aria-disabled'))==='true');
+await pg.tap('#vsTeam'); await pg.waitForTimeout(400);
+ok('Video: "Only save the edits" without a collection saves nothing',(await designs()).length===0&&/Pick a collection first, then save/.test(await txt('#vsHint')));
+await shot('v2-video-need');
+await pg.tap('#vsCols [data-col="Restocks"]'); await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:20000});
+d=(await designs())[0];
+ok('Video: the edits are saved in the collection with a cover',d&&d.tool==='video'&&(d.cols||[]).includes('Restocks')&&!!(await fdb()).files[d.thumb_path],d&&d.cols);
+
 /* 9. dark mode screenshots */
 if(SHOTS){ await pg.emulateMedia({colorScheme:'dark'}); await sheet(); await shot('9-myphone-dark'); await where('team'); await pg.waitForSelector('#teamCols [data-col]'); await pg.waitForTimeout(300); await shot('9-team-pick-dark'); await pg.tap('#save',{force:true}); await pg.waitForTimeout(300); await shot('9-team-nudge-dark'); }
 

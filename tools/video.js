@@ -403,7 +403,7 @@ function leavePrompt(href){
   d.querySelector('#lvKeep').onclick=()=>d.close();
   d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-    try{ await teamSave(); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+    try{ await teamSave({keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
 }
 $('vdBack').addEventListener('click',e=>{ if(st.ready&&st.design&&cur()!==st.base){ e.preventDefault(); leavePrompt(e.currentTarget.href); } });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&(st.busy||(st.ready&&!st.draftId&&!RENDER&&cur()!==st.clean))){ e.preventDefault(); e.returnValue=''; } });
@@ -420,12 +420,16 @@ async function thumbBlob(){
   try{ await st.P.prepare(t); st.P.draw(c.getContext('2d'),t,{preview:false}); }catch(err){ V.fail(err,'thumb'); }
   return L.canvasBlob(c,'image/jpeg',.85).finally(()=>{ c.width=c.height=0; });
 }
-async function teamSave(){
+async function teamSave(o){
+  o=o||{};
+  /* r3-save: the team needs a collection (an update of a design that has none is refused too; the leave prompt may keep a legacy design as it is) */
+  const cols=o.collections||(st.design&&st.design.collections)||[];
+  if(!o.keepCols&&!cols.some(n=>String(n).trim())) throw new Error('Pick a collection first.');
   const C=await L.cloud();
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
   const name=nameNow(), recipe=clone(st.R); recipe.v=2; recipe.kind='video'; recipe.brand=st.B.id;
-  const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob()});
-  st.design={id,name}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus(); if(st.draftId) writeDraft(true);
+  const id=await C.saveDesign({id:st.design?st.design.id:null,brand:st.B.id,tool:TOOL,name,kind:'design',recipe,photos:[],thumb:await thumbBlob(),collections:cols});
+  st.design={id,name,collections:cols}; st.base=cur(); history.replaceState(null,'',location.pathname+'?design='+id); syncStatus(); if(st.draftId) writeDraft(true);
   return id;
 }
 V.teamSave=teamSave;
@@ -447,7 +451,10 @@ async function openSave(){
   if(!st.ready||st.busy||V.empty()) return;
   pause(); stopSolo();
   const d=L.dialog('<div class="dlg-body vd-save-d" id="vsBody"></div>','vd-dlg'); d.tabIndex=-1; d.focus();
-  const body=d.querySelector('#vsBody'), ctl={ac:null,url:null,lock:null,est:null,sub:undefined};
+  const body=d.querySelector('#vsBody'), ctl={ac:null,url:null,lock:null,est:null,sub:undefined,team:false,cols:null,picked:new Set(st.design?(st.design.collections||[]):[]),hint:false,teamNote:''};   // r3-save: nothing is chosen for a new video; an opened one starts on Phone + Team
+  if(st.design) ctl.team=true;
+  const touchy=matchMedia('(pointer:coarse)').matches, ic=d=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`,
+    deviceIc=ic('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>'), usersIc=ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/>');
   let sup={mode:'none'}; try{ sup=await (st.sup||(st.sup=StudioReelExport.support())); }catch(_){}
   d.addEventListener('cancel',e=>{ if(st.busy){ e.preventDefault(); if(ctl.ac) ctl.ac.abort(); } });
   d.addEventListener('close',()=>{ if(ctl.url) setTimeout(()=>URL.revokeObjectURL(ctl.url),60000); });
@@ -457,20 +464,53 @@ async function openSave(){
     const heavy=V.lay().some(x=>x.c.kind==='reel'&&st.reels[x.c.reel]&&st.reels[x.c.reel].M.heavy), hasVid=st.R.clips.some(c=>c.kind==='video');
     const noGo=sup.mode==='none'||miss.length>0||total<=0;
     body.innerHTML=`<h3>Save</h3>
-      <button type="button" class="btn" id="vsGo"${noGo?' disabled':''}><span>Save video</span><small><bdi>${size}</bdi></small></button>
+      <div class="save-where"><span class="lbl" id="vsWhereLbl">Save to</span><div class="sw-seg" id="vsWhere" role="radiogroup" aria-labelledby="vsWhereLbl">
+        <button type="button" class="sw-opt" role="radio" data-where="me" aria-checked="true"><span class="sw-ic">${deviceIc}</span><span class="sw-txt"><b>${touchy?'My phone':'This device'}</b><small>The video file</small></span></button>
+        <button type="button" class="sw-opt" role="radio" data-where="team" aria-checked="false"><span class="sw-ic">${usersIc}</span><span class="sw-txt"><b>Phone + Team</b><small>Also your edits, in Saved</small></span></button></div></div>
+      <div class="team-box" id="vsTeamBox" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="tb-field"><span class="lbl" id="vsColsLbl">Collection <span class="lbl-req">required</span></span><div class="chips tb-cols" id="vsCols" role="group" aria-labelledby="vsColsLbl"></div>
+          <input type="text" id="vsCol" dir="auto" maxlength="60" placeholder="Or name a new collection" aria-label="New collection">
+          <small class="tb-hint" id="vsHint" dir="auto" role="status" aria-live="polite"></small></div></div>
+      <button type="button" class="btn" id="vsGo"${noGo?' disabled':''}><span id="vsGoTxt">Save video</span><small><bdi>${size}</bdi></small></button>
       <p class="vd-note" id="vsEst" role="status"></p>
       <p class="vd-note warn" id="vsHeavy"${heavy?'':' hidden'}>This video takes longer to save (3D). Keep Studio open.</p>
       ${sup.mode==='recorder'?`<p class="vd-note">This browser makes the video in real time (<bdi>${Math.round(total)}</bdi> s)${hasVid?' and it may stutter where your clips play':''}. Keep Studio open.</p>`:''}
       ${sup.mode==='none'?'<p class="vd-note" role="status">This browser can’t make videos. Open Studio in Chrome, or in Safari on iOS 17 or newer.</p>':''}
       ${miss.length?`<p class="vd-note" role="status">${miss.length===1?'A file is':'Some files are'} missing on this ${L.devWord()}. Add ${miss.length===1?'it':'them'} again on the timeline first.</p>`:''}
-      <button type="button" class="btn ghost" id="vsTeam"><span>Save edits to the team</span><small>Keeps your clips’ order, words and sound settings, not the video.</small></button>
+      <button type="button" class="link" id="vsTeam">Only save the edits to the team (no video)</button>
+      <p class="vd-note">The team keeps your clips’ order, words and sound settings, not the video.</p>
       ${V.hasOwnFiles()?`<p class="vd-note" id="vsOwn">Your clips, photos and sounds stay on this ${L.devWord()}; the team gets your edits.</p>`:''}
       <div class="status" id="vsSt" role="status">${esc(msg||(st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):''))}</div>
       <div class="dlg-actions"><button type="button" class="link" id="vsClose">Close</button></div>`;
-    bind('vsClose',()=>d.close()); bind('vsGo',()=>exportIt()); bind('vsTeam',async()=>{
-      const b=body.querySelector('#vsTeam'), s=body.querySelector('#vsSt'); b.disabled=true; s.textContent='Saving to the team…';
-      try{ await teamSave(); s.textContent='Saved to the team'; L.celebrate&&L.celebrate(); }catch(err){ s.textContent=err.message||'Could not save. Try again.'; }
+    const short=n=>{ n=String(n||''); return n.length>22?n.slice(0,21)+'…':n; }, pickedNow=()=>{ const l=[...ctl.picked], t=body.querySelector('#vsCol').value.trim(); if(t&&!l.includes(t)) l.push(t); return l; };
+    const needCol=()=>ctl.team&&!pickedNow().length;
+    const sync=()=>{ const c=pickedNow(), upd=!!st.design;
+      body.querySelectorAll('#vsWhere [data-where]').forEach(x=>x.setAttribute('aria-checked',String(x.dataset.where===(ctl.team?'team':'me'))));
+      body.querySelector('#vsTeamBox').hidden=!ctl.team; const go=body.querySelector('#vsGo'); if(!c.length) ; else ctl.hint=false;
+      body.querySelector('#vsGoTxt').textContent=!ctl.team?'Save video to '+(touchy?'my phone':'this device'):!c.length?'Pick a collection':upd?'Save video + update “'+short(st.design.name)+'”':c.length>1?'Save video + 2 collections'.replace('2',c.length):'Save video + “'+short(c[0])+'”';
+      go.setAttribute('aria-disabled',String(needCol())); go.classList.toggle('is-need',needCol());
+      const names=[...new Set([...(ctl.cols||[]),...ctl.picked])], last=(()=>{ try{ return JSON.parse(localStorage.getItem('studio:lastCols:'+st.B.id))||[]; }catch(_){ return []; } })();
+      const all=[...last.filter(n=>names.includes(n)),...names.filter(n=>!last.includes(n)).sort((x,y)=>x.localeCompare(y))], box=body.querySelector('#vsCols');
+      box.innerHTML=all.map(n=>`<button type="button" class="chip col-pick" dir="auto" data-col="${esc(n)}" aria-pressed="${ctl.picked.has(n)}">${ctl.picked.has(n)?'✓ ':''}<span>${esc(n)}</span></button>`).join(''); box.hidden=!all.length;
+      const h=body.querySelector('#vsHint'); h.textContent=c.length?'It goes in '+c.map(n=>'“'+n+'”').join(' and ')+'.':ctl.hint?'Pick a collection first, then save.':all.length?'Choose where it goes in Saved, or name a new one.':'Name your first collection.'; h.classList.toggle('need',!c.length&&!!ctl.hint); };
+    const nudge=()=>{ ctl.hint=true; sync(); const c=body.querySelector('#vsCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200); L.haptic&&L.haptic('warn'); };
+    const loadCols=async()=>{ if(ctl.cols) return; try{ ctl.cols=((await (await L.cloud()).collections(st.B.id))||[]).map(x=>x.name); }catch(_){ ctl.cols=[]; } if(d.open) sync(); };
+    const setWhere=async w=>{ if(w!=='team'){ ctl.team=false; sync(); return false; }
+      ctl.team=false; sync(); if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))){ return false; } ctl.team=true; sync(); loadCols(); return true; };
+    const teamNow=async()=>{ const o={collections:pickedNow()}; await teamSave(o); try{ localStorage.setItem('studio:lastCols:'+st.B.id,JSON.stringify(o.collections)); }catch(_){} ctl.teamNote='Saved to the team in '+o.collections.map(n=>'“'+n+'”').join(', '); return o; };
+    bind('vsClose',()=>d.close());
+    body.querySelector('#vsWhere').addEventListener('click',e=>{ const x=e.target.closest('[data-where]'); if(x&&x.dataset.where!==(ctl.team?'team':'me')){ L.haptic&&L.haptic('tick'); setWhere(x.dataset.where); } });
+    body.querySelector('#vsCols').addEventListener('click',e=>{ const x=e.target.closest('[data-col]'); if(!x) return; const n=x.dataset.col; ctl.picked.has(n)?ctl.picked.delete(n):ctl.picked.add(n); sync(); });
+    body.querySelector('#vsCol').addEventListener('input',()=>{ ctl.hint=false; sync(); });
+    bind('vsGo',async()=>{ if(needCol()){ nudge(); return; }
+      if(ctl.team){ const s=body.querySelector('#vsSt'); s.textContent='Saving to the team…'; try{ await teamNow(); }catch(err){ s.textContent=err.message||'Could not save to the team. Try again.'; return; } }   // the edits first: quick, and safe if the video is stopped
+      exportIt(); });
+    bind('vsTeam',async()=>{
+      const b=body.querySelector('#vsTeam'), s=body.querySelector('#vsSt'); if(!(await setWhere('team'))) return; if(needCol()){ nudge(); return; }
+      b.disabled=true; s.textContent='Saving to the team…';
+      try{ const o=await teamNow(); s.innerHTML=''; s.textContent=ctl.teamNote; L.celebrate&&L.celebrate(); }catch(err){ s.textContent=err.message||'Could not save. Try again.'; }
       b.disabled=false; });
+    sync(); if(ctl.team) loadCols();
     body.querySelector('#vsGo:not(:disabled)')&&body.querySelector('#vsGo').focus({preventScroll:true});
     if(!noGo) estimate(sup,total);
   }
@@ -515,6 +555,7 @@ async function openSave(){
     const dl=()=>{ const a=document.createElement('a'); a.href=ctl.url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),1000); };
     body.innerHTML=`<h3>Your video is ready</h3>
       <p class="vd-note"><bdi dir="auto">${esc(name)}</bdi> · <bdi>${mb(blob.size)}</bdi></p>
+      ${ctl.teamNote?`<p class="vd-note ok" role="status" dir="auto">${esc(ctl.teamNote)}</p>`:''}
       <button type="button" class="btn" id="vsOut">${touch?'Share or save':'Download'}</button>
       <div class="dlg-actions"><button type="button" class="link" id="vsClose">Close</button></div>`;
     bind('vsClose',()=>d.close());
@@ -569,7 +610,7 @@ async function openProject(recipe,design,draft){
   st.R.clips.forEach(c=>{ if(c.kind==='reel'&&c.out==null) c.out=st.reels[c.reel].M.duration; });
   try{ const u=P.update(); if(u&&u.then) await u; }catch(err){ V.fail(err,'update'); }
   const first=st.R.clips.find(c=>c.kind==='reel'); st.defName=first&&st.reels[first.reel]?st.reels[first.reel].M.title:'Video';
-  if(design){ st.design={id:design.id,name:design.name}; $('vdName').value=design.name; }
+  if(design){ st.design={id:design.id,name:design.name,collections:(design.collectionNames||design.collections||[]).filter(Boolean)}; $('vdName').value=design.name; }
   if(draft&&draft.name) $('vdName').value=draft.name;
   $('vdName').placeholder=st.defName;
   $('vdLoad').hidden=true; $('vdErr').hidden=true;

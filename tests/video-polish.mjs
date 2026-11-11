@@ -186,7 +186,7 @@ for(const scheme of ['light','dark']){
   /* team save keeps the draft linked */
   await pg.goto(BASE+'tools/video.html?draft='+id); await ready(pg);
   await pg.tap('#vdSave'); await pg.waitForSelector('dialog[open] #vsGo');
-  await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:15000});
+  await pg.tap('#vsTeam'); await pg.waitForSelector('#vsCol'); await pg.fill('#vsCol','Videos'); await pg.tap('#vsTeam'); await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('vsSt').textContent),null,{timeout:15000});
   const linked=await draftOf(pg,keys[0]), sid=await pg.evaluate(()=>VD.st.design&&VD.st.design.id);
   ok(N+'a team save keeps the draft and links it to the design id; Save video does not remove it',linked&&linked.design===sid&&!!sid&&(await draftKeys(pg)).length===1,{design:linked&&linked.design,sid});
   await pg.tap('#vsClose'); await pg.waitForTimeout(150);
