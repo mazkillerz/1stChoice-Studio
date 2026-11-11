@@ -61,9 +61,10 @@ for(const scheme of ['light','dark']){
       links:[...document.querySelectorAll('#sh-save .link')].filter(e=>__s15.vis(e)).map(e=>({t:e.textContent.trim(),u:getComputedStyle(e).textDecorationLine,r:+__s15.ratio(e).toFixed(2)})),
       dock:getComputedStyle(document.getElementById('saveDock')).display}));
     ok(N+'Save sheet: at most two blue buttons (its Save and the bar), Done is not one',sv.acc.length<=2&&!sv.acc.includes('Done'),sv.acc);
-    ok(N+'Save sheet: text buttons have no underline and read at 4.5:1',sv.links.length>=2&&sv.links.every(l=>l.u==='none'&&l.r>=4.5),sv.links);
+    ok(N+'Save sheet: text buttons have no underline and read at 4.5:1',sv.links.length>=1&&sv.links.every(l=>l.u==='none'&&l.r>=4.5),sv.links);
     ok(N+'the computer dock is not shown on a phone',sv.dock==='none',sv.dock);
     /* 3. Keep the photos: its note sits under it */
+    await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForTimeout(500);   // 2.3.0: More options lives in the team panel
     await pg.tap('#teamMore'); await pg.waitForTimeout(350);
     const kp=await pg.evaluate(()=>{ const l=document.querySelector('#teamMoreBox .check-txt'), n=l&&l.querySelector('.small'); if(!l) return null; const a=l.firstChild, r=document.createRange(); r.selectNodeContents(a); const ta=r.getBoundingClientRect(), tn=n.getBoundingClientRect();
       return {label:a.textContent.trim(),note:n.textContent.trim(),under:tn.top>=ta.bottom-1,clip:l.scrollWidth>l.clientWidth+1,ratio:+__s15.ratio(n).toFixed(2)}; });

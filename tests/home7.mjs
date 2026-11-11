@@ -214,7 +214,7 @@ if(part('saved')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=awai
   /* tapping a card opens it in its tool */
   await pg.tap('#savedGrid .sv-card[data-id="seed1"] .sv-open'); await pg.waitForURL(/photo-story\.html\?design=seed1/,{timeout:8000}).catch(()=>{}); await pg.waitForTimeout(1500);
   ok(N+'tapping a card opens that design in its tool',/tools\/photo-story\.html\?design=seed1$/.test(pg.url())&&!(await pg.locator('dialog[open]').count()),pg.url());
-  ok(N+'the design is loaded there (design bar set, team switch starts on)',await pg.evaluate(()=>!document.getElementById('designBar').hidden&&document.getElementById('teamOn').checked)&&/^Update “/.test((await pg.textContent('#saveTxt')).trim()),await pg.textContent('#saveTxt'));
+  ok(N+'the design is loaded there (design bar set, team switch starts on)',await pg.evaluate(()=>!document.getElementById('designBar').hidden&&document.getElementById('teamOn').checked)&&/^(Update “|Pick a collection)/.test((await pg.textContent('#saveTxt')).trim()),await pg.textContent('#saveTxt'));   // a seeded design with no collection needs one first
   await ctx.close();
 }
 

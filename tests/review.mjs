@@ -10,6 +10,7 @@
    5 phone 390 touch light + dark and 1280; targets >= 44 px; at most two filled buttons per view; no page errors
    Run: node tests/review.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
+import { chooseTeam } from './_saveflow-helpers.mjs';
 import fs from 'fs';
 import { seedDesigns } from './seed.js';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
@@ -67,6 +68,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await pg.setInputFiles('#pick',PHOTO); await pg.waitForFunction(()=>{ const p=Studio.debug.S.photos[0]; return p&&p.img&&!p.sample; },null,{polling:100});
     await pg.tap('#barSave'); await pg.waitForFunction(()=>document.getElementById('teamOn'),null,{polling:100}); await pg.waitForTimeout(1500);
     ok(N+'Save sheet: no "Send for review" before the team save',await pg.$eval('#rvSend',e=>e.hidden).catch(()=>false));
+    await chooseTeam(pg,'Suite');   // 2.3.0: Send for review needs a team save, which is a choice now
     await pg.tap('#save'); await pg.waitForSelector('#rvSend:not([hidden])',{timeout:40000}).catch(()=>{});
     const vis=await pg.$eval('#rvSend',e=>!e.hidden).catch(()=>false); ok(N+'Save sheet: "Send for review" shows after the team save',vis);
     if(vis){ await pg.tap('#rvSend'); await pg.waitForFunction(()=>Object.values(JSON.parse(localStorage.getItem('fakecloud')).designs).some(x=>x.review==='in_review'&&!/^seed/.test(x.id)),null,{timeout:8000}).catch(()=>{});

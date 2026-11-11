@@ -54,7 +54,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   const k1=await photoKey(), words1=await pg.evaluate(()=>JSON.stringify({s:Studio.debug.S.style,v:Studio.debug.S.values}));
   const before=await designs();
   let r=await saveOnce();
-  ok(N+'story 1: one tap saves the full-size PNG and adds it to the team',r.got===1&&r.size==='2160x3840'&&/design=/.test(r.url),JSON.stringify(r));
+  ok(N+'story 1: one tap saves the full-size PNG (picture only, nothing goes to the team)',r.got===1&&r.size==='2160x3840'&&!/design=/.test(r.url),JSON.stringify(r));
   const nx=await pg.evaluate(()=>{ const b=document.getElementById('queueNext'), rc=b.getBoundingClientRect(); return {hidden:b.hidden,txt:b.textContent.trim(),ghost:b.classList.contains('ghost'),h:Math.round(rc.height),vis:rc.width>0&&rc.bottom<=innerHeight+1}; });
   ok(N+'then "Next photo (2 of 3)" shows, filled and finger-sized',!nx.hidden&&nx.txt==='Next photo (2 of 3)'&&!nx.ghost&&nx.h>=44&&nx.vis,JSON.stringify(nx));
   ok(N+'Save again goes quiet (ghost) so only one main button shows',await pg.$eval('#save',e=>e.classList.contains('ghost')));
@@ -66,17 +66,17 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
   ok(N+'same words and look as story 1',await pg.evaluate(()=>JSON.stringify({s:Studio.debug.S.style,v:Studio.debug.S.values}))===words1);
   ok(N+'Save is back to one tap, team switch back on',await pg.evaluate(()=>!document.getElementById('designBar')||document.getElementById('designBar').hidden));
   r=await saveOnce(); const id2=new URL(r.url).searchParams.get('design');
-  ok(N+'story 2: one tap, a new team design (not an update of story 1)',r.got===1&&r.size==='2160x3840'&&id2&&id2!==id1&&(await designs())===before+2,JSON.stringify({r,id1,id2,n:await designs()-before}));
+  ok(N+'story 2: one tap, another picture, still no team design',r.got===1&&r.size==='2160x3840'&&!id2&&!id1&&(await designs())===before,JSON.stringify({r,id1,id2,n:await designs()-before}));
   ok(N+'"Next photo (3 of 3)"',(await pg.textContent('#queueNext')).trim()==='Next photo (3 of 3)');
   await tap('#queueNext'); await pg.waitForTimeout(900);
   ok(N+'the last one says "Last photo: 3 of 3"',await ready()==='Last photo: 3 of 3',await ready());
   r=await saveOnce();
-  ok(N+'story 3 saved; the done note says it was the last; nothing left waiting',r.got===1&&/last of your 3/.test(await pg.textContent('#doneTxt'))&&await pg.$eval('#queueNext',e=>e.hidden)&&(await designs())===before+3,await pg.textContent('#doneTxt'));
+  ok(N+'story 3 saved; the done note says it was the last; nothing left waiting',r.got===1&&/last of your 3/.test(await pg.textContent('#doneTxt'))&&await pg.$eval('#queueNext',e=>e.hidden)&&(await designs())===before,await pg.textContent('#doneTxt'));
   ok(N+'after the last one Save is a normal button again',!(await pg.$eval('#save',e=>e.classList.contains('ghost'))));
   /* the last draft is dropped after the team save settles; under parallel load that can take a moment, so wait for it (up to 5 s) */
   const countDrafts=()=>pg.evaluate(one=>Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!/index/.test(k)&&!k.endsWith(':'+one)).length,oneDraft);
   let drafts=await countDrafts(); for(let t=0;drafts&&t<25;t++){ await pg.waitForTimeout(200); drafts=await countDrafts(); }
-  ok(N+'no leftover unfinished stories (each went to the team)',drafts===0,drafts+' drafts '+(drafts?await pg.evaluate(one=>JSON.stringify(Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!k.endsWith(':'+one)).map(k=>{ let d={}; try{ d=JSON.parse(localStorage[k]); }catch(_){} return [k,d.at,d.json&&JSON.parse(d.json).photos&&JSON.parse(d.json).photos.map(p=>p&&p.key)]; }))+' url='+location.search,oneDraft):''));
+  ok(N+'the three stories stay in Continue editing (picture only, not in the team)',drafts===3,drafts+' drafts '+(drafts?await pg.evaluate(one=>JSON.stringify(Object.keys(localStorage).filter(k=>/^studio:drafts?:/.test(k)&&!k.endsWith(':'+one)).map(k=>{ let d={}; try{ d=JSON.parse(localStorage[k]); }catch(_){} return [k,d.at,d.json&&JSON.parse(d.json).photos&&JSON.parse(d.json).photos.map(p=>p&&p.key)]; }))+' url='+location.search,oneDraft):''));
 
   /* a computer shows "Skip to the next photo" before saving */
   if(!vp.touch){ await quick(['pair.jpg','shelf.jpg']); const k=await photoKey();
