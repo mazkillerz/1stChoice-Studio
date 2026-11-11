@@ -27,7 +27,7 @@ Studio.tool({
     // the ground with a see-through window (so "Save the frame only" keeps the photo area transparent)
     const fx=o.value('gfx');
     ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); h.rr(ctx,win.x,win.y,win.w,win.h,win.r);
-    if(fx&&fx!=='plain'){ ctx.clip('evenodd'); h.ground(ground,fx); }   // a Background finish stays outside the window too
+    if(fx&&fx!=='plain'){ ctx.clip('evenodd'); h.ground(ground,fx,o.value('gfxs')); }   // a Background finish stays outside the window too
     else { ctx.fillStyle=ground; ctx.fill('evenodd'); }   // Plain: exactly as before
     if(cream&&!bgc&&C.blob&&o.style!=='C'){ ctx.beginPath(); h.rr(ctx,win.x-24,win.y-24,win.w+48,win.h+48,(+win.r||0)+22); h.rr(ctx,win.x,win.y,win.w,win.h,win.r); ctx.fillStyle=C.blob; ctx.fill('evenodd'); }
     ctx.restore();

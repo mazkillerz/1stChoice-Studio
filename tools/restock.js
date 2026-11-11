@@ -116,7 +116,7 @@ Studio.tool({
       h.pill('pill','Button',pill,W/2,y,pillFit(h,pill,36,btn(C.paper,C.ink)));
       return;
     }
-    h.ground(ground,o.value('gfx'));
+    h.ground(ground,o.value('gfx'),o.value('gfxs'));
     const logoTone=dark?'light':'dark';
 
     /* ---- Cans: the HD can cut-out(s) on a soft panel, no photo ---- */

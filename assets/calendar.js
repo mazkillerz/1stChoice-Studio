@@ -46,7 +46,7 @@ function make(o){
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month'].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
   let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
-  let items=[], designs=[], urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
+  let items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
@@ -69,7 +69,7 @@ function make(o){
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
       C=await o.cloud(); if(my!==run) return;
       if(!(await o.member())){ state='out'; draw(); return; }
-      const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).catch(()=>designs):designs]); if(my!==run) return;
+      const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
       designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
       const lg=legacyItems(o.brand).filter(x=>x.day>=iso(a)&&x.day<=iso(b));
       items=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})).concat(lg); state='ok'; draw();
@@ -204,21 +204,23 @@ function make(o){
     let cols=[]; try{ cols=C&&C.collections?(await C.collections(o.brand))||[]:[]; }catch(_){ cols=[]; }
     const list=designs.slice(), colName=Object.fromEntries(cols.map(c=>[c.id,c.name]));
     const hay=new Map(list.map(g=>[g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' '),...(g.collections||[]).map(c=>colName[c]||c)].join(' '))]));
-    let q='', col='', shape=fmt==='story'?'story':fmt==='post'?'post':'';
+    let q='', col='', shape='';   /* r3-extras: always opens on All; the format only decides which chip order the person expects */
+    const cnt=k=>k?list.filter(g=>shapeOf(g)===k).length:list.length;
     const d=o.dialog(`<div class="dlg-body cal-pick"><div class="cp-top"><div class="cp-bar"><button type="button" class="cs-x" data-back aria-label="Back">${ic('back')}</button><h3 id="calPH">Pick a design</h3><button type="button" class="link cp-skip" data-skip>Skip for now</button></div>
       <label class="cp-search"><span class="sr-only">Search designs</span>${ic('search')}<input type="search" id="calQ" dir="auto" autocomplete="off" placeholder="Search by name, tool or collection" enterkeyhint="search"></label>
       <div class="chips cp-chips" role="group" aria-label="Collection"><button type="button" class="chip" data-col="" aria-pressed="true">All</button>${cols.map(c=>`<button type="button" class="chip" data-col="${esc(c.id)}" aria-pressed="false" dir="auto">${esc(c.name)}</button>`).join('')}</div>
-      <div class="chips cp-shape" role="group" aria-label="Shape">${[['story','Stories'],['post','Posts'],['','All shapes']].map(([k,l])=>`<button type="button" class="chip sm" data-shape="${k}" aria-pressed="${shape===k}">${l}</button>`).join('')}</div></div>
-      <div class="cp-grid" id="calG"></div><p class="small cp-none" id="calNone" hidden>No designs match. Clear the search or pick All.</p></div>`,'cal-dlg cal-full');
+      <div class="chips cp-shape" role="group" aria-label="Shape">${[['','All'],['story','Stories'],['post','Posts']].map(([k,l])=>`<button type="button" class="chip sm" data-shape="${k}" aria-pressed="${shape===k}">${l} <span class="cp-n">${cnt(k)}</span></button>`).join('')}</div></div>
+      <div class="cp-grid" id="calG"></div><div class="cp-none" id="calNone" hidden><p class="small" id="calNoneT"></p><button type="button" class="link" id="calRetry" hidden>Try again</button></div></div>`,'cal-dlg cal-full');
     d.setAttribute('aria-labelledby','calPH'); const $=s=>d.querySelector(s);
     const pending=new Set(); let ft=0;
     const flush=()=>{ ft=0; const need=[...pending].filter(p=>!urls[p]); pending.clear(); if(!need.length||!C||!C.fileUrls){ fillThumbsIn(d); return; } C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbsIn(d); }).catch(()=>{}); };
     const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>{ es.forEach(en=>{ if(!en.isIntersecting) return; const im=en.target; io.unobserve(im); const p=im.dataset.path; if(urls[p]) im.src=urls[p]; else if(p){ pending.add(p); clearTimeout(ft); ft=setTimeout(flush,40); } }); },{root:d,rootMargin:'400px 0px'}):null;
     const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>(!col||(g.collections||[]).includes(col))&&(!shape||shapeOf(g)===shape)&&(!nq||hay.get(g.id).includes(nq)));
       $('#calG').innerHTML=shown.map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" aria-pressed="${it.design_ids.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('');
-      $('#calNone').hidden=!!shown.length; $('#calNone').textContent=list.length?'No designs match. Clear the search or pick All.':'No saved designs yet. Save one from a tool and it shows here.';
+      $('#calNone').hidden=!!shown.length; $('#calNoneT').textContent=list.length?'No designs match. Clear the search or pick All.':designsFail?'Could not load your saved designs.':'No saved designs yet. Save one from a tool and it shows here.'; $('#calRetry').hidden=!!list.length||!designsFail;
       d.querySelectorAll('.cal-pcard img').forEach(im=>{ if(im.getAttribute('src')) return; if(io) io.observe(im); else pending.add(im.dataset.path); }); if(!io){ flush(); } };
     paint();
+    $('#calRetry').addEventListener('click',async()=>{ const b=$('#calRetry'); b.disabled=true; try{ const r=await C.designs(o.brand); designs=r||[]; designsFail=false; list.splice(0,list.length,...designs); list.forEach(g=>hay.set(g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' ')].join(' ')))); d.querySelectorAll('[data-shape]').forEach(x=>{ const n=x.querySelector('.cp-n'); if(n) n.textContent=cnt(x.dataset.shape); }); }catch(_){ designsFail=true; } b.disabled=false; paint(); });
     $('#calQ').addEventListener('input',e=>{ q=e.target.value; paint(); });
     d.addEventListener('click',e=>{ const t=e.target;
       if(t.closest('[data-back],[data-skip]')){ d.close(); return; }

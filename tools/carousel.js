@@ -89,7 +89,7 @@ Studio.tool({
       if(info.part===0) photoWords(110,false); else { h.text('head','Headline','',0,0); h.text('small','Small line','',0,0); h.shade(H,H-220,.35,0); if(everyLogo) h.logo((W-170)/2,80,170,'light'); }
       drawCounter(true); gridGuide(); return;
     }
-    h.ground(ground,o.value('gfx'));
+    h.ground(ground,o.value('gfx'),o.value('gfxs'));
     const topLogo=(force)=>{ if(force||everyLogo){ const lw=180; h.logo((W-lw)/2,cTop&&counter!=='none'?104:72,lw,dark?'light':'dark'); return 72+h.logoH(lw)+40; } return 0; };
     if(kind==='words'){
       topLogo(!o.page);

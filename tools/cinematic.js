@@ -17,7 +17,7 @@ Studio.tool({
   ],
   draw(h,o){
     const {ctx,W,H,C}=h, bgc=o.value('bg'), ground=bgc||(o.style==='cream'?(C.cream||C.paper):o.style==='white'?C.paper:C.night), light=bgc?h.isLight(ground):o.style==='cream'||o.style==='white';
-    h.ground(ground,o.value('gfx'));
+    h.ground(ground,o.value('gfx'),o.value('gfxs'));
     const ink=light?C.ink:C.paper, soft=light?(C.brown||C.muted):'rgba(255,255,255,.8)';
     const ar=h.photoAspect(0); let ph=Math.round(W/ar); const maxH=1000, mode=ph>maxH?'cover':'contain'; ph=Math.min(ph,maxH);
     const py=Math.round(870-ph/2);
