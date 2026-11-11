@@ -63,3 +63,19 @@ window.StudioCloud={
 /* campaigns (mega w2) */
 window.StudioCloud.setCampaign=async(designId,campaignId)=>{ const d=db(); if(d.designs[designId]){ d.designs[designId].campaign_id=campaignId||null; put(d); } };
 })();
+/* r3-assets: team assets (flag localStorage fakecloud-noassets=1 simulates the missing table) */
+(function(){
+const C=window.StudioCloud, K='fakecloud';
+const db=()=>JSON.parse(localStorage.getItem(K)||'{"designs":{},"files":{},"cols":{}}'), put=d=>localStorage.setItem(K,JSON.stringify(d));
+const off=()=>localStorage.getItem('fakecloud-noassets')==='1';
+const toData=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});
+const tbl=d=>(d.team_assets=d.team_assets||[]);
+C.teamAssetsReady=async()=>!off();
+C.teamAssets=async brand=>off()?[]:tbl(db()).filter(x=>x.brand===brand).slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+C.saveTeamAsset=async o=>{ const d=db(); const id='ta'+Math.random().toString(36).slice(2,10), base=o.brand+'/assets/'+id+'/';
+  d.files[base+'full.png']=await toData(o.blob); if(o.prevBlob) d.files[base+'prev.png']=await toData(o.prevBlob);
+  const row={id,brand:o.brand,name:String(o.name||'').trim(),tags:o.tags||[],folder:o.folder||null,path:base+'full.png',prev_path:o.prevBlob?base+'prev.png':null,w:o.w||null,h:o.h||null,cutout:!!o.cutout,author:o.author||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  tbl(d).push(row); put(d); return row; };
+C.updateTeamAsset=async(id,patch)=>{ const d=db(), r=tbl(d).find(x=>x.id===id); if(!r) return; ['name','tags','folder'].forEach(k=>{ if(patch&&k in patch) r[k]=patch[k]; }); r.updated_at=new Date().toISOString(); put(d); };
+C.removeTeamAsset=async id=>{ const d=db(); d.team_assets=tbl(d).filter(x=>x.id!==id); put(d); };
+})();
