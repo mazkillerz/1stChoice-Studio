@@ -390,7 +390,7 @@ function lockScroll(key,on){ if(on) LOCKS.add(key); else LOCKS.delete(key); docu
    itself (Done, Cancel, d.close()) calls drop(key), and the matching history step is taken back quietly. History steps are done one
    at a time (a back waits for its popstate), so closing one layer and opening the next in the same tick stays correct. onBack may
    return false to stay open (busy dialog, save running): the entry is put back. */
-const nav=(()=>{
+const NAV=(()=>{
   const stack=[], waiters=[]; let want=0, flight=null, pushQ=0, tmr=0, keepSearch=location.search;
   const rs=history.replaceState.bind(history), ps=history.pushState.bind(history);
   try{ history.replaceState=function(s,t,u){ if(u!=null){ try{ keepSearch=new URL(u,location.href).search; }catch(_){} } return rs(s,t,u); }; }catch(_){}
@@ -427,9 +427,9 @@ const nav=(()=>{
   });
   return {push,drop,idle,back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
 })();
-function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); nav.drop(d); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
+function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); NAV.drop(d); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
   /* r3-nav: Back closes it like Cancel (a busy dialog, or one whose cancel is refused, stays) */
-  nav.push(d,()=>{ const btns=[...d.querySelectorAll('button')].filter(b=>!b.hidden); if(btns.length&&btns.every(b=>b.disabled)) return false;
+  NAV.push(d,()=>{ const btns=[...d.querySelectorAll('button')].filter(b=>!b.hidden); if(btns.length&&btns.every(b=>b.disabled)) return false;
     const ev=new Event('cancel',{cancelable:true}); d.dispatchEvent(ev); if(ev.defaultPrevented) return false; d.close(); });
   /* tapping the dimmed area outside closes it like Cancel; not while it's busy (buttons disabled = saving, deleting, signing in) */
   let downOutside=false;
@@ -1056,8 +1056,8 @@ async function tool(cfg){
   let parentName=null, sheetNavN=0;
   const CHILD_SHEETS={assets:1,comps:1,stickers:1,insp:1};
   function syncSheetNav(depth){
-    while(sheetNavN<depth){ const k=++sheetNavN; nav.push('sheet'+k,()=>sheetBack(k)); }
-    while(sheetNavN>depth){ nav.drop('sheet'+sheetNavN); sheetNavN--; }
+    while(sheetNavN<depth){ const k=++sheetNavN; NAV.push('sheet'+k,()=>sheetBack(k)); }
+    while(sheetNavN>depth){ NAV.drop('sheet'+sheetNavN); sheetNavN--; }
   }
   function sheetBack(k){ if(k===1&&openName==='save'&&typeof saving!=='undefined'&&saving) return false;   // a save is running: keep its sheet
     sheetNavN=k-1; closeSheet(); }
@@ -2678,11 +2678,11 @@ async function home(){
     if(v==='templates') showTemplates();
     if(v==='calendar') showCalendar(); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
-  function openView(v){ if(curView()===v) return; nav.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
+  function openView(v){ if(curView()===v) return; NAV.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
   function openSaved(){ openView('saved'); }
   function goHome(){ if(curView()==='home'){ window.scrollTo({top:0,behavior:reduce()?'auto':'smooth'}); return; }
     if(sel) endSelect(true);   // r3-nav
-    nav.idle(()=>{ if(history.state&&history.state.sp) history.back(); else { try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} showView('home'); } }); }
+    NAV.idle(()=>{ if(history.state&&history.state.sp) history.back(); else { try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} showView('home'); } }); }
   addEventListener('popstate',()=>{ const want=hashView(); if(want!==curView()) showView(want); });
   tabs.forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); haptic('tick'); if(a.dataset.tab==='home') goHome(); else openView(a.dataset.tab); }));
   document.addEventListener('click',e=>{ const a=e.target.closest('[data-see-all]'); if(a){ e.preventDefault(); openSaved(); } });
@@ -3135,8 +3135,8 @@ async function home(){
     m.style.left=x+'px'; m.style.top=y+'px'; m.style.transformOrigin=`${rtl?'left':'right'} ${y<r.top?'bottom':'top'}`;
     btn.setAttribute('aria-expanded','true');
     const btns=[...m.querySelectorAll('[role=menuitem]')];
-    nav.push(m,()=>close(true));   // r3-nav: Back closes the menu first
-    const close=back=>{ m.remove(); nav.drop(m); btn.setAttribute('aria-expanded','false'); removeEventListener('pointerdown',out,true); removeEventListener('scroll',shut,true); removeEventListener('resize',shut); document.removeEventListener('keydown',key,true); if(back&&btn.isConnected) btn.focus({preventScroll:true}); };
+    NAV.push(m,()=>close(true));   // r3-nav: Back closes the menu first
+    const close=back=>{ m.remove(); NAV.drop(m); btn.setAttribute('aria-expanded','false'); removeEventListener('pointerdown',out,true); removeEventListener('scroll',shut,true); removeEventListener('resize',shut); document.removeEventListener('keydown',key,true); if(back&&btn.isConnected) btn.focus({preventScroll:true}); };
     m._close=close;
     const out=e=>{ if(!m.contains(e.target)&&!btn.contains(e.target)) close(false); };
     const shut=e=>{ if(!e||!m.contains(e.target)) close(false); };
@@ -3156,10 +3156,10 @@ async function home(){
      or delete them, in one go. The bottom bar swaps for the actions; ✕, Escape, Back or leaving the page stops selecting. */
   const plural=(n,w)=>n+' '+w+(n===1?'':'s');
   function startSelect(id,keep){ sel=new Set(id?[id]:[]); document.body.classList.add('selecting'); $('selBar').hidden=false; haptic('tick');
-    nav.push('select',()=>endSelect(false,true));   // r3-nav: Back ends select first
+    NAV.push('select',()=>endSelect(false,true));   // r3-nav: Back ends select first
     if(keep) paintSel(); else paintPage(); }   // keep: the grid stays as it is (a finger is still on one of its cards)
   function endSelect(quiet,fromBack){ if(!sel) return; sel=null; document.body.classList.remove('selecting'); $('selBar').hidden=true;
-    if(!fromBack) nav.drop('select');   // drop the select step from history, so Back goes home next
+    if(!fromBack) NAV.drop('select');   // drop the select step from history, so Back goes home next
     if(quiet) paintSel(); else paintPage(); }
   function paintSel(){
     const on=!!sel, n=on?sel.size:0, back=$('savedBack');
@@ -3455,5 +3455,5 @@ async function home(){
 const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={nav,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();
