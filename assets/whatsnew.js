@@ -50,15 +50,20 @@
     return out;
   }
 
+  /* r3-nav: this page does not load studio.js, so it keeps a one-layer back step of its own: Back closes the screenshot first */
+  var Nv=(window.Studio&&Studio.nav)||(function(){var fn=null,skip=0;
+    addEventListener('popstate',function(){if(skip){skip--;return;}var f=fn;fn=null;if(f)f();});
+    return{push:function(k,f){if(fn)return;fn=f;try{history.pushState({wn:1},'');}catch(_){}},drop:function(){if(!fn)return;fn=null;skip++;try{history.back();}catch(_){skip--;}}};})();
   /* ---------- screenshot dialog ---------- */
   function open(src,alt){
     big.src=src;big.alt=alt||'';
     if(dlg.showModal)dlg.showModal();else dlg.setAttribute('open','');
+    Nv.push('wnShot',function(){closeDlg();});   /* r3-nav: Back closes the screenshot */
   }
   function closeDlg(){if(dlg.close)dlg.close();else dlg.removeAttribute('open');}
   closeBtn.addEventListener('click',closeDlg);
   dlg.addEventListener('click',function(e){if(e.target===dlg)closeDlg();});
-  dlg.addEventListener('close',function(){big.removeAttribute('src');});
+  dlg.addEventListener('close',function(){big.removeAttribute('src');Nv.drop('wnShot');});
 
   function fig(kind,src,title){
     var f=el('figure','wn-fig '+kind);

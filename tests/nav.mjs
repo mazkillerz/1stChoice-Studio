@@ -178,5 +178,14 @@ for(const scheme of ['light','dark']){
   await back(pg); ok('board: Back closes the palette',!await vis('#palette')&&pg.url()===u0);
   await ctx.close(); }
 
+/* ---- Welcome tour: Back goes a slide back, then leaves the tour ---- */
+{ const ctx=await mk('light'), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message));
+  await pg.goto(BASE+'index.html?welcome=1'); await pg.waitForSelector('dialog.wl[open]',{timeout:8000}); await wait(pg,500);
+  const cur=()=>pg.evaluate(()=>+(document.querySelector('.wl-dot[aria-current="true"]')||{dataset:{i:-1}}).dataset.i);
+  await pg.tap('.wl-next'); await wait(pg,1200); const c1=await cur();
+  await back(pg); await wait(pg,900); ok('welcome: Back goes one slide back, the tour stays',c1===1&&await cur()===0&&await pg.evaluate(()=>!!document.querySelector('dialog.wl[open]')),[c1,await cur()]);
+  await back(pg); await wait(pg,700); ok('welcome: Back on the first slide leaves the tour',!await pg.evaluate(()=>!!document.querySelector('dialog.wl[open]')));
+  await ctx.close(); }
+
 console.log(res.join('\n')); const bad=res.filter(r=>r.startsWith('FAIL')).length;
 console.log((res.length-bad)+' passed, '+bad+' failed'+(errs.length?'; page errors: '+errs.slice(0,3).join(' | '):'')); await b.close(); process.exit(bad||errs.length?1:0);

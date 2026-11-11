@@ -106,6 +106,7 @@
 
     function finish(result){
       if(done) return; done=true;
+      safe(function(){ if(window.Studio&&Studio.nav) Studio.nav.drop('welcome'); });   /* r3-nav */
       window.removeEventListener('resize',onResize);
       clearTimeout(settleT); if(raf) cancelAnimationFrame(raf);
       if(!reduced) dlg.classList.add('closing');
@@ -135,6 +136,8 @@
     lock(true);
     try{ dlg.showModal(); }
     catch(_){ if(dlg.parentNode) dlg.parentNode.removeChild(dlg); lock(false); active=null; resolve('skipped'); return promise; }
+    /* r3-nav: Back goes one slide back, and on the first slide leaves the tour like Skip */
+    safe(function(){ if(window.Studio&&Studio.nav) Studio.nav.push('welcome',function(){ if(done) return; if(cur>0){ go(cur-1); return false; } finish('skipped'); }); });
     safe(function(){ dlg.focus({preventScroll:true}); });   /* focus the dialog itself so no button shows a focus ring on open */
     return promise;
   }
