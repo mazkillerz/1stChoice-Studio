@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** the mega round (7–8 Nov 2026, one lead + sonnet builders in parallel, plan `studio-notes/mega-plan.md`, log `studio-notes/mega-round.md`): 1.54.0 foundation (Update vs Save as new, versions, covers, Who's using, self-hosted fonts, tokens, faster tests + goldens, preview flags, Supabase tables), 1.55.0 features (brand check, resize, occasion packs, shared components; previews: team workflow, Claude Design import, moving stories), 2.0.0 power and polish (previews: remove background, live stock; Simplify pass). The next session, 2.1.0, is a **team** session; the next Simplify is 2.5.0.
+**Last session:** round 3 (11 Nov 2026, 2.3.0: Save asks where it goes, one back stack, team assets + logo-grade remover, more backgrounds, the New Studio look preview; plan `studio-notes/round3.md`). Before that:  the mega round (7–8 Nov 2026, one lead + sonnet builders in parallel, plan `studio-notes/mega-plan.md`, log `studio-notes/mega-round.md`): 1.54.0 foundation (Update vs Save as new, versions, covers, Who's using, self-hosted fonts, tokens, faster tests + goldens, preview flags, Supabase tables), 1.55.0 features (brand check, resize, occasion packs, shared components; previews: team workflow, Claude Design import, moving stories), 2.0.0 power and polish (previews: remove background, live stock; Simplify pass). The next session, 2.1.0, is a **team** session; the next Simplify is 2.5.0.
 **Simplify session:** every 5th minor version. The next one is 2.5.0 (2.0.0 ran the pattern review and a Simplify pass over the round).
 
 ## Next up
@@ -22,6 +22,20 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 43 | Arabic day words in Saved search (`findDates` in brand.js): proposed اليوم / أمس / هالأسبوع, waiting for the owner's OK | 2 | 1 | 1 | 1 | 3 | From 1.32.0. English today / yesterday / this week work now. |
 
 | 49 | Search "/" key hint: show always (built) or only until used once? | 1 | 1 | 1 | 1 | 2 | Owner's call, from 1.39.0. |
+
+## From round 3 (2.3.0, 11 Nov 2026)
+| # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
+|---|------|-----:|-------:|----:|-------:|------:|-------|
+| 61 | Owner approves the `team_assets` table (Supabase prompt timed out twice): then test Team assets on the live site | 5 | 4 | 3 | 1 | 11 | Until then the library says it is switched on by the owner once. |
+| 62 | Owner's verdict on the New Studio look (flag `next`): make it the default, fold `next.css` in, archive the old bar and Saved | 4 | 5 | 5 | 2 | 12 | What's New card has the switch. |
+| 63 | Full test round (owner said testing comes later): `node tests/run.mjs --all`, contrast, tapscan, taste, RTL; suites not yet moved to the new Save flow show up here | 3 | 3 | 1 | 3 | 4 | `taste`, `simplify15`, `review`, `queue`, `highlight-emoji` were being updated when the save builder stopped. |
+| 64 | Campaigns "Save all" writes new team designs with no collection picker: ask for one collection for the set | 2 | 3 | 1 | 2 | 4 | The only writer left outside the new Save rule. |
+| 65 | Asset remover: coloured glows / shadows stay as a pale halo; a logo part close to the ground colour is eaten; a "tap the ground colour" picker would fix both | 2 | 3 | 3 | 2 | 6 | |
+| 66 | Team assets in Board; "Most used" across the team (needs a counter column); replace a picture but keep the id | 2 | 3 | 2 | 2 | 5 | |
+| 67 | Schedule reminders for planned posts (a push from the installed app at the planned time) | 3 | 4 | 4 | 3 | 8 | Needs notification permission; no server needed with the Notification Triggers fallback = check on open. |
+| 68 | Restock "repeat last": one tap makes today's restock from the last saved one with a new photo | 5 | 2 | 3 | 2 | 8 | Team's daily job. |
+| 69 | Brand kit editor in Studio (colours, fonts, phrases, logo) so a second brand needs no code | 2 | 5 | 5 | 4 | 8 | Step toward "beyond 1st Choice". |
+| 70 | Video and Board save sheets on the shared Save component (three copies of the where/collection UI today) | 1 | 2 | 1 | 2 | 2 | |
 
 ## From the mega round (8 Nov 2026)
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
