@@ -4,6 +4,9 @@
 const CFG=window.STUDIO_CONFIG||{};
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/cloud\.js.*$/,''):'../';
 let sb=null, memberCache=null;
+/* a cover shipped with the site (planned content): 'site:<path from the site root>'. It is never in the bucket, so it is
+   read with a plain fetch, kept on duplicate, and never removed; a re-save replaces it with a normal bucket cover. */
+const SHIPPED=p=>typeof p==='string'&&p.startsWith('site:'), siteUrl=p=>ROOT+p.slice(5);
 
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 async function client(){
@@ -122,23 +125,26 @@ async function designs(brand){
   fail(r.error,'Saved designs');
   return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
 }
-async function getDesign(id){ const c=await client(); const {data,error}=await c.from('designs').select('*,design_collections(collection_id,collections(name))').eq('id',id).single(); fail(error,'Open design'); data.collectionNames=(data.design_collections||[]).map(x=>x.collections&&x.collections.name).filter(Boolean); return data; }
+async function getDesign(id){ const c=await client(); const {data,error}=await c.from('designs').select('*,design_collections(collection_id,collections(name))').eq('id',id).single(); fail(error,'Open design'); await siteDoc(data.recipe); data.collectionNames=(data.design_collections||[]).map(x=>x.collections&&x.collections.name).filter(Boolean); return data; }
 async function upload(path,blob){ const c=await client(); const {error}=await c.storage.from(CFG.bucket).upload(path,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'}); fail(error,'Upload'); return path; }
-async function removeFiles(paths){ paths=(paths||[]).filter(Boolean); if(!paths.length) return; const c=await client(); const {error}=await c.storage.from(CFG.bucket).remove(paths); fail(error,'Remove images'); }
+/* planned content: a recipe may name its layout as a file shipped with the site (docSite) instead of carrying it; it is read here,
+   so every tool gets a normal recipe.doc, and the first save stores the layout in the row like any other design. */
+async function siteDoc(r){ if(!r||r.doc||!r.docSite) return; try{ const res=await fetch(ROOT+r.docSite); if(res.ok) r.doc=await res.json(); }catch(_){} }
+async function removeFiles(paths){ paths=(paths||[]).filter(p=>p&&!SHIPPED(p)); if(!paths.length) return; const c=await client(); const {error}=await c.storage.from(CFG.bucket).remove(paths); fail(error,'Remove images'); }
 /* every file stored for one design lives in <brand>/<design id>/ */
 async function listFolder(prefix){ const c=await client(); const {data,error}=await c.storage.from(CFG.bucket).list(prefix,{limit:1000}); fail(error,'Images'); return (data||[]).filter(f=>f.id).map(f=>prefix+f.name); }
 const urlCache=new Map();
 async function fileUrl(path){
-  if(!path) return null; const hit=urlCache.get(path); if(hit&&hit.until>Date.now()) return hit.url;
+  if(!path) return null; if(SHIPPED(path)) return siteUrl(path); const hit=urlCache.get(path); if(hit&&hit.until>Date.now()) return hit.url;
   const c=await client(); const {data,error}=await c.storage.from(CFG.bucket).createSignedUrl(path,3600); if(error) return null;
   urlCache.set(path,{url:data.signedUrl,until:Date.now()+50*60*1000}); return data.signedUrl;
 }
 async function fileUrls(paths){
-  paths=[...new Set(paths.filter(Boolean))]; const need=paths.filter(p=>!(urlCache.get(p)&&urlCache.get(p).until>Date.now()));
+  const site={}; paths.filter(SHIPPED).forEach(p=>{ site[p]=siteUrl(p); }); paths=[...new Set(paths.filter(p=>p&&!SHIPPED(p)))]; const need=paths.filter(p=>!(urlCache.get(p)&&urlCache.get(p).until>Date.now()));
   if(need.length){ const c=await client(); const {data}=await c.storage.from(CFG.bucket).createSignedUrls(need,3600); (data||[]).forEach(r=>{ if(r.signedUrl) urlCache.set(r.path,{url:r.signedUrl,until:Date.now()+50*60*1000}); }); }
-  const out={}; paths.forEach(p=>{ const h=urlCache.get(p); if(h) out[p]=h.url; }); return out;
+  const out={...site}; paths.forEach(p=>{ const h=urlCache.get(p); if(h) out[p]=h.url; }); return out;
 }
-async function download(path){ const c=await client(); const {data,error}=await c.storage.from(CFG.bucket).download(path); fail(error,'Photo'); return data; }
+async function download(path){ if(SHIPPED(path)){ const r=await fetch(siteUrl(path)); if(!r.ok) throw new Error('Photo: '+r.status); return r.blob(); } const c=await client(); const {data,error}=await c.storage.from(CFG.bucket).download(path); fail(error,'Photo'); return data; }
 
 const VERSION_CAP=20;
 const VCOLS='id,design_id,name,recipe,thumb_path,photo_paths,author,created_at';
@@ -230,7 +236,7 @@ async function deleteDesign(id){
 }
 async function duplicateDesign(id,newName){
   const c=await client(); const d=await getDesign(id); const nid=uid(); const base=d.brand+'/'+nid+'/';
-  const copy=async p=>{ if(!p) return null; const np=base+p.split('/').pop(); const {error}=await c.storage.from(CFG.bucket).copy(p,np); return error?null:np; };
+  const copy=async p=>{ if(!p) return null; if(SHIPPED(p)) return p; const np=base+p.split('/').pop(); const {error}=await c.storage.from(CFG.bucket).copy(p,np); return error?null:np; };
   const photoPaths=[]; for(const p of (d.recipe.photoPaths||[])) photoPaths.push(await copy(p));
   const thumb=await copy(d.thumb_path);
   const recipe={...d.recipe,photoPaths};

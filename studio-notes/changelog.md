@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.3.1 · 12 Nov 2026
+
+### Planned posts arrive ready in Saved
+type: feature
+Posts and stories planned for you now show up in Saved with their cover, already on the calendar. Open one, change anything, and save as usual.
+
 ## 2.3.0 · 11 Nov 2026
 Save asks where your story goes, Back goes one step back everywhere, and the team can add its own assets. A new look for the bottom bar, Saved and Home is waiting as a preview.
 
