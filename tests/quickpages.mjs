@@ -1,7 +1,7 @@
 /* Studio 1.1.0: Quick start for paged tools, and Collage drops on a border.
    1. The + menu lists the photo tools, each with its own icon (no two the same); pinned Carousel and Highlight covers rows have a camera (unpinned ones have it in All tools: alltools-cam.mjs).
    2. Five photos picked for Carousel open Carousel with five slides, one photo on each (none left as an example photo),
-      the "Your photos are in" card shows, and one tap on the bar's Save saves (the save is a full-size slide PNG).
+      the "Your photos are in" card shows, and Save, then Save to my phone, saves (the save is a full-size slide PNG).
    3. Three photos for Highlight covers give three covers, every one a photo cover.
    4. Thirteen photos for Carousel keep the first ten (the most a carousel has), and the pick sheet's wording says so.
    5. Collage with a 30px border: a point on a photo's border counts as that photo (drop to swap works on the frame too),
@@ -42,9 +42,9 @@ ok('carousel: 5 photos make 5 slides',car.pages===5,car.pages);
 ok('carousel: every slide has its own photo',car.real.every(Boolean),JSON.stringify(car.real));
 ok('carousel: opens on the first slide with "Your photos are in"',car.page===0&&ready);
 const dls=[]; pg.on('download',d=>dls.push(d));
-await pg.tap('#barSave'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
+await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000}); await pg.waitForTimeout(300); await pg.tap('#save'); for(let i=0;i<60&&!dls.length;i++) await pg.waitForTimeout(300);
 let size=''; if(dls[0]){ const f=os.tmpdir()+'/qp-'+dls[0].suggestedFilename(); await dls[0].saveAs(f); size=/\.png$/i.test(f)?pngSize(f):'not a png: '+f; }
-ok('carousel: one tap on Save saves at full size (2160x2700 slides)',dls.length>=1&&size==='2160x2700',dls.length+' files, '+size);
+ok('carousel: Save, then Save to my phone, saves at full size (2160x2700 slides)',dls.length>=1&&size==='2160x2700',dls.length+' files, '+size);
 
 /* 3. highlight covers from 3 photos */
 await pg.goto(BASE+'index.html'); await pg.waitForTimeout(500);

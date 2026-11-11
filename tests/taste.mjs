@@ -7,7 +7,7 @@
                        sheet head text starts where the first control starts; sibling icons (bottom bars, + menu) have equal sizes; the three photo tools have different icons
     #6  contrast       every visible text >= 4.5:1 (3:1 large) in light AND dark, selected states included, and a selected control differs from its unselected sibling
     #3  pop-ups        toast <= 2 lines, <= 15% of the preview, gone in 4.5 s; "Your photo is in" <= 15% and gone in 4 s; dialogs inside the viewport (390 and 1280), no page scroll jump
-    #1  tap budget     Restock / Photo story from a photo to a saved 2160x3840 PNG in <= 2 taps; Restock "Cans" with no photo in 1 tap
+    #1  tap budget     Restock / Photo story from a photo to a saved 2160x3840 PNG in <= 3 taps; Restock "Cans" with no photo in 2 taps (2.4.1: Save asks where first)
     #2  clutter        first view of Home and each tool: <= 2 accent-filled controls (not the + button), no two controls with the same name;
                        every state (open sheets too): <= 2 accent-filled buttons (chosen chips aside) (1.15.0)
     #10 links          no button or link is underlined (1.15.0)
@@ -366,9 +366,10 @@ async function budget(tag,id){
   await pg.waitForFunction(()=>window.__tm&&window.__tm.eps.some(e=>e.kind==='ready'),null,{timeout:3000}).catch(()=>{});
   await pg.waitForFunction(()=>document.getElementById('readyBar').hidden,null,{timeout:6500}).catch(()=>{});   // let the note run its course (measured by the monitor)
   const eps=await pg.evaluate(()=>window.__tm.eps.map(e=>({...e})));
-  await c.press('#barSave'); taps++;                                                                                 // tap 2: Save in the bar
-  let d=await waitDl(1,9000), png=d?await pngSize(d):'';
-  if(!d){ const open=await pg.evaluate(()=>!!document.querySelector('#sh-save.open')); if(open){ await c.press('#save'); taps++; d=await waitDl(1,9000); png=d?await pngSize(d):''; } }
+  await c.press('#barSave'); taps++;                                                                                 // tap 2: Save in the bar (2.4.1: opens the Save sheet)
+  await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{}); await c.wait(300);
+  await c.press('#save'); taps++;                                                                                    // tap 3: Save to my phone
+  const d=await waitDl(1,9000), png=d?await pngSize(d):'';
   await pg.waitForFunction(()=>![...document.querySelectorAll('.toast')].some(t=>!t.hidden),null,{timeout:6000}).catch(()=>{});
   const eps2=await pg.evaluate(()=>window.__tm.eps.map(e=>({...e})));
   await c.ctx.close(); return {taps,png,eps:eps2.length>=eps.length?eps2:eps};
@@ -379,8 +380,9 @@ async function cans(){
   const style=await pg.evaluate(()=>Studio.debug.S.style).catch(()=>null);
   if(style!=='cans'){ await c.ctx.close(); return {skip:`style "cans" is not applied (style is ${style})`}; }
   let taps=0; await c.press('#barSave'); taps++;
-  let d; for(let i=0;i<36&&!dls.length;i++) await pg.waitForTimeout(250); d=dls[0]; let png=d?await pngSize(d):'';
-  if(!d){ const open=await pg.evaluate(()=>!!document.querySelector('#sh-save.open')); if(open){ await c.press('#save'); taps++; for(let i=0;i<36&&!dls.length;i++) await pg.waitForTimeout(250); d=dls[0]; png=d?await pngSize(d):''; } }
+  await pg.waitForSelector('#sh-save.open',{timeout:5000}).catch(()=>{}); await c.wait(300);
+  await c.press('#save'); taps++;
+  let d; for(let i=0;i<36&&!dls.length;i++) await pg.waitForTimeout(250); d=dls[0]; const png=d?await pngSize(d):'';
   await c.ctx.close(); return {taps,png};
 }
 
@@ -445,9 +447,9 @@ for(const w of [390,1280]){
 }
 /* tap budget */
 for(const [id,f] of [['restock',flows.restock],['photo-story',flows['photo-story']]]){
-  ok(`tap budget: ${id} from a photo to a saved 2160x3840 PNG in <= 2 taps`,!!f&&f.taps<=2&&f.png==='2160x3840',f?{taps:f.taps,png:f.png||'no download'}:'flow did not run'); }
-if(flows.cans&&flows.cans.skip) skip('tap budget: Restock "Cans" with no photo saves a 2160x3840 PNG in 1 tap',flows.cans.skip);
-else ok('tap budget: Restock "Cans" with no photo saves a 2160x3840 PNG in 1 tap after opening',!!flows.cans&&flows.cans.taps<=1&&flows.cans.png==='2160x3840',flows.cans?{taps:flows.cans.taps,png:flows.cans.png||'no download'}:'flow did not run');
+  ok(`tap budget: ${id} from a photo to a saved 2160x3840 PNG in <= 3 taps (2.4.1: Save asks where first)`,!!f&&f.taps<=3&&f.png==='2160x3840',f?{taps:f.taps,png:f.png||'no download'}:'flow did not run'); }
+if(flows.cans&&flows.cans.skip) skip('tap budget: Restock "Cans" with no photo saves a 2160x3840 PNG in 2 taps (2.4.1: Save asks where first)',flows.cans.skip);
+else ok('tap budget: Restock "Cans" with no photo saves a 2160x3840 PNG in 2 taps after opening (2.4.1: Save asks where first)',!!flows.cans&&flows.cans.taps<=2&&flows.cans.png==='2160x3840',flows.cans?{taps:flows.cans.taps,png:flows.cans.png||'no download'}:'flow did not run');
 /* clutter */
 line('clutter:accent','light: first view of Home and each tool has at most 2 accent-filled controls (not counting +)',a=>({screens:a.cnt,most:a.max}));
 line('clutter:dups','light: no two visible controls share a name on the first view of Home and each tool',a=>({screens:a.cnt}));
