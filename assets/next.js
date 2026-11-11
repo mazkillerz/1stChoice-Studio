@@ -70,14 +70,14 @@ NX.shelf=function(H){
 };
 
 /* the card: the whole picture (never cropped) on a soft backing, the full name, one quiet line, the author's initial */
-NX.card=function(d,i,H){
+NX.card=function(d,i,H,o){ o=o||{};
   const tpl=d.kind==='template', names=d.collections.map(H.colName).filter(Boolean), by=initial(d.author);
   const where=names.length?E(names[0])+(names.length>1?' +'+(names.length-1):''):'';
   NX._H=H;
-  return '<div class="sv-card nx-card'+(H.sel&&H.sel.has(d.id)?' picked':'')+'" data-id="'+E(d.id)+'" style="--i:'+Math.min(i,12)+'"><a class="sv-open" href="'+H.toolPage(d.tool)+'?design='+encodeURIComponent(d.id)+'" draggable="false" aria-label="'+E(d.name)+', '+E(H.toolName(d.tool))+(tpl?', template':'')+'. Press and hold for more.">'
+  return '<div class="sv-card nx-card'+(o.mini?' nx-jcard':'')+(H.sel&&H.sel.has(d.id)?' picked':'')+'" data-kind="saved" data-id="'+E(d.id)+'" style="--i:'+Math.min(i,12)+'"><a class="sv-open" href="'+H.toolPage(d.tool)+'?design='+encodeURIComponent(d.id)+'" draggable="false" aria-label="'+E(d.name)+', '+E(H.toolName(d.tool))+(tpl?', template':'')+'. Press and hold for more.">'
     +'<span class="sv-thumb nx-thumb" data-shape="'+H.toolShape(d.tool)+'">'+img(d,H)+(tpl?'<em class="sv-badge nx-tag">Template</em>':'')+H.rvChip(d)+'<span class="sv-check" aria-hidden="true">'+H.ICON.check+'</span></span>'
     +'<span class="sv-txt nx-txt" dir="auto"><b class="nx-name" title="'+E(d.name)+'">'+E(d.name)+'</b><span class="nx-meta">'+(where?'<span class="nx-where">'+where+'</span><i aria-hidden="true">·</i>':'')+'<bdi>'+E(H.ago(H.lastUse(d)))+'</bdi>'+(by?'<u class="nx-by" title="'+E(d.author)+'" aria-label="'+E(d.author)+'">'+E(by)+'</u>':'')+'</span></span></a>'
-    +'<button type="button" class="sv-more" data-dmore="'+E(d.id)+'" aria-label="More for '+E(d.name)+'">'+H.ICON.more+'</button></div>';
+    +(o.mini?'':'<button type="button" class="sv-more" data-dmore="'+E(d.id)+'" aria-label="More for '+E(d.name)+'">'+H.ICON.more+'</button>')+'</div>';
 };
 
 /* the design sheet: a big picture, name and line, four big actions; the other rows follow (studio.js) */
@@ -92,6 +92,29 @@ NX.sheetTiles=function(H,dsg,open){ const tpl=dsg.kind==='template';
     +(tpl?'':'<a class="ds-big" href="'+open+'&go=1"><span>'+H.ICON.download+'</span>Save picture</a>')
     +'<button type="button" class="ds-big" data-act="dup"><span>'+H.ICON.copy+'</span>Duplicate</button>'
     +'<button type="button" class="ds-big" data-act="cols"><span>'+H.ICON.folder+'</span>Collection</button></div>';
+};
+
+/* ---------- Home: compact greeting, Jump back in ---------- */
+NX.homeInit=function(H){
+  const $=id=>document.getElementById(id), t=$('toolsH'); if(t) t.textContent='Create';
+  const sec=document.createElement('section'); sec.className='hub-sec nx-jump'; sec.id='nxJump'; sec.hidden=true; sec.setAttribute('aria-labelledby','nxJumpH');
+  sec.innerHTML='<div class="sec-head"><h2 id="nxJumpH">Jump back in</h2><span class="nx-jacts"><button type="button" class="link" id="nxJSave" hidden>Save pictures</button><a class="see-all" href="#saved" data-see-all>See all</a></span></div><div class="scroller nx-jrow" id="nxJumpList"></div>';
+  const hero=document.querySelector('#homeView .hero'); if(hero) hero.after(sec);
+  $('nxJSave').onclick=()=>$('contSave').click();
+};
+/* drafts and the newest saved designs, newest first, at most 10; returns the saved designs shown (their pictures are fetched by the caller) */
+NX.jump=function(H,o){
+  const sec=document.getElementById('nxJump'), box=document.getElementById('nxJumpList'); if(!sec||!box) return [];
+  const items=o.drafts.map(x=>({t:x.at,draft:x})).concat(o.saved.slice(0,10).map(d=>({t:H.lastUse(d),saved:d}))).sort((a,b)=>b.t-a.t).slice(0,10);
+  sec.hidden=!items.length; document.getElementById('nxJSave').hidden=!o.drafts.length;
+  const shown=[];
+  box.innerHTML=items.map((it,i)=>{
+    if(it.saved){ shown.push(it.saved); return NX.card(it.saved,i,H,{mini:true}); }
+    const x=it.draft;
+    return '<div class="sv-card nx-card nx-jcard" data-kind="draft" data-draft="'+E(x.key)+'"><a class="nx-dopen" href="'+H.toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)+'" draggable="false" aria-label="'+E(x.title)+', unfinished story">'
+      +'<span class="sv-thumb nx-thumb">'+(x.thumb?'<img class="nx-img" alt="" src="'+x.thumb+'" onload="this.classList.add(\'in\')">':'')+'<em class="nx-tag">Draft</em></span>'
+      +'<span class="sv-txt nx-txt" dir="auto"><b class="nx-name">'+E(x.title)+'</b><span class="nx-meta"><bdi>'+E(H.ago(x.at))+'</bdi></span></span></a></div>'; }).join('');
+  return shown;
 };
 
 /* instant Saved: the last list is kept on this device per brand (names, tools, collections, picture paths, times; picture links only while they are fresh) */

@@ -2622,7 +2622,7 @@ function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) retur
 async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
   const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
-  let NX=null; if(flags.on('next')){ try{ NX=await lazy('next'); }catch(_){ delete document.documentElement.dataset.next; } }   /* r3-next: the New Studio look (assets/next.js) loads only with its preview on */
+  let NX=null, NXH=null, nxKind='all'; if(flags.on('next')){ try{ NX=await lazy('next'); }catch(_){ delete document.documentElement.dataset.next; } }   /* r3-next: the New Studio look (assets/next.js) loads only with its preview on */
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
   let all=[], cols=[], filter='all', findQ='', me=null, member=false, owner=false, loading=null, loadedFor=undefined, C=null, cloudNote='', loadRun=0, slowT=0;   // cloudNote: the offline / slow note on show (1.46.0)
   const SORTS={recent:'Recent',oldest:'Oldest',name:'Name A to Z'};
@@ -2656,7 +2656,8 @@ async function home(){
   paintTools();
   /* how your tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
   let toolsView=store('studio:toolsView')==='list'||!store('studio:toolsView')?'list':'grid';
-  function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView; document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
+  function paintToolsView(){ $('toolGrid').className='grid view-'+(NX?'grid':toolsView);   /* r3-next: Create is always the big-tile grid */
+    document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
   paintToolsView();
   /* a photo picked in any Quick start button (home or search) goes to its tool through IndexedDB */
   document.addEventListener('change',async e=>{ const inp=e.target, id=inp&&inp.dataset&&inp.dataset.quick; if(!id||!TOOLS[id]) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
@@ -2876,7 +2877,7 @@ async function home(){
     let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row);   /* first thing on Home (2.2.0) */
       row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
     const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
-      row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
+      row.innerHTML=(NX?'<div class="sec-head"><h2>Today</h2></div>':'')+`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):NX?'Nothing planned today':'Calendar'}</b><small>${t?(NX&&t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':NX?'Plan a post':'Plan and see your team’s posts'}</small></span></button>`; };
     if(!row.firstChild) paintRow(null);
     if(!member||!C||!C.calendar) return;
     try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -2951,6 +2952,9 @@ async function home(){
   /* continue editing: every unfinished story kept on this phone, newest first (several per tool) */
   const allDrafts=()=>Object.keys(TOOLS).flatMap(id=>listDrafts(B.id,id)).sort((a,b)=>(b.d.at||0)-(a.d.at||0));
   let cont=allDrafts();
+  /* r3-next: Jump back in = unfinished stories and the newest saved designs in one row */
+  const nxTime=t=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(t||'')); if(!m) return ''; const h=+m[1]; return h>=12?((h%12)||12)+(m[2]==='00'?'':':'+m[2])+' pm':h+(m[2]==='00'?'':':'+m[2])+' am'; };
+  function paintJump(){ if(!NX||!NXH) return; const g=NX.jump(NXH,{drafts:cont.filter(x=>!x.gone).map(x=>({key:x.key,tool:x.tool,id:x.id,at:x.d.at||0,title:draftTitle(x),thumb:thumbs[tk(x)]||''})),saved:loaded&&member?[...all].sort((a,b)=>lastUse(b)-lastUse(a)):[]}); if(g&&g.length) fillThumbs(g); }
   const thumbs={}, tk=x=>x.key+'@'+(x.d.at||0);   // a preview per edit: a story edited since shows its new picture
   /* a Video editor draft has its own name (default "Video"); the other tools show the tool's name */
   const draftTitle=x=>x.tool==='video'&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
@@ -2962,7 +2966,8 @@ async function home(){
     const note=$('contNote')||(()=>{ const p=document.createElement('p'); p.id='contNote'; p.className='small cont-note'; $('continueList').before(p); return p; })();
     note.hidden=!many.length; note.textContent=many.length?'Lots of unfinished stories ('+many.join(', ')+'). The oldest are at the end: remove the ones you don’t need with ✕.':'';
     $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[tk(x)]?`<img alt="" src="${thumbs[tk(x)]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
-    list.forEach(x=>{ const t=tk(x); if(thumbs[t]!==undefined) return; thumbs[t]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[t]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; }); });
+    list.forEach(x=>{ const t=tk(x); if(thumbs[t]!==undefined) return; thumbs[t]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[t]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; paintJump(); }); });
+    paintJump();
   }
   /* remove an unfinished story: only after you confirm; its photos are deleted from this phone */
   $('continueList').addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; const x=cont.find(c=>c.key===b.dataset.rm); if(!x) return;
@@ -3177,7 +3182,7 @@ async function home(){
   const svCardOld=(d,i)=>{ const tpl=d.kind==='template';
     return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi></span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
   const emptyNote=note(ICON.bookmark,'Nothing saved yet','Tap Save in any tool and your design lands here, for the whole team.','<button type="button" class="btn slim" data-new>Make a design</button>');
-  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); rvHome();   /* review (mega) hook */ campPaint(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
+  function paint(){ if(window.StudioSearch) StudioSearch.refresh(); paintRow(); paintPage(); paintJump(); rvHome();   /* review (mega) hook */ campPaint(); if(tplApi&&curView()==='templates') tplApi.refresh(); }
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
@@ -3219,11 +3224,11 @@ async function home(){
   }
   /* Sort: a small sheet in Studio's style (not the browser's list), a tick on the choice; picking one closes it */
   /* r3-next: the New Studio look's hooks into Saved (assets/next.js draws; this is the state it reads) */
-  let nxKind='all', NXH=null; const nxSave=()=>{ if(!NX||!loaded||!member) return; clearTimeout(nxSave.t); nxSave.t=setTimeout(()=>NX.cacheSave(B.id,all,cols,urls,urlAt),500); };
+  const nxSave=()=>{ if(!NX||!loaded||!member) return; clearTimeout(nxSave.t); nxSave.t=setTimeout(()=>NX.cacheSave(B.id,all,cols,urls,urlAt),500); };
   if(NX){ NXH={ get all(){ return all; }, get cols(){ return cols; }, urls, get filter(){ return filter; }, get kind(){ return nxKind; }, get sel(){ return sel; }, ICON, toolPage, toolName, toolShape, colName, lastUse, ago, rvChip, haptic,
       setKind(k){ nxKind=k; haptic('tick'); paintPage(); }, resetKind(){ nxKind='all'; },
       refetch(path){ delete urls[path]; delete urlAt[path]; if(C) C.fileUrls([path]).then(u=>{ Object.assign(urls,u); document.querySelectorAll('img[data-path]').forEach(i=>{ if(i.dataset.path===path&&urls[path]) i.src=urls[path]; }); }).catch(()=>{}); } };
-    NX.savedInit(NXH);
+    NX.savedInit(NXH); NX.homeInit(NXH); paintJump();
     /* press and hold a collection card: choose it and open its menu (Rename, Delete), like ⋯ */
     { const box=$('colChips'); let t=0, held=false; const stop=()=>{ clearTimeout(t); t=0; };
       box.addEventListener('pointerdown',e=>{ const b=e.target.closest('.nx-col'); held=false; stop(); if(!b||b.dataset.f==='all'||e.button>0) return; const f=b.dataset.f;

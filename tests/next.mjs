@@ -100,7 +100,7 @@ const vis=(pg,s)=>pg.evaluate(s=>{ const e=document.querySelector(s); return !!e
   await ctx.close(); }
 
 /* 5 Home */
-{ const ctx=await mk({pre:`try{ localStorage.setItem('studio:draft:1stchoice:restock:dx',JSON.stringify({at:Date.now(),v:1})); }catch(e){}`}); const pg=await open(ctx);
+{ const ctx=await mk({pre:`try{ localStorage.setItem('studio:draft:1stchoice:restock:dx',JSON.stringify({at:Date.now(),json:{v:1}})); }catch(e){}`}); const pg=await open(ctx);
   ok('home: the greeting is compact (no big headline)',await pg.$eval('.hero h1',h=>h.getBoundingClientRect().height===0||getComputedStyle(h).display==='none'||getComputedStyle(h).position==='absolute'));
   const jump=await pg.$$eval('#nxJump .nx-jcard',c=>c.map(x=>x.dataset.kind)); ok('home: Jump back in lists saved designs',jump.filter(k=>k==='saved').length>=3,jump.join());
   ok('home: See all goes to Saved',await vis(pg,'#nxJump [data-see-all]'));

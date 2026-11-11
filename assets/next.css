@@ -146,3 +146,48 @@
 :root[data-next] .nx-sheet .act-row{min-height:46px}
 :root[data-next] .nx-sheet #dsMain{border-radius:var(--nx-r)}
 :root[data-next] .nx-peek img{border-radius:10px;box-shadow:var(--nx-e2)}
+
+/* ---------- 3. Home ---------- */
+:root[data-next] #homeView{display:flex;flex-direction:column}
+:root[data-next] #homeView>*{width:100%;max-width:1080px;margin-inline:auto;box-sizing:border-box}
+:root[data-next] #homeView>.hero{order:10}
+:root[data-next] #homeView>#sharedBar{order:15}
+:root[data-next] #homeView>#nxJump{order:20}
+:root[data-next] #homeView>#tools{order:30}
+:root[data-next] #homeView>#calRow{order:40}
+:root[data-next] #homeView>#packBanner{order:50}
+:root[data-next] #homeView>#installBar{order:60}
+:root[data-next] #homeView>#rvRow{order:65}
+:root[data-next] #homeView>.foot{order:90}
+:root[data-next] #homeView>.lab-entry{order:95}
+:root[data-next] #continueSec,:root[data-next] #savedRow{display:none}
+:root[data-next] .hero{padding-top:calc(var(--sp-4) + 2px);padding-bottom:var(--sp-1)}
+:root[data-next] .hero h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:root[data-next] .hero .hello{margin:0;font:600 26px/1.15 var(--sans);letter-spacing:-.02em;color:var(--fg)}
+:root[data-next] .hero .usearch{margin-top:var(--sp-3)}
+:root[data-next] .hub-sec{padding-top:var(--sp-4);gap:var(--sp-2)}
+:root[data-next] .hub-sec h2{font:600 20px/1.2 var(--sans);letter-spacing:-.01em}
+:root[data-next] .sec-head .see-all{font:500 15px var(--sans)}
+:root[data-next] .nx-jacts{display:flex;align-items:center;gap:8px}
+:root[data-next] .nx-jacts .link{margin-inline-end:0}
+:root[data-next] .nx-jrow{gap:12px;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter));padding:4px var(--gutter-r) 16px var(--gutter);scroll-padding-inline:var(--gutter);margin-bottom:-12px}
+:root[data-next] .nx-jcard{width:120px;flex:none}
+:root[data-next] .nx-jcard .nx-name{-webkit-line-clamp:1;line-clamp:1;font-size:13px}
+:root[data-next] .nx-dopen{display:flex;flex-direction:column;color:inherit;text-decoration:none;border-radius:16px;-webkit-touch-callout:none;transition:transform .42s var(--spring)}
+:root[data-next] .nx-dopen:active{transform:scale(.95);transition-duration:.09s}
+:root[data-next] .nx-dopen:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+:root[data-next] .nx-jcard .nx-tag{background:var(--accent);color:var(--on-accent)}
+/* Create: the big tiles */
+:root[data-next] .vswitch{display:none}
+:root[data-next] #toolGrid{gap:12px}
+:root[data-next] #toolGrid .tool-row{border-radius:var(--nx-r);box-shadow:var(--nx-e1);overflow:hidden}
+:root[data-next] #toolGrid .tool-item{animation:none}
+:root[data-next] .all-tools{border-radius:var(--nx-r);box-shadow:var(--nx-e1);border:0}
+/* Today */
+:root[data-next] #calRow{padding-top:var(--sp-5)}
+:root[data-next] .cal-home-row{border-radius:var(--nx-r);box-shadow:var(--nx-e1);min-height:64px}
+:root[data-next] .cal-home-row svg{color:var(--accent)}
+:root[data-next] .pack-banner{border:0;border-radius:var(--nx-r);box-shadow:var(--nx-e1);margin:var(--sp-5) auto 0;width:calc(100% - var(--gutter) - var(--gutter-r))}
+:root[data-next] .install{border:0;border-radius:var(--nx-r);box-shadow:var(--nx-e1)}
+:root[data-next] #homeView>.pack-banner{width:calc(100% - var(--gutter) - var(--gutter-r));margin:var(--sp-5) var(--gutter-r) 0 var(--gutter);max-width:calc(1080px - var(--gutter) - var(--gutter-r))}
+@media (min-width:1100px){:root[data-next] #homeView>.pack-banner{margin-inline:auto}}
