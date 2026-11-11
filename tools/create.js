@@ -676,7 +676,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
     if(isTplOpen()&&!wantsNew()){ o.kind='template'; o.asNew=false; } return o; };
   const seen=()=>{ const el=$('crSeeSaved'); if(el) el.hidden=!st.design; };
   $('crGo').onclick=async()=>{ const list=checked(); if(needCol()){ nudge(); return; } if(!list.length){ line('Pick at least one page.'); return; } await saveImages(list); if($('crTeamOn')&&$('crTeamOn').checked){ await runTeam(opts()); seen(); } };
-  if($('crAlt')) $('crAlt').onclick=async()=>{ altMode=wantsNew()?'upd':'new'; if(!(await setWhere('team'))) return; syncT(); $('crGo').click(); };
+  if($('crAlt')) $('crAlt').onclick=async()=>{ altMode=wantsNew()?'upd':'new'; if(isTplOpen()&&altMode==='upd'&&!picked.size) (st.design.collections||[]).forEach(n=>{ if(n) picked.add(n); }); if(!(await setWhere('team'))) return; syncT(); $('crGo').click(); };
   $('crTeamOnly').onclick=()=>{ if(needCol()){ nudge(); return; } runTeam(opts()).then(seen); };
   $('crAsTpl').onclick=async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudge(); return; } await runTeam(Object.assign(opts(),{kind:'template',asNew:!(st.design&&st.design.kind==='template'),name:$('crTName').value})); seen(); };
   if($('crTeamOn').checked) loadCols();

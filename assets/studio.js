@@ -1552,12 +1552,12 @@ async function tool(cfg){
     $('saveTxt').textContent=mainLabel();
     $('save').setAttribute('aria-disabled',String(need)); $('save').classList.toggle('is-need',need);
     const teamDone=$('teamOnly').dataset.off==='1';
-    $('photosRow').hidden=imgDone||on; $('teamOnly').hidden=imgDone||teamDone;
+    $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||teamDone;
     $('alsoTeam').hidden=!imgDone||on||teamDone; $('seeSaved').hidden=!teamDone;
     if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
-  function pickDefaultCols(){ teamPicked.clear(); if(!design) return;   // r3-save: a new design has nothing picked (the last-used one only comes first in the row); an opened design keeps its own
+  function pickDefaultCols(){ teamPicked.clear(); if(!design||(isTpl()&&altMode!=='upd')) return;   // r3-save: a new design has nothing picked (the last-used one only comes first in the row); an opened design keeps its own
     (Array.isArray(design.collections)?design.collections:[]).forEach(n=>{ if(n) teamPicked.add(n); }); }
   store('studio:teamSave',null);   // forget the old remembered setting
   $('teamOn').checked=false;
@@ -1581,7 +1581,7 @@ async function tool(cfg){
   $('teamName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   $('teamKeep').addEventListener('change',e=>{ e.target.dataset.touched='1'; });
   $('teamAsNew').addEventListener('change',e=>{ altMode=e.target.checked?'new':'upd'; syncSaveOpts(); });
-  $('saveAlt').addEventListener('click',async()=>{ altMode=wantsNew()?'upd':'new'; if(!(await setWhere('team'))){ syncSaveOpts(); return; } syncSaveOpts(); doSave(); });
+  $('saveAlt').addEventListener('click',async()=>{ altMode=wantsNew()?'upd':'new'; if(isTpl()&&altMode==='upd'&&!teamPicked.size) pickDefaultCols(); if(!(await setWhere('team'))){ syncSaveOpts(); return; } syncSaveOpts(); doSave(); });   // r3-save: "Update the template" keeps the template's own collections
   let colsLoading=null, colsFailed=false, colsAutoOpened=false;
   async function paintTeamCols(){
     if(!teamCols){ if(!colsLoading){ $('teamCols').innerHTML='<span class="small tb-wait"><span class="spin" aria-hidden="true"></span> Loading collections…</span>'; $('teamColsHint').textContent='';

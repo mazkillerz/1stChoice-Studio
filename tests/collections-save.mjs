@@ -17,15 +17,14 @@ const teamDone=()=>pg.waitForFunction(()=>/Saved to the team|not added/.test(doc
 async function start(name){
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(800);
   await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:5000});
-  await pg.waitForFunction(()=>document.getElementById('teamOn').checked,null,{timeout:8000}); await pg.fill('#teamName',name);
-  await pg.waitForSelector('#teamCols [data-newcol]');
+  await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForSelector('#teamCols [data-newcol]'); await pg.fill('#teamName',name);   // 2.3.0: the team is a choice
 }
 await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear());
 
 /* 1. a new collection typed but Add never tapped */
 await start('Typed only');
 ok('the picker shows "New collection" and a hint line',/New collection/.test(await pg.textContent('#teamCols [data-newcol]'))&&await pg.isVisible('#teamColsHint'));
-await pg.tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol','Collabs');
+if(await pg.isHidden('#teamNewRow')) await pg.tap('#teamCols [data-newcol]'); await pg.fill('#teamNewCol','Collabs');
 ok('typing says the collection will be made on save',/“Collabs” will be made/.test(await pg.textContent('#teamColsHint')));
 await pg.tap('#save'); await teamDone();
 let d=await byName('Typed only');
