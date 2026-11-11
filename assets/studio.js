@@ -166,7 +166,7 @@ function haptic(kind){
 /* a satisfying "saved": a check that pops over the preview with a soft ring, plus a haptic */
 function celebrate(){ haptic('success');
   const host=document.querySelector('.phone')||document.querySelector('.cr-stage')||document.body, b=document.createElement('div');
-  b.className='save-burst'+(host===document.body?' fixed':''); b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+  b.className='save-burst'+(host===document.body?' fixed':''); { const w=host===document.body?innerWidth:host.clientWidth, h=host===document.body?innerHeight:host.clientHeight; b.style.setProperty('--sb',Math.round(Math.max(56,Math.min(104,Math.min(w,h)*.6)))+'px'); }   /* 2.4.0: sized to the preview, so the tick is always a circle */ b.setAttribute('aria-hidden','true'); b.innerHTML='<span class="sb-ring"></span><span class="sb-dot"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
   host.appendChild(b); setTimeout(()=>b.remove(),1500); }
 
 /* ---------- fonts: the brand's fonts first (used by default), then a hand-picked list ---------- */
@@ -1130,6 +1130,7 @@ async function tool(cfg){
     <button type="button" class="link" id="saveAlt" hidden></button>
     <button type="button" class="link" id="alsoTeam" hidden>Also save to the team…</button>
     <button type="button" class="link" id="teamOnly">Only save to the team (no picture)</button>
+    <button type="button" class="link save-plan" id="savePlan" hidden>${CAL_SVG}<span>Add to calendar</span></button><!-- 2.4.0 -->
     <a class="link" id="seeSaved" href="${ROOT}index.html#saved" hidden>See it in Saved</a>
     ${flags.on('team')?'<button type="button" class="link rv-save" id="rvSend" hidden>Send for review</button>':''}<!-- review (mega) -->
     ${cfg.pages?'<button type="button" class="link" id="saveThis">Save this '+PN.one+' only</button>':''}
@@ -1714,6 +1715,7 @@ async function tool(cfg){
     const teamDone=$('teamOnly').dataset.off==='1';
     $('photosRow').hidden=imgDone; $('teamOnly').hidden=imgDone||teamDone||!on;   // only offered once Phone + Team is chosen
     $('alsoTeam').hidden=!imgDone||on||teamDone; $('seeSaved').hidden=!teamDone;
+    $('savePlan').hidden=!(imgDone||teamDone);   // 2.4.0: once something is saved, one tap puts it on the calendar
     if(on) paintTeamCols(); syncSaveAll();
   }
   /* the collections picked for this save: the design's own, or the ones used last time */
@@ -1818,6 +1820,13 @@ async function tool(cfg){
     catch(err){ b.disabled=false; status(teamErr(err)); } });
   /* r3-save: "Only save to the team" and "Also save to the team…" choose Team first; a collection is still required */
   $('teamOnly').addEventListener('click',async()=>{ if(!(await setWhere('team'))) return; if(needCol()){ nudgeCols(); return; } runTeamSave(); });
+  /* 2.4.0: Add to calendar from the Save sheet: the saved team design is linked (its shape picks Post / Story); a phone-only save plans a post without a design */
+  $('savePlan').addEventListener('click',async()=>{ const b=$('savePlan'); b.disabled=true; haptic('tick');
+    try{ let thumb=null; try{ thumb=$('resultImg').src||null; }catch(_){}
+      const fmt=cfg.id==='highlight'?'post':fmtFromSize(W,H);
+      const item=await planDesign(design?{id:design.id,name:design.name,tool:cfg.id,format:fmt,thumb,caption:design.caption||'',hashtags:design.hashtags||[],toast}:{title:defaultName(),format:fmt,toast});
+      if(item){ b.querySelector('span').textContent='On the calendar ✓'; } }
+    finally{ b.disabled=false; } });
   $('alsoTeam').addEventListener('click',async()=>{ imgDone=false; if(!(await setWhere('team'))){ imgDone=true; syncSaveOpts(); return; } imgDone=true; syncSaveOpts(); if(needCol()) nudgeCols(); });
 
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
@@ -2430,7 +2439,7 @@ async function tool(cfg){
   function rulesRun(){ if(!window.StudioRules&&!rulesLoading) (rulesLoading=lazy('rules').catch(()=>{})).then(()=>rulesRun()); else if(window.StudioRules&&$('rulesHost')){ if(!rulesM) rulesM=StudioRules.mount($('rulesHost'),{collect:async()=>rulesDesign(await rulesBook()),scope:rulesScope}); rulesM.run(); } }
   let rulesLoading=null;
   const rulesLater=ms=>{ clearTimeout(rulesT); rulesT=setTimeout(()=>{ if(!window.StudioRules||StudioRules.enabled()) rulesRun(); },ms); };
-  function resetSaveSheet(){ rulesRun(); imgDone=false; if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; needHint=false;
+  function resetSaveSheet(){ rulesRun(); imgDone=false; { const sp=$('savePlan'); if(sp) sp.querySelector('span').textContent='Add to calendar'; } if($('rvSend')) $('rvSend').hidden=true; delete $('teamOn').dataset.touched; altMode=null; needHint=false;
     $('teamOn').checked=!!design&&!isTpl();   // r3-save: a new design always starts on My phone; one opened from Saved starts on Phone + Team (so an edit is never only a picture)
     pickDefaultCols(); $('teamNewRow').hidden=true; $('saveOpts').hidden=false; $('teamOnly').dataset.off=''; if(PG) $('saveThis').hidden=false; $('save').hidden=false; $('result').hidden=true; done(null); progress(null); teamLine(''); syncSaveOpts(); syncQueue(); }
   async function doSave(only){
@@ -2931,8 +2940,8 @@ async function home(){
   async function ideasLib(){ const I=await lazy('ideas',{css:1}); if(!ideasApi) ideasApi=I.init(planCtx('ideas')); return ideasApi; }
   async function goalsLib(){ const K=await lazy('kpis',{css:1}); if(!goalsApi) goalsApi=K.init(planCtx('goals')); return goalsApi; }
   const planFail=(root,fn,what)=>{ root.innerHTML=`<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>${what} did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" data-plan-retry>Try again</button></div>`; root.querySelector('[data-plan-retry]').onclick=fn; };
-  async function showIdeas(){ const root=$('ideasView'); if(!root) return; try{ (await ideasLib()).show(); }catch(_){ planFail(root,showIdeas,'Ideas'); } }
-  async function showGoals(){ const root=$('goalsView'); if(!root) return; try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
+  async function showIdeas(){ const root=$('ideasView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await ideasLib()).show(); }catch(_){ planFail(root,showIdeas,'Ideas'); } }
+  async function showGoals(){ const root=$('goalsView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
   /* quick capture from anywhere on the hub: the + menu, search, Home's Ideas button. mode: 'text' | 'voice' | 'image' | 'link' */
   async function newIdea(mode){ try{ (await ideasLib()).capture({mode:mode||'text'}); }catch(err){ hubToast('Ideas did not open: '+(err.message||err)); } }
   /* Home: two small buttons under the Calendar row (Ideas with the inbox count, Goals with this month's posts) */
@@ -3680,7 +3689,7 @@ async function home(){
   if(location.hash==='#lab') setTimeout(openLab,200);
   { const k=keptLoad(); if(k){ all=k.all; cols=k.cols; member=true; loaded=true; paint(); } }   /* instant Saved: the last list paints at once, then loadSaved() refreshes it */
   loadSaved();
-  calReady=true; calHome(); if(calPend&&curView()==='calendar') showCalendar();
+  calReady=true; calHome(); if(calPend){ const v=curView(); if(v==='calendar') showCalendar(); else if(v==='ideas') showIdeas(); else if(v==='goals') showGoals(); }
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */

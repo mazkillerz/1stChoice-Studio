@@ -28,7 +28,10 @@ const firstLine=s=>String(s||'').split(/\r?\n/).find(l=>l.trim())||'';
 const tagsOf=s=>[...new Set(String(s||'').match(/#[\p{L}\p{N}_]+/gu)||[])];   // #tags typed in the caption
 const SVG=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
 const CAL_IC=SVG('<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/>');
-const ICF={post:SVG('<rect x="4" y="4" width="16" height="16" rx="2.5"/>'),story:SVG('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/>')};
+const ICF={post:SVG('<rect x="4" y="4" width="16" height="16" rx="2.5"/>'),story:SVG('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/>'),reel:SVG('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="m10.5 9.5 4 2.5-4 2.5z"/>')};
+const FMTS=[['post','Post'],['story','Story'],['reel','Reel']], FNAME={post:'Post',story:'Story',reel:'Reel'};
+/* a saved design's shape: the stored format first (2.4.0: Create posts are 1080×1350), else its tool; a highlight cover counts as a post */
+const dShape=g=>{ if(!g) return null; const s=window.Studio&&Studio.shapeOf?Studio.shapeOf(g):(POST_TOOLS.includes(g.tool)?'post':'story'); return s==='story'?'story':'post'; };
 
 /* the old local log: a list of {day|date, title|name|text} under one of a few keys; read once, shown read-only */
 function legacyItems(brand){
@@ -38,6 +41,81 @@ function legacyItems(brand){
     v.forEach((r,i)=>{ if(!r||typeof r!=='object') return; const day=String(r.day||r.date||r.at||r.ts||'').slice(0,10); if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
       out.push({id:'legacy:'+k+':'+i,brand,day,at:null,status:'posted',title:String(r.title||r.name||r.text||'Posted'),caption:String(r.caption||''),hashtags:[],design_ids:[],legacy:true}); }); }
   return out;
+}
+
+/* ---------- the design picker: search and collection chips, one grid; resolves with the picked design or null ---------- */
+async function pickSheet(o){
+  const esc=o.esc, ic=k=>(o.icons&&o.icons[k])||'', C=o.cloud, urls=o.urls||{}; let list=(o.designs||[]).slice();
+  let cols=[]; try{ cols=C&&C.collections?(await C.collections(o.brand))||[]:[]; }catch(_){ cols=[]; }
+  const colName=Object.fromEntries(cols.map(c=>[c.id,c.name])), sel=o.selected||[];
+  const hayOf=g=>nrm([g.name,String(g.tool||'').replace(/[-_]/g,' '),...(g.collections||[]).map(c=>colName[c]||c)].join(' '));
+  let hay=new Map(list.map(g=>[g.id,hayOf(g)])), q='', col='', fail=!!o.fail;
+  return new Promise(resolve=>{ let picked=null;
+    const d=o.dialog(`<div class="dlg-body cal-pick"><div class="cp-top"><div class="cp-bar"><button type="button" class="cs-x" data-back aria-label="Back">${ic('back')}</button><h3 id="calPH">Pick a design</h3><button type="button" class="link cp-skip" data-skip>${o.skipLabel||'Skip for now'}</button></div>
+      <label class="cp-search"><span class="sr-only">Search designs</span>${ic('search')}<input type="search" id="calQ" dir="auto" autocomplete="off" placeholder="Search by name, tool or collection" enterkeyhint="search"></label>
+      <div class="chips cp-chips" role="group" aria-label="Collection"><button type="button" class="chip" data-col="" aria-pressed="true">All</button>${cols.map(c=>`<button type="button" class="chip" data-col="${esc(c.id)}" aria-pressed="false" dir="auto">${esc(c.name)}</button>`).join('')}</div></div>
+      <div class="cp-grid" id="calG"></div><div class="cp-none" id="calNone" hidden><p class="small" id="calNoneT"></p><button type="button" class="link" id="calRetry" hidden>Try again</button></div></div>`,'cal-dlg cal-full');
+    d.setAttribute('aria-labelledby','calPH'); const $=s=>d.querySelector(s);
+    const fill=()=>d.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
+    const pending=new Set(); let ft=0;
+    const flush=()=>{ ft=0; const need=[...pending].filter(p=>!urls[p]); pending.clear(); if(!need.length||!C||!C.fileUrls){ fill(); return; } C.fileUrls(need).then(u=>{ Object.assign(urls,u); fill(); }).catch(()=>{}); };
+    const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>{ es.forEach(en=>{ if(!en.isIntersecting) return; const im=en.target; io.unobserve(im); const p=im.dataset.path; if(urls[p]) im.src=urls[p]; else if(p){ pending.add(p); clearTimeout(ft); ft=setTimeout(flush,40); } }); },{root:d,rootMargin:'400px 0px'}):null;
+    const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>g.kind!=='template'||o.templates).filter(g=>(!col||(g.collections||[]).includes(col))&&(!nq||hay.get(g.id).includes(nq)));
+      $('#calG').innerHTML=shown.map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" data-shape="${dShape(g)}" aria-pressed="${sel.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('');
+      $('#calNone').hidden=!!shown.length; $('#calNoneT').textContent=list.length?'No designs match. Clear the search or pick All.':fail?'Could not load your saved designs.':'No saved designs yet. Save one from a tool and it shows here.'; $('#calRetry').hidden=!!list.length||!fail||!o.reload;
+      d.querySelectorAll('.cal-pcard img').forEach(im=>{ if(im.getAttribute('src')) return; if(io) io.observe(im); else pending.add(im.dataset.path); }); if(!io) flush(); };
+    paint();
+    $('#calRetry').addEventListener('click',async()=>{ const b=$('#calRetry'); b.disabled=true; try{ list=(await o.reload()).slice(); hay=new Map(list.map(g=>[g.id,hayOf(g)])); fail=false; }catch(_){ fail=true; } b.disabled=false; paint(); });
+    $('#calQ').addEventListener('input',e=>{ q=e.target.value; paint(); });
+    d.addEventListener('click',e=>{ const t=e.target;
+      if(t.closest('[data-back],[data-skip]')){ d.close(); return; }
+      let b=t.closest('[data-col]'); if(b){ col=b.dataset.col; d.querySelectorAll('[data-col]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); return; }
+      b=t.closest('[data-pick]'); if(b){ picked=list.find(g=>g.id===b.dataset.pick)||null; d.close(); } });
+    d.addEventListener('close',()=>{ if(io) io.disconnect(); resolve(picked); });
+  });
+}
+
+/* ---------- Add to calendar, fast (2.4.0): from the Save sheet, a design's menu or an idea. Day chips (this week first, More dates),
+   optional time, Post / Story / Reel, optional caption, one Save. Resolves with the saved item, or null. ---------- */
+function quickSheet(o){
+  const esc=o.esc, ic=k=>(o.icons&&o.icons[k])||'', C=o.cloud, g=o.design||null, hap=k=>{ try{ o.haptic&&o.haptic(k); }catch(_){} };
+  const today=new Date(), days=[...Array(7)].map((_,i)=>addDays(today,i));
+  let day=o.day&&/^\d{4}-\d{2}-\d{2}$/.test(o.day)?o.day:iso(today), at=null, fmt=o.format||(g?dShape(g):null)||'post';
+  const cap0=String(o.caption||(g&&g.caption)||'').trim()+((g&&!o.caption&&(g.hashtags||[]).length)?'\n\n'+g.hashtags.join(' '):'');
+  const dayLbl=v=>{ const d=parse(v), n=Math.round((d-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/864e5); return n===0?'Today':n===1?'Tomorrow':L(d,{weekday:'short',day:'numeric',month:'short'}); };
+  return new Promise(resolve=>{ let done=null;
+    const d=o.dialog(`<form class="dlg-body cal-quick" action="#" novalidate>
+      <div class="cs-head"><h3 id="cqH">Add to calendar</h3><button type="button" class="cs-x" data-x aria-label="Close">${ic('close')}</button></div>
+      ${g?`<div class="cq-design" dir="auto">${g.thumb?`<img alt="" src="${esc(g.thumb)}">`:`<span class="cq-ph">${ic('photo')}</span>`}<b>${esc(g.name||'Your design')}</b></div>`:o.title?`<p class="cq-title" dir="auto"><b>${esc(o.title)}</b></p>`:''}
+      <div class="field"><span class="lbl" id="cqDL">Day</span><div class="cq-days" role="group" aria-labelledby="cqDL">${days.map((x,i)=>`<button type="button" class="cq-day" data-day="${iso(x)}" aria-pressed="${iso(x)===day}"><small>${i===0?'Today':L(x,{weekday:'short'})}</small><b><bdi>${x.getDate()}</bdi></b></button>`).join('')}<label class="cq-day cq-more" aria-label="Another day">${ic('next')}<small>More</small><input type="date" id="cqDate" value="${esc(day)}" min="${iso(today)}"></label></div>
+        <p class="small cq-picked" id="cqPicked" aria-live="polite"></p></div>
+      <div class="field"><span class="lbl" id="cqTL">Time <span class="muted">(optional)</span></span><div class="chips cal-times" role="group" aria-labelledby="cqTL">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="false">${l.replace(' ','&nbsp;')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="false">Other</button></div><input type="time" id="cqAt" aria-label="Time" hidden></div>
+      <div class="field"><span class="lbl" id="cqFL">Format</span><div class="cal-fmt cq-fmt" role="group" aria-labelledby="cqFL">${FMTS.map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
+      <div class="field"><label class="lbl" for="cqCap">Caption <span class="muted">(optional)</span></label><textarea id="cqCap" class="cal-ta" dir="auto" rows="2" placeholder="Write or paste the caption">${esc(cap0)}</textarea></div>
+      <div class="status" id="cqSt" role="status"></div>
+      <button type="submit" class="btn" id="cqSave">Add</button></form>`,'cal-dlg cal-quick-dlg');
+    d.setAttribute('aria-labelledby','cqH'); const $=s=>d.querySelector(s);
+    const paintDay=()=>{ d.querySelectorAll('[data-day]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.day===day))); const inWeek=days.some(x=>iso(x)===day);
+      $('.cq-more').classList.toggle('on',!inWeek); $('#cqPicked').innerHTML=inWeek?'':'<bdi>'+esc(L(parse(day),{weekday:'long',day:'numeric',month:'long'}))+'</bdi>'; $('#cqSave').textContent='Add to '+dayLbl(day); };
+    paintDay();
+    d.addEventListener('click',e=>{ const t=e.target;
+      if(t.closest('[data-x]')){ d.close(); return; }
+      let b=t.closest('[data-day]'); if(b){ day=b.dataset.day; $('#cqDate').value=day; hap('tick'); paintDay(); return; }
+      b=t.closest('[data-fmt]'); if(b){ fmt=b.dataset.fmt; d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); return; }
+      b=t.closest('[data-at]'); if(b){ const v=b.dataset.at, on=b.getAttribute('aria-pressed')==='true'; d.querySelectorAll('[data-at]').forEach(x=>x.setAttribute('aria-pressed','false'));
+        if(v==='other'){ b.setAttribute('aria-pressed','true'); $('#cqAt').hidden=false; $('#cqAt').focus(); at=$('#cqAt').value||null; return; }
+        $('#cqAt').hidden=true; $('#cqAt').value=''; at=on?null:v; if(!on) b.setAttribute('aria-pressed','true'); } });
+    const more=$('.cq-more'), di=$('#cqDate');
+    more.addEventListener('click',e=>{ if(e.target===di) return; e.preventDefault(); try{ di.showPicker(); }catch(_){ di.focus(); di.click(); } });
+    di.addEventListener('change',()=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(di.value)){ day=di.value; paintDay(); } });
+    $('#cqAt').addEventListener('input',()=>{ at=$('#cqAt').value||null; });
+    d.querySelector('form').addEventListener('submit',async e=>{ e.preventDefault(); const sv=$('#cqSave'); sv.disabled=true; $('#cqSt').textContent='Saving…';
+      const caption=$('#cqCap').value, title=(g&&g.name)||o.title||firstLine(caption).slice(0,60)||FNAME[fmt];
+      const row={brand:o.brand,day,at,status:'draft',format:fmt,title,caption,hashtags:tagsOf(caption),design_ids:g&&g.id?[g.id]:[],campaign_id:null,author:(o.who&&o.who())||null};
+      try{ done=await C.saveCalendarItem(row); hap('success'); d.close(); o.toast&&o.toast('Added to the calendar · '+dayLbl(day)+(at?' '+fmtTime(at):'')); }
+      catch(err){ sv.disabled=false; $('#cqSt').textContent='Could not save: '+(err.message||err)+' Try again.'; } });
+    d.addEventListener('close',()=>resolve(done));
+  });
 }
 
 function make(o){
@@ -50,7 +128,7 @@ function make(o){
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
-  const shapeOf=g=>g?(POST_TOOLS.includes(g.tool)?'post':'story'):null;
+  const shapeOf=dShape;
   const fmtOf=it=>it.format||shapeOf(it.design_ids.map(designOf).find(Boolean))||'post';
   const capOf=it=>{ const g=dCap(it); return String(it.caption||(g&&g.caption)||'').trim(); };
   /* captions (mega 4.3): a linked design's caption stands in for an item that has none (shown on the card; the sheet offers "Use the design's caption") */
@@ -95,7 +173,7 @@ function make(o){
     const showTitle=!cap||it.title!==t0;   // a title made from the caption's first line would only repeat it
     return `<article class="cal-item st-${it.status}${ro?' ro':''}" data-id="${esc(it.id)}"${ro?'':' draggable="true"'}>
       <button type="button" class="ci-main" data-open="${esc(it.id)}"${ro?' disabled':''}>
-        <span class="ci-top"><span class="ci-fmt" role="img" aria-label="${f==='story'?'Story':'Post'}">${ICF[f]}</span>${it.at?`<bdi class="ci-time">${esc(fmtTime(it.at))}</bdi>`:''}${chip(it.status)}</span>
+        <span class="ci-top"><span class="ci-fmt" role="img" aria-label="${FNAME[f]||'Post'}">${ICF[f]||ICF.post}</span>${it.at?`<bdi class="ci-time">${esc(fmtTime(it.at))}</bdi>`:''}${chip(it.status)}</span>
         <span class="ci-body">${thumbs(it)}<span class="ci-txt">${showTitle?`<b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>`:''}${campTag(it)}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-note">From the old posted log</span>':''}</span></span>
       </button>${ro?'':`<button type="button" class="ci-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(it.title||'this item')}">${ic('more')}</button>${cap?`<button type="button" class="ci-copy" data-copy="${esc(it.id)}">Copy caption</button>`:''}`}</article>`; };
   const pill=it=>`<button type="button" class="cal-pill st-${it.status}${it.legacy?' ro':''}" data-open="${esc(it.id)}" data-id="${esc(it.id)}"${it.legacy?' disabled':' draggable="true"'} dir="auto"><i aria-hidden="true"></i>${esc(it.title||'Untitled')}</button>`;
@@ -125,7 +203,7 @@ function make(o){
     const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb));
     root.innerHTML=`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
         <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>
-        <button type="button" class="mini solid cal-new" data-add="${here?todayIso():iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>
+        <button type="button" class="mini solid cal-new" data-add="${here?todayIso():iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>${o.tabs||''}
       <div class="cal-bar"><div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button></div>
         <div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>
         ${here?'':'<button type="button" class="cal-today" data-nav="0">Today</button>'}<strong class="cal-title" aria-live="polite">${esc(title())}</strong>
@@ -156,8 +234,8 @@ function make(o){
     let fmt=it.format||(isNew?null:fmtOf(it));
     const quick=TIMES.some(t=>t[0]===it.at), other=!!it.at&&!quick;
     const d=o.dialog(`<form class="dlg-body cal-sheet" action="#" novalidate>
-      <div class="cs-head"><h3 id="calEH">${(isNew?'Plan a ':'Edit ')+(it.format==='story'?'story':'post')}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
-      <div class="field"><span class="lbl" id="calFL">Format</span><div class="cal-fmt" role="group" aria-labelledby="calFL">${[['post','Post'],['story','Story']].map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
+      <div class="cs-head"><h3 id="calEH">${(isNew?'Plan a ':'Edit ')+(FNAME[it.format]||'Post').toLowerCase()}</h3><button type="button" class="cs-x" id="calCancel" aria-label="Close">${ic('close')}</button></div>
+      <div class="field"><span class="lbl" id="calFL">Format</span><div class="cal-fmt" role="group" aria-labelledby="calFL">${FMTS.map(([k,l])=>`<button type="button" class="cf-btn" data-fmt="${k}" aria-pressed="${fmt===k}">${ICF[k]}<span>${l}</span></button>`).join('')}</div></div>
       <div class="field"><span class="lbl">Design</span><button type="button" class="cal-tile" id="calPick" aria-haspopup="dialog"></button><div class="cal-dlinks"><a class="link" id="calOpenD" hidden>Open design</a><button type="button" class="link" id="calSkip" hidden>Remove design</button></div></div>
       <div class="field"><span class="lbl">Day and time</span><div class="cal-when"><label class="cal-daypill" for="calDay"><span id="calDayTxt"></span><input type="date" id="calDay" required value="${esc(it.day)}" aria-label="Day"></label>
         <div class="chips cal-times" role="group" aria-label="Time">${TIMES.map(([v,l])=>`<button type="button" class="chip" data-at="${v}" aria-pressed="${it.at===v}">${l.replace(' ','&nbsp;')}</button>`).join('')}<button type="button" class="chip" data-at="other" aria-pressed="${other}">Other</button></div>
@@ -174,7 +252,7 @@ function make(o){
     dayTxt(); paintTile(); count(); setTimeout(grow,0);
     $('#calDay').addEventListener('input',dayTxt); $('#calDay').addEventListener('change',dayTxt);
     $('#calCap').addEventListener('input',()=>{ count(); grow(); });
-    d.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{ fmt=b.dataset.fmt; const h=d.querySelector('#calEH'); if(h) h.textContent=(isNew?'Plan a ':'Edit ')+(fmt==='story'?'story':'post'); d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
+    d.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{ fmt=b.dataset.fmt; const h=d.querySelector('#calEH'); if(h) h.textContent=(isNew?'Plan a ':'Edit ')+(FNAME[fmt]||'Post').toLowerCase(); d.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     d.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ it.status=b.dataset.st; d.querySelectorAll('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); });
     d.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ const v=b.dataset.at, on=b.getAttribute('aria-pressed')==='true';
       d.querySelectorAll('[data-at]').forEach(x=>x.setAttribute('aria-pressed','false'));
@@ -189,7 +267,7 @@ function make(o){
     const del=$('#calDel'); if(del) del.onclick=()=>{ d.close(); confirmDelete(src); };
     d.querySelector('form').addEventListener('submit',async e=>{ e.preventDefault();
       const day=$('#calDay').value;
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return st('Pick a day.'); if(!fmt) return st('Choose Post or Story.');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return st('Pick a day.'); if(!fmt) return st('Choose Post, Story or Reel.');
       const sv=$('#calSave'); sv.disabled=true; st('Saving…');
       await whoOnce();
       const caption=$('#calCap').value, row={...it,day,format:fmt,caption,hashtags:tagsOf(caption),author:it.author||authorName()||null}; row.title=titleFor({...row});
@@ -199,35 +277,10 @@ function make(o){
   }
   function fillThumbsIn(d){ d.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; }); }
 
-  /* the full-screen design picker: search, collection chips, shape chips, one grid that scrolls with the page, thumbs loaded as they scroll into view */
-  async function pickDesign(it,fmt,done){
-    let cols=[]; try{ cols=C&&C.collections?(await C.collections(o.brand))||[]:[]; }catch(_){ cols=[]; }
-    const list=designs.slice(), colName=Object.fromEntries(cols.map(c=>[c.id,c.name]));
-    const hay=new Map(list.map(g=>[g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' '),...(g.collections||[]).map(c=>colName[c]||c)].join(' '))]));
-    let q='', col='', shape='';   /* r3-extras: always opens on All; the format only decides which chip order the person expects */
-    const cnt=k=>k?list.filter(g=>shapeOf(g)===k).length:list.length;
-    const d=o.dialog(`<div class="dlg-body cal-pick"><div class="cp-top"><div class="cp-bar"><button type="button" class="cs-x" data-back aria-label="Back">${ic('back')}</button><h3 id="calPH">Pick a design</h3><button type="button" class="link cp-skip" data-skip>Skip for now</button></div>
-      <label class="cp-search"><span class="sr-only">Search designs</span>${ic('search')}<input type="search" id="calQ" dir="auto" autocomplete="off" placeholder="Search by name, tool or collection" enterkeyhint="search"></label>
-      <div class="chips cp-chips" role="group" aria-label="Collection"><button type="button" class="chip" data-col="" aria-pressed="true">All</button>${cols.map(c=>`<button type="button" class="chip" data-col="${esc(c.id)}" aria-pressed="false" dir="auto">${esc(c.name)}</button>`).join('')}</div>
-      <div class="chips cp-shape" role="group" aria-label="Shape">${[['','All'],['story','Stories'],['post','Posts']].map(([k,l])=>`<button type="button" class="chip sm" data-shape="${k}" aria-pressed="${shape===k}">${l} <span class="cp-n">${cnt(k)}</span></button>`).join('')}</div></div>
-      <div class="cp-grid" id="calG"></div><div class="cp-none" id="calNone" hidden><p class="small" id="calNoneT"></p><button type="button" class="link" id="calRetry" hidden>Try again</button></div></div>`,'cal-dlg cal-full');
-    d.setAttribute('aria-labelledby','calPH'); const $=s=>d.querySelector(s);
-    const pending=new Set(); let ft=0;
-    const flush=()=>{ ft=0; const need=[...pending].filter(p=>!urls[p]); pending.clear(); if(!need.length||!C||!C.fileUrls){ fillThumbsIn(d); return; } C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbsIn(d); }).catch(()=>{}); };
-    const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>{ es.forEach(en=>{ if(!en.isIntersecting) return; const im=en.target; io.unobserve(im); const p=im.dataset.path; if(urls[p]) im.src=urls[p]; else if(p){ pending.add(p); clearTimeout(ft); ft=setTimeout(flush,40); } }); },{root:d,rootMargin:'400px 0px'}):null;
-    const paint=()=>{ const nq=nrm(q), shown=list.filter(g=>(!col||(g.collections||[]).includes(col))&&(!shape||shapeOf(g)===shape)&&(!nq||hay.get(g.id).includes(nq)));
-      $('#calG').innerHTML=shown.map(g=>`<button type="button" class="cal-pcard" data-pick="${esc(g.id)}" aria-pressed="${it.design_ids.includes(g.id)}"><img alt="" decoding="async" data-path="${esc(g.thumb_path||'')}"${urls[g.thumb_path]?` src="${urls[g.thumb_path]}"`:''}><span dir="auto">${esc(g.name)}</span></button>`).join('');
-      $('#calNone').hidden=!!shown.length; $('#calNoneT').textContent=list.length?'No designs match. Clear the search or pick All.':designsFail?'Could not load your saved designs.':'No saved designs yet. Save one from a tool and it shows here.'; $('#calRetry').hidden=!!list.length||!designsFail;
-      d.querySelectorAll('.cal-pcard img').forEach(im=>{ if(im.getAttribute('src')) return; if(io) io.observe(im); else pending.add(im.dataset.path); }); if(!io){ flush(); } };
-    paint();
-    $('#calRetry').addEventListener('click',async()=>{ const b=$('#calRetry'); b.disabled=true; try{ const r=await C.designs(o.brand); designs=r||[]; designsFail=false; list.splice(0,list.length,...designs); list.forEach(g=>hay.set(g.id,nrm([g.name,String(g.tool||'').replace(/[-_]/g,' ')].join(' ')))); d.querySelectorAll('[data-shape]').forEach(x=>{ const n=x.querySelector('.cp-n'); if(n) n.textContent=cnt(x.dataset.shape); }); }catch(_){ designsFail=true; } b.disabled=false; paint(); });
-    $('#calQ').addEventListener('input',e=>{ q=e.target.value; paint(); });
-    d.addEventListener('click',e=>{ const t=e.target;
-      if(t.closest('[data-back],[data-skip]')){ d.close(); return; }
-      let b=t.closest('[data-col]'); if(b){ col=b.dataset.col; d.querySelectorAll('[data-col]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); return; }
-      b=t.closest('[data-shape]'); if(b){ shape=b.dataset.shape; d.querySelectorAll('[data-shape]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); return; }
-      b=t.closest('[data-pick]'); if(b){ const id=b.dataset.pick; d.close(); done(id); } });
-    d.addEventListener('close',()=>{ if(io) io.disconnect(); });
+  /* the full-screen design picker (module level since 2.4.0, so Ideas can use it too) */
+  function pickDesign(it,fmt,done){
+    pickSheet({dialog:o.dialog,esc,icons:o.icons,cloud:C,brand:o.brand,designs,urls,selected:it.design_ids,fail:designsFail,
+      reload:async()=>{ const r=await C.designs(o.brand); designs=r||[]; designsFail=false; return designs; }}).then(g=>{ if(g) done(g.id); });
   }
   function confirmDelete(it){
     const d=o.dialog(`<div class="dlg-body"><h3 id="calDH">Delete this post?</h3><p dir="auto">“${esc(it.title||'Untitled')}” will be removed from the calendar for everyone.</p>
@@ -287,5 +340,5 @@ function make(o){
   };
 }
 let cur=null;
-window.StudioCalendar={ init(o){ cur=make(o); return cur; }, CAL_ICON:CAL_IC };
+window.StudioCalendar={ init(o){ cur=make(o); return cur; }, CAL_ICON:CAL_IC, pick:pickSheet, quick:quickSheet, shape:dShape };
 })();
