@@ -111,3 +111,11 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 - Should Studio's own labels ever be Arabic, or English UI with Arabic content only?
 - Is one blue accent right for the Cream look too, or should the UI stay neutral there?
 - Haptics and share target: confirmed on a real Android phone and an iPhone?
+
+## Team notes round (2.5.0, 12 Nov 2026) [S]
+- "Re-saving an edited design creates a second design" (team note, very important): re-save must update the original; "Save as a copy" only when asked. Check: `resave` suite (+ `saved-versions`).
+- Wants Studio to open fast and all at once, no content popping in one row after another: placeholders + cached numbers on Home. Check: `home7-hub`, `smoke`; keep every Home row in index.html.
+- Wants smooth animated switching between Calendar, Ideas and Goals; subtle animated backgrounds and polished motion (big look changes behind a preview).
+- Live stock in Restock: not needed (archived). Moving stories and the Claude Design import: explain in plain words, keep only if useful.
+- What's New: hero card for the latest, older versions collapsed, New / Improved / Fixed with icons, one plain line per change.
+
