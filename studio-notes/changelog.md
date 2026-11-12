@@ -5,13 +5,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - `## <version> · <date>` starts a version (newest first).
 - Optional, right under the version heading (before its first card): `milestone: <title>` turns the version into a milestone banner (big version number, the title, then any plain lines below it as a short intro). Use it only for big releases (1.0.0, 2.0.0).
 - `### <title>` starts a card in that version.
-- Directly under the title, an optional type line: `type: feature` (a new tool or ability), `type: fix` (something was wrong, hard or broken and now is not) or `type: design` (how it looks or is laid out). A card without it counts as a feature. The What's New page uses it for the filter chips (All, Features, Fixes, Design) and a small tag on each card.
-- The lines after that are the card's short note (plain text, one paragraph).
+- Directly under the title, an optional type line: `type: feature` (a new tool or ability), `type: fix` (something was wrong, hard or broken and now is not) or `type: improve` (something that already worked now works or looks better; `type: design` means the same and is still accepted). A card without a type line counts as New. The What's New page groups every version into **New** (feature), **Improved** (improve, design) and **Fixed** (fix), and uses the same three for the filter chips (All, New, Improved, Fixed).
+- The lines after that are the card's note (plain text, one paragraph). The card's title is the one line people see; the note and the screenshots open when they tap that line.
 - `![before](assets/whatsnew/<file>)` and `![after](assets/whatsnew/<file>)` add screenshots (either or both, paths from the site root).
 - Any other line that starts with `[try:` is ignored.
 - Anything above the first `##` (this intro) is not shown.
 
-How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
+How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
 ## 2.4.2 · 12 Nov 2026
 
