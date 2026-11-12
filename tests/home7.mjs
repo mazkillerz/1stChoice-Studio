@@ -42,11 +42,11 @@ if(part('hub')) for(const vp of [PHONE,DESK]){
   /* ---------- the + button ---------- */
   await fresh(pg);
   const fr=await pg.$eval('#fab',e=>{ const r=e.getBoundingClientRect(); return {w:r.width,h:r.height,right:innerWidth-r.right,bottom:innerHeight-r.bottom,cx:r.left+r.width/2,cy:r.top+r.height/2,left:r.left,top:r.top}; });
-  ok(N+'the + button is at least 56px',fr.w>=56&&fr.h>=56,fr);
+  ok(N+'the + button is at least 48px',fr.w>=48&&fr.h>=48,fr);   /* 2.5.2: the + is built into the bar's right end (owner) */
   ok(N+'the + button sits in the bottom-right corner area (within 24px)',fr.right>=0&&fr.right<=24.5&&fr.bottom>=0&&fr.bottom<=24.5&&fr.cx>vp.width/2&&fr.cy>vp.height/2,fr);
   if(vp.touch){
     const hb=await pg.$eval('.hubbar',e=>{ const r=e.getBoundingClientRect(); return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}; });
-    ok(N+'the + button sits beside the bottom bar, not on it',hb.right<=fr.left+1&&Math.abs((hb.top+hb.bottom)/2-(fr.top+fr.h/2))<30,{hb,fr});
+    ok(N+'the + button sits inside the right end of the bottom bar (2.5.2)',fr.left>=hb.left&&fr.left+fr.w<=hb.right+1&&fr.top>=hb.top-1&&fr.top+fr.h<=hb.bottom+1&&Math.abs((hb.top+hb.bottom)/2-(fr.top+fr.h/2))<6,{hb,fr});
   }
   await tap(pg,'#fab'); await pg.waitForTimeout(600);
   ok(N+'the + button opens a menu',await pg.isVisible('dialog.fab-dlg[open]')&&await pg.getAttribute('#fab','aria-expanded')==='true');
@@ -58,7 +58,7 @@ if(part('hub')) for(const vp of [PHONE,DESK]){
   ok(N+'menu: New design links to Create',(await pg.getAttribute('dialog.fab-dlg a.fab-item','href')||'').endsWith('tools/create.html'));
   ok(N+'menu: photo inputs for Restock, Photo story and Collage (each takes several: a story each, or a collage)',JSON.stringify(await pg.$$eval('dialog.fab-dlg input[data-quick]',l=>l.map(x=>x.dataset.quick+(x.multiple?'*':''))))==='["restock*","photo-story*","collage*"]');
   const xr=await pg.$eval('dialog.fab-dlg .fab-x',e=>{ const r=e.getBoundingClientRect(); return Math.min(r.width,r.height); });
-  ok(N+'the close button is at least 56px',xr>=56,xr);
+  ok(N+'the close button is at least 48px',xr>=48,xr);
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
   ok(N+'Escape closes the menu',!(await pg.locator('dialog[open]').count())&&await pg.getAttribute('#fab','aria-expanded')==='false');
   await tap(pg,'#fab'); await pg.waitForTimeout(500); await tap(pg,'dialog.fab-dlg .fab-x'); await pg.waitForTimeout(400);

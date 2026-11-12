@@ -31,7 +31,7 @@ for(const scheme of ['light','dark']){
   /* 1. home */
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear()); await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200);
   const home=await pg.evaluate(()=>{ const lum=c=>{ const m=c.match(/\d+(\.\d+)?/g).map(Number).slice(0,3).map(v=>{ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*m[0]+.7152*m[1]+.0722*m[2]; };
-    const bs=getComputedStyle(document.body), bg=lum(bs.backgroundColor), fg=lum(bs.color);
+    const bs=getComputedStyle(document.body), clear=c=>/rgba\(.*,\s*0\)$|transparent/.test(c), bgc=clear(bs.backgroundColor)?getComputedStyle(document.documentElement).backgroundColor:bs.backgroundColor, bg=lum(bgc), fg=lum(bs.color);   /* 2.5.2: the page colour sits on <html> (the look's light shows through <body>) */
     return {restock:!!document.querySelector('.tool-item [data-quick="restock"]'),search:!!document.getElementById('uq'),saved:document.querySelectorAll('#savedRowList .sv-card').length,
       bg, ratio:(Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05)}; });
   ok(N+'home opens: Restock row with a camera button, search, saved designs',home.restock&&home.search&&home.saved>0,{restock:home.restock,saved:home.saved});

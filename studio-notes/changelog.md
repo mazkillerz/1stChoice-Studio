@@ -31,6 +31,7 @@ Switching between the three tabs no longer fades or moves the page: the content 
 ### Calendar, Ideas and Goals tabs under your thumb
 type: improve
 The Calendar · Ideas · Goals switch now sits at the bottom, right above the bar, so you can change pages with one thumb.
+![after](assets/whatsnew/2.5.2-bar-after.jpg)
 
 ### One bottom bar, a calmer highlight
 type: design
