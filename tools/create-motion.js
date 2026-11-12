@@ -108,7 +108,7 @@ function open(host){
     if(!cur||!ls.some(n=>n.id()===cur)) cur=(BD.S.sel[0]&&ls.includes(BD.S.sel[0])?BD.S.sel[0]:ls[1]||ls[0]||{id:()=>null}).id();
     const n=ls.find(x=>x.id()===cur), en=n&&getEnter(n), type=en?en.type:'none', text=n&&kind(n)==='text';
     body.innerHTML=`<div class="cm">
-      <p class="small">Choose how each thing arrives. Auto sets a good order for you. The last picture is your design as it is.</p>
+      <p class="small cm-how">${ls.some(x=>getEnter(x))?'Your story already moves. <b>Play preview</b> to watch it, then <b>Save video</b>. Want it different? Tap a thing below and pick how it arrives.':'Tap <b>Auto</b> and your story moves by itself, then <b>Save video</b>.'} The video ends on your design as it is.</p>
       <div class="cm-act"><button type="button" class="btn ghost" data-a="auto">Auto</button><button type="button" class="btn ghost" data-a="play">${prev?'Stop':'Play preview'}</button><button type="button" class="btn" data-a="save"${busy?' disabled':''}>Save video</button></div>
       <div class="cr-status" id="cmSt" role="status" aria-live="polite"></div><div class="cr-result cm-res" id="cmRes" hidden></div>
       <span class="lbl">Length</span><div class="cr-seg" data-g="len">${[5,6,7,8].map(v=>`<button type="button" data-len="${v}" aria-pressed="${v===m.len}">${v} s</button>`).join('')}</div>
@@ -185,6 +185,8 @@ function open(host){
   BD.on('select',()=>{ if(!body) return; const n=BD.S.sel[0]; if(n&&page()&&layers(page()).includes(n)&&n.id()!==cur&&!busy&&!prev){ cur=n.id(); paint(); } });
   BD.on('doc',()=>{ if(body&&!busy&&!prev) paint(); });
   paint();
+  /* 2.5.0 (owner: "make it simple"): a page with no motion yet gets Auto straight away, so opening + Save video is all it takes */
+  { const f=page(); if(f&&!layers(f).some(n=>getEnter(n))) autoPlan(f,getMotion(f).len).then(plan=>{ if(!body||busy||prev) return; layers(f).forEach(n=>{ const p=plan.get(n); n.setAttr('enter',p||null); }); touch(); paint(); }).catch(()=>{}); }
 }
 window.CRMotion={open,makeRig,autoPlan,getEnter,getMotion,levelTo};
 })();

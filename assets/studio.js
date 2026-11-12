@@ -95,8 +95,8 @@ function store(k,v){try{ if(v===undefined) return JSON.parse(localStorage.getIte
    Code asks Studio.flags.on(id). A feature the owner approves leaves FLAGS and stops asking. */
 const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Reviews, captions, campaigns and the phrasebook'},
-  {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
-  {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
+  {id:'import',label:'Import a Claude Design board',sub:'In Create: Add → Import. A design made in Claude opens as pieces you can edit'},
+  {id:'motion',label:'Moving stories',sub:'In Create: ⋯ → Moving story. Your story comes alive as a short video'},   /* w3-mp4 */
   {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
   {id:'look',label:'New look and motion',sub:'A softly moving background, smoother taps and pages, a warmer Home'}   /* 2.5.0: waits for the owner's OK */
 ];   /* 2.5.0: 'stock' (Live stock in Restock) archived on the owner's word: _archive/live-stock (2026-11-12)/ */
