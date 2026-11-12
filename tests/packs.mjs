@@ -1,5 +1,5 @@
 /* Occasion packs (w2-packs, mega): brands/<id>/packs/<pack>/pack.js.
-   1. The kit lists packs:['nd26']; every former National Day asset / text fill / template / chip resolves exactly as before
+   1. The kit lists packs:['nd26'] (plus the always-on 'gt' content-line pack, 12 Nov 2026, ignored here); every former National Day asset / text fill / template / chip resolves exactly as before
       (compared with tests/fixtures/packs/brand-before.js = brand.js before the move), brand.js carries no nd26 block, _template is not listed.
    2. The engine loads the pack (Studio.useBrand merges it) and old asset ids still resolve in the browser.
    3. A saved National Day Create design renders pixel-identical with the pack and with the old brand.js (served by a route).
@@ -27,16 +27,16 @@ await blk('kit',async()=>{
   const oldA=old.assets.filter(isNd).map(noTag), newA=now.assets.filter(isNd).map(noTag);
   ok('32 former nd26 assets, ids and fields identical',oldA.length===32&&JSON.stringify(oldA)===JSON.stringify(newA),[oldA.length,newA.length]);
   ok('every asset of the old kit is still there, same order',JSON.stringify(old.assets.map(a=>a.id))===JSON.stringify(now.assets.map(a=>a.id).filter(id=>old.assets.some(a=>a.id===id))));
-  ok('no asset appeared or went missing overall',old.assets.length===now.assets.length);
+  ok('no asset appeared or went missing overall',old.assets.length===now.assets.filter(a=>!/^gt-/.test(a.id)).length);
   ok('text fills identical',JSON.stringify(old.textFills)===JSON.stringify(now.textFills)&&now.textFills.length===2);
-  const oldT=old.create.templates.filter(d=>d.layout==='doc'), newT=now.create.templates.filter(d=>d.layout==='doc');
+  const oldT=old.create.templates.filter(d=>d.layout==='doc'), newT=now.create.templates.filter(d=>d.layout==='doc'&&d.cat!=='gottalent');
   ok('29 National Day / label-reveal templates identical',oldT.length===29&&JSON.stringify(oldT)===JSON.stringify(newT));
   ok('all other templates unchanged',JSON.stringify(old.create.templates.filter(d=>d.layout!=='doc'))===JSON.stringify(now.create.templates.filter(d=>d.layout!=='doc')));
-  ok('template count the same',old.create.templates.length===now.create.templates.length);
-  ok('National Day chip identical',JSON.stringify(old.templateCats)===JSON.stringify(now.templateCats));
+  ok('template count the same',old.create.templates.length===now.create.templates.filter(d=>d.cat!=='gottalent').length);
+  ok('National Day chip identical',JSON.stringify(old.templateCats)===JSON.stringify(now.templateCats.filter(c=>c.id!=='gottalent')));
   ok('palette unchanged',JSON.stringify(old.palette)===JSON.stringify(now.palette));
   const src=fs.readFileSync(ROOT+'brands/1stchoice/brand.js','utf8');
-  ok('brand.js lists the pack and carries no nd26 block',/packs:\['nd26'\]/.test(src)&&!/nd26|nationalday|National Day/.test(src.replace(/packs:\['nd26'\][^\n]*/,'')));
+  ok('brand.js lists the pack and carries no nd26 block',/packs:\['nd26'(,'gt')?\]/.test(src)&&!/nd26|nationalday|National Day/.test(src.replace(/packs:\['nd26'(,'gt')?\][^\n]*/,'')));
   ok('the old block is kept in _archive',fs.existsSync(ROOT+'_archive/brand-nd26-block (8 Nov 2026)/brand-nd26-block.txt'));
   const pk=now.packList.find(p=>p.id==='nd26');
   ok('pack has id, name, dates, banner, chip, 29 templates',pk&&pk.name&&pk.dates&&pk.dates.from==='11-01'&&pk.dates.to==='11-30'&&pk.banner.title&&pk.templateCat.id==='nationalday'&&pk.templates.length===29);
@@ -72,8 +72,8 @@ await blk('engine',async()=>{ const ctx=await mk({width:1280,height:800},{touch:
   const r=await pg.evaluate(async()=>{ const B=await Studio.useBrand(); const L=Studio.lab;
     const ids=['nd26-flag','nd26-logo','nd26-photo-s-print-blur','nd26-crayon-red','nd26-crayon-green','nd26-sticker-cat'];
     return {packs:(B.packList||[]).map(p=>p.id),have:ids.map(i=>!!L.brandAssets().find(a=>a.id===i)),fills:(B.textFills||[]).map(f=>f.id),
-      hiddenOnly:L.brandAssets().filter(a=>a.hidden&&a.id.startsWith('nd26-')).length,tpls:B.create.templates.filter(t=>t.layout==='doc').length,cats:B.templateCats.map(c=>c.id)}; });
-  ok('engine loaded the nd26 pack',r.packs.join()==='nd26',r);
+      hiddenOnly:L.brandAssets().filter(a=>a.hidden&&a.id.startsWith('nd26-')).length,tpls:B.create.templates.filter(t=>t.layout==='doc'&&t.cat==='nationalday').length,cats:B.templateCats.map(c=>c.id)}; });
+  ok('engine loaded the nd26 pack',r.packs[0]==='nd26',r);
   ok('former asset ids resolve',r.have.every(Boolean),r);
   ok('text fills, templates and chip merged',r.fills.join()==='crayon-red,crayon-green'&&r.tpls===29&&r.cats.includes('nationalday'),r);
   await ctx.close(); });
