@@ -571,14 +571,20 @@ async function teamSave1(o){ o=o||{};
 const curJson=()=>{ const d=JSON.parse(BD.docJson()); delete d.name; return JSON.stringify(d); };
 function markSaved(){ st.base=curJson(); }
 const designDirty=()=>!!st.design&&st.base!=null&&curJson()!==st.base;
-function syncSaved(){ $('crSaved').textContent=st.design?(designDirty()?'Not saved to the team':(st.design.kind==='template'?'Team template':'Saved to the team')):''; }
+/* 2.5.0 (owner): the phone's Back on a changed saved design asks "Update or discard?" (our prompt) instead of the browser's "Leave site?".
+   While the design has unsaved changes it holds one back-stack entry (Studio.nav); Back opens the prompt and stays on the page. */
+let leaveGuard=false;
+function guardSync(){ const d=designDirty()&&!RENDER; if(d===leaveGuard||!Studio.nav) return; leaveGuard=d;
+  if(d) Studio.nav.push('cr-leave',()=>{ if(!designDirty()){ leaveGuard=false; return; } leaveGuard=false; const dl=leavePrompt(document.querySelector('.cr-back').href); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
+  else Studio.nav.drop('cr-leave'); }
+function syncSaved(){ guardSync(); $('crSaved').textContent=st.design?(designDirty()?'Not saved to the team':(st.design.kind==='template'?'Team template':'Saved to the team')):''; }
 function leavePrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(st.design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
     <div class="status" id="lvSt" role="status"></div>
     <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(st.design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.querySelector('#lvKeep').onclick=()=>d.close();
   d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-    try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } }; }
+    try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };  return d; }
 document.querySelector('.cr-back').addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
 addEventListener('pagehide',()=>{ if(S.id&&!st.design) BD.saveNow(); });
@@ -649,7 +655,8 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
       <button type="button" class="link" id="crPlan" hidden>Add to calendar</button>
       <a class="link" id="crSeeSaved" href="../index.html#saved" hidden>See it in Saved</a>
     </div></div>`);
-  if(many) fs.forEach(f=>{ try{ const s=fsize(f), c=BD.renderFrame(f,112/s.w); body.querySelector(`[data-pth="${f.id()}"]`).src=c.toDataURL('image/jpeg',.7); c.width=c.height=0; }catch(_){} });
+  /* 2.5.0: the page pictures are drawn after the sheet has slid up, one per frame (drawing 7 at once blocked the slide-in) */
+  if(many){ let k=0; const next=()=>{ if(k>=fs.length||!sheet||sheet.name!=='save') return; const f=fs[k++]; try{ const s=fsize(f), c=BD.renderFrame(f,112/s.w), im=body.querySelector(`[data-pth="${f.id()}"]`); if(im) im.src=c.toDataURL('image/jpeg',.7); c.width=c.height=0; }catch(_){} requestAnimationFrame(next); }; setTimeout(next,280); }
   const hasPhotos=usedImgs(JSON.parse(BD.docJson())).length>0; $('crKeep').checked=hasPhotos; $('crKeep').disabled=!hasPhotos; if(st.design&&!isTplOpen()) $('crTeamOn').checked=true;   // r3-save: a new design starts on My phone; an opened saved design starts on Phone + Team (Update)
   $('crTName').value=st.design?st.design.name:defaultName();
   const picked=new Set(st.design&&!isTplOpen()?(st.design.collections||[]).filter(Boolean):[]); let teamCols=null, needHint=false;

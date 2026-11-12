@@ -1436,7 +1436,7 @@ input[type=range]{min-height:44px}
 .pack-banner .pb-x:active{background:var(--line)}
 @media (max-width:420px){.pack-banner{flex-wrap:wrap;padding-inline-start:14px}.pack-banner .pb-txt{order:1;flex:1 1 calc(100% - 60px)}.pack-banner .pb-x{order:2}.pack-banner .pb-go{order:3;flex:1 1 100%}}
 /* calendar (mega): no new-design button on the calendar page; the calendar's own styles are in assets/calendar.css */
-body.on-calendar nav.top{display:none}
+body.on-calendar nav.top,body.on-plan nav.top{display:none}   /* 2.5.0: the same on Calendar, Ideas and Goals, so switching never moves the page */
 body.hub.on-calendar{background:var(--bg)}
 body.on-calendar .fab{display:none}
 
@@ -1566,17 +1566,12 @@ body.on-plan .fab{view-transition-name:hubfab}
 ::view-transition-group(plan-pill){animation-duration:.34s;animation-timing-function:cubic-bezier(.3,1.25,.5,1)}
 ::view-transition-old(plan-pill),::view-transition-new(plan-pill){animation:none;mix-blend-mode:normal;height:100%}
 ::view-transition-old(plan-tabs),::view-transition-new(plan-tabs),::view-transition-old(hubbar),::view-transition-new(hubbar),::view-transition-old(hubfab),::view-transition-new(hubfab){animation:none}
-:root[data-plan-dir="fwd"]::view-transition-old(root){animation:plan-out-l .22s var(--ease) both}
-:root[data-plan-dir="fwd"]::view-transition-new(root){animation:plan-in-r .34s var(--ease) both}
-:root[data-plan-dir="back"]::view-transition-old(root){animation:plan-out-r .22s var(--ease) both}
-:root[data-plan-dir="back"]::view-transition-new(root){animation:plan-in-l .34s var(--ease) both}
-@keyframes plan-out-l{to{opacity:0;transform:translateX(-28px)}}
-@keyframes plan-out-r{to{opacity:0;transform:translateX(28px)}}
-@keyframes plan-in-r{from{opacity:0;transform:translateX(36px)}}
-@keyframes plan-in-l{from{opacity:0;transform:translateX(-36px)}}
-/* no View Transitions: the new page's content slides in (the tabs stay put) */
-:root[data-plan-dir="fwd"] .cal-view.plan-in>:not(.plan-tabs){animation:plan-in-r .32s var(--ease) both}
-:root[data-plan-dir="back"] .cal-view.plan-in>:not(.plan-tabs){animation:plan-in-l .32s var(--ease) both}
+:root[data-plan-dir]::view-transition-old(root){animation:plan-fade-out .14s ease-out both}
+:root[data-plan-dir]::view-transition-new(root){animation:plan-fade-in .2s ease-out both}
+@keyframes plan-fade-out{to{opacity:0}}
+@keyframes plan-fade-in{from{opacity:0}}
+/* (owner, 2.5.0: the bar and the page stay where they are; only the pill slides and the content softly changes) */
+:root[data-plan-dir] .cal-view.plan-in>:not(.plan-tabs){animation:plan-fade-in .2s ease-out both}
 @media (prefers-reduced-motion: reduce){.cal-view.plan-in>*{animation:none!important}}
 
 /* ===== 2.5.0 preview 'look' (Settings → Previews → New look and motion; off by default, everything scoped to :root[data-look2]) =====
@@ -1594,10 +1589,10 @@ body.on-plan .fab{view-transition-name:hubfab}
 @keyframes lk-drift{0%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(5vmax,-4vmax,0) rotate(9deg)}100%{transform:translate3d(-4vmax,3vmax,0) rotate(-7deg)}}
 :root[data-look2] .hero .hello{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 :root[data-look2] .hello-date{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);color:var(--muted);font:500 var(--fs-s) var(--sans)}
-:root[data-look2] .hero :is(.hello,h1,.usearch){animation:lk-rise .5s var(--ease) backwards}
+:root[data-look2] body.hub-first .hero :is(.hello,h1,.usearch){animation:lk-rise .5s var(--ease) backwards}
 :root[data-look2] .hero h1{animation-delay:40ms}
 :root[data-look2] .hero .usearch{animation-delay:80ms}
-:root[data-look2] #homeView>.hub-sec:not([hidden]){animation:lk-rise .5s var(--ease) backwards}
+:root[data-look2] body.hub-first #homeView>.hub-sec:not([hidden]){animation:lk-rise .5s var(--ease) backwards}   /* only when Studio opens, never again on the way back to Home */
 :root[data-look2] #homeView>.hub-sec:nth-of-type(2){animation-delay:90ms}
 :root[data-look2] #homeView>.hub-sec:nth-of-type(3){animation-delay:130ms}
 :root[data-look2] #homeView>.hub-sec:nth-of-type(4){animation-delay:170ms}
@@ -1608,5 +1603,14 @@ body.on-plan .fab{view-transition-name:hubfab}
 @media (hover:hover){:root[data-look2] :is(.tool-row,.cal-home-row,.tp-card):hover{box-shadow:0 10px 24px -14px rgba(28,22,16,.35)}}
 :root[data-look2] .cal-home-row.today{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 10%,var(--surface)),var(--surface) 70%)}
 :root[data-look2] .cal-home-row.today svg{color:var(--accent)}
-:root[data-look2] .cal-view>*{animation:lk-rise .4s var(--ease) backwards}
-@media (prefers-reduced-motion: reduce){:root[data-look2] body:is(.hub,.wn)::before{animation:none}:root[data-look2] :is(.hero .hello,.hero h1,.hero .usearch,#homeView>.hub-sec,.cal-view>*){animation:none}}
+@media (prefers-reduced-motion: reduce){:root[data-look2] body:is(.hub,.wn)::before{animation:none}:root[data-look2] :is(.hero .hello,.hero h1,.hero .usearch,#homeView>.hub-sec){animation:none}}
+
+/* ===== 2.5.0 (owner): Ideas · Goals · + Idea on Home always fit in one row (three equal tiles, no sideways scroll) ===== */
+.plan-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible}
+.plan-chip{min-width:0;min-height:52px;padding:6px 10px;gap:8px;justify-content:flex-start}
+.plan-chip .pc-t{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.2}
+.plan-chip .pc-t b{font-weight:600}
+.plan-chip .pc-t :is(b,em){max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-chip .pc-t em{font-size:var(--fs-s)}
+.plan-chip.plan-add{margin-inline-start:0;justify-content:center}
+.plan-chip.hs-chip,.plan-chip.hs-chip.hs-end{width:auto;margin-inline-start:0}

@@ -118,4 +118,5 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 - Wants smooth animated switching between Calendar, Ideas and Goals; subtle animated backgrounds and polished motion (big look changes behind a preview).
 - Live stock in Restock: not needed (archived). Moving stories and the Claude Design import: explain in plain words, keep only if useful.
 - What's New: hero card for the latest, older versions collapsed, New / Improved / Fixed with icons, one plain line per change.
+- 2.5.1 [S]: flicker on the Home Calendar row and when switching Plan tabs (redraws); a horizontally scrolling chip row is rejected ("make it fixed, no scrolling"); page-wide slide/resize between tabs rejected ("the bar fixed, the content fixed, no animation of resizing the entire page"); the browser's "Leave site?" on Back is wrong (wants the Update prompt); sheets must slide up and close on an outside tap. Checks: `ideas`/`calendar`/`kpis` (no-redraw), `home7-hub`, `nav`.
 

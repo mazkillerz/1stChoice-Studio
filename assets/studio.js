@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.5.0';
+const VERSION='2.5.1';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1544,7 +1544,7 @@ async function tool(cfg){
     hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
     syncUndo(); saveDraft(s); designChanged();
   }
-  function designChanged(){ quickReady=false; if(saving) return;
+  function designChanged(){ quickReady=false; setTimeout(guardSync,0); if(saving) return;
     if($('teamOnly').dataset.off==='1'&&design){ resetSaveSheet(); return; }   // 2.5.0: an edit after a team save: the card (computer) is back on Phone + Team, Update “name” (it used to fall back to My phone, so the next Save made only a picture)
     if(imgDone){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
   /* Undo / Redo keep the chosen layer chosen when it is still there (1.21.0: before, the layer bar stayed open on a layer that
@@ -1835,7 +1835,12 @@ async function tool(cfg){
   /* ---- a saved design you're editing: changes are tracked so leaving can ask Update / Discard ---- */
   let baseJson=null;
   const curJson=()=>{ const r=recipe(); delete r.page; return JSON.stringify(r)+'|'+S.photos.map(p=>p.path||p.key||'').join(','); };
-  function markSaved(){ baseJson=curJson(); }
+  function markSaved(){ baseJson=curJson(); guardSync(); }
+  /* 2.5.0 (owner): the phone's Back on a changed saved design opens the Update / Discard prompt, not the browser's "Leave site?" */
+  let leaveGuard=false;
+  function guardSync(){ const d=!RENDER_FRAME&&designDirty(); if(d===leaveGuard) return; leaveGuard=d;
+    if(d) NAV.push('tool-leave',()=>{ if(!designDirty()){ leaveGuard=false; return; } leaveGuard=false; const dl=leavePrompt(ROOT+'index.html'); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
+    else NAV.drop('tool-leave'); }
   const designDirty=()=>!!design&&baseJson!==null&&curJson()!==baseJson;
   function leavePrompt(href){
     const d=dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
@@ -1845,6 +1850,7 @@ async function tool(cfg){
     d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
       try{ await teamSave({name:design.name,keepCols:true}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+    return d;
   }
   let leaving=false;
   /* a link tapped while the team save is still running waits for it (a few seconds), then goes */
@@ -2830,6 +2836,7 @@ async function home(){
   const fv=$('footVer'); if(fv) fv.textContent='Studio '+VERSION;
   const ft=$('footDev'); if(ft) ft.textContent=devWord();
   /* a friendly line above the title, by the time of day on this phone */
+  document.body.classList.add('hub-first'); setTimeout(()=>document.body.classList.remove('hub-first'),1500);   /* 2.5.0: the look preview's rise-in runs once, when Studio opens */
   const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening';
     const dt=document.createElement('span'); dt.className='hello-date'; dt.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}); hello.append(dt); }   /* the date shows with the 'look' preview */
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
@@ -2926,13 +2933,17 @@ async function home(){
     if(!row.dataset.wired){ row.dataset.wired='1'; row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
     return row; }
   /* swap one piece only when it changed, with a soft fade (never a jump: the box keeps its size) */
-  const swapIn=(old,html,where,parent)=>{ if(old&&old.outerHTML===html) return; const t=document.createElement('div'); t.innerHTML=html; const el=t.firstElementChild;
-    if(old){ old.replaceWith(el); if(!reduce()) el.classList.add('hs-in'); } else parent.insertAdjacentElement(where,el); };
+  /* compared by the HTML it was made from (data-h), never by outerHTML: the fade class made every refresh look "changed", so the row faded again and again (owner: "the calendar flickers") */
+  const swapIn=(old,html,where,parent)=>{ if(old&&old.dataset.h===html) return; const t=document.createElement('div'); t.innerHTML=html; const el=t.firstElementChild; el.dataset.h=html;
+    const fade=old&&!old.classList.contains('hs-skel')?false:!reduce();   // only the first fill (placeholder → content) fades; later changes just change
+    if(old) old.replaceWith(el); else parent.insertAdjacentElement(where,el);
+    if(fade&&old){ el.classList.add('hs-in'); el.addEventListener('animationend',()=>el.classList.remove('hs-in'),{once:true}); } };
   function paintCalRow(row,list){ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
     swapIn(row.querySelector('.cal-home-row'),`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`,'afterbegin',row); }
   function paintMini(row,inbox,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
-    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span>Ideas${inbox?` <em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span>Goals${goal?` <em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span>Idea</span></button>`;
-    if(mini.dataset.h===html) return; const first=!mini.dataset.h; mini.dataset.h=html; mini.innerHTML=html; if(!first&&!reduce()){ mini.classList.remove('hs-in'); void mini.offsetWidth; mini.classList.add('hs-in'); } }
+    /* 2.5.0 (owner: no sideways scroll): three equal tiles that always fit; the count sits on a small second line */
+    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span class="pc-t"><b>Idea</b></span></button>`;
+    if(mini.dataset.h===html) return; mini.dataset.h=html; mini.innerHTML=html; }
   async function calHome(){
     if(!$('homeView')) return; const row=calRowEl(); if(!row) return;
     const now=new Date(), k=dayKey(now), m=k.slice(0,7);

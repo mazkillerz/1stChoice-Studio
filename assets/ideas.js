@@ -39,7 +39,7 @@ function make(o){
   const root=o.root, esc=o.esc, ic=k=>(o.icons&&o.icons[k])||'', hap=k=>{ try{ o.haptic&&o.haptic(k); }catch(_){} };
   const rd=k=>{ try{ return o.store?o.store(k):null; }catch(_){ return null; } }, wr=(k,v)=>{ try{ o.store&&o.store(k,v); }catch(_){} };
   const wide=()=>matchMedia('(min-width:821px)').matches;
-  let C=null, items=[], designs=[], cal={}, urls={}, state='loading', note='', run=0, slowT=0, built=false;
+  let lastSig='', C=null, items=[], designs=[], cal={}, urls={}, state='loading', note='', run=0, slowT=0, built=false;
   let tab=rd('studio:ideasTab')==='board'?'board':'inbox', stage='idea', typeF='', q='', searchOpen=false, wasWide=wide();
   const authorName=()=>{ try{ return (o.who&&o.who.author&&o.who.author())||null; }catch(_){ return null; } };
   const designOf=id=>designs.find(d=>d.id===id);
@@ -60,7 +60,9 @@ function make(o){
       const [list,dl,cl]=await Promise.all([C.ideas(o.brand),Promise.resolve(o.designs?o.designs():[]).catch(()=>designs),C.calendar?C.calendar(o.brand,{from:from,to:to}).catch(()=>[]):[]]); if(my!==run) return;
       designs=dl||[]; cal={}; (cl||[]).forEach(x=>{ cal[x.id]=x; });
       const live=new Set(list.map(x=>x.id)), keepP=items.filter(x=>x._pending&&!live.has(x.id));
-      items=keepP.concat(list); state='ok'; drawTop(); drawBody(); thumbsFor(items);
+      items=keepP.concat(list);
+      const sig=JSON.stringify([items,designs.map(d=>d.id+d.updated_at),cl]), same=state==='ok'&&sig===lastSig; lastSig=sig;   /* 2.5.0: no redraw when nothing changed (no flicker) */
+      state='ok'; if(!same){ drawTop(); drawBody(); thumbsFor(items); }
     }catch(err){ if(my!==run) return; const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(state==='ok'){ o.toast(net?'You’re offline. These are your ideas from before.':'Could not refresh the ideas: '+(err.message||err)); return; }
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); drawBody(); }
@@ -388,9 +390,9 @@ function make(o){
   matchMedia('(min-width:821px)').addEventListener('change',()=>{ if(wide()!==wasWide){ wasWide=wide(); if(built&&state==='ok') drawBody(); } });
 
   return {
-    show(){ built=true; stopAudio(); build(); drawBody();
+    show(){ const again=built&&state==='ok'&&root.querySelector('.id-content'); built=true; stopAudio(); if(!again){ lastSig=''; build(); drawBody(); }   /* 2.5.0: coming back keeps the page on screen (no rebuild flash) */
       /* opens on the Inbox when it has ideas (unless the board was the last choice), else the Board */
-      load().then(()=>{ if(state==='ok'&&rd('studio:ideasTab')!=='board'&&inbox().length) tab='inbox'; else if(state==='ok'&&!inbox().length&&tab==='inbox') tab='board'; if(state==='ok'){ drawTop(); drawBody(); } });
+      const t0=tab; load().then(()=>{ if(state==='ok'&&rd('studio:ideasTab')!=='board'&&inbox().length) tab='inbox'; else if(state==='ok'&&!inbox().length&&tab==='inbox') tab='board'; if(state==='ok'&&(!again||tab!==t0)){ drawTop(); drawBody(); } });
       const h=root.querySelector('#idH'); if(h) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
     capture,

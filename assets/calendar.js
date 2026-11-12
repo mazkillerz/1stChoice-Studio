@@ -124,7 +124,7 @@ function make(o){
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month'].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
   let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
-  let items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
+  let lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
@@ -150,7 +150,9 @@ function make(o){
       const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
       designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
       const lg=legacyItems(o.brand).filter(x=>x.day>=iso(a)&&x.day<=iso(b));
-      items=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})).concat(lg); state='ok'; draw();
+      items=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})).concat(lg);
+      /* 2.5.0 (owner: "it flickers like it refreshes"): redraw only when something changed since what is on screen */
+      const sig=JSON.stringify([iso(a),iso(b),mode,items,designs.map(d=>d.id+d.updated_at)]); const same=state==='ok'&&sig===lastSig; lastSig=sig; state='ok'; if(!same) draw();
       if(toToday){ toToday=false; const t=root.querySelector('.cal-day.today'); if(t&&!wide()) t.scrollIntoView({block:'start'}); }
       const need=[...new Set(items.flatMap(x=>x.design_ids).map(designOf).filter(Boolean).map(d=>d.thumb_path).filter(p=>p&&!urls[p]))];
       if(need.length) C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbs(); }).catch(()=>{});
@@ -333,7 +335,7 @@ function make(o){
 
   return {
     get mode(){ return mode; },
-    show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } built=true; draw(); load();
+    show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
       const h=root.querySelector('#calH'); if(h) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
     get items(){ return items; }

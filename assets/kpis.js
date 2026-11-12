@@ -19,7 +19,7 @@ function init(o){
   if(!document.getElementById('lz-calendar')){ const mine=document.querySelector('link[href*="kpis.css"]'), l=document.createElement('link'); l.id='lz-calendar'; l.rel='stylesheet';
     l.href=mine?mine.getAttribute('href').replace('kpis.css','calendar.css'):'assets/calendar.css'; document.head.appendChild(l); }
   const root=o.root, esc=o.esc, ic=k=>(o.icons&&o.icons[k])||'';
-  let boots=0, C=null, state='loading', note='', run=0, slowT=0, built=false;
+  let lastSig='', boots=0, C=null, state='loading', note='', run=0, slowT=0, built=false;
   let month=nowKey(), chartKey='post';
   let cal=[], ideas=[], rows={};   // rows by month key
   const Lm=(k,opt)=>mdate(k).toLocaleDateString('en',opt);
@@ -45,7 +45,8 @@ function init(o){
         (C.ideas?Promise.resolve().then(()=>C.ideas(o.brand)).catch(()=>[]):Promise.resolve([]))]);
       if(my!==run) return;
       cal=list||[]; ideas=idl||[]; rows={}; (km||[]).forEach(r=>{ rows[r.month]=r; });
-      state='ok'; draw();
+      const sig=JSON.stringify([month,cal,ideas.length,rows]), same=state==='ok'&&sig===lastSig; lastSig=sig;   /* 2.5.0: no redraw when nothing changed (no flicker) */
+      state='ok'; if(!same) draw();
     }catch(err){ if(my!==run) return;
       if(err&&err.name==='ReferenceError'&&boots++<5){ setTimeout(()=>{ if(my===run) load(); },400); return; }   /* opened by #goals before studio.js finished starting */
       const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
@@ -183,7 +184,7 @@ function init(o){
     if((b=t.closest('[data-kp-chart]'))){ chartKey=b.dataset.kpChart; wr('studio:goalsChart',chartKey); draw(); const nb=root.querySelector('[data-kp-chart="'+chartKey+'"]'); nb&&nb.focus(); } });
 
   return {
-    show(){ built=true; try{ const s=o.store('studio:goalsChart'); if(CHART.some(c=>c[0]===s)) chartKey=s; }catch(_){} draw(); load(); },
+    show(){ const again=built&&state==='ok'; built=true; try{ const s=o.store('studio:goalsChart'); if(CHART.some(c=>c[0]===s)) chartKey=s; }catch(_){} if(!again){ lastSig=''; draw(); } load(); },
     refresh(){ if(built) load(); }
   };
 }

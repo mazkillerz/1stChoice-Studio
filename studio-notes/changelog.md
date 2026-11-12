@@ -13,6 +13,29 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.5.1 · 13 Nov 2026
+Smoother Home and Plan pages, a proper Back on saved designs, and a Save sheet that slides up.
+
+### No more flicker
+type: fix
+The Calendar row on Home no longer flashes, and Calendar, Ideas and Goals stay still when you come back to them: they only change what is new instead of redrawing the whole page.
+
+### Ideas, Goals and + Idea fit in one row
+type: improve
+The three buttons under the Calendar row on Home now share the width evenly, with the count on a small second line, so nothing hides off the edge and there is no sideways scrolling.
+
+### Calendar, Ideas and Goals stay in place
+type: improve
+The tab bar and the page no longer move or resize when you switch: only the highlight slides to the tab you tap and the content softly changes. The top bar is hidden on all three, so the page never jumps and the top no longer looks cut off.
+
+### Back asks to update your saved design
+type: fix
+On a saved design you changed, the phone's Back button now asks **Update “name”**, **Discard changes** or **Keep editing**, the same as the back arrow, instead of the browser's "Leave site?".
+
+### Save sheet slides up
+type: improve
+In Create, the Save sheet slides up smoothly again, even for designs with many pages (the page pictures now draw after it is open), and a tap outside it closes it.
+
 ## 2.5.0 · 12 Nov 2026
 Saving again updates your design instead of making a copy, Home opens in one smooth piece, and the Calendar, Ideas and Goals tabs glide.
 
