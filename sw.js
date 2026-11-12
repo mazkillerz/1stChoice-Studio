@@ -5,7 +5,7 @@
    - Supabase (sign-in, saved designs, team photos) is NEVER cached: those requests go straight to the network.
    - Share target (Android, installed app): photos shared from the gallery arrive as a POST to ./share-target; they wait in
      IndexedDB ('studio' › 'files' › 'studio:shared', the same store studio.js uses) and the hub opens a "pick a tool" sheet. */
-const VERSION='studio-v2-5-1';   // Studio 2.5.1
+const VERSION='studio-v2-5-2';   // Studio 2.5.2
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
   'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
@@ -44,7 +44,10 @@ self.addEventListener('fetch',e=>{
 async function networkFirst(req){
   const c=await caches.open(VERSION);
   try{
-    const res=await fetch(req);
+    /* 2.5.2: always ask GitHub whether the file changed (no-cache = a quick check, the file is downloaded only when it is new).
+       Before, the phone's own 10-minute cache could keep serving the old version right after an update. */
+    const fresh=req.mode==='navigate'?new Request(req.url,{cache:'no-cache',credentials:'same-origin',redirect:'follow'}):new Request(req,{cache:'no-cache'});
+    const res=await fetch(fresh);
     if(res&&res.ok) c.put(req,res.clone());
     return res;
   }catch(err){

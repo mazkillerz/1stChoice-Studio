@@ -13,6 +13,21 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.5.2 · 13 Nov 2026
+The new look is now Studio's look for everyone, Studio always opens its newest version, and switching pages is calm.
+
+### The new look for everyone
+type: design
+The softly moving light, the date on Home, the springy taps and the smoother cards are now simply how Studio looks, with no switch to turn on. Lists rise in once when Studio opens and stay still after that.
+
+### Always the newest version
+type: fix
+Right after an update, a phone could keep showing the old Studio for up to 10 minutes from its own memory. Studio now checks for a newer version every time it opens (a quick check: files download only when they really changed), so fixes reach you straight away.
+
+### Calendar, Ideas and Goals: no movement at all
+type: fix
+Switching between the three tabs no longer fades or moves the page: the content changes in place and only the highlight slides to the tab you tap. Coming back to a tab you already opened shows it exactly as it was, with no redraw.
+
 ## 2.5.1 · 13 Nov 2026
 Smoother Home and Plan pages, a proper Back on saved designs, and a Save sheet that slides up.
 
@@ -60,7 +75,6 @@ In Create, ⋯ → **Moving story** now plans how every piece arrives the moment
 ### Try the new look
 type: design
 A softly moving light behind Home and the Plan pages, sections that rise in when they open, springy taps and today's date on Home. It is a preview, off until you switch it on.
-[flag:look] New look and motion
 ![after](assets/whatsnew/2.5.0-look-after.jpg)
 
 ### Live stock is gone

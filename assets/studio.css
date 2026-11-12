@@ -1566,44 +1566,40 @@ body.on-plan .fab{view-transition-name:hubfab}
 ::view-transition-group(plan-pill){animation-duration:.34s;animation-timing-function:cubic-bezier(.3,1.25,.5,1)}
 ::view-transition-old(plan-pill),::view-transition-new(plan-pill){animation:none;mix-blend-mode:normal;height:100%}
 ::view-transition-old(plan-tabs),::view-transition-new(plan-tabs),::view-transition-old(hubbar),::view-transition-new(hubbar),::view-transition-old(hubfab),::view-transition-new(hubfab){animation:none}
-:root[data-plan-dir]::view-transition-old(root){animation:plan-fade-out .14s ease-out both}
-:root[data-plan-dir]::view-transition-new(root){animation:plan-fade-in .2s ease-out both}
-@keyframes plan-fade-out{to{opacity:0}}
-@keyframes plan-fade-in{from{opacity:0}}
+/* 2.5.2 (owner): the page itself does not animate at all between the three tabs (a whole-page fade read as a flicker); only the pill slides */
+:root[data-plan-dir]::view-transition-old(root),:root[data-plan-dir]::view-transition-new(root){animation:none}
 /* (owner, 2.5.0: the bar and the page stay where they are; only the pill slides and the content softly changes) */
-:root[data-plan-dir] .cal-view.plan-in>:not(.plan-tabs){animation:plan-fade-in .2s ease-out both}
-@media (prefers-reduced-motion: reduce){.cal-view.plan-in>*{animation:none!important}}
 
-/* ===== 2.5.0 preview 'look' (Settings → Previews → New look and motion; off by default, everything scoped to :root[data-look2]) =====
+/* ===== The look (2.5.0 preview, the default since 2.5.2 on the owner's word) =====
    A softly drifting light behind the hub and What's New, sections that rise in on open, springy press feedback, a warmer Home header.
    Neutral tints from the interface accent only (no brand colours); reduced motion keeps the light still and drops the movement. */
 .hello-date{display:none}
-:root[data-look2] body:is(.hub,.wn){background:transparent}
-:root[data-look2] body:is(.hub,.wn)::before{content:"";position:fixed;inset:-25vmax;z-index:-1;pointer-events:none;
+:root body:is(.hub,.wn){background:transparent}
+:root body:is(.hub,.wn)::before{content:"";position:fixed;inset:-25vmax;z-index:-1;pointer-events:none;
   background:radial-gradient(42vmax 42vmax at 18% 14%,color-mix(in srgb,var(--accent) 24%,transparent),transparent 68%),
     radial-gradient(38vmax 38vmax at 86% 38%,color-mix(in srgb,#f0a35e 26%,transparent),transparent 68%),
     radial-gradient(46vmax 46vmax at 34% 88%,color-mix(in srgb,#4fb6a8 20%,transparent),transparent 68%);
   animation:lk-drift 42s ease-in-out infinite alternate;will-change:transform}
-@media (prefers-color-scheme: dark){:root[data-look2]:not([data-theme="light"]) body:is(.hub,.wn)::before{opacity:.85}}
-:root[data-look2][data-theme="dark"] body:is(.hub,.wn)::before{opacity:.85}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body:is(.hub,.wn)::before{opacity:.85}}
+:root[data-theme="dark"] body:is(.hub,.wn)::before{opacity:.85}
 @keyframes lk-drift{0%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(5vmax,-4vmax,0) rotate(9deg)}100%{transform:translate3d(-4vmax,3vmax,0) rotate(-7deg)}}
-:root[data-look2] .hero .hello{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-:root[data-look2] .hello-date{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);color:var(--muted);font:500 var(--fs-s) var(--sans)}
-:root[data-look2] body.hub-first .hero :is(.hello,h1,.usearch){animation:lk-rise .5s var(--ease) backwards}
-:root[data-look2] .hero h1{animation-delay:40ms}
-:root[data-look2] .hero .usearch{animation-delay:80ms}
-:root[data-look2] body.hub-first #homeView>.hub-sec:not([hidden]){animation:lk-rise .5s var(--ease) backwards}   /* only when Studio opens, never again on the way back to Home */
-:root[data-look2] #homeView>.hub-sec:nth-of-type(2){animation-delay:90ms}
-:root[data-look2] #homeView>.hub-sec:nth-of-type(3){animation-delay:130ms}
-:root[data-look2] #homeView>.hub-sec:nth-of-type(4){animation-delay:170ms}
+:root .hero .hello{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+:root .hello-date{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);color:var(--muted);font:500 var(--fs-s) var(--sans)}
+:root body.hub-first .hero :is(.hello,h1,.usearch){animation:lk-rise .5s var(--ease) backwards}
+:root .hero h1{animation-delay:40ms}
+:root .hero .usearch{animation-delay:80ms}
+:root body.hub-first #homeView>.hub-sec:not([hidden]){animation:lk-rise .5s var(--ease) backwards}   /* only when Studio opens, never again on the way back to Home */
+:root #homeView>.hub-sec:nth-of-type(2){animation-delay:90ms}
+:root #homeView>.hub-sec:nth-of-type(3){animation-delay:130ms}
+:root #homeView>.hub-sec:nth-of-type(4){animation-delay:170ms}
 @keyframes lk-rise{from{opacity:0;transform:translateY(10px)}}
-:root[data-look2] :is(.tool-row,.sv-open,.cal-home-row,.plan-chip,.all-tools,.tp-card,.btn,.see-all){transition:transform .28s cubic-bezier(.3,1.4,.5,1),box-shadow .2s var(--ease)}
-:root[data-look2] :is(.tool-row,.sv-open,.cal-home-row,.all-tools,.tp-card):active{transform:scale(.975)}
-:root[data-look2] :is(.plan-chip,.btn,.see-all):active{transform:scale(.95)}
-@media (hover:hover){:root[data-look2] :is(.tool-row,.cal-home-row,.tp-card):hover{box-shadow:0 10px 24px -14px rgba(28,22,16,.35)}}
-:root[data-look2] .cal-home-row.today{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 10%,var(--surface)),var(--surface) 70%)}
-:root[data-look2] .cal-home-row.today svg{color:var(--accent)}
-@media (prefers-reduced-motion: reduce){:root[data-look2] body:is(.hub,.wn)::before{animation:none}:root[data-look2] :is(.hero .hello,.hero h1,.hero .usearch,#homeView>.hub-sec){animation:none}}
+:root :is(.tool-row,.sv-open,.cal-home-row,.plan-chip,.all-tools,.tp-card,.btn,.see-all){transition:transform .28s cubic-bezier(.3,1.4,.5,1),box-shadow .2s var(--ease)}
+:root :is(.tool-row,.sv-open,.cal-home-row,.all-tools,.tp-card):active{transform:scale(.975)}
+:root :is(.plan-chip,.btn,.see-all):active{transform:scale(.95)}
+@media (hover:hover){:root :is(.tool-row,.cal-home-row,.tp-card):hover{box-shadow:0 10px 24px -14px rgba(28,22,16,.35)}}
+:root .cal-home-row.today{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 10%,var(--surface)),var(--surface) 70%)}
+:root .cal-home-row.today svg{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){:root body:is(.hub,.wn)::before{animation:none}:root :is(.hero .hello,.hero h1,.hero .usearch,#homeView>.hub-sec){animation:none}}
 
 /* ===== 2.5.0 (owner): Ideas · Goals · + Idea on Home always fit in one row (three equal tiles, no sideways scroll) ===== */
 .plan-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible}
@@ -1614,3 +1610,6 @@ body.on-plan .fab{view-transition-name:hubfab}
 .plan-chip .pc-t em{font-size:var(--fs-s)}
 .plan-chip.plan-add{margin-inline-start:0;justify-content:center}
 .plan-chip.hs-chip,.plan-chip.hs-chip.hs-end{width:auto;margin-inline-start:0}
+
+/* 2.5.2: list entrances (tool rows, saved cards) play when Studio opens, not every time Home is shown again (that read as a flicker) */
+body.hub:not(.hub-first) #homeView :is(.tool-item,.sv-card,.tool-row){animation:none}

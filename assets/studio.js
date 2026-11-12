@@ -13,11 +13,11 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.5.1';
+const VERSION='2.5.2';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)) window.addEventListener('load',()=>{ navigator.serviceWorker.register(ROOT+'sw.js').catch(()=>{}); });
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)) window.addEventListener('load',()=>{ navigator.serviceWorker.register(ROOT+'sw.js',{updateViaCache:'none'}).then(r=>{ try{ r.update(); }catch(_){} }).catch(()=>{}); });   /* 2.5.2: the newest sw.js every visit */
 let installEvt=null; window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; document.dispatchEvent(new Event('studio:installable')); });
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 let BRAND=null, LOGO=null, LOGO_LIGHT=null;
@@ -97,21 +97,16 @@ const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Reviews, captions, campaigns and the phrasebook'},
   {id:'import',label:'Import a Claude Design board',sub:'In Create: Add → Import. A design made in Claude opens as pieces you can edit'},
   {id:'motion',label:'Moving stories',sub:'In Create: ⋯ → Moving story. Your story comes alive as a short video'},   /* w3-mp4 */
-  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'look',label:'New look and motion',sub:'A softly moving background, smoother taps and pages, a warmer Home'}   /* 2.5.0: waits for the owner's OK */
-];   /* 2.5.0: 'stock' (Live stock in Restock) archived on the owner's word: _archive/live-stock (2026-11-12)/ */
+  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'}
+];   /* 2.5.2: 'look' (New look and motion) is the default now (owner) */   /* 2.5.0: 'stock' (Live stock in Restock) archived on the owner's word: _archive/live-stock (2026-11-12)/ */
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
   list:()=>FLAGS.map(f=>({...f,on:flags.on(f.id)})),
   on(id){ try{ return localStorage.getItem('studio:flag:'+id)==='1'; }catch(_){ return false; } },
   set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
 };
-/* 2.5.0 'look' preview: one root attribute scopes every rule (studio.css, end); index.html / whats-new.html set it in <head> too, so it never flashes */
-const lookSync=()=>{ try{ if(flags.on('look')) document.documentElement.dataset.look2='1'; else delete document.documentElement.dataset.look2; }catch(_){} };
-document.addEventListener('studio:flag',e=>{ if(e.detail&&e.detail.id==='look') lookSync(); });
 try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
-lookSync();
-try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); localStorage.removeItem('studio:flag:stock'); Object.keys(localStorage).filter(k=>k.startsWith('studio:stock:')).forEach(k=>localStorage.removeItem(k)); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
+try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); localStorage.removeItem('studio:flag:look'); localStorage.removeItem('studio:flag:stock'); Object.keys(localStorage).filter(k=>k.startsWith('studio:stock:')).forEach(k=>localStorage.removeItem(k)); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
 
 /* a design's shape (2.4.0): the stored format wins (Create posts are 1080×1350), else what its tool makes. 'post'|'story'|'square'|'cover' */
 const fmtFromSize=(w,h)=>!w||!h?null:w===h?'square':h/w<1.5?'post':'story';
@@ -2838,7 +2833,7 @@ async function home(){
   /* a friendly line above the title, by the time of day on this phone */
   document.body.classList.add('hub-first'); setTimeout(()=>document.body.classList.remove('hub-first'),1500);   /* 2.5.0: the look preview's rise-in runs once, when Studio opens */
   const hello=$('hello'); if(hello){ const hr=new Date().getHours(); hello.textContent=hr>=5&&hr<12?'Good morning':hr>=12&&hr<17?'Good afternoon':'Good evening';
-    const dt=document.createElement('span'); dt.className='hello-date'; dt.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}); hello.append(dt); }   /* the date shows with the 'look' preview */
+    const dt=document.createElement('span'); dt.className='hello-date'; dt.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}); hello.append(dt); }
   /* two places: Home, and the Saved page (#saved: its own history entry, so the phone's Back button returns home).
      The bottom bar (phone) lights the one you're on; its highlight is sized from the tab itself, so icon and label sit in its middle. */
   const tabs=[...document.querySelectorAll('.hubbar a')], pill=document.querySelector('.hubbar .pill');
@@ -2979,7 +2974,7 @@ async function home(){
     const go=()=>new Promise(res=>{ NAV.idle(()=>{ try{ history.replaceState({sp:1},'','#'+v); }catch(_){} let p; try{ p=showView(v); }catch(_){} Promise.race([Promise.resolve(p).catch(()=>{}),new Promise(r=>setTimeout(r,700))]).then(res); }); });
     const end=()=>{ delete root.dataset.planDir; };
     if(document.startViewTransition&&!reduce()){ try{ const t=document.startViewTransition(go); t.finished.then(end,end); return; }catch(_){} }
-    go().then(()=>{ const el=$(v+'View'); if(el&&!reduce()){ el.classList.remove('plan-in'); void el.offsetWidth; el.classList.add('plan-in'); setTimeout(()=>el.classList.remove('plan-in'),500); } end(); }); }
+    go().then(end); }
   const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:planTabs(v),
     cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
     netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null},
