@@ -2908,17 +2908,42 @@ async function home(){
     }catch(_){ root.innerHTML='<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>The calendar did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" id="calRetry">Try again</button></div>'; const r=root.querySelector('#calRetry'); if(r) r.onclick=showCalendar; }
   }
   const calOpen=today=>{ calToday=!!today; if(curView()==='calendar'){ showCalendar(); } else openView('calendar'); };
+  /* 2.5.0 speed: the Calendar row and the Ideas / Goals chips are already in index.html as placeholders (no jump when they fill in),
+     the last numbers paint at once from this device (studio:home:plan:<brand>), and ONE parallel fetch (this month's calendar, ideas,
+     goals) refreshes them; it starts as soon as the team sign-in is known, next to the saved designs, not after them. */
+  const PLANK='studio:home:plan:'+B.id; let planRun=null;
+  const dayKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  function calRowEl(){
+    let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return null; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row); }   /* first thing on Home (2.2.0) */
+    if(!row.dataset.wired){ row.dataset.wired='1'; row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
+    return row; }
+  /* swap one piece only when it changed, with a soft fade (never a jump: the box keeps its size) */
+  const swapIn=(old,html,where,parent)=>{ if(old&&old.outerHTML===html) return; const t=document.createElement('div'); t.innerHTML=html; const el=t.firstElementChild;
+    if(old){ old.replaceWith(el); if(!reduce()) el.classList.add('hs-in'); } else parent.insertAdjacentElement(where,el); };
+  function paintCalRow(row,list){ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
+    swapIn(row.querySelector('.cal-home-row'),`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`,'afterbegin',row); }
+  function paintMini(row,inbox,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
+    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span>Ideas${inbox?` <em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span>Goals${goal?` <em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span>Idea</span></button>`;
+    if(mini.dataset.h===html) return; const first=!mini.dataset.h; mini.dataset.h=html; mini.innerHTML=html; if(!first&&!reduce()){ mini.classList.remove('hs-in'); void mini.offsetWidth; mini.classList.add('hs-in'); } }
   async function calHome(){
-    if(!$('homeView')) return;
-    let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row);   /* first thing on Home (2.2.0) */
-      row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
-    const paintRow=list=>{ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
-      row.innerHTML=`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`; };
-    if(!row.firstChild) paintRow(null);
-    if(!member||!C||!C.calendar){ planHome(); return; }
-    try{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-      const list=(await C.calendar(B.id,{from:k,to:k})).filter(x=>x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')); paintRow(list); }catch(_){}
-    finally{ planHome(); }
+    if(!$('homeView')) return; const row=calRowEl(); if(!row) return;
+    const now=new Date(), k=dayKey(now), m=k.slice(0,7);
+    if(!row.dataset.painted){ row.dataset.painted='1'; const c=store(PLANK)||{};   // the last numbers, at once
+      paintCalRow(row,c.day===k?c.today:null); paintMini(row,c.inbox||0,c.month===m?c.goal||'':''); row.classList.remove('is-skel'); }
+    if(!member) return;
+    if(planRun) return planRun;
+    planRun=(async()=>{ try{
+      const Cl=C||await getCloud(); if(!Cl||!Cl.calendar) return;
+      const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), safe=p=>p?p.catch(()=>null):Promise.resolve(null);
+      const [cal,ids,km]=await Promise.all([safe(Cl.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})),PLAN_ON&&Cl.ideas?safe(Cl.ideas(B.id)):null,PLAN_ON&&Cl.kpiMonths?safe(Cl.kpiMonths(B.id,m,m)):null]);
+      const c=store(PLANK)||{};
+      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({title:x.title,at:x.at})); paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); }
+      if(ids) c.inbox=ids.filter(x=>x.stage==='inbox').length;
+      if(km&&cal){ const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted'), keyK=['post','story','reel'].find(q=>+t[q]>0);
+        c.goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):''; c.month=m; }
+      paintMini(row,c.inbox||0,c.month===m?c.goal||'':''); store(PLANK,c);
+    }catch(_){} finally{ setTimeout(()=>{ planRun=null; },0); } })();
+    return planRun;
   }
 
   /* ---------- 2.4.0 Plan (flag "plan"): Ideas board (assets/ideas.js) and monthly Goals (assets/kpis.js), lazy like the calendar.
@@ -2940,18 +2965,6 @@ async function home(){
   async function showGoals(){ const root=$('goalsView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
   /* quick capture from anywhere on the hub: the + menu, search, Home's Ideas button. mode: 'text' | 'voice' | 'image' | 'link' */
   async function newIdea(mode){ try{ (await ideasLib()).capture({mode:mode||'text'}); }catch(err){ hubToast('Ideas did not open: '+(err.message||err)); } }
-  /* Home: two small buttons under the Calendar row (Ideas with the inbox count, Goals with this month's posts) */
-  async function planHome(){ const row=$('calRow'); if(!PLAN_ON||!row) return;
-    let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
-    const paintMini=(inbox,goal)=>{ mini.innerHTML=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span>Ideas${inbox?` <em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span>Goals${goal?` <em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span>Idea</span></button>`; };
-    if(!mini.firstChild) paintMini(0,'');
-    if(!member||!C||!C.ideas) return;
-    try{ const d=new Date(), m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-      const [ids,km,cal]=await Promise.all([C.ideas(B.id),C.kpiMonths(B.id,m,m),C.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})]);
-      const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted');
-      const keyK=['post','story','reel'].find(k=>+t[k]>0), goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):'';
-      paintMini(ids.filter(x=>x.stage==='inbox').length,goal); }catch(_){}
-  }
   document.addEventListener('click',e=>{ if(e.target.closest('[data-new-idea]')){ e.preventDefault(); haptic('tick'); newIdea('text'); } });
 
   /* ---------- review (mega): approvals and comments behind the "team" preview (assets/review.js + review.css, lazy). Hooks: svCard chip, paint(),
@@ -3230,8 +3243,9 @@ async function home(){
       const member=await refreshAccount(); if(run!==loadRun) return; loadedFor=me?me.id:null;
       if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
       if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
+      calHome();   // 2.5.0: the Plan row loads next to the designs, not after them
       const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over
-      [all,cols]=got; cloudNote=''; loaded=true; paint(); calHome(); keepSaved();
+      [all,cols]=got; cloudNote=''; loaded=true; paint(); keepSaved();
     }catch(err){ if(run!==loadRun) return;
       const net=netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(showing()){ hubToast(net?(slow?'The connection is slow. These are your designs from before.':'You’re offline. These are your designs from before.'):'Could not refresh the saved designs: '+(err.message||err)); return; }
