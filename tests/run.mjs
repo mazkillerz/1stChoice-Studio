@@ -37,10 +37,10 @@ const MAP=[
   [/^assets\/fonts\/|^assets\/studio\.css$|^brands\/[\w-]+\/fonts\/|^brands\/[\w-]+\/brand\.js$|^lab\/board\.html$/,['fonts-local']],
   [/^assets\/who\./,['who']],
   [/^assets\/cloud\.js$|^tests\/fakecloud\.js$/,['cloud-api','planned']],
-  [/^tools\/create\.js$|^assets\/cloud\.js$/,['saved-versions']],
+  [/^tools\/create\.js$|^assets\/cloud\.js$/,['saved-versions','resave']],
   [/^brands\/|^tests\/fixtures\/brands\//,['tokens']],
   [/^brands\/|^tests\/fixtures\/brands\//,['brandkit','create-stickers','nd-templates','text-fill','goldens']],
-  [/^tools\/(?!video)|assets\/studio\.js/,['goldens','simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry','toolfix43','drafts-queue']],
+  [/^tools\/(?!video)|assets\/studio\.js/,['resave','goldens','simplify40','simplify35','full','v5','polish','queue','queue-keep','copystyle','stickers','emoji-stickers','flip','simplify15','textstyles','brandkit','simplify30','quicksave','font-ready','team-retry','toolfix43','drafts-queue']],
   [/^assets\/stickers\.js$|^tools\/highlight-emoji\.js$/,['stickers','copystyle','emoji-stickers','highlight-emoji','flip','create-stickers','board-stickers']],[/assets\/render\.js/,['draft-pictures','batch-saved','continue-clear','create-render','font-ready']],
   [/assets\/cloud\.js/,['hub-offline','smoke','quicksave','home7-save','collections-save']],
   [/assets\/studio\.(js|css)|index\.html/,['hub-offline','hub-fixes','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30','continue-clear','create-render','select-swipe','collections-save']],
@@ -75,7 +75,7 @@ const TWINS=['home7','polish71','collage-grids'];   // the whole-file versions o
 if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
-const TOOL_SUITES=['nav','saveflow','teamassets','rules','captions','components','full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','tokens'],
+const TOOL_SUITES=['nav','saveflow','teamassets','rules','captions','components','full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','resave','tokens'],
       HUB_SUITES=['nav','ideas','kpis','calpick','calendar','review','captions','campaigns','phrasebook','packs','hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
@@ -122,7 +122,7 @@ const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={goldens:110,'collage-grids-compat':120,'collage-grids-grids':110,'video-timeline':200,video:190,'video-polish':130,textstyles:95,'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,backgrounds:165,'batch-saved':75,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+const SLOW={goldens:110,resave:90,'collage-grids-compat':120,'collage-grids-grids':110,'video-timeline':200,video:190,'video-polish':130,textstyles:95,'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,backgrounds:165,'batch-saved':75,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
   'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));
