@@ -10,7 +10,7 @@ const OUT=fs.mkdtempSync('/tmp/ndtest-');
 const pngSize=f=>{ const x=fs.readFileSync(f); return [x.readUInt32BE(16),x.readUInt32BE(20)]; };
 import { loadKit } from './kit.mjs';
 const BRAND=loadKit(ROOT,'1stchoice');   // brand.js + its packs, merged the way the engine does
-const defs=BRAND.create.templates.filter(d=>d.layout==='doc');
+const defs=BRAND.create.templates.filter(d=>d.layout==='doc'&&d.cat==='nationalday');
 const SZ={story:[1080,1920],post:[1080,1350],square:[1080,1080]};
 const AR=/[؀-ۿ]/;
 const b=await chromium.launch(); const errs=[]; let fails=0;

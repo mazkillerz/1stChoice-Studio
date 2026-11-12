@@ -45,7 +45,7 @@ Studio.registerBrand({
     {id:'blob',name:'Blob',hex:'#E5D5C0'},{id:'gold',name:'Gold',hex:'#D6B078'},{id:'yellow',name:'Passion yellow',hex:'#F6C040'},
     {id:'berry',name:'Passion berry',hex:'#BE2C5C'}
   ],
-  packs:['nd26'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
+  packs:['nd26','gt'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
   handle:'@1stchoice.om',      // Instagram handle (the "Instagram handle" component)
   /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
   flavours:[

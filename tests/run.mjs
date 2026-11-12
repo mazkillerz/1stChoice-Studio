@@ -29,7 +29,7 @@ const MAP=[
   [/assets\/calendar\.|assets\/captions\.|assets\/campaigns\./,['calendar','captions','campaigns']],
   [/assets\/review\./,['review']],[/assets\/rules\./,['rules','captions']],[/assets\/phrasebook\./,['phrasebook']],
   [/assets\/components\.js|tools\/create-lib\.js/,['components','goldens']],
-  [/brands\/[\w-]+\/packs\/|tests\/kit\.mjs/,['packs','nd-templates','goldens','templates']],
+  [/brands\/[\w-]+\/packs\/|tests\/kit\.mjs/,['packs','nd-templates','got-talent','goldens','templates']],
   [/tools\/create-import/,['create-import']],[/tools\/create-motion/,['create-motion']],[/tools\/create-resize/,['create-resize']],
   [/tools\/create\.js|tools\/create-core\.js/,['create-import','create-motion','create-resize','rules','campaigns']],
   [/assets\/cloud\.js|tests\/fakecloud\.js/,['calendar','review','captions','campaigns','phrasebook']],
