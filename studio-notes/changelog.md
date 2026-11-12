@@ -13,6 +13,37 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the big highlight card at the top. Older versions are grouped automatically by minor version in blocks of five (0.1 to 0.5, 0.6 to 0.10, 0.11 to 0.15 ...); a patch version such as 0.6.1 sits with 0.6. Each group is a closed section the reader can open.
 
+## 2.5.0 · 12 Nov 2026
+Saving again updates your design instead of making a copy, Home opens in one smooth piece, and the Calendar, Ideas and Goals tabs glide.
+
+### Saving again updates the same design
+type: fix
+Save a design to the team, change it, tap Save again: the same design is updated, whether you stayed on the page, went back or reopened it from Saved. Before, a design without your own photos was quietly stored as a template, so every save after that made a new copy. Want a separate one? Tap **Save as a copy** under the Save button. Every update still keeps the one before in Versions.
+
+### Home opens in one piece
+type: improve
+Home no longer builds itself bit by bit. The Calendar row, Ideas and Goals, your tools and Saved designs each have a soft placeholder from the first moment, then fill in where they are, so nothing jumps down. The calendar, ideas and goals now load together with your saved designs, and the last numbers show straight away from your phone.
+![after](assets/whatsnew/2.5.0-home-after.jpg)
+
+### Calendar, Ideas and Goals glide
+type: improve
+Switching between Calendar, Ideas and Goals now feels like one place: the highlight slides to the tab you tap and the page slides in from its side. Phones set to reduce motion switch without movement.
+
+### Moving stories in two taps
+type: improve
+In Create, ⋯ → **Moving story** now plans how every piece arrives the moment it opens, so you can tap **Save video** straight away. Change any piece if you like. Still a preview: turn it on in Settings → Previews.
+[flag:motion] Moving stories
+
+### Try the new look
+type: design
+A softly moving light behind Home and the Plan pages, sections that rise in when they open, springy taps and today's date on Home. It is a preview, off until you switch it on.
+[flag:look] New look and motion
+![after](assets/whatsnew/2.5.0-look-after.jpg)
+
+### Live stock is gone
+type: fix
+The Live stock preview in Restock was not needed, so it is removed from the app (kept in the archive). Restock works exactly as before.
+
 ## 2.4.2 · 12 Nov 2026
 
 ### 1st Choice Got Talent templates
