@@ -25,7 +25,7 @@ const MAP=[
   [/assets\/teamassets\.|assets\/cutout-pro/,['teamassets','cutout-pro']],[/assets\/ideas\./,['ideas']],[/assets\/kpis\./,['kpis']],[/assets\/cloud\.js|tests\/fakecloud\.js/,['teamassets','saveflow']],
   [/tools\/create\.js|tools\/video\.js|tools\/video-ui\.js|lab\/board-ui\.js|assets\/search\.js|assets\/welcome\.js/,['nav','saveflow']],
   /* mega round, Wave 2-3 (1.55.0) */
-  [/assets\/cutout|assets\/vendor\/cutout/,['cutout']],[/assets\/stock\.js|tools\/restock\.js/,['stock']],
+  [/assets\/cutout|assets\/vendor\/cutout/,['cutout']],
   [/assets\/calendar\.|assets\/captions\.|assets\/campaigns\./,['calendar','captions','campaigns']],
   [/assets\/review\./,['review']],[/assets\/rules\./,['rules','captions']],[/assets\/phrasebook\./,['phrasebook']],
   [/assets\/components\.js|tools\/create-lib\.js/,['components','goldens']],

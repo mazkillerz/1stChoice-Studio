@@ -552,8 +552,9 @@ async function teamSave1(o){ o=o||{};
   if(!(await L.ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
   let doc=JSON.parse(BD.docJson()); const imgs0=usedImgs(doc);
   /* an opened design whose photos were all removed is still that design: update it, not a new template */
-  const keepKind=!!st.design&&st.design.kind==='design'&&!o.asNew&&o.kind!=='template'&&o.keep!==false;
-  const tpl=o.kind==='template'||(!keepKind&&!(o.keep!==false&&imgs0.length));
+  /* 2.5.0: a design without photos is still a design (it used to become a template, so every re-save made a new design).
+     A template only from "Save as a team template", "Update the template", or "Keep the photos" switched off. */
+  const tpl=o.kind==='template'||(o.keep===false&&imgs0.length>0);
   const kindOut=tpl?'template':'design';
   const asNew=!!o.asNew||!st.design||(st.design.kind!==kindOut);
   if(tpl) doc=templateDoc(doc);
@@ -564,7 +565,7 @@ async function teamSave1(o){ o=o||{};
   if(tpl&&o.kind==='template'&&!st.design) return {id,name,kind:kindOut};   // a template saved from a draft: keep working on the draft
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }
-  if(st.draftKey){ L.removeDraft(st.draftKey); st.draftKey=null; } S.id=null; st.dirty=false;
+  { const dk=st.draftKey||(S.id?DKEY():null); if(dk) L.removeDraft(dk); st.draftKey=null; } S.id=null; st.dirty=false;   // the draft is gone even if it was never written yet (no copy left in Continue editing)
   st.design={id,name,kind:kindOut,collections:cols}; altMode=null; markSaved(); history.replaceState(null,'',location.pathname+'?design='+id); syncSaved();
   return {id,name,kind:kindOut}; }
 const curJson=()=>{ const d=JSON.parse(BD.docJson()); delete d.name; return JSON.stringify(d); };
@@ -634,7 +635,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
         <input type="text" id="crCol" dir="auto" maxlength="60" placeholder="Or name a new collection" aria-label="New collection">
         <small class="tb-hint" id="crHint" dir="auto" role="status" aria-live="polite"></small></div>
       <label class="check"><input type="checkbox" id="crKeep" checked> Keep the photos (off = a template)</label>
-      ${st.design?'<label class="check"><input type="checkbox" id="crAsNew"> Save as a new design instead of updating</label>':''}
+      ${st.design?'<label class="check"><input type="checkbox" id="crAsNew"> Save as a copy instead of updating</label>':''}
       <button type="button" class="mini" id="crTeamOnly">Only save to the team</button>
     </div>
     <div id="rulesHost" hidden></div><!-- rules (mega): the brand check lines; hidden = no height -->
@@ -665,7 +666,7 @@ function openSave(){ reopen=null; const fs=frames(); if(!fs.length){ toast('Add 
   const syncT=()=>{ const on=$('crTeamOn').checked, d=st.design, nw=wantsNew(), upd=!!d&&!nw, c=pickedNow(); $('crTeamBox').hidden=!on; if(!c.length) ; else needHint=false;
     document.querySelectorAll('#crWhere [data-where]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.where===(on?'team':'me'))));
     if($('crAsNew')) $('crAsNew').checked=nw;
-    if($('crAlt')) $('crAlt').textContent=nw?(isTplOpen()?'Update the template':'Update “'+short(d.name)+'”'):'Save as new';
+    if($('crAlt')) $('crAlt').textContent=nw?(isTplOpen()?'Update the template':'Update “'+short(d.name)+'”'):'Save as a copy';
     $('crGo').textContent=!on?(many?'Save '+checked().length+' pages':'Save image'):!c.length?'Pick a collection':upd?'Update “'+short(d.name)+'”':c.length>1?'Save to '+c.length+' collections':'Save to “'+short(c[0])+'”';
     $('crGo').setAttribute('aria-disabled',String(needCol())); $('crGo').classList.toggle('is-need',needCol()); paintCols(); };
   const nudge=()=>{ needHint=true; syncT(); const c=$('crCols'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); setTimeout(()=>c.classList.remove('nudge'),1200); try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){}

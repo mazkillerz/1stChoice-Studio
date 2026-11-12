@@ -26,7 +26,6 @@ const photoBox=(shape,pw,ph,room,real)=>{
 };
 Studio.tool({
   id:'restock', title:'Restock', fileName:'restock',
-  stock:{field:'flav'},   // live stock preview: a sale point fills the flavours
   photos:{count:1}, sampleNote:'Example photo. A clear photo of the cans works best (cans not touching).',
   photosFor:o=>o.style!=='cans',   // Cans uses the HD can pictures, so no photo box and nothing to add before Save
   photoStyle:'white',              // adding a photo while on Cans switches to this look

@@ -97,9 +97,8 @@ const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Reviews, captions, campaigns and the phrasebook'},
   {id:'import',label:'Import a Claude Design board',sub:'Open an exported board in Create as layers'},
   {id:'motion',label:'Moving stories',sub:'Save a Create story as a short video'},   /* w3-mp4 */
-  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'stock',label:'Live stock in Restock',sub:'Pick a sale point and its stock fills in'}   /* w3-stock */
-];
+  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'}
+];   /* 2.5.0: 'stock' (Live stock in Restock) archived on the owner's word: _archive/live-stock (2026-11-12)/ */
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
   list:()=>FLAGS.map(f=>({...f,on:flags.on(f.id)})),
@@ -107,7 +106,7 @@ const flags={
   set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
 };
 try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
-try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
+try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); localStorage.removeItem('studio:flag:stock'); Object.keys(localStorage).filter(k=>k.startsWith('studio:stock:')).forEach(k=>localStorage.removeItem(k)); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
 
 /* a design's shape (2.4.0): the stored format wins (Create posts are 1080×1350), else what its tool makes. 'post'|'story'|'square'|'cover' */
 const fmtFromSize=(w,h)=>!w||!h?null:w===h?'square':h/w<1.5?'post':'story';
@@ -1119,7 +1118,7 @@ async function tool(cfg){
         <button type="button" class="link team-more" id="teamMore" aria-expanded="false" aria-controls="teamMoreBox">More options</button>
         <div class="team-more-box" id="teamMoreBox" hidden>
           <label class="check"><input type="checkbox" id="teamKeep"><span class="check-txt">Keep the photos<span class="small">Off: a template, layout and words only</span></span></label>
-          <label class="check" id="teamAsNewRow" hidden><input type="checkbox" id="teamAsNew"> Save as a new design instead of updating</label>
+          <label class="check" id="teamAsNewRow" hidden><input type="checkbox" id="teamAsNew"> Save as a copy instead of updating</label>
         </div>
       </div>
     </div>
@@ -1291,13 +1290,6 @@ async function tool(cfg){
     wirePalettes(box,(key,v)=>{ if(!key.startsWith('f:')) return; S.values[key.slice(2)]=v||null; syncUI(); remember(); render(); });
     box.addEventListener('change',e=>{ const t=e.target; if(t.dataset.on) S.values[t.dataset.on].on=t.checked; if(t.dataset.toggle) S.values[t.dataset.toggle]=t.checked; if(t.dataset.don) S.values[t.dataset.don].on=t.checked; syncUI(); remember(); render(); });
   });
-  /* live stock (w3-stock): with the preview on, a tool that asks for it (cfg.stock={field}) gets "Pick a sale point" above its words */
-  if(flags.on('stock')&&cfg.stock&&B.stock){ const wb=document.querySelector('[data-fields="words"]'); if(wb){
-    const row=document.createElement('div'); row.className='field stock-field'; row.innerHTML='<button type="button" class="mini stock-pick" id="stockPick">Pick a sale point</button><span class="small stock-note" id="stockNote" role="status" aria-live="polite"></span>'; wb.before(row);
-    $('stockPick').onclick=async()=>{ try{ if(!window.StudioStock) await loadScript(ROOT+'assets/stock.js'); }catch(_){ $('stockNote').textContent='You are offline. Fill the stock by hand.'; return; }
-      StudioStock.pick(B,{dialog,norm:normText,onPick:p=>{ const f=fields.find(x=>x.id===cfg.stock.field); if(f&&f.type==='multi'){ S.values[f.id].picks=f.options.filter(o=>(p.stock[o.v]||0)>0).map(o=>o.v); if(S.layers[f.id]) S.layers[f.id].hidden=false; }
-        $('stockPick').innerHTML='<bdi dir="auto"></bdi>'; $('stockPick').firstChild.textContent=p.label; $('stockNote').textContent=(B.flavours||[]).filter(x=>x.id in p.stock).map(x=>x.name+' '+p.stock[x.id]).join(' · ');
-        syncUI(); remember(); render(); }}); }; } }
   function value(id){
     const v=S.values[id]; const f=fields.find(x=>x.id===id); if(!f) return '';
     if(f.type==='chips'){ if(v.pick==='__none') return ''; return String(v.pick==='__own'?v.own:v.pick).trim(); }
@@ -1651,17 +1643,20 @@ async function tool(cfg){
     await whoOnce();
     if(!design&&designLost&&!o.asNew) throw new Error('That saved design did not open, so saving now would make a copy. Reload the page to open it first.');
     const asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName());
-    const keep=(o.keep!=null?o.keep:(design?design.kind!=='template':true))&&hasPhotosNow(), r=recipe();
+    /* 2.5.0 (owner: "re-saving makes a second design"): a design with no photos of its own used to be stored as a TEMPLATE, and saving
+       a template again always made a new design. Now only "Keep the photos" switched off (or updating an opened template) makes a template. */
+    const photosNow=hasPhotosNow(), keep=(o.keep!=null?o.keep:(design?design.kind!=='template'||asNew:true))&&photosNow, r=recipe();
+    const kindOut=(photosNow&&o.keep===false)||(!asNew&&isTpl())?'template':'design';
     const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
     const thumb=await thumbBlob();
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:keep?'design':'template',recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow(),format:cfg.id==='highlight'?'cover':fmtFromSize(W,H)});
+    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:kindOut,recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow(),format:cfg.id==='highlight'?'cover':fmtFromSize(W,H)});
     let fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     /* the collections are checked on the saved design itself: any that did not go in are tried once more */
     const lacks=()=>{ const have=new Set((fresh.collectionNames||[]).map(n=>String(n).trim())); return cols.map(n=>String(n).trim()).filter(n=>n&&!have.has(n)); };
     let colMiss=lacks();
     if(colMiss.length){ try{ await C.setDesignCollections(B.id,id,cols); fresh=await C.getDesign(id); colMiss=lacks(); }catch(_){} }
-    design={id,name,kind:keep?'design':'template',collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); teamCols=null;   // r3-save: the list is asked again (a new collection is now real)
+    design={id,name,kind:kindOut,collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); teamCols=null;   // r3-save: the list is asked again (a new collection is now real)
     showDesignBar(); clearDraft(); markSaved();
     await capSave(C,id,asNew);   // captions (mega)
     history.replaceState(null,'',location.pathname+'?design='+id);
@@ -1705,7 +1700,7 @@ async function tool(cfg){
     $('saveWhereBox').hidden=imgDone;   // after a picture: "Also save to the team…" is the way in
     const upd=!!design&&!wantsNew(), nm=short(design&&design.name);
     $('teamAsNewRow').hidden=!design; $('teamAsNew').checked=!!design&&wantsNew();
-    const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as new';
+    const alt=$('saveAlt'); alt.hidden=!design||imgDone; alt.textContent=!design?'':wantsNew()?(isTpl()?'Update the template':'Update “'+nm+'”'):'Save as a copy';
     if(document.activeElement!==$('teamName')&&!$('teamName').dataset.touched) $('teamName').value=design?design.name:defaultName();
     $('teamKeep').checked=$('teamKeep').dataset.touched?$('teamKeep').checked:(design?design.kind!=='template'||wantsNew():true); $('teamKeep').disabled=!hasPhotosNow();
     const need=needCol(); if(!need) needHint=false;

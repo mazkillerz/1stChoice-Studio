@@ -1,0 +1,9 @@
+  /* live stock (w3-stock): with the preview on, a tool that asks for it (cfg.stock={field}) gets "Pick a sale point" above its words */
+  if(flags.on('stock')&&cfg.stock&&B.stock){ const wb=document.querySelector('[data-fields="words"]'); if(wb){
+    const row=document.createElement('div'); row.className='field stock-field'; row.innerHTML='<button type="button" class="mini stock-pick" id="stockPick">Pick a sale point</button><span class="small stock-note" id="stockNote" role="status" aria-live="polite"></span>'; wb.before(row);
+    $('stockPick').onclick=async()=>{ try{ if(!window.StudioStock) await loadScript(ROOT+'assets/stock.js'); }catch(_){ $('stockNote').textContent='You are offline. Fill the stock by hand.'; return; }
+      StudioStock.pick(B,{dialog,norm:normText,onPick:p=>{ const f=fields.find(x=>x.id===cfg.stock.field); if(f&&f.type==='multi'){ S.values[f.id].picks=f.options.filter(o=>(p.stock[o.v]||0)>0).map(o=>o.v); if(S.layers[f.id]) S.layers[f.id].hidden=false; }
+        $('stockPick').innerHTML='<bdi dir="auto"></bdi>'; $('stockPick').firstChild.textContent=p.label; $('stockNote').textContent=(B.flavours||[]).filter(x=>x.id in p.stock).map(x=>x.name+' '+p.stock[x.id]).join(' · ');
+        syncUI(); remember(); render(); }}); }; } }
+  /* live stock (w3-stock, behind the "stock" preview): the owner's public read-only stock feed; product names are matched to the flavours above */
+  stock:{feed:'https://location.1stchoice.cloud/api/public/locations',products:[{match:'classic',flavour:'classic'},{match:'passion',flavour:'passion'}],ignore:['water']},

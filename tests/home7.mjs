@@ -325,7 +325,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   await pg.tap('#teamCols [data-col="Restocks"]');
   ok(N+'collections sit in the sheet, not under More options',await pg.isVisible('#teamCols')&&!(await pg.isVisible('#teamMoreBox'))&&!(await pg.$('#teamMoreBox #teamCols')));
   await pg.tap('#teamMore'); await pg.waitForTimeout(300);
-  ok(N+'More options holds only "Keep the photos" and "Save as new"',await pg.isVisible('#teamMoreBox #teamKeep')&&(await pg.$$eval('#teamMoreBox input',l=>l.map(x=>x.id))).join()==='teamKeep,teamAsNew');
+  ok(N+'More options holds only "Keep the photos" and "Save as a copy"',await pg.isVisible('#teamMoreBox #teamKeep')&&(await pg.$$eval('#teamMoreBox input',l=>l.map(x=>x.id))).join()==='teamKeep,teamAsNew');
   await pg.tap('#teamCols [data-newcol]'); await pg.waitForTimeout(300);
   ok(N+'"New" reveals a field to type a collection',await pg.isVisible('#teamNewRow')&&await pg.isVisible('#teamNewCol')&&await pg.isVisible('#teamAddCol'));
   await pg.fill('#teamNewCol','Spring'); await pg.tap('#teamAddCol'); await pg.waitForTimeout(300);
@@ -349,7 +349,7 @@ if(part('save')) { const vp=PHONE, N='phone: ', ctx=await mk(vp); const pg=await
   ok(N+'a saved design is open (design bar set)',await pg.evaluate(()=>!document.getElementById('designBar').hidden)&&/\?design=/.test(pg.url()));
   ok(N+'...and the team switch is ON (the button says Update), after the quiet check',await pg.isChecked('#teamOn'));
   await sheetOpen();
-  ok(N+'...also when the sheet opens: on, button Update “name”, Save as new under it',await pg.isChecked('#teamOn')&&/^Update “/.test((await pg.textContent('#saveTxt')).trim())&&(await pg.textContent('#saveAlt')).trim()==='Save as new',await pg.textContent('#saveTxt'));
+  ok(N+'...also when the sheet opens: on, button Update “name”, Save as a copy under it',await pg.isChecked('#teamOn')&&/^Update “/.test((await pg.textContent('#saveTxt')).trim())&&(await pg.textContent('#saveAlt')).trim()==='Save as a copy',await pg.textContent('#saveTxt'));
   ok(N+'...with the design\'s own name in the name field',await pg.inputValue('#teamName')===nm,await pg.inputValue('#teamName'));
   await pg.waitForTimeout(300);
   ok(N+'the sheet starts on Phone + Team for an opened design',await pg.getAttribute('#saveWhere [data-where="team"]','aria-checked')==='true');

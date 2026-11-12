@@ -1,15 +1,15 @@
 /* Saved designs: covers, updates and versions (mega round 1.1).
    Owner report: "I go inside, save and update, but it saves another version, not that version."
    Phone (390x844 touch, light + dark) and computer (1280x800):
-   1. Tool: a new design is saved; opened from Saved the main button reads Update "name" (team switch on), "Save as new" sits under it;
-      Update keeps the id (and the design count), Save as new makes a new id.
-   2. A team template opened from Templates starts as a NEW design ("Save as new design"), "Update the template" is the other choice.
+   1. Tool: a new design is saved; opened from Saved the main button reads Update "name" (team switch on), "Save as a copy" sits under it;
+      Update keeps the id (and the design count), Save as a copy makes a new id.
+   2. A team template opened from Templates starts as a NEW design ("Save as a copy design"), "Update the template" is the other choice.
    3. Two taps during a slow upload make ONE design (the second is an update, it used to make a second new design).
    4. A cover made while the photo is still decoding is drawn only after the decode.
    5. A blank or missing cover is redrawn when the design opens; "Redraw cover" in the design menu does it on demand.
    6. Versions: every update keeps the one before; the menu lists them (who, when) and Restore (with a confirm) puts one back; the row is
       hidden when the cloud has no versions.
-   7. Create: Update "name" / Save as new for an opened design, a template defaults to a new design, "Update the template" updates it.
+   7. Create: Update "name" / Save as a copy for an opened design, a template defaults to a new design, "Update the template" updates it.
    8. Two tabs editing the same design stay one design.
    fakecloud has versions / restoreVersion / setThumb (4.0 schema); STUB below only counts the calls and can hide versions.
    Run: server on :8080 (or BASE=...), then node tests/saved-versions.mjs. Exit 1 on any FAIL. */
@@ -52,17 +52,17 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   const moreOf=id=>pg.waitForFunction(id=>[...document.querySelectorAll('.sv-more[data-dmore="'+id+'"]')].some(x=>x.offsetParent),id,{timeout:15000,polling:100});
   const seedClear=()=>pg.evaluate(()=>{ localStorage.clear(); });
 
-  /* 1. new design, then Update / Save as new */
+  /* 1. new design, then Update / Save as a copy */
   await pg.goto(BASE+'index.html'); await seedClear();
   await tool('tools/restock.html',true); await sheet();
-  let L=await lab(); ok(N+'new design: starts on My phone, the button reads "Save to my phone", no Save as new yet',/^Save to (my phone|this device)$/.test(L.btn)&&L.alt===''&&!L.team,L);
+  let L=await lab(); ok(N+'new design: starts on My phone, the button reads "Save to my phone", no Save as a copy yet',/^Save to (my phone|this device)$/.test(L.btn)&&L.alt===''&&!L.team,L);
   await tm(); L=await lab(); ok(N+'Phone + Team with a collection: the button names it',L.btn==='Save to “Versions”',L);
   await tap('#save'); await waitCalls(pg,1); await pg.waitForTimeout(800);
   let db=await dbOf(pg), ids=Object.keys(db.designs); const id=ids[0], c1=await calls(pg);
   ok(N+'the first save makes one design with a real cover',ids.length===1&&c1.length===1&&c1[0].id===null&&(await flatOf(pg,id))===false,{n:ids.length,calls:c1});
   const upd0=db.designs[id].updated_at;
   await tool('tools/restock.html?design='+id); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
-  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as new under it, Phone + Team chosen',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as new'&&L.team&&L.where==='team',L);
+  L=await lab(); ok(N+'opened from Saved: main button reads Update “name”, Save as a copy under it, Phone + Team chosen',/^Update “.+”$/.test(L.btn)&&L.alt==='Save as a copy'&&L.team&&L.where==='team',L);
   const filled=await pg.evaluate(()=>[...document.querySelectorAll('#sh-save .btn:not(.ghost)')].filter(x=>x.offsetParent&&!x.hidden).length); ok(N+'at most two filled buttons in the Save sheet',filled<=2,filled);
   await tap('#save'); await waitCalls(pg,2); await pg.waitForTimeout(800);
   db=await dbOf(pg); let cc=await calls(pg);
@@ -70,7 +70,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   await tool('tools/restock.html?design='+id); await pg.waitForFunction(()=>!document.getElementById('designBar').hidden,null,{polling:100}); await sheet();
   await tap('#saveAlt'); await waitCalls(pg,3); await pg.waitForTimeout(800);
   db=await dbOf(pg); cc=await calls(pg);
-  ok(N+'Save as new makes a new design and leaves the first as it was',Object.keys(db.designs).length===2&&cc[2].id===null&&!!db.designs[id],{n:Object.keys(db.designs).length,call:cc[2]});
+  ok(N+'Save as a copy makes a new design and leaves the first as it was',Object.keys(db.designs).length===2&&cc[2].id===null&&!!db.designs[id],{n:Object.keys(db.designs).length,call:cc[2]});
   const newId=Object.keys(db.designs).find(k=>k!==id); ok(N+'the page is now on the new design (URL)',(await pg.evaluate(()=>new URLSearchParams(location.search).get('design')))===newId);
 
   /* 2. a team template: starts as a new design; Update the template is the other choice */
@@ -150,7 +150,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
   ok(N+'two tabs updating the same design stay one design',Object.keys(db.designs).length===1&&cc.slice(-2).every(x=>x.id===cid),{n:Object.keys(db.designs).length,calls:cc.slice(-2)});
   await pg2.close();
 
-  /* 7. Create (Update / Save as new, template defaults) */
+  /* 7. Create (Update / Save as a copy, template defaults) */
   if(name!=='phone/dark'){
     await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); localStorage.setItem('__calls','[]'); });
     const cready=async()=>{ await pg.waitForFunction(()=>window.CRUI&&BD.util.frames().length>0,null,{timeout:20000}); await pg.waitForTimeout(500); };
@@ -165,11 +165,11 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
     await tap('#crTeamOnly'); await waitCalls(pg,1); await pg.waitForTimeout(800);
     const cd=Object.keys((await dbOf(pg)).designs)[0]; db=await dbOf(pg); ok(N+'Create saved a design (with the photo)',db.designs[cd].kind==='design'&&(await flatOf(pg,cd))===false,db.designs[cd]&&db.designs[cd].kind);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); C=await clab();
-    ok(N+'Create, opened design: Update “name”, Save as new, Phone + Team chosen',/^Update “.+”$/.test(C.go)&&C.alt==='Save as new'&&C.on,C);
+    ok(N+'Create, opened design: Update “name”, Save as a copy, Phone + Team chosen',/^Update “.+”$/.test(C.go)&&C.alt==='Save as a copy'&&C.on,C);
     await tap('#crTeamOnly'); await waitCalls(pg,2); await pg.waitForTimeout(800); cc=await calls(pg);
     ok(N+'Create: Update keeps the same design',cc[1].id===cd&&Object.keys((await dbOf(pg)).designs).length===1,cc[1]);
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready(); await csave(); await tap('#crAlt'); await waitCalls(pg,3); await pg.waitForTimeout(1200); cc=await calls(pg);
-    ok(N+'Create: Save as new makes a second design',cc[2].id===null&&Object.keys((await dbOf(pg)).designs).length===2,cc[2]);
+    ok(N+'Create: Save as a copy makes a second design',cc[2].id===null&&Object.keys((await dbOf(pg)).designs).length===2,cc[2]);
     /* a design whose photo was removed is still an update, not a new template */
     await pg.goto(BASE+'tools/create.html?design='+cd); await cready();
     await pg.evaluate(()=>{ BD.main.find('Image').filter(n=>BD.util.kind(n)==='image').forEach(n=>n.destroy()); BD.main.batchDraw(); }); await csave();
