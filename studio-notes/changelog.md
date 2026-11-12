@@ -17,7 +17,7 @@ How the page shows it, with no extra work: the newest version is the big highlig
 
 ### 1st Choice Got Talent templates
 type: feature
-A new Got Talent group in Templates: 13 ready posts and stories for the monthly best-follower-photos line (launch, results, winners 1 to 5, stories). Every piece is its own layer, so you can move, swap or edit anything, and the winner photo is a normal photo you replace.
+A new Got Talent group in Templates for the monthly best-follower-photos line: the launch carousel (3 slides) and the monthly results carousel (7 slides) each open as one design, plus 3 stories. Every piece is its own layer, so you can move, swap or edit anything, and the winner photo is a normal photo you replace.
 
 ## 2.4.1 · 12 Nov 2026
 
