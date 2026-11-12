@@ -1438,7 +1438,7 @@ input[type=range]{min-height:44px}
 /* calendar (mega): no new-design button on the calendar page; the calendar's own styles are in assets/calendar.css */
 body.on-calendar nav.top,body.on-plan nav.top{display:none}   /* 2.5.0: the same on Calendar, Ideas and Goals, so switching never moves the page */
 body.hub.on-calendar{background:var(--bg)}
-body.on-calendar .fab{display:none}
+/* 2.5.2: the + stays on the calendar too (it is part of the bottom bar now, so the bar never changes size) */
 
 /* remove background (cutout, mega): a button under Flip in the Photo sheet, with a one-line progress note */
 .cut-row{flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3)}
@@ -1613,3 +1613,20 @@ body.on-plan .fab{view-transition-name:hubfab}
 
 /* 2.5.2: list entrances (tool rows, saved cards) play when Studio opens, not every time Home is shown again (that read as a flicker) */
 body.hub:not(.hub-first) #homeView :is(.tool-item,.sv-card,.tool-row){animation:none}
+.link.danger{color:var(--danger)}
+
+/* ===== 2.5.2 (owner): one bottom bar from edge to edge, with the + built into its right end (no gap beside it) ===== */
+@media (max-width:820px){
+  :root .hubbar{left:max(12px,var(--safe-l));right:max(12px,var(--safe-r));padding-inline-end:70px}
+  .fab{inset-inline-end:calc(max(12px,var(--safe-r)) + 7px);bottom:calc(10px + var(--safe-b) + 7px);width:52px;height:52px;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+  :root .fab{box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+  :root .dlg.fab-dlg{inset:auto max(12px,var(--safe-r)) calc(10px + var(--safe-b) + 72px) auto}
+  body.us-open .hubbar{padding-inline-end:6px}
+}
+
+/* ===== 2.5.2 (owner): Calendar · Ideas · Goals sit at the bottom, right above the bar, where the thumb is ===== */
+@media (max-width:820px){
+  body.on-plan .plan-tabs{position:fixed;z-index:39;left:max(12px,var(--safe-l));right:max(12px,var(--safe-r));bottom:calc(10px + var(--safe-b) + 64px + 10px);margin:0;
+    background:color-mix(in srgb,var(--raised) 86%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);box-shadow:var(--shadow-2)}
+  body.on-plan .cal-view{padding-bottom:calc(var(--bar-h) + 140px + var(--safe-b))}
+}

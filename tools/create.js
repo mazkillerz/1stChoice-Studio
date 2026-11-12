@@ -511,7 +511,7 @@ function addBlank(size){ afterBuild(makePages(size)); }
 
 /* ---------- drafts: kept on this phone, listed in Continue editing ---------- */
 const DKEY=()=>L.draftBase(B.id,TOOL)+':'+S.id;
-function touch(){ if(!st.ready||st.design||RENDER) return; st.dirty=true;
+function touch(){ if(!st.ready||st.design||RENDER) return; st.dirty=true; st.imgSaved=false; setTimeout(guardSync,0);
   if(!S.id){ const n=L.listDrafts(B.id,TOOL).length; S.id=U.uid(); history.replaceState(null,'',location.pathname+'?draft='+S.id);
     if(n>=L.DRAFT_CAP&&!st.capWarned){ st.capWarned=true; toast('You have '+(n+1)+' unfinished designs on this '+L.devWord()+'. Remove old ones in Continue editing.',6000); } }
   BD.scheduleSave(); }
@@ -574,18 +574,28 @@ const designDirty=()=>!!st.design&&st.base!=null&&curJson()!==st.base;
 /* 2.5.0 (owner): the phone's Back on a changed saved design asks "Update or discard?" (our prompt) instead of the browser's "Leave site?".
    While the design has unsaved changes it holds one back-stack entry (Studio.nav); Back opens the prompt and stays on the page. */
 let leaveGuard=false;
-function guardSync(){ const d=designDirty()&&!RENDER; if(d===leaveGuard||!Studio.nav) return; leaveGuard=d;
-  if(d) Studio.nav.push('cr-leave',()=>{ if(!designDirty()){ leaveGuard=false; return; } leaveGuard=false; const dl=leavePrompt(document.querySelector('.cr-back').href); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
+/* 2.5.2: a NEW design with edits not saved as a picture asks too (Save / Leave, kept in Continue editing / Discard) */
+const draftUnsaved=()=>!st.design&&!RENDER&&!!S.id&&st.dirty&&!st.imgSaved;
+const needAsk=()=>!RENDER&&(designDirty()||draftUnsaved());
+function guardSync(){ const d=needAsk(); if(d===leaveGuard||!Studio.nav) return; leaveGuard=d;
+  if(d) Studio.nav.push('cr-leave',()=>{ leaveGuard=false; if(!needAsk()) return; const dl=leavePrompt(document.querySelector('.cr-back').href); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
   else Studio.nav.drop('cr-leave'); }
+function leaveDraftPrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3>Leave this design?</h3><p class="small">It is not saved yet. If you leave, it stays in <b>Continue editing</b> on this ${L.devWord()}, so you can finish it later.</p>
+    <div class="dlg-actions col"><button type="button" class="btn" id="lvSave">Save it now</button><button type="button" class="btn ghost" id="lvLeave">Leave, keep the draft</button><button type="button" class="link danger" id="lvDrop">Discard it</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
+  d.querySelector('#lvKeep').onclick=()=>d.close();
+  d.querySelector('#lvSave').onclick=()=>{ d.close(); setTimeout(openSave,260); };
+  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} location.href=href; };
+  d.querySelector('#lvDrop').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); location.href=href; };
+  return d; }
 function syncSaved(){ guardSync(); $('crSaved').textContent=st.design?(designDirty()?'Not saved to the team':(st.design.kind==='template'?'Team template':'Saved to the team')):''; }
-function leavePrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(st.design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
+function leavePrompt(href){ if(!st.design) return leaveDraftPrompt(href); const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(st.design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
     <div class="status" id="lvSt" role="status"></div>
     <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(st.design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.querySelector('#lvKeep').onclick=()=>d.close();
   d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
     try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };  return d; }
-document.querySelector('.cr-back').addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
+document.querySelector('.cr-back').addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
 addEventListener('pagehide',()=>{ if(S.id&&!st.design) BD.saveNow(); });
 async function openDesign(id,ready){
@@ -712,10 +722,10 @@ async function saveImages(list){ if(st.saving) return; st.saving=true; const btn
   try{ for(const [i,f] of list.entries()){ line((list.length>1?'Page '+(i+1)+' of '+list.length+': ':'')+'making the full-size PNG…',false,true); await tick(30);
       const r=await BD.exportFrame(f,{scale:2,type:'image/png'}); if(r.scale<2) low=true; files.push(new File([r.blob],fname(i+1,list.length,stamp),{type:'image/png'})); }
     const small=low?' This phone was low on memory, so '+(files.length>1?'some pages are':'it is')+' a little smaller. Close other tabs for full size.':'';
-    const what=files.length>1?files.length+' pages':'Your design';
+    const what=files.length>1?files.length+' pages':'Your design'; st.imgSaved=true; setTimeout(guardSync,0);   // 2.5.2: saved as a picture: leaving no longer asks
     if(matchMedia('(pointer:coarse)').matches){ const r=await L.shareFiles(files);
       if(r==='shared'){ line('Saved! Choose “Save Image” if you haven’t yet.'+small,true); showResult(files); L.celebrate&&L.celebrate(); return; }
-      if(r==='cancelled'){ line('Not saved. Tap Save again when you are ready.'); showResult(files); return; }
+      if(r==='cancelled'){ st.imgSaved=false; line('Not saved. Tap Save again when you are ready.'); showResult(files); return; }
       if(r==='needtap'){ line('Ready! Tap a picture below to save it.'+small,true); showResult(files,true); return; } }
     for(const f of files){ const url=URL.createObjectURL(f), a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },4000); await tick(250); }
     line(what+' saved to your downloads'+(files.length>1?', numbered in order.':'.')+small,true); showResult(files); L.celebrate&&L.celebrate(); }

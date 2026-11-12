@@ -299,7 +299,12 @@ function offerResume(){
 }
 
 /* ---------- changes: every edit goes through touch() ---------- */
-function syncStatus(){ $('vdStatus').textContent=st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):(st.draftId?'Kept on this '+L.devWord():''); }
+/* 2.5.2: the phone's Back on a changed saved video opens the same Update / Discard prompt as the back arrow (not the browser's "Leave site?") */
+let leaveGuard=false;
+function guardSync(){ const d=!!(st.ready&&st.design&&cur()!==st.base); if(d===leaveGuard||!Studio.nav) return; leaveGuard=d;
+  if(d) Studio.nav.push('vd-leave',()=>{ leaveGuard=false; if(!(st.ready&&st.design&&cur()!==st.base)) return; const dl=leavePrompt($('vdBack').href); if(dl&&dl.addEventListener) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
+  else Studio.nav.drop('vd-leave'); }
+function syncStatus(){ setTimeout(guardSync,0); $('vdStatus').textContent=st.design?(cur()!==st.base?'Not saved to the team':'Saved to the team'):(st.draftId?'Kept on this '+L.devWord():''); }
 V.syncStatus=syncStatus;
 /* keep text and sound layers inside the video after the clips change */
 V.fitLayers=()=>{ const d=dur(); if(d<=0) return;
@@ -406,6 +411,7 @@ function leavePrompt(href){
   d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
     try{ await teamSave({keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+  return d;
 }
 $('vdBack').addEventListener('click',e=>{ if(st.ready&&st.design&&cur()!==st.base){ e.preventDefault(); leavePrompt(e.currentTarget.href); } });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&(st.busy||(st.ready&&!st.draftId&&!RENDER&&cur()!==st.clean))){ e.preventDefault(); e.returnValue=''; } });

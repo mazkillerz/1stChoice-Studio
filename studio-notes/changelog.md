@@ -28,6 +28,18 @@ Right after an update, a phone could keep showing the old Studio for up to 10 mi
 type: fix
 Switching between the three tabs no longer fades or moves the page: the content changes in place and only the highlight slides to the tab you tap. Coming back to a tab you already opened shows it exactly as it was, with no redraw.
 
+### Calendar, Ideas and Goals tabs under your thumb
+type: improve
+The Calendar · Ideas · Goals switch now sits at the bottom, right above the bar, so you can change pages with one thumb.
+
+### One bottom bar, a calmer highlight
+type: design
+The bottom bar now runs from edge to edge with the + built into its right end, so there is no gap beside it. Moving between Home, Templates and Saved, the highlight stretches toward the tab you tap and settles there, and never bounces outside the bar.
+
+### Back asks before you lose anything, in every tool
+type: fix
+Back (the phone's gesture or the arrow) now asks before leaving a story you have not saved, in Photo story, Restock and every other tool, and in Create: **Save it now**, **Leave, keep the draft** (it waits in Continue editing) or **Discard it**. A saved design you changed still asks Update or Discard, now in the Video editor too.
+
 ## 2.5.1 · 13 Nov 2026
 Smoother Home and Plan pages, a proper Back on saved designs, and a Save sheet that slides up.
 

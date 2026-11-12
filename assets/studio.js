@@ -1557,11 +1557,11 @@ async function tool(cfg){
 
   /* ---- drafts: every unfinished story is kept on this phone (photos included), as a list per tool ----
      This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
-  const DBASE=draftBase(B.id,cfg.id); let draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
+  const DBASE=draftBase(B.id,cfg.id); let draftDropped=false, draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
   const DKEY=()=>DBASE+':'+draftId;
   const RENDER=new URLSearchParams(location.search).get('render')==='1';   // a hidden frame taking pictures (assets/render.js): it never writes a draft
   function saveDraft(s){
-    if(!hist.ready||RENDER) return; if(design) return;   // a saved design never goes to Continue editing
+    if(!hist.ready||RENDER||draftDropped) return; if(design) return;   // a saved design never goes to Continue editing (draftDropped: Discard it, while leaving)
     if(hist.i>0) dirty=true; if(!dirty) return;
     if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
       $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
@@ -1833,11 +1833,16 @@ async function tool(cfg){
   function markSaved(){ baseJson=curJson(); guardSync(); }
   /* 2.5.0 (owner): the phone's Back on a changed saved design opens the Update / Discard prompt, not the browser's "Leave site?" */
   let leaveGuard=false;
-  function guardSync(){ const d=!RENDER_FRAME&&designDirty(); if(d===leaveGuard) return; leaveGuard=d;
-    if(d) NAV.push('tool-leave',()=>{ if(!designDirty()){ leaveGuard=false; return; } leaveGuard=false; const dl=leavePrompt(ROOT+'index.html'); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
+  /* 2.5.2 (owner: "make it work across everything, e.g. a photo story"): a NEW story with edits not saved as a picture asks too
+     (Save / Leave, kept in Continue editing / Discard). A saved design asks Update / Discard as before. */
+  const draftUnsaved=()=>!design&&!RENDER_FRAME&&!!draftId&&dirty&&!imgDone;
+  const needAsk=()=>!RENDER_FRAME&&(designDirty()||draftUnsaved());
+  function guardSync(){ const d=needAsk(); if(d===leaveGuard) return; leaveGuard=d;
+    if(d) NAV.push('tool-leave',()=>{ leaveGuard=false; if(!needAsk()) return; const dl=leavePrompt(ROOT+'index.html'); if(dl) dl.addEventListener('close',()=>setTimeout(guardSync,400)); });
     else NAV.drop('tool-leave'); }
   const designDirty=()=>!!design&&baseJson!==null&&curJson()!==baseJson;
   function leavePrompt(href){
+    if(!design) return leaveDraftPrompt(href);
     const d=dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
       <div class="status" id="lvSt" role="status"></div>
       <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
@@ -1845,6 +1850,15 @@ async function tool(cfg){
     d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
       try{ await teamSave({name:design.name,keepCols:true}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+    return d;
+  }
+  function leaveDraftPrompt(href){
+    const d=dialog(`<div class="dlg-body"><h3>Leave this ${esc(cfg.pages?'design':'story')}?</h3><p class="small">It is not saved yet. If you leave, it stays in <b>Continue editing</b> on this ${devWord()}, so you can finish it later.</p>
+      <div class="dlg-actions col"><button type="button" class="btn" id="lvSave">Save it now</button><button type="button" class="btn ghost" id="lvLeave">Leave, keep the draft</button><button type="button" class="link danger" id="lvDrop">Discard it</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
+    d.querySelector('#lvKeep').onclick=()=>d.close();
+    d.querySelector('#lvSave').onclick=()=>{ d.close(); setTimeout(()=>{ if(isPhone()){ resetSaveSheet(); openSheet('save'); focusSheet('save'); } else { const c=$('save'); if(c){ c.scrollIntoView({block:'center',behavior:'smooth'}); c.focus({preventScroll:true}); } } },260); };
+    d.querySelector('#lvLeave').onclick=()=>{ draftNow(); leaving=true; location.href=href; };
+    d.querySelector('#lvDrop').onclick=()=>{ draftDropped=true; clearDraft(); leaving=true; location.href=href; };
     return d;
   }
   let leaving=false;
@@ -1855,7 +1869,7 @@ async function tool(cfg){
     e.preventDefault(); e.stopImmediatePropagation(); if(waitingLeave) return; waitingLeave=true;
     toast('Still saving to the team… one moment'); const href=a.href;
     teamQ.then(()=>{ waitingLeave=false; if(designDirty()){ leavePrompt(href); return; } leaving=true; location.href=href; }); },true);
-  document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(designDirty()){ e.preventDefault(); leavePrompt(a.href); } }));
+  document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(a.href); } }));
   addEventListener('beforeunload',e=>{ if(teamBusy||(!leaving&&designDirty())){ e.preventDefault(); e.returnValue=''; } });
   async function openDesign(id,ready){
     status('Opening the saved design…');
@@ -2369,7 +2383,7 @@ async function tool(cfg){
       finish(inClaude?'Ready!':'Saved!',(inClaude?'Your image is ready below.':(pages>1?'Your '+PN.many+' are in your downloads, numbered in order.':'Your story is in your downloads.'))+small);
     } finally { saving=false; cancelSave=false; $('saveCancel').hidden=true; $('save').disabled=false; $('barSave').disabled=false; S.sel=sel&&reg.some(r=>r.id===sel)?sel:null; render(); }
   }
-  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; keepQueue(); if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; }
+  function finish(title,txt,keepBar){ if(!keepBar){ setTimeout(()=>progress(null),400); celebrate(); if(qTotal){ qSaved=true; keepQueue(); if(!queue.length) txt='That was the last of your '+qTotal+' photos. '+(txt||''); } } done(title,txt); imgDone=true; guardSync(); }
   function showResult(files,offerShare){
     const url=URL.createObjectURL(files[0]); $('resultImg').src=url; $('result').hidden=false;
     $('shareAgain').hidden=!offerShare; $('resultNote').hidden=offerShare;
@@ -2850,7 +2864,19 @@ async function home(){
   const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':location.hash==='#ideas'&&$('ideasView')?'ideas':location.hash==='#goals'&&$('goalsView')?'goals':'home';
   function setTab(v){ if(PLAN_VIEWS.includes(v)) v='home';   // the Plan pages (calendar, ideas, goals) sit under Home
     tabs.forEach(a=>a.setAttribute('aria-current',String(a.dataset.tab===v)));
-    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth){ pill.style.width=on.offsetWidth+'px'; pill.style.height=on.offsetHeight+'px'; pill.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`; } }
+    const on=tabs.find(a=>a.dataset.tab===v); if(on&&pill&&on.offsetWidth) placePill(on); }
+  /* 2.5.2 (owner: the highlight "goes outside of the box and back"): no springy overshoot any more. The highlight stretches toward the
+     new tab (its leading edge first), then the trailing edge catches up, like a drop of liquid; it never leaves its slot's box. */
+  let pillAt=null, pillT=0;
+  function placePill(on){ const x=on.offsetLeft, w=on.offsetWidth, y=on.offsetTop, h=on.offsetHeight;
+    const set=(px,pw,tr)=>{ pill.style.transition=tr; pill.style.width=pw+'px'; pill.style.height=h+'px'; pill.style.transform=`translate(${px}px,${y}px)`; };
+    clearTimeout(pillT);
+    if(!pillAt||reduce()||Math.abs(pillAt.x-x)<1){ set(x,w,'none'); void pill.offsetWidth; pill.style.transition=''; pillAt={x,w}; return; }
+    const a=pillAt, L=Math.min(a.x,x), R=Math.max(a.x+a.w,x+w), E='cubic-bezier(.4,0,.2,1)';
+    set(L,R-L,`transform .2s ${E},width .2s ${E}`);
+    pillT=setTimeout(()=>set(x,w,'transform .26s cubic-bezier(.2,.8,.2,1),width .26s cubic-bezier(.2,.8,.2,1)'),170);
+    pillAt={x,w}; }
+  addEventListener('resize',()=>{ pillAt=null; const on=tabs.find(a=>a.getAttribute('aria-current')==='true'); if(on&&pill) placePill(on); });
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
