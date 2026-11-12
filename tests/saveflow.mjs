@@ -135,7 +135,8 @@ ok('Create: the button names the collection',await txt('#crGo')==='Save to “Co
 await pg.fill('#crTName','Create flow'); await pg.tap('#crTeamOnly'); await pg.waitForFunction(()=>/Saved (to the team|as a team)/.test(document.getElementById('crSt').textContent),null,{timeout:20000});
 d=await byName('Create flow');
 ok('Create: the design is in the collection with its cover',d&&(d.cols||[]).includes('Collabs')&&!!(await fdb()).files[d.thumb_path],d&&d.cols);
-ok('Create: a typed new collection counts',await (async()=>{ await pg.fill('#crCol','Typed in create'); return await txt('#crGo')==='Save to 2 collections' && /Typed in create/.test(await txt('#crHint')); })());
+/* 2.5.0: the saved design (no photos of its own) stays a design, so the next save UPDATES it (it used to become a template and save a copy) */
+ok('Create: a typed new collection counts, and the saved design is updated (not copied)',await (async()=>{ await pg.fill('#crCol','Typed in create'); return await txt('#crGo')==='Update “Create flow”' && /Typed in create/.test(await txt('#crHint')); })(),await txt('#crGo'));
 
 /* 9. Video: same rules */
 await pg.evaluate(()=>{ localStorage.removeItem('fakecloud'); }); await seed(['Restocks']);

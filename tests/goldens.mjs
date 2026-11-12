@@ -75,7 +75,7 @@ async function worker(){ while(next<todo.length){ const id=todo[next++]; let r;
   results.push(r);
   if(r.error){ console.log('FAIL '+id+' '+r.error); continue; }
   if(UPDATE){ fs.writeFileSync(path.join(DIR,id+'.png'),Buffer.from(r.png.split(',')[1],'base64')); console.log('wrote '+id+' '+r.w+'x'+r.h); continue; }
-  if(r.missing){ console.log('FAIL '+id+' no golden yet (UPDATE=1 node tests/goldens.mjs '+id+')'); r.error='missing'; continue; }
+  if(r.missing||r.mean==null){ console.log('FAIL '+id+' no golden yet (UPDATE=1 node tests/goldens.mjs '+id+')'); r.error='missing'; continue; }
   if(r.size){ console.log('FAIL '+id+' size changed: golden '+r.size.join('x')+', now '+r.w+'x'+r.h); r.error='size'; continue; }
   if(r.diffPng){ const f=path.join(OUT,id+'.diff.png'); fs.writeFileSync(f,Buffer.from(r.diffPng.split(',')[1],'base64')); r.error='differs';
     console.log('FAIL '+id+' differs: mean '+r.mean.toFixed(2)+' (max '+MEAN+'), '+(r.share*100).toFixed(2)+'% pixels changed (max '+SHARE*100+'%) -> '+f); }

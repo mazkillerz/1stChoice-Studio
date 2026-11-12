@@ -133,14 +133,14 @@ for(const st of ['white','cream','photo']){
   await ctx.close();
 }
 
-/* 4. opened fresh on Cans: one tap on Save = the full-size PNG */
+/* 4. opened fresh on Cans: Save, then "Save to my phone" (2.4.1: Save always asks first) = the full-size PNG */
 {
   const {ctx,pg}=await mk({style:'cans'});
   await pg.waitForTimeout(2500);
-  await pg.tap('#barSave');
+  await pg.tap('#barSave'); await pg.waitForSelector('#save',{state:'visible',timeout:10000}); await pg.waitForTimeout(500); await pg.tap('#save');
   for(let i=0;i<60&&!pg.dls.length;i++) await pg.waitForTimeout(300);
   const sz=pg.dls[0]?await pngSize(pg.dls[0]):'';
-  ok('Cans, opened fresh: one tap on Save makes the 2160x3840 PNG',sz==='2160x3840',sz);
+  ok('Cans, opened fresh: Save + Save to my phone makes the 2160x3840 PNG',sz==='2160x3840',sz);
   if(pg.dls[0]){ /* the can pictures are in the saved PNG (the middle of the panel is not the ground colour) */
     const buf=fs.readFileSync(await pg.dls[0].path()); const png=await pg.evaluate(async b64=>{ const im=new Image(); im.src='data:image/png;base64,'+b64; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d'); x.drawImage(im,0,0); const d=x.getImageData(Math.round(im.width*.3),Math.round(im.height*.43),Math.round(im.width*.4),Math.round(im.height*.12)).data; let dark=0; for(let i=0;i<d.length;i+=4) if(d[i]<90) dark++; return dark/(d.length/4); },buf.toString('base64'));
     ok('Cans, saved PNG: the HD cans are drawn (dark can bodies in the panel)',png>.08,+png.toFixed(2));

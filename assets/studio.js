@@ -1544,7 +1544,9 @@ async function tool(cfg){
     hist.stack=hist.stack.slice(0,hist.i+1); hist.stack.push(s); if(hist.stack.length>80) hist.stack.shift(); hist.i=hist.stack.length-1;
     syncUndo(); saveDraft(s); designChanged();
   }
-  function designChanged(){ quickReady=false; if(imgDone&&!saving){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
+  function designChanged(){ quickReady=false; if(saving) return;
+    if($('teamOnly').dataset.off==='1'&&design){ resetSaveSheet(); return; }   // 2.5.0: an edit after a team save: the card (computer) is back on Phone + Team, Update “name” (it used to fall back to My phone, so the next Save made only a picture)
+    if(imgDone){ imgDone=false; syncSaveOpts(); } }   // an edit after saving: the next Save makes a new picture
   /* Undo / Redo keep the chosen layer chosen when it is still there (1.21.0: before, the layer bar stayed open on a layer that
      was no longer chosen, so its buttons did nothing); a layer that the step removed closes the bar instead */
   function restore(s){ const keep=S.sel, pg=S.page;
