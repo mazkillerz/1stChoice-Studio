@@ -26,6 +26,7 @@ window.StudioCloud={
     d.designs[id]={...extra,id,brand:o.brand,tool:o.tool,name:o.name,kind:o.kind,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,cols:o.collections||[],updated_at:new Date().toISOString()};
     if(prev) tidy(d,id);
     (o.collections||[]).forEach(n=>{ d.cols[n]={id:n,name:n,brand:o.brand}; }); put(d); return id; },
+  async designsNamed(brand,tool,name){ const n=String(name||'').trim(); return Object.values(db().designs).filter(d=>d.brand===brand&&d.tool===tool&&d.kind!=='template'&&String(d.name).trim()===n).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>({id:d.id,name:d.name,kind:d.kind,updated_at:d.updated_at})); },
   async getDesign(id){ const x=db().designs[id]; if(!x) throw new Error('not found'); return {...x,collectionNames:x.cols}; },
   async designs(brand){ return Object.values(db().designs).filter(d=>d.brand===brand).map(d=>({...d,collections:[...(d.cols||[])]})); },
   async download(path){ return toBlob(db().files[path]); },

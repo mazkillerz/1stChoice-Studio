@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.5.2';
+const VERSION='2.5.3';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -206,6 +206,23 @@ async function healCover(C,d,make){
     const nb=await make(); if(!nb||await coverFlat(nb)) return false; await C.setThumb(d.id,nb); return true; }
   catch(_){ return false; }
 }
+/* 2.5.3 (owner: "there's still a duplication issue"): before a save makes a NEW design, look for a saved design of this tool with the
+   same name. An explicit "Save as a copy" quietly gets a "(copy)" name; any other new save asks: update the saved one, keep both, or cancel.
+   Returns {mode:'new'|'update'|'cancel', id?, name?}. exceptId: the design open now (its own name is not a clash for an update). */
+async function sameNameCheck(C,brand,tool,name,exceptId,explicitCopy){
+  if(!C||!C.designsNamed||!String(name||'').trim()) return {mode:'new'};
+  const named=async n=>{ try{ return await C.designsNamed(brand,tool,n); }catch(_){ return []; } };
+  const copyName=async()=>{ let c=name+' (copy)', k=2; while(k<30&&(await named(c)).length) c=name+' (copy '+(k++)+')'; return c; };
+  const all=await named(name);
+  if(explicitCopy) return all.length?{mode:'new',name:await copyName()}:{mode:'new'};
+  const same=all.filter(x=>x.id!==exceptId); if(!same.length) return {mode:'new'};
+  return await new Promise(res=>{ let v={mode:'cancel'};
+    const d=dialog(`<div class="dlg-body"><h3 dir="auto">“${esc(name)}” is already in Saved</h3><p class="small">Update that saved design with this one, or keep both?</p>
+      <div class="dlg-actions col"><button type="button" class="btn" id="snUpd">Update the saved one</button><button type="button" class="btn ghost" id="snNew">Keep both</button><button type="button" class="link" id="snNo">Cancel</button></div></div>`);
+    d.querySelector('#snUpd').onclick=()=>{ v={mode:'update',id:same[0].id}; d.close(); };
+    d.querySelector('#snNew').onclick=async()=>{ v={mode:'new',name:await copyName()}; d.close(); };
+    d.querySelector('#snNo').onclick=()=>d.close();
+    d.addEventListener('close',()=>res(v)); }); }
 const FONT_READY=new Set();
 async function ensureFont(fam){
   if(!fam||FONT_READY.has(fam)) return; const f=MORE_FONTS.find(x=>x.family===fam);
@@ -1644,15 +1661,18 @@ async function tool(cfg){
     if(!(await ensureMember('Saved designs go to the team, so anyone on the team can find and reuse them.'))) throw new Error('Not saved to the team: sign in first.');
     await whoOnce();
     if(!design&&designLost&&!o.asNew) throw new Error('That saved design did not open, so saving now would make a copy. Reload the page to open it first.');
-    const asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName());
+    let asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName()), target=asNew?null:design.id;
+    if(asNew&&!(o.keep===false&&hasPhotosNow())){ const r=await sameNameCheck(C,B.id,cfg.id,name,design&&design.id,!!(o.asNew&&design));   // 2.5.3: no silent second design with the same name
+      if(r.mode==='cancel') throw new Error('Not saved.'); if(r.mode==='update'){ asNew=false; target=r.id; } else if(r.name) name=r.name; }
+    const sameRow=!asNew&&!!design&&target===design.id;
     /* 2.5.0 (owner: "re-saving makes a second design"): a design with no photos of its own used to be stored as a TEMPLATE, and saving
        a template again always made a new design. Now only "Keep the photos" switched off (or updating an opened template) makes a template. */
     const photosNow=hasPhotosNow(), keep=(o.keep!=null?o.keep:(design?design.kind!=='template'||asNew:true))&&photosNow, r=recipe();
     const kindOut=(photosNow&&o.keep===false)||(!asNew&&isTpl())?'template':'design';
-    const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&!asNew) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
+    const photos=keep?await Promise.all(S.photos.map(async(p,i)=>{ if(!photoUsed(i)||!p.img||p.sample) return null; if(p.path&&!p.changed&&sameRow) return {path:p.path}; return {blob:await photoBlob(p)}; })):[];
     const cols=o.collections||(design?design.collections:[])||[];
     const thumb=await thumbBlob();
-    const id=await C.saveDesign({id:asNew?null:design.id,brand:B.id,tool:cfg.id,name,kind:kindOut,recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow(),format:cfg.id==='highlight'?'cover':fmtFromSize(W,H)});
+    const id=await C.saveDesign({id:target,brand:B.id,tool:cfg.id,name,kind:kindOut,recipe:campaignStamp(cfg.id,r),photos,thumb,collections:cols,author:whoNow(),format:cfg.id==='highlight'?'cover':fmtFromSize(W,H)});
     let fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&S.photos[i]){ S.photos[i].path=p; S.photos[i].changed=false; } });
     /* the collections are checked on the saved design itself: any that did not go in are tried once more */
     const lacks=()=>{ const have=new Set((fresh.collectionNames||[]).map(n=>String(n).trim())); return cols.map(n=>String(n).trim()).filter(n=>n&&!have.has(n)); };
@@ -3754,7 +3774,7 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={coverFlat,healCover,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
+const lab={coverFlat,healCover,sameNameCheck,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
 window.Studio={shapeOf,fmtFromSize,planDesign,nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};

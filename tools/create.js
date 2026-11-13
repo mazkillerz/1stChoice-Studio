@@ -556,12 +556,16 @@ async function teamSave1(o){ o=o||{};
      A template only from "Save as a team template", "Update the template", or "Keep the photos" switched off. */
   const tpl=o.kind==='template'||(o.keep===false&&imgs0.length>0);
   const kindOut=tpl?'template':'design';
-  const asNew=!!o.asNew||!st.design||(st.design.kind!==kindOut);
+  let asNew=!!o.asNew||!st.design||(st.design.kind!==kindOut);
   if(tpl) doc=templateDoc(doc);
-  const imgs=tpl?[]:imgs0, name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName());
-  const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&!asNew) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));
+  const imgs=tpl?[]:imgs0; let name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName()), target=asNew?null:st.design.id;
+  /* 2.5.3 (owner: "there's still a duplication issue"): a NEW design never silently gets the name of one already in Saved */
+  if(asNew&&!tpl&&L.sameNameCheck){ const r=await L.sameNameCheck(C,B.id,TOOL,name,st.design&&st.design.id,!!(o.asNew&&st.design));
+    if(r.mode==='cancel') throw new Error('Not saved.'); if(r.mode==='update'){ asNew=false; target=r.id; } else if(r.name) name=r.name; }
+  const sameRow=!asNew&&!!st.design&&target===st.design.id;
+  const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&sameRow) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));
   const cols=o.collections||(st.design&&!asNew?st.design.collections:[])||[];
-  const id=await C.saveDesign({id:asNew?null:st.design.id,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow(),format:docFormat(doc)});
+  const id=await C.saveDesign({id:target,brand:B.id,tool:TOOL,name,kind:kindOut,recipe:Studio.campaignStamp(TOOL,{v:1,kind:'board',doc,imgs}),photos,thumb:await thumbBlob(),collections:cols,author:whoNow(),format:docFormat(doc)});
   if(tpl&&o.kind==='template'&&!st.design) return {id,name,kind:kindOut};   // a template saved from a draft: keep working on the draft
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }

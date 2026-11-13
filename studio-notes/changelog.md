@@ -13,6 +13,12 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.5.3 · 13 Nov 2026
+
+### No more surprise duplicates in Saved
+type: fix
+If a save would make a second design with the same name as one already in Saved, Studio now asks first: update the saved one, keep both, or cancel. "Save as a copy" gives the copy its own name, like “Jumaa (copy)”, so you can always tell them apart.
+
 ## 2.5.2 · 13 Nov 2026
 The new look is now Studio's look for everyone, Studio always opens its newest version, and switching pages is calm.
 
