@@ -169,6 +169,11 @@ async function keepAsVersion(prev,author){
 /* Images go to Supabase ONLY here, when someone taps Save design: the photos actually used in the story
    (unchanged ones are not uploaded again) plus one small preview. Drafts never leave the phone.
    An update keeps the row it replaces as a version (design_versions, newest 20) and its files stay. */
+/* 2.5.3 (owner: "there's still a duplication issue"): saved designs of this tool with exactly this name (not templates), newest first.
+   Create and the tool pages ask before a NEW save makes a second design with the same name. */
+async function designsNamed(brand,tool,name){ const c=await client(); const n=String(name||'').trim(); if(!n) return [];
+  const {data,error}=await c.from('designs').select('id,name,kind,updated_at').eq('brand',brand).eq('tool',tool).eq('name',n).neq('kind','template').order('updated_at',{ascending:false}).limit(5);
+  return error?[]:(data||[]); }
 async function saveDesign(o){
   const c=await client(); const id=o.id||uid(); const base=o.brand+'/'+id+'/';
   const paths=[], fresh=[]; let verId=null, colErr=null;
@@ -344,7 +349,7 @@ async function saveKpiMonth(o){ const c=await client(); const row={...o,updated_
 /* a design's shape (post / story / square / cover), stored since 2.4.0 so lists can tell posts from stories without the recipe */
 async function setFormat(id,format){ const c=await client(); const {error}=await c.from('designs').update({format}).eq('id',id); if(missing(error)) return; fail(error,'Format'); }
 
-window.StudioCloud={client,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
+window.StudioCloud={client,designsNamed,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
   versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset,ideas,saveIdea,updateIdea,deleteIdea,kpiMonths,saveKpiMonth,setFormat};
