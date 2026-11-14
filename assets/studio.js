@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.6.0';
+const VERSION='2.7.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -1045,7 +1045,7 @@ async function tool(cfg){
     nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}<span aria-hidden="true">Snap</span></button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
-    <div class="banner queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini" id="queueClear">Clear</button><button type="button" class="mini queue-go" id="queueGo">Continue</button></span></div><div class="banner" id="draftBar" hidden><span id="draftTxt">You have an unfinished story here.</span><span class="banner-btns"><button type="button" class="mini" id="draftFresh">Start fresh</button><button type="button" class="mini solid" id="draftGo">Continue</button></span></div><div class="banner last-bar" id="lastBar" role="region" aria-label="Your last layout" hidden><span id="lastTxt">Same layout as last time?</span><span class="banner-btns"><button type="button" class="mini solid" id="lastGo">Use it</button><button type="button" class="icon-btn" id="lastNo" aria-label="Not now" title="Not now">${ICON.close}</button></span></div>
+    <div class="banner slim-bar queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span class="slim-txt" id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini solid" id="queueGo">Continue</button><button type="button" class="icon-btn" id="queueClear" aria-label="Clear the waiting photos" title="Clear the waiting photos">${ICON.close}</button></span></div><div class="banner slim-bar" id="draftBar" role="region" aria-label="Unfinished story" hidden><span class="slim-txt" id="draftTxt">Unfinished story here</span><span class="banner-btns"><button type="button" class="mini solid" id="draftGo">Continue</button><button type="button" class="icon-btn" id="draftFresh" aria-label="Start fresh" title="Start fresh">${ICON.close}</button></span></div><div class="banner slim-bar last-bar" id="lastBar" role="region" aria-label="Your last layout" hidden><span class="slim-txt" id="lastTxt">Same layout as last time?</span><span class="banner-btns"><button type="button" class="mini solid" id="lastGo">Use it</button><button type="button" class="icon-btn" id="lastNo" aria-label="Not now" title="Not now">${ICON.close}</button></span></div>
     <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span><button type="button" class="rp-skip" id="readySkip" hidden>Skip</button></div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
@@ -2004,17 +2004,23 @@ async function tool(cfg){
   /* Start fresh = a new story; the unfinished ones stay in Continue editing */
   /* 2.6.0 Same as last time (see the offer at the end of tool()) */
   const LAST_KEY='studio:last:'+B.id+':'+cfg.id;
-  const lastVals=v=>{ const o={}; fields.forEach(f=>{ if(f.type!=='dates'&&f.type!=='note'&&v&&f.id in v) o[f.id]=clone(v[f.id]); }); return o; };
-  function nowLayout(){ const p0=S.P[0]; return {style:S.style,values:lastVals(p0.values),layers:clone(p0.layers||{}),extras:clone(p0.extras||[]),fx:S.photos.map(p=>hasFx(p.fx)?{look:p.fx.look||'',light:+p.fx.light||0}:null)}; }
+  /* paged tools (2.7.0): only the fields shared by every page come along (each cover or slide keeps its own words), and the first
+     photo's look stands for all of them; page 1's layout goes onto every page when it is used */
+  const lastVals=v=>{ const o={}; fields.forEach(f=>{ if(f.type!=='dates'&&f.type!=='note'&&(!PG||f.global)&&v&&f.id in v) o[f.id]=clone(v[f.id]); }); return o; };
+  const fxOf=p=>p&&hasFx(p.fx)?{look:p.fx.look||'',light:+p.fx.light||0}:null;
+  function nowLayout(){ const p0=S.P[0]; return {style:S.style,values:lastVals(p0.values),layers:clone(p0.layers||{}),extras:clone(p0.extras||[]),fx:PG?[fxOf(S.photos[0])]:S.photos.map(fxOf)}; }
   const LDEF={dx:0,dy:0,k:1,color:null,hidden:false,rot:0,flip:false};
   const realLayers=ls=>{ const o={}; Object.keys(ls||{}).sort().forEach(id=>{ const l={}; Object.keys(ls[id]||{}).sort().forEach(k=>{ const v=ls[id][k]; if(v!==undefined&&!(k in LDEF&&(LDEF[k]===v||(v==null&&LDEF[k]==null)))) l[k]=v; }); if(Object.keys(l).length) o[id]=l; }); return o; };   // a layer nobody touched is not a layout
   const layoutSig=L=>JSON.stringify([L.style,L.values,realLayers(L.layers),L.extras,(L.fx||[]).map(x=>x||0)]);
-  function keepLast(){ if(PG||RENDER||!hist.ready) return; const L=nowLayout(), plain=!Object.keys(realLayers(L.layers)).length&&!L.extras.length&&!L.fx.some(Boolean);
+  function keepLast(){ if(RENDER||!hist.ready) return; const L=nowLayout(), plain=!Object.keys(realLayers(L.layers)).length&&!L.extras.length&&!L.fx.some(Boolean);
     store(LAST_KEY,plain?null:{v:1,at:Date.now(),name:design&&design.name||'',...L}); }   // nothing moved or added: the remembered words and look are enough
   function lastLayout(){ const L=store(LAST_KEY); return L&&L.v===1&&L.layers?L:null; }
   async function useLast(){ const L=lastLayout(); $('lastBar').hidden=true; if(!L) return;
     const cur=recipe(), r={...cur,style:L.style||cur.style,values:{...cur.values,...lastVals(L.values)},layers:clone(L.layers),extras:clone(L.extras||[]),
-      photos:cur.photos.map((p,i)=>{ const fx=L.fx&&L.fx[i]; const o={...p}; delete o.fx; return fx?{...o,fx}:o; })};
+      photos:cur.photos.map((p,i)=>{ const fx=L.fx&&L.fx[PG?0:i]; const o={...p}; delete o.fx; return fx?{...o,fx}:o; })};
+    if(PG) r.pages=(cur.pages||[]).map((pp,i)=>{ const g={...pp,values:{...pp.values,...lastVals(L.values)},layers:clone(L.layers),extras:clone(L.extras||[])};
+      if(i) g.extras.forEach(x=>{ const n=Math.max(assetN,extraN)+1; assetN=extraN=n; const nid=(x.type==='asset'?'asset':x.type==='comp'?'comp':'extra')+n; if(g.layers[x.id]){ g.layers[nid]=g.layers[x.id]; delete g.layers[x.id]; } x.id=nid; });   // added pieces get their own ids per page, as Duplicate does
+      return g; });
     applyRecipe(r); await fontsOf(r); syncUI(); syncInspector(); paintPager(); remember(); render(); status('Your last layout is in. Undo to go back.',3500); }
   $('lastGo').addEventListener('click',()=>{ useLast(); });
   $('lastNo').addEventListener('click',()=>{ $('lastBar').hidden=true; });
@@ -2659,7 +2665,7 @@ async function tool(cfg){
     else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this '+devWord()+'.'); } }
     else if(q.get('quick')!=='1'){ const real=drafts.filter(realDraft);
-      if(real.length){ $('draftTxt').innerHTML=real.length>1?`You have ${real.length} unfinished stories here. <a href="${ROOT}index.html#continueSec">See all</a>`:'You have an unfinished story here.'; $('draftBar').hidden=false; } }
+      if(real.length){ $('draftTxt').innerHTML=real.length>1?`${real.length} unfinished · <a href="${ROOT}index.html#continueSec">See all</a>`:'Unfinished story here'; $('draftBar').hidden=false; } }
   }catch(err){ status(err.message||'Could not open that.'); }
   syncUI(); paintPager(); fit(); draw(vctx,true); startHistory(); pickDefaultCols(); syncSaveOpts();
   /* r3-save: nothing turns the team on by itself any more; the person chooses on the Save sheet */
@@ -2687,8 +2693,8 @@ async function tool(cfg){
   else if(noPhotoStyle()&&!design&&!draftId) quickReady=true;
   /* 2.6.0 Same as last time: the layout of the last picture saved here (moved or edited words, stickers, logos, photo looks)
      is kept per tool; a fresh story offers it once, with the new photo. Words and look alone are remembered already (KEY), so
-     the banner shows only when the last layout really differs. One-page tools only; never on a saved design, draft or template. */
-  if(!PG&&!RENDER&&!design&&!want&&!q.get('preset')&&$('draftBar').hidden&&$('queueBar').hidden){ const L=lastLayout();
+     the banner shows only when the last layout really differs. Paged tools too since 2.7.0; never on a saved design, draft or template. */
+  if(!RENDER&&!design&&!want&&!q.get('preset')&&$('draftBar').hidden&&$('queueBar').hidden){ const L=lastLayout();
     if(L&&layoutSig(L)!==layoutSig(nowLayout())){ $('lastTxt').textContent=L.name?'Same layout as “'+L.name+'”?':'Same layout as last time?'; $('lastBar').hidden=false; } }
   /* Save pictures from Saved (1.18.0): assets/render.js opens this page in a hidden frame with ?design=…&render=1 and takes
      each page's picture from here, drawn by the same renderPage() as Save, so the pixels are the same as opening it and saving */

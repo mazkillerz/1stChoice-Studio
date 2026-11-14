@@ -66,7 +66,7 @@ for(const theme of ['light','dark']){
   const nDrafts=await pg.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:draft:1stchoice:restock:[^:]+$/.test(k)).length);
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(1200);
   ok(N+'draft: setup has a newer blank draft beside the real one',nDrafts===2,String(nDrafts));
-  ok(N+'draft: the banner counts one story',await pg.isVisible('#draftBar')&&(await pg.textContent('#draftTxt'))==='You have an unfinished story here.',await pg.textContent('#draftTxt'));
+  ok(N+'draft: the banner counts one story',await pg.isVisible('#draftBar')&&(await pg.textContent('#draftTxt'))==='Unfinished story here',await pg.textContent('#draftTxt'));
   await pg.tap('#draftGo'); await pg.waitForTimeout(1500);
   ok(N+'draft: Continue opens the story with the photo',(await photoSize())===shelf,await photoSize()+' vs '+shelf);
 

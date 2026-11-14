@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 63 | 2.7.0 | 4 (new `pagedlayout` 25/0 light + dark at 390/360; `--changed` before merge; before/after phone shots from a worktree of HEAD) | 5 (two backlog items in one pass, no subagents needed) | 0 known about 2.6.0 | pass | A paged tool's Quick start input exists only when the tool is pinned: pin it in the test first |
 | 62 | 2.6.0 | 4 (new `lastlayout` 27/0 light + dark; `--changed` before merge; phone shots of the new banner in both themes caught a 108px banner over the design, cut to a 52px pill) | 5 (one feature + its UI in one pass, no subagents needed for a change this size) | 0 known about 2.5.3 | pass | Check how an existing pattern looks on a phone before reusing it (the draft banner already covered the preview top) |
 | team notes round | 2.5.0 | 4 (`--changed` before merge; new `resave`; What's New rebuilt with its suite; shots of Home + look in both themes) | 4 (root cause of the duplicates found by reading the kind logic + the live data in minutes; 2 builders in worktrees) | 0 reported about 2.4.2; this round answers 5 team notes | pass | Read the real data first (SQL) before designing a cleanup: only 1–3 suspect rows existed |
 | plan round | 2.4.0 | 4 (`--changed` before merge; new `calpick`, `ideas` 70, `kpis` 36; shots of every changed screen in both themes) | 4 (two sonnet builders on new files + lead on hub/calendar/save; everything asked shipped in one session) | 4 (Save preview, tick pill, posts as stories, second filter row) + the preview look rejected | pass | Measure sheets with Phone + Team and on small previews before release: both owner bugs only showed in that state. |
@@ -28,6 +29,12 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## 2.7.0 (14 Nov 2026, Mazoon session: Same layout for paged tools, slim offers)
+- Paged tools skip restoring saved values in `KEY` (`if(!PG)`), so their shared settings (`global` fields: Ring, colours, dots) were never remembered; keeping only the `global` fields in the last layout fills that gap without copying one cover's word onto every cover.
+- Copying extras onto several pages needs fresh ids per page (the same renaming `dupPage` does), or two pages share one layer entry.
+- A fresh plain open after a save shows the draft offer, not Same layout (the offer waits for the draft line to be hidden): test the offer through Quick start, the real path.
+- `.mini.queue-go` (blue outline text) would have beaten `.mini.solid` on the same button (equal specificity, later rule): drop the variant class when a button changes look.
 
 ## 2.6.0 (14 Nov 2026, team session: Same layout as last time)
 - Tools already remembered words and look per tool (`KEY`); the real gap for "repeat last" was the layout (layers, extras, photo looks). Read what the engine already stores before designing a "remember" feature.
