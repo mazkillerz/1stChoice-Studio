@@ -41,7 +41,7 @@ for(const theme of ['light','dark']){
 
   /* 3. next day: a new Quick start photo offers it, the photo note still shows */
   await quick();
-  ok(N+'a new Restock from a photo offers "Same layout as your last time?"',await bar()&&/last story/.test(await pg.textContent('#lastTxt')));
+  ok(N+'a new Restock from a photo offers "Same layout as last time?"',await bar()&&/last time/.test(await pg.textContent('#lastTxt')));
   const before=await pg.evaluate(()=>{ const p=Studio.debug.S.photos[0]; return {src:p.img&&p.img.src,head:Studio.debug.S.layers.head||{}}; });
   ok(N+'before Use it the story starts plain',!before.head.dy,before.head);
   /* the banner: fits, big enough buttons, readable */
