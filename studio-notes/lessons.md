@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| 62 | 2.6.0 | 4 (new `lastlayout` 27/0 light + dark; `--changed` before merge; phone shots of the new banner in both themes caught a 108px banner over the design, cut to a 52px pill) | 5 (one feature + its UI in one pass, no subagents needed for a change this size) | 0 known about 2.5.3 | pass | Check how an existing pattern looks on a phone before reusing it (the draft banner already covered the preview top) |
 | team notes round | 2.5.0 | 4 (`--changed` before merge; new `resave`; What's New rebuilt with its suite; shots of Home + look in both themes) | 4 (root cause of the duplicates found by reading the kind logic + the live data in minutes; 2 builders in worktrees) | 0 reported about 2.4.2; this round answers 5 team notes | pass | Read the real data first (SQL) before designing a cleanup: only 1–3 suspect rows existed |
 | plan round | 2.4.0 | 4 (`--changed` before merge; new `calpick`, `ideas` 70, `kpis` 36; shots of every changed screen in both themes) | 4 (two sonnet builders on new files + lead on hub/calendar/save; everything asked shipped in one session) | 4 (Save preview, tick pill, posts as stories, second filter row) + the preview look rejected | pass | Measure sheets with Phone + Team and on small previews before release: both owner bugs only showed in that state. |
 | round 3 | 2.3.0 | 4 (owner asked for light testing, but merging publishes, so `--changed` ran once before the merge: 111 suites, 11 red, then all green; 3 real bugs caught after merging: a history step cancelling a page load, Saved jumping to the top when a pop-up closed, the Team group not refreshing; the other reds were old suites still on the old Save flow or the old Done behaviour) | 3 (5 builders + lead hit the 5-hour limit after ~2.5 h; two builders cut off minutes before done, the lead finished their merges and test updates) | 2 (Back/Done in the editor; saves reaching the team with no choice) | pass (35/35) | Run 3 builders, not 5; after a flow change grep every suite for the old taps before the merge; apply Supabase migrations while the owner is in the chat |
@@ -27,6 +28,12 @@ What worked, what failed, and process tweaks. Newest session first.
 
 
 
+
+## 2.6.0 (14 Nov 2026, team session: Same layout as last time)
+- Tools already remembered words and look per tool (`KEY`); the real gap for "repeat last" was the layout (layers, extras, photo looks). Read what the engine already stores before designing a "remember" feature.
+- Layers get default entries (`{dx:0,dy:0,k:1,color:null,hidden:false}`) as soon as they are drawn, so "has the person moved anything" must ignore default values (`realLayers()`), not count keys.
+- Quick start writes a draft at once (`draftId` set), so "fresh story" is `!design && !want && !preset`, not `!draftId`.
+- Reusing `.banner` as-is put a 108px box over the top of the design on a phone; one phone shot found it before any test did.
 
 ## Round 1.43.0–1.50.0 (5–7 Nov 2026, lead; owner: "Improve studio 10 sessions bug improvements please", then "Continue all sessions")
 - Ten version sessions planned as bug-fix rounds per area; eight helper sessions ran, the lead did the rest. Four or five at once used the shared 5-hour limit in ~55 min and three stopped mid-turn; two had pushed finished work, one had pushed nothing. Lesson: two at once, push every fix.

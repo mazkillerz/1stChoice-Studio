@@ -13,6 +13,14 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.6.0 · 14 Nov 2026
+Today's restock can start with yesterday's layout, in one tap.
+
+### Same layout as last time
+type: feature
+Moved the headline, added a sticker or a logo, or gave the photo a look? Studio now remembers the layout of the last picture you saved in each tool. The next time you start a story from a photo, a slim line at the top asks **Same layout as last time?** Tap **Use it** and everything comes back around today's photo; Undo takes it away again, × hides it. It only shows when there is something to bring back, and never on a saved design or a draft. Works in Restock, Photo story and the other one-page tools.
+![after](assets/whatsnew/2.6.0-lastlayout-after.jpg)
+
 ## 2.5.3 · 13 Nov 2026
 
 ### No more surprise duplicates in Saved
