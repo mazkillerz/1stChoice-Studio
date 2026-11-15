@@ -328,15 +328,22 @@ async function updateTeamAsset(id,patch){
 async function removeTeamAsset(id){ const c=await client(); const {error}=await c.from('team_assets').delete().eq('id',id); fail(error,'Team asset'); }
 
 /* ---------- 2.4.0 Plan round: ideas, monthly KPIs (tables ideas, kpi_months; reads give [] while a table is missing) ---------- */
-async function ideas(brand){ const c=await client(); return rows(c.from('ideas').select('*').eq('brand',brand).order('sort').order('created_at',{ascending:false}),'Ideas'); }
+const IDEA_SWITCH='This switches on once the owner updates the database.';
+/* a missing table/column makes reads give [] and writes a friendly message (the migration 20261115120000_ideas_thread is not applied yet) */
+function ideaFail(error,what){ if(missing(error)) throw new Error(IDEA_SWITCH); fail(error,what); }
+const audioExt=t=>t.includes('mp4')||t.includes('aac')?'.m4a':t.includes('ogg')?'.ogg':t.includes('mpeg')?'.mp3':'.webm';
+const audioBlob=o=>{ const t=(o.type||'audio/webm').split(';')[0]; return {type:t,ext:audioExt(t),blob:o.type&&o.type!==t?new Blob([o],{type:t}):o}; };
+/* the board's ideas, without the archived ones (deleted_at); while that column is missing every row shows */
+async function ideas(brand){ const c=await client(); const q=()=>c.from('ideas').select('*').eq('brand',brand).order('sort').order('created_at',{ascending:false});
+  let r=await q().is('deleted_at',null); if(r.error&&missing(r.error)) r=await q();
+  if(missing(r.error)) return []; fail(r.error,'Ideas'); return r.data||[]; }
 /* save (new or update). o.image / o.audio: a Blob to upload now (replaces the stored file; the old one is removed after the row is saved) */
 async function saveIdea(o){
   const c=await client(); const id=o.id||uid(), base=o.brand+'/ideas/'+id+'/', fresh=[], old=[];
   const row={...o}; delete row.image; delete row.audio; row.id=id; row.updated_at=new Date().toISOString();
   try{
     if(o.image){ const ext=o.image.type==='image/png'?'.png':o.image.type==='image/webp'?'.webp':'.jpg'; const p=await upload(base+'pic-'+uid().slice(0,8)+ext,o.image); fresh.push(p); if(o.image_path_old) old.push(o.image_path_old); row.image_path=p; }
-    if(o.audio){ const t=(o.audio.type||'audio/webm').split(';')[0], ext=t.includes('mp4')||t.includes('aac')?'.m4a':t.includes('ogg')?'.ogg':t.includes('mpeg')?'.mp3':'.webm';
-      const p=await upload(base+'voice-'+uid().slice(0,8)+ext,o.audio.type&&o.audio.type!==t?new Blob([o.audio],{type:t}):o.audio); fresh.push(p); if(o.audio_path_old) old.push(o.audio_path_old); row.audio_path=p; }
+    if(o.audio){ const a=audioBlob(o.audio); const p=await upload(base+'voice-'+uid().slice(0,8)+a.ext,a.blob); fresh.push(p); if(o.audio_path_old) old.push(o.audio_path_old); row.audio_path=p; }
     delete row.image_path_old; delete row.audio_path_old;
     const {data,error}=await c.from('ideas').upsert(row).select().single(); fail(error,'Save idea');
     if(old.length){ try{ await removeFiles(old); }catch(_){} }
@@ -344,12 +351,34 @@ async function saveIdea(o){
   }catch(err){ try{ await removeFiles(fresh); }catch(_){} throw err; }
 }
 async function updateIdea(id,patch){ const c=await client(); const {data,error}=await c.from('ideas').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select().single(); fail(error,'Idea'); return data; }
-/* delete = the row and its own files (picture, voice note) */
-async function deleteIdea(id){
-  const c=await client(); const {data}=await c.from('ideas').select('brand,image_path,audio_path').eq('id',id).maybeSingle();
-  const {error}=await c.from('ideas').delete().eq('id',id); fail(error,'Delete idea');
-  if(data){ try{ await removeFiles([data.image_path,data.audio_path].filter(Boolean)); }catch(_){} }
+/* the discussion on an idea: text and voice replies (table idea_notes). Archived ones (deleted_at) are hidden, never removed. */
+async function ideaNotes(brand){ const c=await client(); return rows(c.from('idea_notes').select('*').eq('brand',brand).is('deleted_at',null).order('created_at'),'Replies'); }
+async function addIdeaNote(o){
+  const c=await client(); const id=uid(); let path=null;
+  try{
+    if(o.audio){ const a=audioBlob(o.audio); path=await upload(o.brand+'/ideas/'+o.idea_id+'/notes/'+id+a.ext,a.blob); }
+    const row={id,brand:o.brand,idea_id:o.idea_id,author:o.author||null,body:o.body||'',audio_path:path,audio_secs:path?(o.secs||null):null};
+    const {data,error}=await c.from('idea_notes').insert(row).select().single(); ideaFail(error,'Reply'); return data;
+  }catch(err){ if(path){ try{ await removeFiles([path]); }catch(_){} } throw err; }
 }
+async function setIdeaFlag(table,id,patch,what){ const c=await client(); const {data,error}=await c.from(table).update(patch).eq('id',id).select().single(); ideaFail(error,what); return data; }
+const archivedBy=by=>({deleted_at:new Date().toISOString(),deleted_by:by||null}), restoredRow={deleted_at:null,deleted_by:null};
+const archiveIdeaNote=(id,by)=>setIdeaFlag('idea_notes',id,archivedBy(by),'Archive');
+const restoreIdeaNote=id=>setIdeaFlag('idea_notes',id,restoredRow,'Restore');
+const archiveIdea=(id,by)=>setIdeaFlag('ideas',id,archivedBy(by),'Archive');
+const restoreIdea=id=>setIdeaFlag('ideas',id,restoredRow,'Restore');
+async function archivedIdeas(brand){ const c=await client(), q=t=>c.from(t).select('*').eq('brand',brand).not('deleted_at','is',null).order('deleted_at',{ascending:false});
+  return {ideas:await rows(q('ideas'),'Archive'),notes:await rows(q('idea_notes'),'Archive')}; }
+/* first opened by someone else: sets seen_at / seen_by only while empty; quiet while the column is missing */
+async function markIdeaSeen(id,by){ const c=await client(); const {error}=await c.from('ideas').update({seen_at:new Date().toISOString(),seen_by:by||null}).eq('id',id).is('seen_at',null); if(error&&!missing(error)) fail(error,'Idea'); }
+/* the idea's own voice note moves into an archived reply (nothing leaves storage), then the idea's audio fields are cleared */
+async function archiveIdeaVoice(ideaId,by){
+  const c=await client(); const {data:it,error:e0}=await c.from('ideas').select('brand,author,audio_path,audio_secs,created_at').eq('id',ideaId).maybeSingle(); fail(e0,'Idea'); if(!it||!it.audio_path) return null;
+  const {error}=await c.from('idea_notes').insert({brand:it.brand,idea_id:ideaId,author:it.author||null,body:'',audio_path:it.audio_path,audio_secs:it.audio_secs||null,created_at:it.created_at,...archivedBy(by)}); ideaFail(error,'Archive');
+  const {data,error:e2}=await c.from('ideas').update({audio_path:null,audio_secs:null,updated_at:new Date().toISOString()}).eq('id',ideaId).select().single(); fail(e2,'Idea'); return data;
+}
+/* "delete" now only archives: the row and its files stay, and Archive can restore them */
+const deleteIdea=(id,by)=>archiveIdea(id,by);
 async function kpiMonths(brand,from,to){ const c=await client(); let q=c.from('kpi_months').select('*').eq('brand',brand); if(from) q=q.gte('month',from); if(to) q=q.lte('month',to); return rows(q.order('month'),'Goals'); }
 async function saveKpiMonth(o){ const c=await client(); const row={...o,updated_at:new Date().toISOString()}; delete row.id;
   const {data,error}=await c.from('kpi_months').upsert(row,{onConflict:'brand,month'}).select().single(); fail(error,'Save goals'); return data; }
@@ -359,5 +388,5 @@ async function setFormat(id,format){ const c=await client(); const {error}=await
 window.StudioCloud={client,designsNamed,session,sessionState,signedInHere,netErr,user,isMember,checkMember,sendCode,verifyCode,signInTeam,signOut,onAuth,teamEmail:CFG.teamEmail,members,addMember,removeMember,
   collections,ensureCollections,renameCollection,deleteCollection,setDesignCollections,
   designs,getDesign,saveDesign,renameDesign,touchUsed,deleteDesign,duplicateDesign,fileUrl,fileUrls,download,
-  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset,ideas,saveIdea,updateIdea,deleteIdea,kpiMonths,saveKpiMonth,setFormat};
+  versions,restoreVersion,setThumb,setReview,setCaption,calendar,saveCalendarItem,deleteCalendarItem,comments,addComment,resolveComment,phrases,suggestPhrase,setPhraseStatus,campaigns,saveCampaign,deleteCampaign,setCampaign,teamAssetsReady,teamAssets,saveTeamAsset,updateTeamAsset,removeTeamAsset,ideas,saveIdea,updateIdea,deleteIdea,ideaNotes,addIdeaNote,archiveIdeaNote,restoreIdeaNote,archivedIdeas,archiveIdea,restoreIdea,markIdeaSeen,archiveIdeaVoice,kpiMonths,saveKpiMonth,setFormat};
 })();
