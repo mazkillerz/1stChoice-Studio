@@ -1,0 +1,16 @@
+/* Feed preview (assets/feed.js): the Calendar's Feed view. Interface tokens only. */
+.feed{max-width:420px;margin:0 auto;min-width:0}
+.feed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}
+.feed-tile{position:relative;display:block;padding:0;border:0;margin:0;aspect-ratio:3/4;overflow:hidden;background:var(--surface-2);color:var(--fg);cursor:pointer;min-width:0}
+.feed-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.feed-tile.planned.has-pic img{opacity:.82}
+.feed-tile.planned::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent);pointer-events:none}
+.feed-tile .ft-title{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;padding:10px;font:600 var(--fs-s) var(--sans);text-align:start;color:var(--muted,var(--fg))}
+.feed-badge{position:absolute;inset-inline-start:4px;bottom:4px;padding:2px 7px;border-radius:var(--r-pill);background:rgba(0,0,0,.66);color:#fff;font:600 11px/1.4 var(--sans)}
+.feed-tile .ft-fmt{position:absolute;inset-inline-end:5px;top:5px;width:18px;height:18px;color:#fff;filter:drop-shadow(0 0 2px rgba(0,0,0,.6))}
+.feed-tile .ft-fmt svg{width:18px;height:18px;display:block}
+.feed-tile:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.feed-empty{max-width:420px;margin:var(--sp-5,32px) auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:var(--sp-2)}
+.feed-empty b{font:600 var(--fs-l) var(--sans)}
+.feed-empty p{margin:0;color:var(--muted,var(--fg))}
+.feed-empty .btn svg{width:18px;height:18px}

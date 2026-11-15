@@ -6,6 +6,7 @@
    The old local "posted" log (if a device kept one) shows as read-only posted items; nothing is migrated or deleted. */
 (function(){
 'use strict';
+const FEEDBASE=(document.currentScript&&document.currentScript.src||'').replace(/calendar\.js.*$/,'');   /* 2.9.0 feed */
 /* the sheet's three choices (Ready = 'approved' in the database); 'in_review' is set by the review feature and shown read-only */
 const STATUS=[['draft','Draft'],['approved','Ready'],['posted','Posted']];
 const SLABEL={draft:'Draft',in_review:'In review',approved:'Ready',posted:'Posted'};
@@ -122,10 +123,11 @@ function make(o){
   const root=o.root, esc=o.esc, ic=k=>(o.icons&&o.icons[k])||'', hap=k=>{ try{ o.haptic&&o.haptic(k); }catch(_){} };
   const rd=k=>{ try{ return o.store?o.store(k):null; }catch(_){ return null; } }, wr=(k,v)=>{ try{ o.store&&o.store(k,v); }catch(_){} };
   const wide=()=>matchMedia('(min-width:821px)').matches;
-  let C=null, mode=(['week','month'].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
+  let C=null, mode=(['week','month','feed'/* 2.9.0 feed */].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
   let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
   let lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
-  const range=()=>{ if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
+  const range=()=>{ if(mode==='feed') return window.StudioFeed?StudioFeed.range():[addDays(new Date(),-60),addDays(new Date(),90)]; /* 2.9.0 feed */
+    if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
   const designOf=id=>designs.find(d=>d.id===id);
   const shapeOf=dShape;
@@ -145,6 +147,7 @@ function make(o){
     slowT=setTimeout(()=>{ if(my===run&&state!=='ok'){ state='slow'; draw(); } },8000);
     try{
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
+      if(mode==='feed'&&!window.StudioFeed) await loadFeed(); /* 2.9.0 feed */
       C=await o.cloud(); if(my!==run) return;
       if(!(await o.member())){ state='out'; draw(); return; }
       const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
@@ -161,10 +164,16 @@ function make(o){
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); draw(); }
     finally{ if(my===run) clearTimeout(slowT); }
   }
+  /* 2.9.0 feed: the Feed view lives in assets/feed.js (+ feed.css), loaded the first time it is chosen */
+  function loadFeed(){ if(window.StudioFeed) return Promise.resolve(); if(!document.getElementById('lz-feed')){ const l=document.createElement('link'); l.id='lz-feed'; l.rel='stylesheet'; l.href=FEEDBASE+'feed.css'; document.head.appendChild(l); }
+    return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=FEEDBASE+'feed.js'; s.onload=()=>res(); s.onerror=()=>rej(Object.assign(new Error('Could not load the feed. Check the connection.'),{offline:true})); document.head.appendChild(s); }); }
+  const feedHtml=()=>StudioFeed.html({items,designOf,urls,esc,fmtOf,todayIso:todayIso(),plus:ic('plus'),fmtIcon:k=>ICF[k],dayLabel:k=>L(parse(k),{day:'numeric',month:'short'})});
+  /* /2.9.0 feed */
   function fillThumbs(){ root.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; }); }
 
   /* ---------- drawing ---------- */
-  const title=()=>{ const [a,b]=range(); if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
+  const title=()=>{ const [a,b]=range(); if(mode==='feed') return 'Profile preview'; /* 2.9.0 feed */
+    if(mode==='month') return L(anchor,{month:'long',year:'numeric'});
     return a.getMonth()===b.getMonth()?L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric'}):L(a,{day:'numeric',month:'short'})+' – '+L(b,{day:'numeric',month:'short'}); };
   /* a linked design opens from its picture (2.1.2): anyone on the team can see the design itself */
   const designHref=(id,tool)=>'tools/'+encodeURIComponent(tool)+'.html?design='+encodeURIComponent(id);
@@ -195,25 +204,25 @@ function make(o){
     return `<div class="cal-month"><div class="cm-head" aria-hidden="true">${head}</div><div class="cm-grid">${cells}</div></div>`; }
   function draw(){
     const keepY=window.scrollY;
-    const body=state==='ok'?(mode==='month'?monthHtml():weekHtml())
+    const body=state==='ok'?(mode==='feed'?feedHtml():mode==='month'?monthHtml():weekHtml()) /* 2.9.0 feed */
       :state==='loading'?'<div class="cal-skel" aria-hidden="true">'+'<span></span>'.repeat(5)+'</div>'
       :state==='offline'?noteBox(ic('clock'),'You’re offline','You can still make and save pictures. Your calendar comes back when you’re online.',againBtn)
       :state==='slow'?noteBox(ic('clock'),'Still loading…','The connection is slow. Your calendar shows as soon as it arrives.',againBtn)
       :state==='out'?noteBox(CAL_IC,'The calendar is for your team','Sign in to plan and see your team’s posts.','<button type="button" class="btn slim" data-cal-signin>Sign in</button>')
       :noteBox(ic('rotate'),'Could not load the calendar',esc(note),againBtn);
     const live=state==='ok';
-    const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb));
+    const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb))||mode==='feed';
     root.innerHTML=`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
         <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>
         <button type="button" class="mini solid cal-new" data-add="${here?todayIso():iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>${o.tabs||''}
-      <div class="cal-bar"><div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button></div>
-        <div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>
+      <div class="cal-bar"><div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button><button type="button" class="chip" data-mode="feed" aria-pressed="${mode==='feed'}">Feed</button></div>
+        <div class="cal-nav">${mode==='feed'?'':`<button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>`}
         ${here?'':'<button type="button" class="cal-today" data-nav="0">Today</button>'}<strong class="cal-title" aria-live="polite">${esc(title())}</strong>
-        <button type="button" class="cal-arrow" data-nav="1" aria-label="${mode==='month'?'Next month':'Next week'}">${ic('next')}</button></div></div></div>
+        ${mode==='feed'?'':`<button type="button" class="cal-arrow" data-nav="1" aria-label="${mode==='month'?'Next month':'Next week'}">${ic('next')}</button>`}</div></div></div>
       <div class="cal-body">${body}</div>`;
     window.scrollTo({top:keepY,behavior:'instant'});
   }
-  function go(n){ if(n===0) anchor=new Date(); else if(mode==='month') anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1); else anchor=addDays(anchor,7*n); hap('tick'); load(); }
+  function go(n){ if(mode==='feed') return; /* 2.9.0 feed */ if(n===0) anchor=new Date(); else if(mode==='month') anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1); else anchor=addDays(anchor,7*n); hap('tick'); load(); }
   function setMode(m,day){ if(day) anchor=parse(day); mode=m; wr('studio:calMode',m); hap('tick'); state=state==='ok'?'ok':state; load(); }
 
   /* ---------- save, move, status, delete ---------- */
