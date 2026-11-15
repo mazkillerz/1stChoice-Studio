@@ -218,3 +218,7 @@ a.id-lnk{min-height:44px;margin-block:-6px}
 .id-voice .id-play{width:44px;height:44px;margin:-2px 0}
 .id-csend{width:auto;flex:none}
 .id-cin{flex:1 1 0;width:auto}
+/* inside the Plan shell the pane has its own padding and scroll */
+.plan-shell .ideas-view .id-top{margin-inline:0;padding:6px 0 4px;border-bottom:0}
+.plan-shell .ideas-view .id-head{padding-top:0}
+:root .ideas-view .chip[aria-pressed="true"]{animation:none}   /* the board redraws on every tap: no re-pop */
