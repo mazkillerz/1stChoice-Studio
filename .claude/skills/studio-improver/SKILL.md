@@ -193,7 +193,7 @@ Test what changed, fully; test the core flows quickly; test everything only ever
 | Cloud errors, offline and slow states (`assets/cloud.js`, `doLoad` / notes in `home()`, `checkTeam()` in `tool()`) | `hub-offline`, `smoke`, `quicksave`, `home7-save` |
 | Any stylesheet (`assets/*.css`, `tools/*.css`) | `simplify45` (no dead CSS; add a class built at run time to its `DYNAMIC` list) |
 | Offer / Carousel drawing (`tools/offer.js`, `tools/carousel.js`) | `draw-edges` |
-| Preview flags, Who's using, Settings rows (`FLAGS`, `assets/who.js`) | `flags`, `who`, `welcome` |
+| Preview flags, Who's using, Settings rows (`FLAGS`, `assets/who.js`) | `flags`, `who`, `welcome`, `simplify215` (Settings groups: a new row goes in its group; no two rows share an icon) |
 | Cloud API, Supabase tables, versions (`assets/cloud.js`, `tests/fakecloud.js`, `supabase/migrations/`) | `cloud-api`, `saved-versions`, `hub-offline`, plus the team suites below |
 | Fonts (`assets/fonts/`, `brands/*/fonts/`, `useBrand`) | `fonts-local`, `font-ready`, `brandkit` |
 | Tokens and shared components (`Studio.tokens`, `assets/components.js`, `create-lib.js` *Doc builders) | `tokens`, `components`, `goldens`, `restock-styles`, `photostory-styles`, `collage-grids`, `draw-edges` |

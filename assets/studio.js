@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.14.0';
+const VERSION='2.15.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -277,6 +277,8 @@ const ICON={
   sparkle:svg('<path d="M10 3.5l1.6 4.4L16 9.5l-4.4 1.6L10 15.5l-1.6-4.4L4 9.5l4.4-1.6z"/><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/>',20),
   template:svg('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18"/><path d="M9 9v12"/>',20),
   user:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',20),
+  crown:svg('<path d="M3 7l4 4 5-6 5 6 4-4-2 11H5z"/><path d="M5 21h14"/>',20),   /* 2.15.0: I'm the owner (it shared Experimental's flask) */
+  flag:svg('<path d="M5 22V4"/><path d="M5 4h12l-2 4 2 4H5"/>',20),   /* 2.15.0: Previews (it shared What's new's sparkle) */
   idcard:svg('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16a3 3 0 0 1 6 0"/><path d="M15 10h3M15 14h3"/>',20),   /* 2.10.0: Who's using (it shared Sign in's icon) */
   look:svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>',20),
   lab:svg('<path d="M9 3h6"/><path d="M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',20),
@@ -3241,16 +3243,19 @@ async function home(){
     const d=dialog(`<div class="dlg-body set"><div class="lib-head"><h3 id="setH">Settings</h3><button type="button" class="mini" data-x>Done</button></div>
       <div class="act-list set-list">${acc}
       ${row('who',ICON.idcard,'Who’s using Studio',who.name?esc(who.name):'Not set yet · goes on saved designs','Change')}
-      <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button></div>
-      <div class="act-list set-list">${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
+      <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.crown}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button></div>
+      <h4 class="set-gl">Brand and team</h4><div class="act-list set-list">
       <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings before you save</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
-      <button type="button" class="act-row set-row" data-set="remind" role="switch" aria-checked="${remindOn()}">${ICON.bell}<span class="set-txt"><b>Remind me about planned posts</b><small>${esc(remindSub())}</small></span><span class="set-switch" aria-hidden="true"></span></button>
-      ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
       ${row('teamassets',ICON.photo,'Team assets','Logos and cut-outs everyone on the team can use')}   <!-- r3-assets -->
+      ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}</div>
+      <h4 class="set-gl">On this ${devWord()}</h4><div class="act-list set-list">
+      ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
+      <button type="button" class="act-row set-row" data-set="remind" role="switch" aria-checked="${remindOn()}">${ICON.bell}<span class="set-txt"><b>Remind me about planned posts</b><small>${esc(remindSub())}</small></span><span class="set-switch" aria-hidden="true"></span></button>
+      ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}</div>
+      <h4 class="set-gl">Help and more</h4><div class="act-list set-list">
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
       ${row('new',ICON.sparkle,'What’s new','Every update, newest first')}
-      ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}
-      ${row('previews',ICON.sparkle,'Previews','New features waiting for the owner’s OK',flags.list().filter(f=>f.on).length?flags.list().filter(f=>f.on).length+' on':'Off')}
+      ${row('previews',ICON.flag,'Previews','New features waiting for the owner’s OK',flags.list().filter(f=>f.on).length?flags.list().filter(f=>f.on).length+' on':'Off')}
       ${row('lab',ICON.lab,'Experimental','New things being tested (passcode)')}</div>
       <p class="small set-foot">Studio ${esc(VERSION)} · Pins, recent searches and unfinished stories stay on this ${devWord()}.</p></div>`,'set-dlg');
     d.setAttribute('aria-labelledby','setH'); d.tabIndex=-1; d.focus();

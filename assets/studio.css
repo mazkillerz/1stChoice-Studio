@@ -1264,6 +1264,7 @@ body{line-height:1.5;font-feature-settings:"kern" 1}
 .set-txt small{font:400 var(--fs-s) var(--sans);color:var(--muted)}
 .set-end{flex:none;padding:4px 10px;border-radius:var(--r-pill);background:var(--chip);font:600 var(--fs-xs) var(--sans);color:var(--fg)}
 .set-foot{margin:0;text-align:center}
+.set-gl{margin:var(--sp-2) 0 calc(-1*var(--sp-1));padding-inline:18px;font:500 var(--fs-s) var(--sans);color:var(--muted)}   /* 2.15.0: Settings in four short groups */
 /* the Templates page has its own header (Back + title), like Saved */
 body.on-templates nav.top{display:none}
 body.hub.on-templates{background:var(--bg)}

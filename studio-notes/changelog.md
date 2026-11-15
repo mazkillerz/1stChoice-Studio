@@ -13,6 +13,15 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.15.0 · 15 Nov 2026
+A Simplify release: Settings in four short groups, every row with its own icon.
+
+### Settings in four short groups
+type: improve
+Settings had grown to one long list. It is now four short groups: you (account, name, owner), **Brand and team** (Brand check, Team assets), **On this phone** (how your tools look, reminders, install) and **Help and more** (welcome tour, What's new, previews, experimental). Nothing moved out of Settings and every switch works as before. I'm the owner and Previews also got their own icons, so no two rows look alike.
+![before](assets/whatsnew/2.15.0-settings-before.jpg)
+![after](assets/whatsnew/2.15.0-settings-after.jpg)
+
 ## 2.14.0 · 15 Nov 2026
 The team's logos and cut-outs are in Board too.
 
