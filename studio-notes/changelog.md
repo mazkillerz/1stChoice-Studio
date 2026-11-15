@@ -11,7 +11,33 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - Any other line that starts with `[try:` is ignored.
 - Anything above the first `##` (this intro) is not shown.
 
-How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
+How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
+
+## 2.19.1 · 15 Nov 2026
+What's new opens in one tap.
+
+### What's new, one tap deep
+type: fix
+The What's new page lost its nested sections (opening an older version took four or five taps). The newest version is fully open, and every older version is one row that opens in a single tap and shows everything at once: every change with its note and its before and after pictures. A **Jump to** bar at the top goes straight to the latest versions, and **All versions** opens a sheet with every version grouped 2.x, 1.x, 0.x. The New, Improved and Fixed filters still work, and the filter chips no longer get cut off on a phone.
+![before](assets/whatsnew/2.19.1-whatsnew-before.jpg)
+![after](assets/whatsnew/2.19.1-whatsnew-after.jpg)
+
+## 2.19.0 · 15 Nov 2026
+The calendar switches Week, Month and Feed instantly.
+
+### A faster, smoother calendar
+type: improve
+Week, Month and Feed now switch at once, with a highlight that slides along the Week · Month · Feed control and a quick, clean fade (never two views on top of each other). Moving to the next or previous week or month no longer waits for the internet: the calendar keeps two months back and four months ahead ready, refreshes quietly in the background and only redraws when something changed. The week title fits again on a phone. In the calendar a sideways swipe now switches tabs; use the arrows for the next week.
+![after](assets/whatsnew/2.19.0-calendar-after.jpg)
+
+## 2.18.0 · 15 Nov 2026
+Calendar, Ideas and Goals are one page now, with swipeable tabs at the top.
+
+### Swipe between Calendar, Ideas and Goals
+type: improve
+The floating Calendar · Ideas · Goals bar that sat on top of the bottom bar is gone. The three now share one page with tabs at the top, like a profile's tabs: tap a tab or swipe left and right, and a line under the tab follows your finger. All three stay ready in the background, so switching is instant and the old page's text never shows on top of the new one. Back still takes you Home in one step.
+![before](assets/whatsnew/2.18.0-plantabs-before.jpg)
+![after](assets/whatsnew/2.18.0-plantabs-after.jpg)
 
 ## 2.17.0 · 15 Nov 2026
 The brand kit, in one place: logo, colours, fonts and approved words.
