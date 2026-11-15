@@ -3,7 +3,7 @@
            node tests/run.mjs --changed [base]        smoke + taste + the suites mapped to the files changed since base
                                                       (default: origin/main, fetched first, so a stale local main never makes it run everything)
            node tests/run.mjs --quick                 smoke + taste + only the suites in tests/ you added or changed (while you work)
-           node tests/run.mjs --all                   every suite except SKIP and the whole-file twins (home7, polish71, collage-grids: their PART files run instead)
+           node tests/run.mjs --all                   every suite except SKIP and the whole-file twins (home7, polish71, collage-grids, full, saved-versions, video-timeline, video, backgrounds, create-resize: their PART files run instead; --changed/--quick pick the parts too)
            --dry                                      only print which suites it would run, and why
            NOQUIET=1                                  keep the fixed page.waitForTimeout sleeps as written (default: tests/_quiet.mjs ends a sleep early
                                                       when nothing is scheduled to happen in it; see that file)
@@ -73,14 +73,18 @@ try{ if(sh0('git rev-parse --is-shallow-repository').trim()==='true') console.lo
 const dry=names.includes('--dry'); names=names.filter(n=>n!=='--dry');
 const why={};
 const SKIP=['run','_quiet','_saveflow-helpers','kit','shot','shot-stickers','shot-create','tapscan','tplthumbs','reelthumbs','look8','seed'];
-const TWINS=['home7','polish71','collage-grids'];   // the whole-file versions of home7-hub/-saved/-save and polish71-saved/-search/-bar: --all runs the parts instead
+const TWINS=['home7','polish71','collage-grids','full','saved-versions','video-timeline','video','backgrounds','create-resize'];   // the whole-file versions of the PART files (home7-hub/-saved/-save, polish71-saved/-search/-bar, collage-grids-compat/-grids, and the SPLIT list below): --all runs the parts instead
+/* a suite that is too slow as one file (> ~120 s) has PART files: --changed/--quick/--all pick the parts, never the whole file; naming it (node tests/run.mjs full) still runs the whole file */
+const SPLIT={full:['full-phone-a','full-phone-b','full-desktop'],'saved-versions':['saved-versions-light','saved-versions-dark','saved-versions-desktop'],'video-timeline':['video-timeline-light','video-timeline-dark','video-timeline-misc'],
+  video:['video-light','video-dark','video-misc'],backgrounds:['backgrounds-a','backgrounds-b','backgrounds-c','backgrounds-d'],'create-resize':['create-resize-a','create-resize-b']};
+const expand=l=>l.flatMap(x=>SPLIT[x]||[x]);
 if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
 const TOOL_SUITES=['nav','saveflow','teamassets','rules','captions','components','full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','resave','tokens','lastlayout','pagedlayout'],
       HUB_SUITES=['nav','ideas','kpis','calpick','calendar','review','captions','campaigns','phrasebook','packs','hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
-const add=(set,list,r)=>list.forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
+const add=(set,list,r)=>expand(list).forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */
 function studioParts(base){
   let diff=''; try{ diff=sh(`git diff -U0 ${base} -- assets/studio.js`); }catch(_){ return ['other']; }
@@ -124,7 +128,8 @@ const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
     const r={name,code,pass:lines.filter(l=>l.startsWith('PASS')).length,fails,s:((Date.now()-t)/1000).toFixed(0),tail:code&&!fails.length?lines.filter(Boolean).slice(-3):[]};
     console.log(`${code?'✗':'✓'} ${name}  pass ${r.pass}  fail ${fails.length}  ${r.s}s`); out.push(r); res(); }); });
 /* longest first (seconds on a 4-core sandbox, Oct 2026), so the slow ones are not left running alone at the end */
-const SLOW={goldens:110,resave:90,'collage-grids-compat':120,'collage-grids-grids':110,'video-timeline':200,video:190,'video-polish':130,textstyles:95,'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,backgrounds:165,'batch-saved':75,full:180,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
+const SLOW={'video-timeline-light':115,'video-timeline-dark':120,'video-light':100,'video-dark':110,'backgrounds-c':100,'backgrounds-d':65,'full-desktop':70,'full-phone-a':55,'full-phone-b':55,'saved-versions-light':72,'saved-versions-desktop':70,'saved-versions-dark':55,'create-resize-a':72,'create-resize-b':76,'backgrounds-a':35,
+  goldens:110,resave:90,'collage-grids-compat':120,'collage-grids-grids':110,'video-polish':130,textstyles:95,'draw-edges':100,'font-ready':75,'drafts-queue':75,'select-swipe':25,'create-render':60,'continue-clear':66,'batch-saved':75,'polish71-saved':110,'home7-hub':85,batch:75,postpresets:80,'queue-keep':70,'restock-styles':65,contrast:77,welcome:63,quicksave:55,queue:60,v5:50,taste:51,
   'home7-save':37,smoke:35,select:35,'home7-saved':33,'alltools-cam':23,'polish71-bar':16,'polish71-search':15};
 const queue=[...names].sort((a,b)=>(SLOW[b]||30)-(SLOW[a]||30));
 await Promise.all(Array.from({length:Math.min(JOBS,queue.length)},async()=>{ while(queue.length) await runOne(queue.shift()); }));

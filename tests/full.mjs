@@ -9,12 +9,14 @@ const pngSize=f=>{ const b=fs.readFileSync(f); return b.readUInt32BE(16)+'x'+b.r
 /* the PNGs inside a stored ZIP (what Save all makes on a computer since 1.9.0) */
 const unzipPngs=buf=>{ const out=[]; let p=0; while(buf.readUInt32LE(p)===0x04034b50){ const size=buf.readUInt32LE(p+18), nl=buf.readUInt16LE(p+26), xl=buf.readUInt16LE(p+28), d=buf.slice(p+30+nl+xl,p+30+nl+xl+size);
   out.push({name:buf.slice(p+30,p+30+nl).toString('utf8'),wh:d.readUInt32BE(16)+'x'+d.readUInt32BE(20)}); p+=30+nl+xl+size; } return out; };
+/* PART=phone-a|phone-b|desktop (comma list) runs only those parts (phone-a: the first four tools on the phone, phone-b: the last four); full-phone-a.mjs, full-phone-b.mjs and full-desktop.mjs set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const rows=[]; const b=await chromium.launch();
-for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{width:1280,height:800},false]]){
+for(const [tag,vp,mob] of [['phone',{width:390,height:844},true],['desktop',{width:1280,height:800},false]].filter(v=>v[0]==='phone'?part('phone-a')||part('phone-b'):part('desktop'))){
   const ctx=await b.newContext({viewport:vp,deviceScaleFactor:mob?2:1,isMobile:mob,hasTouch:mob,acceptDownloads:true,serviceWorkers:'block'});
   await ctx.route(/supabase\.co/,r=>r.abort());
   await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
-  for(const t of TOOLS){
+  for(const [ti,t] of TOOLS.entries()){ if(!part(tag==='phone'?(ti<4?'phone-a':'phone-b'):'desktop')) continue;
     const R={tool:t,view:tag,errors:[],checks:[]}; const ok=(name,cond,info)=>R.checks.push((cond?'PASS ':'FAIL ')+name+(info?' ('+info+')':''));
     const pg=await ctx.newPage();
     pg.on('pageerror',e=>R.errors.push(String(e))); pg.on('console',m=>{ if(m.type()==='error'&&!/status of 404/.test(m.text())) R.errors.push(m.text()); });

@@ -8,6 +8,8 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 process.env.PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK='1';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
+/* PART=light|dark|misc (comma list) runs only those parts; video-light.mjs, video-dark.mjs and video-misc.mjs (360px phone + computer) set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n')[0]); process.exit(1); });
@@ -42,7 +44,7 @@ const dragTouch=async(cdp,x1,x2,y)=>{ const pt=x=>[{x,y,id:1}];
 
 const first={};   // the saved design id per scheme
 
-for(const scheme of ['light','dark']){
+for(const scheme of ['light','dark'].filter(part)){
   const N=scheme+' phone: ';
   const {ctx,pg,errs}=await newPage({width:390,height:844},scheme,true);
   const cdp=await ctx.newCDPSession(pg);
@@ -218,7 +220,7 @@ for(const scheme of ['light','dark']){
 }
 
 /* small phone and computer */
-for(const scheme of ['light']){
+for(const scheme of ['light'].filter(()=>part('misc'))){
   {
     const {ctx,pg,errs}=await newPage({width:360,height:740},scheme,true);
     await pg.goto(BASE+'tools/video.html'); await ready(pg);

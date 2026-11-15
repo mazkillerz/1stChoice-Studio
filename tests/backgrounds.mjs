@@ -22,6 +22,8 @@ const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&i!==''?' ('+(typeof i==='string'?i:JSON.stringify(i))+')':'')); };
 const pngSize=async d=>{ const p=await d.path(); const x=fs.readFileSync(p); return x.readUInt32BE(16)+'x'+x.readUInt32BE(20); };
+/* PART=a|b|c|d (comma list) runs only those parts; backgrounds-a.mjs, -b.mjs, -c.mjs and -d.mjs set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const t0=Date.now(), b=await chromium.launch(), errs=[];
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n')[0]); process.exit(1); });
 const KINDS=['plain','fade','glow','dots','lines','grain'], NEWK=['sweep','spot','mesh','grid','waves','rings','paper','linen'], LABELS=['Plain','Fade','Glow','Sweep','Spot','Mesh','Dots','Lines','Grid','Waves','Rings','Grain','Paper','Linen'];
@@ -55,7 +57,7 @@ const groupVisible=pg=>pg.locator('[data-seg="gfx"]').isVisible();
 const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBoundingClientRect(); return {l:x.textContent.trim(),v:x.dataset.v,p:x.getAttribute('aria-pressed'),w:r.width,h:r.height}; }));
 
 /* 1 + 2 (Restock) + 5 + 10 (light part) */
-{
+if(part('a')){
   const {ctx,pg}=await mk({style:'white'});
   await settle(pg); await openStyle(pg);
   const bs=await btns(pg);
@@ -81,7 +83,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 }
 
 /* 2 (Photo story) */
-{
+if(part('a')){
   const {ctx,pg}=await mk({tool:'photo-story'});
   await pg.waitForFunction(()=>Studio.debug.reg().length>3,null,{timeout:20000}); await pg.waitForTimeout(600);
   await openStyle(pg);
@@ -99,7 +101,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 }
 
 /* 3 + 4. pixels on Restock Cans */
-{
+if(part('a')){
   const {ctx,pg}=await mk({style:'cans'});
   await set(pg,'cans',{bg:null}); const plain=await settle(pg);
   await set(pg,null,{gfx:undefined}); const none=await settle(pg);
@@ -128,7 +130,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 }
 
 /* 6. Save with Dots on Cans = the full-size PNG */
-{
+if(part('a')){
   const {ctx,pg}=await mk({style:'cans'});
   await settle(pg); await openStyle(pg);
   await pg.tap('[data-seg="gfx"] .seg[data-v="dots"]'); await pg.waitForTimeout(400);
@@ -143,7 +145,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 }
 
 /* 8 + 9. Undo / Redo and the chosen layer */
-{
+if(part('b')){
   const {ctx,pg}=await mk({style:'white'});
   await settle(pg);
   const st=()=>pg.evaluate(()=>({sel:Studio.debug.S.sel,open:!!document.querySelector('#sh-insp.open'),name:document.getElementById('inspName').textContent.trim(),k:(Studio.debug.S.layers.head||{}).k}));
@@ -188,7 +190,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 }
 
 /* 10. dark theme: the buttons render, the pressed one looks different */
-{
+if(part('b')){
   const {ctx,pg}=await mk({style:'white',theme:'dark'});
   await settle(pg); await openStyle(pg);
   const dk=await pg.evaluate(()=>[...document.querySelectorAll('[data-seg="gfx"] .seg')].map(x=>{ const c=getComputedStyle(x), r=x.getBoundingClientRect(); return {p:x.getAttribute('aria-pressed'),bg:c.backgroundColor,bc:c.borderColor,col:c.color,w:r.width,h:r.height}; }));
@@ -200,7 +202,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 
 /* 12. Carousel (1.22.0): Background under Background colour for all slides; Plain by default and pixel-identical to no value;
    a finish shows on a Words-only slide, and it is the same on every slide (a setting for All slides) */
-{
+if(part('b')){
   const {ctx,pg}=await mk({tool:'carousel'});
   await pg.evaluate(()=>document.getElementById('draftFresh')?.click()); await pg.waitForTimeout(300);
   await set(pg,null,{kind:'words'}); await settle(pg); await openStyle(pg);
@@ -228,7 +230,7 @@ const btns=pg=>pg.$$eval('[data-seg="gfx"] .seg',bs=>bs.map(x=>{ const r=x.getBo
 
 /* 13. Cinematic, New place, Offer, Collage (1.29.0) */
 const T13={cinematic:{on:['white','cream','black'],off:[]},'new-place':{on:['A','B','C','D'],off:[]},offer:{on:['white','cream','black'],off:['photo']},collage:{on:['white','cream','black'],off:[]}};
-for(const [tool,{on,off}] of Object.entries(T13)){
+if(part('c')) for(const [tool,{on,off}] of Object.entries(T13)){
   const {ctx,pg}=await mk({tool});
   await pg.evaluate(()=>document.getElementById('draftFresh')?.click());
   await pg.waitForFunction(()=>Studio.debug.S.photos.every(p=>!p||p.img),null,{timeout:20000}).catch(()=>{});
@@ -284,7 +286,7 @@ for(const [tool,{on,off}] of Object.entries(T13)){
 }
 
 /* 14. Templates (1.29.0): presets that start with a finish */
-for(const [id,tool,st,k] of [['rs-glow','restock','cans','glow'],['of-dots','offer','white','dots']]){
+if(part('c')) for(const [id,tool,st,k] of [['rs-glow','restock','cans','glow'],['of-dots','offer','white','dots']]){
   const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block'});
   await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(id+': '+e.message));
@@ -296,7 +298,7 @@ for(const [id,tool,st,k] of [['rs-glow','restock','cans','glow'],['of-dots','off
 }
 
 /* r3-backgrounds (2.3.0): eight new finishes, a Strength choice, old designs unchanged */
-{
+if(part('d')){
   const BASE_H={"light:plain":4265569260,"light:fade":4058999808,"light:glow":3713539796,"light:dots":556123429,"light:lines":727896472,"light:grain":758800660,"dark:plain":2122782880,"dark:fade":3746603295,"dark:glow":2808377080,"dark:dots":2664701895,"dark:lines":3508124102,"dark:grain":1750200072};   /* the hashes of Restock Cans (preview pixels) for the old finishes, taken before the new ones existed */
   const {ctx,pg}=await mk({style:'cans'}); await settle(pg);
   for(const [name,vals] of [['light',{bg:undefined}],['dark',{bg:'#1a1a1a'}]]){
