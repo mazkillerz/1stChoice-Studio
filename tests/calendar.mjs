@@ -78,8 +78,8 @@ async function phone(dark){
   ok(T+'item card: format icon, time in bdi, status chip, caption (dir=auto), Copy caption, visible ⋯',c1.time==='9:30'&&c1.bdi==='BDI'&&c1.chip==='Draft'&&c1.fmt==='Story'&&/New batch today/.test(c1.cap)&&c1.dir==='auto'&&c1.copy&&c1.more>=44,c1);
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
   ok(T+'linked design thumb shows',await pg.evaluate(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return !!i&&!!i.getAttribute('src')&&i.complete&&i.naturalWidth>0; }));
-  const hd=await pg.evaluate(()=>{ const top=document.querySelector('.cal-top').getBoundingClientRect(), seg=document.querySelector('.cal-seg').getBoundingClientRect(), nw=document.querySelector('.cal-new').getBoundingClientRect(); return {top:top.top,h:top.height,segIn:seg.top>=top.top&&seg.bottom<=top.bottom,newIn:nw.bottom<=top.bottom,segTapH:document.querySelector('[data-mode]').offsetHeight}; });
-  ok(T+'one compact header block (2.4.1: with the Calendar · Ideas · Goals tabs) holds Back, New, Week/Month and the arrows (switch fully visible)',hd.top===0&&hd.segIn&&hd.newIn&&hd.h<=190,hd);
+  const hd=await pg.evaluate(()=>{ const top=document.querySelector('.cal-top').getBoundingClientRect(), seg=document.querySelector('.cal-seg').getBoundingClientRect(), nw=document.querySelector('.cal-new').getBoundingClientRect(); const ph=document.querySelector('#planView .pv-head').getBoundingClientRect(); return {top:Math.abs(top.top-ph.bottom)<=1?0:top.top,noBack:!document.querySelector('#calendarView [data-cal-back]'),h:top.height,segIn:seg.top>=top.top&&seg.bottom<=top.bottom,newIn:nw.bottom<=top.bottom,segTapH:document.querySelector('[data-mode]').offsetHeight}; });
+  ok(T+'one compact header block (shell: right under the Plan tab bar) holds New, Week/Month/Feed and the arrows (switch fully visible)',hd.top===0&&hd.noBack&&hd.segIn&&hd.newIn&&hd.h<=190,hd);
   const lg=await pg.$eval('.cal-item.ro',e=>e.innerText).catch(()=>'');
   ok(T+'old posted log entry shows as a read-only posted item',/Old posted story/.test(lg)&&/Posted/.test(lg),lg.replace(/\s+/g,' '));
   const t0=await txt(pg,'.cal-title'); await pg.tap('[data-nav="1"]'); await pg.waitForTimeout(350);
@@ -194,7 +194,7 @@ async function phone(dark){
   ok(T+'tap targets are at least 44px',small.length===0,small.slice(0,4));
   ok(T+'at most two filled buttons in the week view',(await pg.evaluate(()=>[...document.querySelectorAll('#calendarView .btn,#calendarView .mini.solid')].filter(e=>e.offsetParent).length))<=2);
   /* Home goes back */
-  await pg.tap('[data-cal-back]'); await pg.waitForTimeout(400);
+  await pg.tap('#planView .pv-back'); await pg.waitForTimeout(400);
   ok(T+'Back returns to Home',await pg.evaluate(()=>!document.getElementById('homeView').hidden&&location.hash===''));
   await ctx.close();
 }

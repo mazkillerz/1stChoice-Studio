@@ -51,6 +51,7 @@ for(const [name,opts,scheme] of [['390 light',{viewport:{width:390,height:844},i
     if(anim!==undefined) ok(T+tag+': the body animates',anim?w.anim>0:w.anim===0,w); return w; };
   ok(T+'items are drawn (Today post)',await pg.$$eval('.cal-item',e=>e.length>0));
   ok(T+'feed.js is preloaded at idle',await pg.waitForFunction(()=>!!window.StudioFeed,null,{timeout:6000}).then(()=>true,()=>false));
+  ok(T+'shell: no own back button or tabs, h1 is sr-only',await pg.evaluate(()=>!document.querySelector('#calendarView [data-cal-back],#calendarView .plan-tabs')&&document.querySelector('#calendarView h1').classList.contains('sr-only')));
   ok(T+'pill under Week at start',await pillOK(pg));
   await go('[data-mode="month"]','.cal-month','Week to Month',true); ok(T+'pill under Month',await pillOK(pg));
   await go('[data-mode="feed"]','.feed','Month to Feed',true); ok(T+'pill under Feed',await pillOK(pg));
@@ -62,6 +63,7 @@ for(const [name,opts,scheme] of [['390 light',{viewport:{width:390,height:844},i
   await go('[data-mode="month"]','.cal-month','to Month again'); await go('[data-nav="1"]','.cal-month','Next month');
   await go('[data-mode="week"]','.cal-week','to Week'); 
   ok(T+'no cloud calendar request while inside the cached window',(await calls(pg))===0,await calls(pg));
+  ok(T+'the window never scrolls (the pane does)',await pg.evaluate(()=>scrollY===0));
   ok(T+'no sideways scroll',await pg.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=0);
   /* far outside the window: one fetch, then it is cached */
   for(let i=0;i<30;i++) await pg.evaluate(()=>document.querySelector('[data-nav="1"]').click());
