@@ -110,3 +110,4 @@
 .ta-swatch button svg{width:16px;height:16px}
 .ta-stage[data-picking="1"]{cursor:crosshair;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .ta-stage[data-picking="1"] canvas{touch-action:manipulation}
+.ta-opts>*{flex:none}

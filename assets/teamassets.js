@@ -263,7 +263,7 @@ async function open(o){
     if(t.closest('#taPickReset')){ cur.picks=[]; cur.picking=false; paintOpts(); syncPick(); recompute(true); return; }
     if(b=t.closest('[data-unpick]')){ cur.picks.splice(+b.dataset.unpick,1); paintOpts(); recompute(true); return; }
     if(t.id==='taPrev'&&cur&&cur.picking&&cur.mode==='logo'){ if(cur.picks.length>=3){ const h=A.querySelector('#taPickHint'); if(h) h.textContent=pickHint(); return; }
-      const r=t.getBoundingClientRect(), q=pickAt(cur,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height); if(q){ cur.picks.push(q); paintOpts(); recompute(true); } return; }
+      const r=t.getBoundingClientRect(), q=pickAt(cur,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height); if(q){ cur.picks.push(q); paintOpts(); const sw=A.querySelector('#taSw'); if(sw&&sw.scrollIntoView) sw.scrollIntoView({block:'nearest'}); recompute(true); } return; }
     if(t.closest('#taNext')){ if(!cur.busy&&cur.result){ if(cur.picking){ cur.picking=false; applyResult(); } cur.name=cur.name||cleanName(cur.file.name); detailsStep(); } return; }
     if(t.closest('#taGo')){ upload(); return; } });
   d.addEventListener('input',e=>{ const t=e.target;
