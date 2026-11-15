@@ -16,8 +16,8 @@ Owner's sessions 1–6, then 7–15 chosen by the lead. Lead = main model (plans
 2. **8 · 2.23.0 Ideas: discussion first + unread** — the idea sheet opens on the idea and its thread (editing behind one tap), and "N new" replies/ideas since your last visit show on the Ideas tab and cards. Why: the thread only works if people see replies.
 3. **9 · 2.24.0 Search finds ideas and planned posts** — Studio's search lists matching ideas and calendar posts. Why: one search box for everything was a loved feature.
 4. **10 · 2.25.0 Simplify** — pattern review; leftovers of the old strip and the interim shell CSS; page headers consistent across Saved / Templates / Plan; full sweep, contrast, tapscan.
-5. **11 · 2.26.0 Faster start** — measure Home's cold start on a slow phone network and cut what blocks it (scripts not needed for the first paint, old font preconnects, early plan code).
-6. **12 · 2.27.0 Voice playback** — play speed (1×, 1.5×, 2×), seek by tapping the bar, one player at a time across the thread. Why: long voice notes are the team's main way to discuss.
-7. **13 · 2.28.0 Today stays fresh** — Home's Today/Calendar row refresh when you come back to Studio (visibility) and after posting, without flicker.
+5. **11 · 2.27.0 Faster start** — measure Home's cold start on a slow phone network and cut what blocks it (scripts not needed for the first paint, old font preconnects, early plan code).
+6. **12 · 2.28.0 Voice playback** — play speed (1×, 1.5×, 2×), seek by tapping the bar, one player at a time across the thread. Why: long voice notes are the team's main way to discuss.
+7. **13 · 2.26.0 Today stays fresh** (shipped before 11 and 12: ready first) — Home's Today/Calendar row refresh when you come back to Studio (visibility) and after posting, without flicker.
 8. **14 · 2.29.0 Polish pass** — shots of every changed screen at 390/360/1280 in both themes and Arabic; fix what looks average.
 9. **15 · 2.30.0 Simplify + full sweep** — the round's second Simplify, skill upgrade, final summary.

@@ -3137,7 +3137,6 @@ async function home(){
 
   /* ---------- 2.4.0 Plan (flag "plan"): Ideas board (assets/ideas.js) and monthly Goals (assets/kpis.js), lazy like the calendar.
      Both get the same context: cloud, member, dialogs, the saved designs, a design picker and Add to calendar. ---------- */
-  function planTabs(){ return ''; }   /* 2.18.0: the floating strip is gone; the shell's tabs (#planView) switch the panes */
   document.addEventListener('click',e=>{ const b=e.target.closest('[data-plan-tab],[data-plan-go]'); if(!b||!PLAN_ON) return; const v=b.dataset.planTab||b.dataset.planGo; if(v===curView()) return; haptic('tick');
     if(b.dataset.planTab&&PLAN_VIEWS.includes(curView())) return planSwitch(v);
     if(v==='calendar') calOpen(false); else openView(v); });
@@ -3266,8 +3265,13 @@ async function home(){
   let homeHidden=false;
   const refreshLocal=()=>{ const now=allDrafts(), same=now.length===cont.filter(x=>!x.gone).length&&now.every((x,i)=>{ const c=cont.filter(y=>!y.gone)[i]; return c&&c.key===x.key&&c.d.at===x.d.at; });
     if(!same){ cont=now; paintCont(); } queueWaiting(); };
-  addEventListener('pageshow',e=>{ if(e.persisted) refreshLocal(); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') homeHidden=true; else if(homeHidden){ homeHidden=false; refreshLocal(); } });
+  /* 2.26.0 Today stays fresh: back in Studio after a while (another app, the phone asleep, Back from a tool), Home's Calendar row / Today
+     and the Plan tab on screen fetch again (at most once a minute); pieces only change if their content changed (swapIn / lastSig), so nothing flickers */
+  let freshAt=Date.now();
+  const refreshPlan=()=>{ if(Date.now()-freshAt<60000||navigator.onLine===false) return; freshAt=Date.now();
+    try{ if(curView()==='home'&&typeof calHome==='function') calHome(); else if(PLAN_VIEWS.includes(curView())) planShow(curView()); }catch(_){} };
+  addEventListener('pageshow',e=>{ if(e.persisted){ refreshLocal(); refreshPlan(); } });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') homeHidden=true; else if(homeHidden){ homeHidden=false; refreshLocal(); refreshPlan(); } });
   /* Save pictures of every unfinished story (1.23.0): the same hidden-frame renderer as Saved (assets/render.js), opened with
      ?draft=<id>&render=1, so each picture is the one Save would make. Drafts stay in Continue editing. Create drafts too (1.37.0):
      Create has its own render=1 mode with the same Studio.renderer hook. Afterwards (1.32.0) the Saved! dialog offers to remove the stories

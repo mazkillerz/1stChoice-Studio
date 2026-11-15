@@ -1630,16 +1630,11 @@ body.sheet-open .remind-bar{bottom:auto;top:calc(var(--top-h,0px) + var(--safe-t
 .pv-track{flex:1;min-height:0}
 .plan-shell .pv-pane{max-width:none;margin:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
   padding:0 max(var(--gutter-r),calc((100% - 1080px)/2)) calc(var(--bar-h) + var(--safe-b) + 40px) max(var(--gutter),calc((100% - 1080px)/2))}
-.plan-shell .pv-pane .cal-head .sp-title.sr-only + *{margin-inline-start:auto}
 body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
 @media (min-width:821px){ .plan-shell .pv-pane{padding-bottom:40px} .pv-head{padding-inline-start:max(12px,var(--safe-l))} }
 @media (prefers-reduced-motion: reduce){ .st-tab,.st-l{transition:none} }
 .plan-shell .cal-top{margin-inline:0;padding:6px 0;border-bottom:0}
 .plan-shell .kp-shbar{gap:var(--sp-2)}
-/* shell: a module's own Back and page title give way to the tab bar (the modules also skip them when ctx.shell is set) */
-.plan-shell .pv-pane .cal-head .sp-back,.plan-shell .pv-pane .id-head .sp-back{display:none}
-.plan-shell .pv-pane .cal-head .sp-title,.plan-shell .pv-pane .id-head .sp-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.plan-shell .pv-pane .cal-head,.plan-shell .pv-pane .id-head{justify-content:flex-end}
 
 /* ===== 2.21.0 home2: "New Home" (preview flag home2, off by default). Every visual rule below is under :root[data-home2]; index.html sets the attribute before first paint.
    Top to bottom: slim header + one muted greeting line, search, Today (the hero card: Calendar | Ideas | Goals), a compact tools list. ===== */
