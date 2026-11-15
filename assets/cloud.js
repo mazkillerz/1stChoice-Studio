@@ -118,12 +118,19 @@ async function setDesignCollections(brand,designId,names){
 /* a table or column the migration has not created yet (Postgres 42P01 / 42703, PostgREST PGRST204 / PGRST205): older data keeps working */
 function missing(e){ return !!e&&(['42P01','42703','PGRST204','PGRST205'].includes(e.code)||/could not find|does not exist|schema cache/i.test(String(e.message||''))); }
 const DESIGN_COLS='id,tool,name,kind,thumb_path,updated_at,used_at,created_at';
+/* 2.16.0: the visible words of a design (tool text fields, text layers, Create text nodes, Video texts), stored as recipe.words so Saved
+   search can find them without loading every recipe. Plain text, whitespace collapsed, at most 400 characters. */
+function recipeWords(r){ const out=new Set(); const skip={photoPaths:1,imgs:1,media:1,docSite:1};
+  const walk=(n,d)=>{ if(!n||typeof n!=='object'||d>14) return; if(Array.isArray(n)){ n.forEach(x=>walk(x,d+1)); return; } if(n.on===false) return;
+    for(const k in n){ const v=n[k]; if(skip[k]) continue; if((k==='text'||k==='value')&&typeof v==='string'){ const t=v.replace(/\s+/g,' ').trim(); if(t) out.add(t); } else walk(v,d+1); } };
+  walk(r,0); return [...out].join(' ').slice(0,400).trim(); }
 async function designs(brand){
   const c=await client();
-  let r=await c.from('designs').select(DESIGN_COLS+',author,review,review_by,review_at,caption,hashtags,campaign_id,format,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
+  let r=await c.from('designs').select(DESIGN_COLS+',words:recipe->>words,author,review,review_by,review_at,caption,hashtags,campaign_id,format,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
+  if(r.error) r=await c.from('designs').select(DESIGN_COLS+',author,review,review_by,review_at,caption,hashtags,campaign_id,format,design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
   if(r.error&&missing(r.error)) r=await c.from('designs').select(DESIGN_COLS+',design_collections(collection_id)').eq('brand',brand).order('updated_at',{ascending:false});
   fail(r.error,'Saved designs');
-  return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,format:null,...d,collections:(d.design_collections||[]).map(x=>x.collection_id)}));
+  return r.data.map(d=>({review:null,caption:null,hashtags:null,author:null,campaign_id:null,format:null,...d,words:typeof d.words==='string'?d.words:'',collections:(d.design_collections||[]).map(x=>x.collection_id)}));
 }
 async function getDesign(id){ const c=await client(); const {data,error}=await c.from('designs').select('*,design_collections(collection_id,collections(name))').eq('id',id).single(); fail(error,'Open design'); await siteDoc(data.recipe); data.collectionNames=(data.design_collections||[]).map(x=>x.collections&&x.collections.name).filter(Boolean); return data; }
 async function upload(path,blob){ const c=await client(); const {error}=await c.storage.from(CFG.bucket).upload(path,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'}); fail(error,'Upload'); return path; }
@@ -186,7 +193,7 @@ async function saveDesign(o){
       }
     }
     const thumb=await upload(base+'thumb-'+uid().slice(0,8)+'.jpg',o.thumb); fresh.push(thumb);
-    const row={id,brand:o.brand,tool:o.tool,name:o.name.trim(),kind:o.kind||'design',schema_version:o.recipe.v||1,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,photo_paths:paths.filter(Boolean)};
+    const row={id,brand:o.brand,tool:o.tool,name:o.name.trim(),kind:o.kind||'design',schema_version:o.recipe.v||1,recipe:{...o.recipe,photoPaths:paths,words:recipeWords(o.recipe)},thumb_path:thumb,photo_paths:paths.filter(Boolean)};
     if(o.id){ const {data:prev}=await c.from('designs').select('id,name,recipe,thumb_path,photo_paths,author').eq('id',id).maybeSingle();
       if(prev) verId=await keepAsVersion(prev,o.author); }
     const extra={}; if(o.author) extra.author=o.author; if(o.format) extra.format=o.format;   // format: a design's shape (2.4.0)
