@@ -109,7 +109,7 @@ await phone(false); await phone(true);
 /* missing tables */
 { const {ctx,pg}=await mkp(PH,true,"localStorage.setItem('fakecloud-noplan','1');"); await pg.goto(BASE+'index.html#goals'); await pg.waitForSelector('.kp-card',{timeout:10000});
   ok('tables missing: empty-state note shown',/Set this month/.test(await txt(pg,'.kp-empty')));
-  await pg.tap('.kp-editbtn'); await pg.waitForSelector('#kpSave'); await pg.tap('#kpSave'); await pg.waitForTimeout(400);
+  await pg.tap('.kp-empty [data-kp-edit]');   /* 2.30.0: with no goals, Set goals is the one way in */ await pg.waitForSelector('#kpSave'); await pg.tap('#kpSave'); await pg.waitForTimeout(400);
   ok('tables missing: save says the owner switches goals on',/switched on by the owner/.test(await txt(pg,'#kpSt')),await txt(pg,'#kpSt')); await ctx.close(); }
 ok('no page errors',errs.length===0,errs.slice(0,3)); await b.close();
 console.log(res.join('\n')); const f=res.filter(x=>x.startsWith('FAIL')).length; console.log(`\n${res.length-f} passed, ${f} failed`); process.exit(f?1:0);

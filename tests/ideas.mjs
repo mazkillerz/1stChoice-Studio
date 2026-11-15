@@ -54,7 +54,7 @@ async function flow(dark){
   await open(pg);
   ok(T+'#ideas opens; empty: lands on the Board with a friendly empty state',/Your board is empty/.test(await txt(pg,'.id-content'))&&await pg.evaluate(()=>!document.getElementById('ideasView').hidden),await txt(pg,'.id-content'));
   ok(T+'no Inbox tab and no "sort later" step anywhere',!(await pg.$('#ideasView [data-tab]'))&&!/Inbox/.test(await txt(pg,'#ideasView')));
-  ok(T+'empty board has a New idea button',/New idea/.test(await txt(pg,'.id-content')));
+  ok(T+'empty board: one New button (the toolbar\'s), the note points to it',/Tap New/.test(await txt(pg,'.id-content'))&&!(await pg.$('.id-content [data-idea-new]'))&&await pg.$$eval('#ideasView [data-idea-new]',l=>l.length===1));
   /* capture by typing + link + type, Ctrl+Enter */
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg textarea');
   ok(T+'New opens a sheet with the idea box focused',await pg.waitForFunction(()=>document.activeElement&&document.activeElement.id==='idCT',null,{timeout:3000}).then(()=>true).catch(()=>false));

@@ -13,6 +13,21 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.30.0 · 15 Nov 2026
+Simplify: one button for one job, and every screen checked again.
+
+### One button for one job
+type: improve
+Two screens showed the same action twice. Goals with no goals yet showed both **Edit** at the top and **Set goals** in the page: now only Set goals shows until there are goals, then Edit takes over. An empty Ideas board showed **New** at the top and **New idea** in the middle: now the note simply points to New. Every screen of this round was checked again in light and dark, on a small phone and a computer, with Arabic text.
+
+## 2.29.0 · 15 Nov 2026
+Polish: the new Home's Today shows what's coming up.
+
+### Coming up, when today is free
+type: improve
+In the new Home preview, a day with nothing planned no longer shows a big empty Today card: it says "Nothing planned for today. Coming up:" and lists the next two posts with their day, time and kind; tap one to open the calendar. A time under an Arabic title now reads correctly ("6 pm", not "pm 6").
+![after](assets/whatsnew/2.29.0-comingup-after.jpg)
+
 ## 2.28.0 · 15 Nov 2026
 Listen to voice notes your way.
 

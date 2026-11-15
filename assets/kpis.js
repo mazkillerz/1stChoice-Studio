@@ -116,7 +116,8 @@ function init(o){
         <div class="kp-chartbox">${chartSvg()}</div></section>`;
   }
   function draw(){
-    const keepY=o.shell?root.scrollTop:window.scrollY, ok=state==='ok', here=month===nowKey();   /* 2.18.0 shell: the pane scrolls, not the window */
+    const keepY=o.shell?root.scrollTop:window.scrollY, ok=state==='ok', here=month===nowKey();
+    const hasG=!ok||(!!rows[month]&&KINDS.some(([k])=>target(month,k)));   /* 2.30.0: with no goals yet, "Set goals" in the page is the one way in (no second Edit) */   /* 2.18.0 shell: the pane scrolls, not the window */
     const msg=state==='loading'?'<div class="cal-skel" aria-hidden="true"><span></span><span></span><span></span></div>'
       :state==='offline'?noteBox(ic('clock'),'You’re offline','Your goals come back when you’re online.',againBtn)
       :state==='slow'?noteBox(ic('clock'),'Still loading…','The connection is slow. Your goals show as soon as they arrive.',againBtn)
@@ -128,7 +129,7 @@ function init(o){
       editH=`<button type="button" class="mini kp-editbtn" data-kp-edit aria-label="Edit goals"${ok?'':' disabled'}>${ic('pencil')}<span>Edit</span></button>`,
       todayH=here?'':'<button type="button" class="cal-today" data-kp-nav="0">This month</button>';
     if(o.shell) root.innerHTML=`<div class="cal-top kp-top"><h1 id="kpH" class="sr-only" tabindex="-1">Goals</h1>
-      <div class="cal-bar kp-shbar">${navH}${todayH}${editH}</div>${stale&&ok&&dataAt>0?`<p class="cal-stale" role="status">Updated <bdi>${ago(dataAt)}</bdi></p>`:''}</div>
+      <div class="cal-bar kp-shbar">${navH}${todayH}${hasG?editH:''}</div>${stale&&ok&&dataAt>0?`<p class="cal-stale" role="status">Updated <bdi>${ago(dataAt)}</bdi></p>`:''}</div>
       <div class="kp-body">${ok?body():msg}</div>`;   /* 2.18.0 shell: one slim row (the tab says "Goals") */
     else root.innerHTML=`<div class="cal-top"><div class="cal-head">${o.shell?'':`<button type="button" class="sp-back" data-kp-back aria-label="Back to home">${ic('back')}</button>`}
         <div class="sp-title${o.shell?' sr-only':''}"><h1 id="kpH" tabindex="-1">Goals</h1></div>

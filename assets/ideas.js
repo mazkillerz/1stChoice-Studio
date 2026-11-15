@@ -231,7 +231,7 @@ function make(o){
   function boardHtml(){
     const all=boardItems().filter(matches), by=k=>all.filter(x=>x.stage===k);
     const filt=`<div class="chips id-types" role="group" aria-label="Filter by type"><button type="button" class="chip" data-type="" aria-pressed="${!typeF}">All</button>${TYPES.map(([k,l])=>`<button type="button" class="chip" data-type="${k}" aria-pressed="${typeF===k}">${l}</button>`).join('')}</div>`;
-    if(!items.length) return filt+`<div class="id-empty"><span class="id-bulb" aria-hidden="true">${IC.bulb}</span><b>Your board is empty</b><p>Capture an idea in a few seconds. It lands here, ready to plan.</p>${newBtn}</div>`+endLink;
+    if(!items.length) return filt+`<div class="id-empty"><span class="id-bulb" aria-hidden="true">${IC.bulb}</span><b>Your board is empty</b><p>${o.shell?'Tap <b>New</b> to capture one in a few seconds. It lands here, ready to plan.':'Capture an idea in a few seconds. It lands here, ready to plan.'}</p>${o.shell?'':newBtn}</div>`+endLink;
     if(wide()) return filt+`<div class="id-cols">${STAGES.map(([k,l])=>`<section class="id-col" data-stage="${k}" aria-label="${l}"><header><b>${l}</b><em><bdi>${by(k).length}</bdi></em></header><div class="id-list">${by(k).map(x=>card(x)).join('')||'<p class="id-none">Nothing here</p>'}</div></section>`).join('')}</div>`+endLink;
     const stagesRow=`<div class="id-stages" role="group" aria-label="Stage">${STAGES.map(([k,l])=>`<button type="button" class="chip" data-stage-tab="${k}" aria-pressed="${stage===k}">${l}<i><bdi>${by(k).length}</bdi></i></button>`).join('')}</div>`;
     const list=by(stage);
