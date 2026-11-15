@@ -16,7 +16,7 @@ async function mkp(opts){
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message)); return {ctx,pg};
 }
 const state=pg=>pg.evaluate(()=>{ const tr=document.querySelector('#planView .pv-track'), w=tr.clientWidth, sel=[...document.querySelectorAll('.pv-tab')].findIndex(t=>t.getAttribute('aria-selected')==='true');
-  const ind=document.querySelector('.st-ind').getBoundingClientRect(), lab=document.querySelectorAll('.pv-tab .st-l')[sel].getBoundingClientRect();
+  const ind=document.querySelector('#planView .st-ind').getBoundingClientRect(), lab=document.querySelectorAll('.pv-tab .st-l')[sel].getBoundingClientRect();
   const vis=['calendarView','ideasView','goalsView'].filter(id=>{ const r=document.getElementById(id).getBoundingClientRect(); return r.right>1&&r.left<innerWidth-1; });
   return {hash:location.hash,sel,pane:Math.round(tr.scrollLeft/w),indOk:Math.abs(ind.left-lab.left)<=2&&Math.abs(ind.width-lab.width)<=2,vis}; });
 const settle=pg=>pg.waitForFunction(()=>{ const tr=document.querySelector('#planView .pv-track'); return tr&&Math.abs(tr.scrollLeft/tr.clientWidth-Math.round(tr.scrollLeft/tr.clientWidth))<0.01&&!document.getAnimations().some(a=>a.playState==='running'); },null,{timeout:4000,polling:50}).catch(()=>{});
