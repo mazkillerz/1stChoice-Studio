@@ -74,3 +74,8 @@ async function shareIn(req){
   const ok=files.length?await idbPut('studio:shared',{files,at:Date.now()}):false;
   return Response.redirect(new URL('index.html?shared='+(ok?files.length:0),self.registration.scope).href,303);
 }
+
+/* 2.11.0 reminders: tapping a reminder notification focuses Studio (or opens it) on Home. Added by the reminders builder; nothing else here changed. */
+self.addEventListener('notificationclick',e=>{ e.notification.close(); const url=(e.notification.data&&e.notification.data.url)||self.registration.scope;
+  e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{ const c=cs.find(x=>x.url.indexOf(self.registration.scope)===0); if(c&&c.focus){ if(c.navigate) c.navigate(url).catch(()=>{}); return c.focus(); } return self.clients.openWindow(url); })); });
+/* end reminders */

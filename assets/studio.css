@@ -1642,3 +1642,9 @@ body.hub:not(.hub-first) #homeView :is(.tool-item,.sv-card,.tool-row){animation:
 .cal-home-post svg{width:18px;height:18px;flex:none}
 .cal-home-post:active{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
 .cal-home-post:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* 2.11.0 reminders: the slim note while Studio is open */
+.remind-bar{position:fixed;inset-inline:12px;bottom:calc(var(--bar-h,0px) + var(--safe-b) + 16px);z-index:61;width:auto;max-width:460px;margin-inline:auto;flex-wrap:nowrap;gap:var(--sp-2);padding:4px 4px 4px 14px;border-radius:var(--r-pill);box-shadow:var(--shadow)}
+.remind-bar .slim-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.remind-bar .mini,.remind-bar .icon-btn{min-height:44px;min-width:44px}
+body.sheet-open .remind-bar{bottom:auto;top:calc(var(--top-h,0px) + var(--safe-t) + 8px)}
