@@ -65,7 +65,7 @@ async function phone(dark){
     ok(T+'card updates to "12 of 17"',/12 of 17/.test(await txt(pg,'.kp-card[data-kp-card="post"]')));
     /* numbers */
     ok(T+'no numbers yet: Add numbers link',/Add numbers/.test(await txt(pg,'.kp-sh')));
-    await pg.tap('[data-kp-nums]'); await pg.waitForSelector('#kpN-reach');
+    await pg.tap('[data-kp-nums]'); await pg.waitForSelector('#kpN-reach'); await pg.waitForTimeout(150);   /* the sheet focuses Reach after 60 ms: let it settle before filling */
     await pg.fill('#kpN-reach','12,300'); await pg.fill('#kpN-followers','2,100'); await pg.fill('#kpN-likes','abc');
     await pg.tap('#kpSave'); await pg.waitForTimeout(200);
     ok(T+'bad digits are refused with a message',/digits only/.test(await txt(pg,'#kpSt')));

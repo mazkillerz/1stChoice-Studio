@@ -22,6 +22,15 @@ function init(o){
   let lastSig='', boots=0, C=null, state='loading', note='', run=0, slowT=0, built=false;
   let month=nowKey(), chartKey='post';
   let cal=[], ideas=[], rows={};   // rows by month key
+  /* instant plan (Session 7): the last good numbers live on this device and paint at once; fresh ones replace them only when they differ */
+  const CKEY='studio:plan:kpi:'+o.brand; let stale=false, dataAt=0;
+  const slimCal=list=>(list||[]).map(x=>({id:x.id,day:x.day,status:x.status,format:x.format||null}));
+  const slimIdeas=list=>(Array.isArray(list)?list:[]).filter(i=>i.type==='giveaway'&&i.stage==='posted').map(i=>({type:i.type,stage:i.stage,calendar_id:i.calendar_id||null,updated_at:i.updated_at||null}));
+  const rd=k=>{ try{ return o.store(k); }catch(_){ return null; } };
+  const sigOf=()=>JSON.stringify([month,slimCal(cal),slimIdeas(ideas),rows]);
+  { const c=rd(CKEY); if(c&&c.v===1&&c.rows&&typeof c.rows==='object'&&c.month===month){ rows=c.rows; cal=Array.isArray(c.cal)?c.cal:[]; ideas=Array.isArray(c.ideas)?c.ideas:[]; dataAt=+c.at||0; state='ok'; lastSig=sigOf(); } }
+  const ago=t=>{ const m=Math.max(0,Math.round((Date.now()-t)/60000)); return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+(m<2880?' day ago':' days ago'); };
+  window.addEventListener('online',()=>{ if(built&&stale) load(); });
   const Lm=(k,opt)=>mdate(k).toLocaleDateString('en',opt);
   const shortM=k=>Lm(k,{month:'short'});
   const againBtn='<button type="button" class="btn slim" data-kp-reload>Try again</button>';
@@ -37,7 +46,7 @@ function init(o){
     try{
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
       C=await o.cloud(); if(my!==run) return;
-      if(!(await o.member())){ state='out'; draw(); return; }
+      if(!(await o.member())){ wr(CKEY,null); cal=[]; ideas=[]; rows={}; stale=false; state='out'; draw(); return; }
       const from=shift(month,-5);
       const [list,km,idl]=await Promise.all([
         C.calendar(o.brand,{from:from+'-01',to:month+'-'+pad(lastDay(month))}),
@@ -45,11 +54,12 @@ function init(o){
         (C.ideas?Promise.resolve().then(()=>C.ideas(o.brand)).catch(()=>[]):Promise.resolve([]))]);
       if(my!==run) return;
       cal=list||[]; ideas=idl||[]; rows={}; (km||[]).forEach(r=>{ rows[r.month]=r; });
-      const sig=JSON.stringify([month,cal,ideas.length,rows]), same=state==='ok'&&sig===lastSig; lastSig=sig;   /* 2.5.0: no redraw when nothing changed (no flicker) */
-      state='ok'; if(!same) draw();
+      const sig=sigOf(), same=state==='ok'&&sig===lastSig; lastSig=sig; stale=false; dataAt=Date.now(); if(month===nowKey()) wr(CKEY,{v:1,at:dataAt,month,rows,cal:slimCal(cal),ideas:slimIdeas(ideas)});   /* 2.5.0: no redraw when nothing changed (no flicker) */
+      state='ok'; if(!same||root.querySelector('.cal-stale')) draw();
     }catch(err){ if(my!==run) return;
       if(err&&err.name==='ReferenceError'&&boots++<5){ setTimeout(()=>{ if(my===run) load(); },400); return; }   /* opened by #goals before studio.js finished starting */
       const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
+      if(state==='ok'&&net&&dataAt>0){ stale=true; draw(); return; }
       if(state==='ok'){ o.toast(net?'You’re offline. These are your goals from before.':'Could not refresh goals: '+(err.message||err)); return; }
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); draw(); }
     finally{ if(my===run) clearTimeout(slowT); }
@@ -118,7 +128,7 @@ function init(o){
       editH=`<button type="button" class="mini kp-editbtn" data-kp-edit aria-label="Edit goals"${ok?'':' disabled'}>${ic('pencil')}<span>Edit</span></button>`,
       todayH=here?'':'<button type="button" class="cal-today" data-kp-nav="0">This month</button>';
     if(o.shell) root.innerHTML=`<div class="cal-top kp-top"><h1 id="kpH" class="sr-only" tabindex="-1">Goals</h1>
-      <div class="cal-bar kp-shbar">${navH}${todayH}${editH}</div></div>
+      <div class="cal-bar kp-shbar">${navH}${todayH}${editH}</div>${stale&&ok&&dataAt>0?`<p class="cal-stale" role="status">Updated <bdi>${ago(dataAt)}</bdi></p>`:''}</div>
       <div class="kp-body">${ok?body():msg}</div>`;   /* 2.18.0 shell: one slim row (the tab says "Goals") */
     else root.innerHTML=`<div class="cal-top"><div class="cal-head">${o.shell?'':`<button type="button" class="sp-back" data-kp-back aria-label="Back to home">${ic('back')}</button>`}
         <div class="sp-title${o.shell?' sr-only':''}"><h1 id="kpH" tabindex="-1">Goals</h1></div>
