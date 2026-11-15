@@ -24,8 +24,8 @@ ok('All tools: every tool is listed',order.length===11&&['create','video','new-p
 const groups=await pg.$$eval('.lib .tgroup',h=>h.map(x=>x.textContent));
 ok('All tools: tools are grouped',groups.filter(g=>g!=='On your home').length===3,groups.join(' / '));   // 1.5.0 added the On your home heading above the groups
 await pg.click('#libDone'); await pg.waitForTimeout(300);
-ok('hub: two view choices',await pg.$$eval('[data-view="tools"] button',bs=>bs.length)===2);
-ok('hub: an old "compact" choice shows as grid',await pg.$eval('#toolGrid',g=>g.classList.contains('view-grid')));
+ok('hub: no list/grid switch any more (2.21.0)',await pg.$$eval('[data-view="tools"] button',bs=>bs.length)===0);
+ok('hub: an old stored "compact" choice is ignored and forgotten, the tools are a list',await pg.evaluate(()=>!document.getElementById('toolGrid').className.includes('view-')&&localStorage.getItem('studio:toolsView')===null));
 /* one-tap save */
 await pg.goto(BASE+'tools/restock.html'); await pg.waitForTimeout(900);
 await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(1200);

@@ -29,12 +29,10 @@ for(const [w,h] of [[390,844],[360,740]]){ const N=w+': ';
     const m3=await pg.evaluate(()=>{ const v=e=>{ const el=document.getElementById(e); return !el.hidden&&el.getClientRects().length>0; }; const bs=[...document.querySelectorAll('#inspStyleRow .mini')].filter(x=>!x.hidden); return {paste:v('inspPasteStyle'), save:v('inspSaveStyle'), clipped:bs.filter(x=>x.scrollWidth>x.clientWidth+1).map(x=>x.id), sw:document.documentElement.scrollWidth<=innerWidth+1}; });
     ok(N+'after Copy style: Paste and Save this style both show, no label cut, no sideways scroll',m3.paste&&m3.save&&!m3.clipped.length&&m3.sw,m3);
     await ctx.close(); }
-  /* Home switch */
-  for(const [pins,want] of [[['restock'],false],[['restock','photo-story'],true]]){ const {ctx,pg}=await mk(w,h,pins); await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1800);
-    const vis=await pg.evaluate(()=>{ const s=document.querySelector('.vswitch[data-view="tools"]'); return !!s&&!s.hidden&&s.getClientRects().length>0; });
-    ok(N+pins.length+' pinned: list/grid switch '+(want?'shows':'is hidden'),vis===want);
-    if(!want){ await pg.tap('#setBtn'); await pg.waitForTimeout(600); const row=pg.locator('[data-set="view"]').first(); const has=await row.count();
-      ok(N+'Settings still has Your tools (list/grid)',has>0); if(has){ await row.tap(); await pg.waitForTimeout(300); ok(N+'Settings switches it to grid',(await pg.evaluate(()=>document.getElementById('toolGrid').className)).includes('view-grid')); } }
+  /* 2.21.0: the list/grid switch is gone from Home and Settings */
+  for(const pins of [['restock'],['restock','photo-story']]){ const {ctx,pg}=await mk(w,h,pins); await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1800);
+    ok(N+pins.length+' pinned: no list/grid switch on Home',await pg.evaluate(()=>!document.querySelector('.vswitch,[data-view="tools"]')));
+    await pg.tap('#setBtn'); await pg.waitForTimeout(600); ok(N+pins.length+' pinned: Settings has no Your tools (list/grid) row',(await pg.locator('[data-set="view"]').count())===0);
     await ctx.close(); } }
 ok('no page errors',!errs.length,errs.slice(0,3));
 await b.close(); console.log(res.join('\n')); const f=res.filter(r=>r.startsWith('FAIL')).length; console.log(`simplify35: ${res.length-f} pass, ${f} fail, ${Math.round((Date.now()-T0)/1000)} s`); process.exit(f?1:0);
