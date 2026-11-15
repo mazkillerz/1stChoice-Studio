@@ -51,7 +51,7 @@ const MAP=[
   [/changelog\.md|whatsnew/,['whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag','simplify45','toolfix43']],[/\.css$/,['simplify45']],
-  [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers','board-touch']],
+  [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers','board-touch','board-assets']],
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav','reels-hub','feedlayouts']],
   [/tools\/create-templates|assets\/search\./,['postpresets','feedlayouts','create-fit']],
   [/assets\/welcome\./,['welcome']],

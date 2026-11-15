@@ -365,7 +365,7 @@ const pv=(w,h,m)=>{ m=m||18; const k=m/Math.max(w,h); return `width:${Math.max(4
 UI.pv=pv;
 function catBody(id,q){ const m=s=>!q||String(s).toLowerCase().includes(q); const B=BD.B||{}, ph=B.phrases||{};
   if(id==='brand'){ const as=L.listedAssets().filter(a=>m(a.label)||m(a.group||'')||m('brand')); const words=[...(ph.headlines||[]),...(ph.small||[]),...(ph.buttons||[])].filter((v,i,a)=>a.indexOf(v)===i&&m(v));
-    return (as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
+    return (m('team')||m('logo')||!q?`<button type="button" class="mini wide" data-act2="teamAssets">${IC.image} Team assets</button><p class="hint">Logos and cut-outs the team shares.</p>`:'')+(as.length?`<div class="agrid">${as.map(a=>`<button type="button" class="ag" data-asset="${a.id}" draggable="true" title="${esc(a.label)}" aria-label="${esc(a.label)}"><img src="${L.assetUrl(a)}" alt="" loading="lazy"></button>`).join('')}</div>`:'')+
       (words.length?`<span class="lbl sub">Approved wording</span><div class="phr" dir="auto">${words.map(p=>`<button type="button" class="chip sm" data-phrase="${esc(p)}" draggable="true" dir="auto">${esc(p)}</button>`).join('')}</div>`:''); }
   if(id==='text'){ const st=(S.styles.text||[]).filter(t=>m(t.name)), sh=BD.tools.tStyles().filter(t=>m(t.name)||m('style')); const base=[['Heading','h1'],['Subheading','h2'],['Body text','body']].filter(([l])=>m(l)||m('text'));
     return `<div class="tadd">${base.map(([l,t])=>`<button type="button" class="ta ta-${t}" data-addtext="${t}" draggable="true">${l}</button>`).join('')}${m('curved')||m('text')?`<button type="button" class="ta ta-arc" data-arc="1">${IC.arc} Curved text</button>`:''}</div>`+
@@ -414,6 +414,8 @@ function addItem(el,at){ const d=el.dataset, c=BD.brandColors();
   if(d.code==='barcode'){ UI.barcodeDialog(); return; } if(d.code==='qr'){ UI.qrDialog(); return; }
 }
 UI.addItem=addItem;
+/* Team assets (the shared logos and cut-outs): the same picker as the tool pages; a pick lands as one image layer */
+UI.teamAssets=async function(){ try{ const T=await Studio.lazy('teamassets',{css:1,global:'StudioTeamAssets'}); if(innerWidth<900) panel('L',false); T.open({brand:(BD.B&&BD.B.id)||undefined,mode:'pick',onPick:r=>BD.addTeamAsset(r)}); }catch(_){ BD.toast&&BD.toast('Team assets did not open. Check your connection.'); } };
 /* every text in the frame you're on that a style can go on (not locked, not hidden) */
 function frameTexts(){ const f=BD.targetFrame(); if(!f) return []; return [...f.find(n=>(kind(n)==='text'||kind(n)==='arc')&&!isLocked(n)&&n.isVisible())]; }
 UI.frameTexts=frameTexts;
@@ -432,7 +434,7 @@ function tsMenu(id){ const T=BD.tools, t=T.tStyles().find(x=>x.id===id); if(!t) 
 UI.tsMenu=tsMenu;
 addList.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]'); if(cat){ addCat=cat.dataset.cat; paintAdd(); $('addPane').scrollTop=0; return; }
-  const a2=e.target.closest('[data-act2]'); if(a2){ if(a2.dataset.act2==='upload') $('pickImg').click(); if(a2.dataset.act2==='printDialog') UI.printFrameDialog(); return; }
+  const a2=e.target.closest('[data-act2]'); if(a2){ if(a2.dataset.act2==='upload') $('pickImg').click(); if(a2.dataset.act2==='printDialog') UI.printFrameDialog(); if(a2.dataset.act2==='teamAssets') UI.teamAssets(); return; }
   const fr=e.target.closest('[data-addframe]'); if(fr){ UI.addFrame(BD.PRESETS.find(p=>p.id===fr.dataset.addframe)); return; }
   const pr=e.target.closest('[data-addprint]'); if(pr){ const p=BD.PRINT.find(x=>x.id===pr.dataset.addprint); UI.addPrintFrame(p.w,p.h,p.label); return; }
   const tp=e.target.closest('[data-tpl]'); if(tp){ await BD.buildTemplate(tp.dataset.tpl,true); return; }
