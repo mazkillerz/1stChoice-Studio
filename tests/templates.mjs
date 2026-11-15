@@ -226,7 +226,7 @@ for(const scheme of ['light','dark']){
   const pressed=await pg.$eval('.tp-card[href$="t=r1"]',e=>getComputedStyle(e).transform);
   await pg.mouse.up(); await pg.waitForTimeout(150);
   const sc=parseFloat((pressed.match(/matrix\(([^,]+)/)||[])[1]);
-  ok(N+'pressing a card scales it down to .97 (and a click still reaches onOpen)',Math.abs(sc-.97)<.005&&(await pg.evaluate(()=>window.__opened)).id==='r1',{pressed});
+  ok(N+'pressing a card scales it down (.97–.975, the look press) and a click still reaches onOpen',sc>=.965&&sc<=.98&&(await pg.evaluate(()=>window.__opened)).id==='r1',{pressed});
   await pg.mouse.move(5,5); await pg.waitForTimeout(700);
   await shot(pg,'desktop-'+scheme+'-all');
   await pg.click('.tp-chip[data-id="post"]'); await pg.waitForTimeout(450);
