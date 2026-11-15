@@ -1560,19 +1560,6 @@ body.hub.on-calendar{background:var(--bg)}
 @keyframes hs-in{from{opacity:0}}
 @media (prefers-reduced-motion: reduce){.hs-skel i,.tool-skel i{animation:none}.hs-in{animation:none}}
 
-/* ===== 2.5.0: Calendar ↔ Ideas ↔ Goals glide. The tab strip stays, its pill slides, the page slides in from its side. ===== */
-body.on-plan .plan-tabs{view-transition-name:plan-tabs}
-body.on-plan .plan-tab[aria-current="page"]{view-transition-name:plan-pill}
-body.on-plan .hubbar{view-transition-name:hubbar}
-body.on-plan .fab{view-transition-name:hubfab}
-.plan-tab{transition:color .2s var(--ease),transform .15s var(--ease)}
-.plan-tab:active{transform:scale(.96)}
-::view-transition-group(plan-pill){animation-duration:.34s;animation-timing-function:cubic-bezier(.3,1.25,.5,1)}
-::view-transition-old(plan-pill),::view-transition-new(plan-pill){animation:none;mix-blend-mode:normal;height:100%}
-::view-transition-old(plan-tabs),::view-transition-new(plan-tabs),::view-transition-old(hubbar),::view-transition-new(hubbar),::view-transition-old(hubfab),::view-transition-new(hubfab){animation:none}
-/* 2.5.2 (owner): the page itself does not animate at all between the three tabs (a whole-page fade read as a flicker); only the pill slides */
-:root[data-plan-dir]::view-transition-old(root),:root[data-plan-dir]::view-transition-new(root){animation:none}
-/* (owner, 2.5.0: the bar and the page stay where they are; only the pill slides and the content softly changes) */
 
 /* ===== The look (2.5.0 preview, the default since 2.5.2 on the owner's word) =====
    A softly drifting light behind the hub and What's New, sections that rise in on open, springy press feedback, a warmer Home header.
@@ -1628,13 +1615,6 @@ body.hub:not(.hub-first) #homeView :is(.tool-item,.sv-card,.tool-row){animation:
   body.us-open .hubbar{padding-inline-end:6px}
 }
 
-/* ===== 2.5.2 (owner): Calendar · Ideas · Goals sit at the bottom, right above the bar, where the thumb is ===== */
-@media (max-width:820px){
-  body.on-plan .plan-tabs{position:fixed;z-index:39;left:max(12px,var(--safe-l));right:max(12px,var(--safe-r));bottom:calc(10px + var(--safe-b) + 64px + 10px);margin:0;
-    background:color-mix(in srgb,var(--raised) 86%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);box-shadow:var(--shadow-2)}
-  body.on-plan .cal-view{padding-bottom:calc(var(--bar-h) + 140px + var(--safe-b))}
-}
-@media (max-width:820px){ body.on-plan .plan-tab[aria-current="page"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:none} }
 
 /* 2.8.0 Post now: Home's quiet "Post" pill at the end of the calendar row (outlined, never a second blue button) */
 .cal-home-line{position:relative}
@@ -1649,3 +1629,33 @@ body.hub:not(.hub-first) #homeView :is(.tool-item,.sv-card,.tool-row){animation:
 .remind-bar .slim-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .remind-bar .mini,.remind-bar .icon-btn{min-height:44px;min-width:44px}
 body.sheet-open .remind-bar{bottom:auto;top:calc(var(--top-h,0px) + var(--safe-t) + 8px)}
+
+/* ===== 2.18.0 (owner): Calendar · Ideas · Goals as swipeable tabs at the top of one page (like a profile's tabs).
+   .st-* = the swipe-tab pieces (also Home's Today); .pv-* = the Plan page. The panes sit side by side in a scroll-snap track,
+   each pane scrolls on its own, and the underline is moved by swipeTabs() from the track's scroll position. ===== */
+.st-bar{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
+.st-tab{position:relative;min-height:var(--tap);border:0;background:none;padding:0 var(--sp-2);color:var(--muted);font:600 var(--fs-m) var(--sans);cursor:pointer;transition:color .18s var(--ease);-webkit-tap-highlight-color:transparent}
+.st-tab[aria-selected="true"]{color:var(--fg)}
+.st-tab:focus:not(:focus-visible){outline:none}
+.st-tab:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:var(--r-m,12px)}
+.st-tab:active .st-l{opacity:.6}
+.st-l{display:inline-block;white-space:nowrap;transition:opacity .12s var(--ease)}
+.st-ind{position:absolute;left:0;bottom:0;height:3px;width:0;border-radius:3px 3px 0 0;background:var(--accent);pointer-events:none;will-change:transform,width}
+.st-track{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.st-track::-webkit-scrollbar{display:none}
+.st-pane{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+.plan-shell{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;background:var(--bg)}
+.plan-shell[hidden]{display:none}
+.pv-head{flex:none;display:flex;align-items:center;gap:var(--sp-1,4px);padding:var(--safe-t) var(--gutter-r) 0 max(4px,var(--safe-l));background:var(--bg);border-bottom:1px solid var(--line)}
+.pv-head .pv-back{flex:none}
+.pv-tabs{flex:1;min-width:0;max-width:520px;margin-inline:auto;height:52px}
+.pv-tab{min-height:52px;font-size:var(--fs-l)}
+.pv-track{flex:1;min-height:0}
+.plan-shell .pv-pane{max-width:none;margin:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+  padding:0 max(var(--gutter-r),calc((100% - 1080px)/2)) calc(var(--bar-h) + var(--safe-b) + 40px) max(var(--gutter),calc((100% - 1080px)/2))}
+.plan-shell .pv-pane .cal-head .sp-title.sr-only + *{margin-inline-start:auto}
+body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
+@media (min-width:821px){ .plan-shell .pv-pane{padding-bottom:40px} .pv-head{padding-inline-start:max(12px,var(--safe-l))} }
+@media (prefers-reduced-motion: reduce){ .st-tab,.st-l{transition:none} }
+.plan-shell .cal-top{margin-inline:0;padding:6px 0;border-bottom:0}
+.plan-shell .kp-shbar{gap:var(--sp-2)}

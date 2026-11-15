@@ -42,7 +42,8 @@ async function phone(dark){
   const {ctx,pg}=await mkp({...PH,colorScheme:dark?'dark':'light'},true);
   await pg.goto(BASE+'index.html#goals'); await pg.waitForSelector('#goalsView .kp-card',{timeout:10000});
   const h=await txt(pg,'#goalsView .cal-top');
-  ok(T+'header: Goals, Edit goals, tabs, month',/Goals/.test(h)&&/Edit goals/.test(h)&&/Calendar/.test(h)&&new RegExp(now.toLocaleDateString('en',{month:'long'})).test(h),h);
+  const tb=await txt(pg,'#planView .pv-tabs'), eb=await pg.$eval('#goalsView [data-kp-edit]',e=>e.getAttribute('aria-label'));   /* 2.18.0: the shell's tabs name the page; one slim row: month + Edit */
+  ok(T+'header: Goals tab, Edit goals, tabs, month',/Goals/.test(h)&&eb==='Edit goals'&&/Calendar/.test(tb)&&/Goals/.test(tb)&&new RegExp(now.toLocaleDateString('en',{month:'long'})).test(h),h+' | '+tb);
   const cards=await pg.$$eval('.kp-card',e=>e.map(x=>x.innerText.replace(/\s+/g,' ').trim()));
   ok(T+'Posts card reads "12 of 15" with +3 vs previous month',/Posts\s*12 of 15/.test(cards[0])&&new RegExp('\\+3 vs '+prevName).test(cards[0]),cards[0]);
   ok(T+'Stories 4 of 10 (-1), Reels 1 of 4 (-1), Giveaways 1 of 1',/Stories\s*4 of 10/.test(cards[1])&&/Reels\s*1 of 4/.test(cards[2])&&/Giveaways.*1 of 1/.test(cards[3]),cards);
@@ -79,7 +80,7 @@ async function phone(dark){
     await pg.tap('[data-kp-x]'); await pg.waitForTimeout(250);
     /* month switch */
     await pg.tap('[data-kp-nav="-1"]'); await pg.waitForFunction(()=>/Posts\s*9 of 12/.test(document.querySelector('.kp-card').innerText.replace(/\s+/g,' ')),null,{timeout:5000}).catch(()=>{});
-    ok(T+'previous month: Posts 9 of 12, "This month" link appears',/9 of 12/.test(await txt(pg,'.kp-card[data-kp-card="post"]'))&&/This month/.test(await txt(pg,'.cal-bar')));
+    ok(T+'previous month: Posts 9 of 12, "This month" link appears',/9 of 12/.test(await txt(pg,'.kp-card[data-kp-card="post"]'))&&/This month/.test(await txt(pg,'#goalsView .cal-bar')));
     await pg.tap('[data-kp-nav="-1"]'); await pg.waitForTimeout(500);
     ok(T+'a month with no goals row: "Set this month\'s goals" note, counts still shown',/Set this month’s goals/.test(await txt(pg,'.kp-empty'))&&/6/.test(await txt(pg,'.kp-card[data-kp-card="post"]'))&&/No goal/.test(await txt(pg,'.kp-card[data-kp-card="post"]')));
     await pg.tap('.cal-today'); await pg.waitForTimeout(500);
