@@ -13,6 +13,34 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.28.0 · 15 Nov 2026
+Listen to voice notes your way.
+
+### Listen your way
+type: feature
+Voice notes in Ideas got a proper player: tap anywhere on the wave to jump there (or drag along it), and the speed button switches between 1×, 1.5× and 2× (your phone remembers it for every note). Only one note plays at a time and shows how far you are (0:07 / 0:42). When someone recorded a few notes in a row, the next one plays by itself. A note that can't load says so, with Retry.
+
+## 2.27.0 · 15 Nov 2026
+Home opens faster.
+
+### Home opens faster
+type: improve
+Studio now loads only what Home needs first: the brand's extras load side by side instead of one after another, the team connection starts straight away, and Templates and the welcome tour load the first time you open them. On a slow phone connection your tools and today's calendar row now appear about three quarters of a second sooner (from about 3.8 s to 3.1 s in our test on a slow 3G-like network), with fewer files before Home is ready.
+
+## 2.26.0 · 15 Nov 2026
+Home's Today stays up to date.
+
+### Today stays fresh
+type: improve
+Come back to Studio after a while (from another app, after the phone slept, or Back from a tool) and Home's calendar row, or the Calendar, Ideas or Goals tab you were on, quietly checks for news (at most once a minute). A post a teammate just planned for today shows up without you pulling or reloading, and nothing else on the screen moves.
+
+## 2.25.0 · 15 Nov 2026
+Simplify: the round's leftovers cleared and every screen checked.
+
+### Tidier under the hood
+type: improve
+A Simplify pass over this round: the code and styles of the old floating Calendar · Ideas · Goals strip and of the temporary tab headers are gone, the Plan page has one header (Back and the three tabs), and every screen was checked again in light and dark, on a small phone and on a computer, with Arabic names. Nothing changes in how you use Studio; it is just less to load and less that can go wrong.
+
 ## 2.24.0 · 15 Nov 2026
 Search finds your ideas and planned posts.
 
