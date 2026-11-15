@@ -37,6 +37,34 @@ function lazy(name,o){ o=o||{}; const g=o.global||'Studio'+name.replace(/(^|-)(\
   if(o.css) lazyCss(name);
   if(window[g]) return Promise.resolve(window[g]);
   return LAZY[name]||(LAZY[name]=loadScript(ROOT+'assets/'+name+'.js').then(()=>window[g],e=>{ delete LAZY[name]; throw e; })); }
+/* 2.18.0 swipe tabs (Plan page, Home's Today): a tab bar with an underline that follows the finger, over a horizontal scroll-snap track
+   of panes. Native scrolling does the swipe (smooth on every phone); the underline is placed from the track's scroll position each frame.
+   swipeTabs({bar,track,onChange(i,how)}) -> {go(i,smooth), index()}. how: 'swipe' (a finger settled on a pane) or 'tap'. */
+function swipeTabs(o){
+  const bar=o.bar, track=o.track, ind=bar.querySelector('.st-ind'), tabs=[...bar.querySelectorAll('.st-tab')], panes=()=>[...track.children];
+  let cur=-1, shown=-1, raf=0, settleT=0, geo=null, aiming=-1;
+  const W=()=>track.clientWidth||1, clamp=i=>Math.max(0,Math.min(tabs.length-1,i));
+  const measure=()=>{ const b=bar.getBoundingClientRect(); geo=tabs.map(t=>{ const l=t.querySelector('.st-l')||t, r=l.getBoundingClientRect(); return {x:r.left-b.left,w:r.width}; }); };
+  function paint(f){ if(!ind) return; if(!geo||!geo[0].w) measure(); if(!geo[0].w) return; f=Math.max(0,Math.min(tabs.length-1,f)); const a=Math.floor(f), b2=Math.min(tabs.length-1,a+1), t=f-a, A=geo[a], Bq=geo[b2];
+    const x=A.x+(Bq.x-A.x)*t, w=A.w+(Bq.w-A.w)*t; ind.style.width=w+'px'; ind.style.transform='translateX('+x+'px)'; }
+  function mark(i){ if(i===shown) return; shown=i; tabs.forEach((t,k)=>{ const on=k===i; t.setAttribute('aria-selected',String(on)); t.tabIndex=on?0:-1; }); }
+  function settle(){ const i=clamp(Math.round(track.scrollLeft/W())); if(aiming>=0&&i!==aiming) return; aiming=-1; paint(i); mark(i);
+    panes().forEach((p,k)=>{ p.inert=k!==i; });
+    if(i!==cur){ cur=i; o.onChange&&o.onChange(i,'swipe'); } }
+  track.addEventListener('scroll',()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; const f=track.scrollLeft/W(); paint(f); if(aiming<0) mark(clamp(Math.round(f))); }); clearTimeout(settleT); settleT=setTimeout(settle,120); },{passive:true});
+  if('onscrollend' in window) track.addEventListener('scrollend',()=>{ clearTimeout(settleT); settle(); });
+  /* a touch on a pane that is still sliding in makes it live at once (inert is only for panes off screen) */
+  track.addEventListener('pointerdown',()=>{ aiming=-1; panes().forEach(p=>{ p.inert=false; }); },{passive:true});
+  function go(i,smooth){ i=clamp(i); const was=cur; cur=i; mark(i); panes().forEach((p,k)=>{ p.inert=k!==i; });
+    const left=i*W(); if(Math.abs(track.scrollLeft-left)<1){ paint(i); return; }
+    if(smooth){ aiming=i; track.scrollTo({left,behavior:'smooth'}); } else { aiming=-1; track.scrollTo({left,behavior:'instant'}); paint(i); }
+    if(was!==i&&o.onChange) o.onChange(i,'tap'); }
+  bar.addEventListener('keydown',e=>{ const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0; if(!d) return; e.preventDefault(); const n=clamp(cur+d); tabs[n].focus(); tabs[n].click(); });
+  addEventListener('resize',()=>{ geo=null; if(cur>=0){ track.scrollTo({left:cur*W(),behavior:'instant'}); paint(cur); } });
+  if(window.ResizeObserver) new ResizeObserver(()=>{ geo=null; if(cur>=0&&track.clientWidth){ if(Math.abs(track.scrollLeft-cur*W())>1) track.scrollTo({left:cur*W(),behavior:'instant'}); paint(cur); } }).observe(track);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ geo=null; if(cur>=0) paint(cur); });
+  return {go, index:()=>Math.max(0,cur)};
+}
 const whoLib=()=>lazy('who');   // StudioWho, loaded
 /* HEIC/HEIF (iPhone photos): most browsers can't open them, so a HEIC reader (assets/vendor/heic-to.js) is
    loaded the first time someone picks one. Safari opens them itself, so it's only used when needed. */
@@ -2915,7 +2943,17 @@ async function home(){
   const PLAN_ON=true;   /* 2.4.1: Ideas and Goals are permanent (owner); was the preview flag "plan" */
   try{ localStorage.removeItem('studio:flag:plan'); }catch(_){}
   if(PLAN_ON) [['ideas','Ideas'],['goals','Goals']].forEach(([v,l])=>{ if($(v+'View')) return; const s=document.createElement('section'); s.id=v+'View'; s.className='cal-view plan-view '+v+'-view'; s.setAttribute('aria-label',l); s.hidden=true; $('calendarView').after(s); VIEWS[v]=v+'View'; });
-  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':$('calendarView')&&!$('calendarView').hidden?'calendar':$('ideasView')&&!$('ideasView').hidden?'ideas':$('goalsView')&&!$('goalsView').hidden?'goals':'home';
+  /* 2.18.0 (owner): Calendar · Ideas · Goals are one page with swipeable tabs at the top (like a profile's tabs). The three pages are panes
+     side by side in one scroll-snap track (#planView): swipe or tap a tab, an underline follows the finger, and every pane stays drawn,
+     so switching is instant and old text never sits on top of new. The floating tab strip above the bar is gone. */
+  const PLAN_ORDER=['calendar','ideas','goals'];
+  const planView=(()=>{ const sh=document.createElement('section'); sh.id='planView'; sh.className='plan-shell'; sh.hidden=true; sh.setAttribute('aria-label','Plan');
+    sh.innerHTML=`<header class="pv-head"><button type="button" class="sp-back pv-back" aria-label="Back to home">${ICON.back||'‹'}</button><div class="st-bar pv-tabs" role="tablist" aria-label="Plan">${[['calendar','Calendar'],['ideas','Ideas'],['goals','Goals']].map(([k,l])=>`<button type="button" class="st-tab pv-tab" role="tab" id="pvt-${k}" aria-controls="${k}View" aria-selected="false" tabindex="-1" data-plan-tab="${k}"><span class="st-l">${l}</span></button>`).join('')}<i class="st-ind" aria-hidden="true"></i></div></header><div class="st-track pv-track"></div>`;
+    const tr=sh.querySelector('.pv-track'); PLAN_ORDER.forEach(k=>{ const el=$(k+'View'); if(!el) return; el.hidden=false; el.classList.add('st-pane','pv-pane'); el.setAttribute('role','tabpanel'); el.setAttribute('aria-labelledby','pvt-'+k); el.tabIndex=-1; tr.appendChild(el); });
+    $('templatesView').after(sh); return sh; })();
+  const planTabsUi=swipeTabs({bar:planView.querySelector('.pv-tabs'),track:planView.querySelector('.pv-track'),onChange:(i,how)=>{ if(how!=='swipe') return; const v=PLAN_ORDER[i]; haptic('tick'); planShown(v); }});
+  planView.querySelector('.pv-back').onclick=()=>goHome();
+  const curView=()=>!$('saved').hidden?'saved':$('templatesView')&&!$('templatesView').hidden?'templates':!planView.hidden?PLAN_ORDER[planTabsUi.index()]:'home';
   const onSaved=()=>curView()==='saved';
   const hashView=()=>location.hash==='#saved'?'saved':location.hash==='#templates'&&$('templatesView')?'templates':location.hash==='#calendar'&&$('calendarView')?'calendar':location.hash==='#ideas'&&$('ideasView')?'ideas':location.hash==='#goals'&&$('goalsView')?'goals':'home';
   function setTab(v){ if(PLAN_VIEWS.includes(v)) v='home';   // the Plan pages (calendar, ideas, goals) sit under Home
@@ -2937,14 +2975,21 @@ async function home(){
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
     if(was==='home') homeY=scrollY;
-    Object.entries(VIEWS).forEach(([k,id])=>{ const el=$(id); if(el) el.hidden=k!==v; });
+    Object.entries(VIEWS).forEach(([k,id])=>{ if(PLAN_VIEWS.includes(k)) return; const el=$(id); if(el) el.hidden=k!==v; });
+    const plan=PLAN_VIEWS.includes(v); planView.hidden=!plan; if(plan) planTabsUi.go(PLAN_ORDER.indexOf(v),PLAN_VIEWS.includes(was)&&!reduce());
     document.body.classList.toggle('on-saved',v==='saved'); document.body.classList.toggle('on-templates',v==='templates'); document.body.classList.toggle('on-calendar',v==='calendar'); document.body.classList.toggle('on-plan',PLAN_VIEWS.includes(v));
     window.scrollTo({top:v==='home'?homeY:0,behavior:'instant'});
     if(v==='saved'){ paintPage(); const h=$('savedH'); h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
     if(v==='templates') showTemplates();
-    if(v==='calendar') return showCalendar();
-    if(v==='ideas') return showIdeas();
-    if(v==='goals') return showGoals(); }
+    if(plan){ planWarm(v); return planShow(v); } }
+  const planShow=v=>v==='calendar'?showCalendar():v==='ideas'?showIdeas():showGoals();
+  /* a swipe settled on another pane: the address follows (Back still lands on Home) and that pane refreshes (no redraw if nothing changed) */
+  function planShown(v){ if(v==='calendar') calToday=false; document.body.classList.toggle('on-calendar',v==='calendar'); NAV.idle(()=>{ try{ history.replaceState({sp:1},'','#'+v); }catch(_){} }); planShow(v); }
+  /* keep all three panes ready: once the plan page is open, the other two are drawn in the background (one after the other, when idle) */
+  let planWarmed=false;
+  function planWarm(first){ if(planWarmed) return; planWarmed=true; const rest=PLAN_ORDER.filter(k=>k!==first), idle=window.requestIdleCallback||(f=>setTimeout(f,300));
+    const next=()=>{ const k=rest.shift(); if(!k) return; idle(()=>{ Promise.resolve(planShow(k)).catch(()=>{}).then(next); },{timeout:1200}); };
+    setTimeout(next,350); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
   function openView(v){ if(curView()===v) return; NAV.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
   function openSaved(){ openView('saved'); }
@@ -2998,7 +3043,7 @@ async function home(){
   /* the calendar module, started once (the calendar page and Home's Post button share it) */
   async function calLib(){
     const Cal=await lazy('calendar',{css:1}), root=$('calendarView');
-    if(!calApi) calApi=Cal.init({root,brand:B.id,tabs:PLAN_ON?planTabs('calendar'):'',esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),onPosted:()=>{ calHome(); },
+    if(!calApi) calApi=Cal.init({root,brand:B.id,tabs:'',shell:true,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),onPosted:()=>{ calHome(); },
         cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
         netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null,ask:   /* who.js may still be loading: read the stored name meanwhile, or a fast save lost its author */ async o2=>(await whoLib()).ask(o2)}});
     if(window.StudioWho===undefined) whoLib().catch(()=>{});
@@ -3066,20 +3111,15 @@ async function home(){
 
   /* ---------- 2.4.0 Plan (flag "plan"): Ideas board (assets/ideas.js) and monthly Goals (assets/kpis.js), lazy like the calendar.
      Both get the same context: cloud, member, dialogs, the saved designs, a design picker and Add to calendar. ---------- */
-  function planTabs(on){ return `<nav class="plan-tabs" aria-label="Plan">${[['calendar','Calendar'],['ideas','Ideas'],['goals','Goals']].map(([k,l])=>`<button type="button" class="plan-tab" data-plan-tab="${k}" aria-current="${k===on?'page':'false'}">${l}</button>`).join('')}</nav>`; }
+  function planTabs(){ return ''; }   /* 2.18.0: the floating strip is gone; the shell's tabs (#planView) switch the panes */
   document.addEventListener('click',e=>{ const b=e.target.closest('[data-plan-tab],[data-plan-go]'); if(!b||!PLAN_ON) return; const v=b.dataset.planTab||b.dataset.planGo; if(v===curView()) return; haptic('tick');
     if(b.dataset.planTab&&PLAN_VIEWS.includes(curView())) return planSwitch(v);
     if(v==='calendar') calOpen(false); else openView(v); });
   /* 2.5.0: Calendar ↔ Ideas ↔ Goals glide: the tab pill slides to the new tab and the page slides in from the side it lives on
      (View Transitions where the phone has them, a CSS slide otherwise; none with reduced motion). The new page has up to 700 ms to draw. */
-  const PLAN_ORDER=['calendar','ideas','goals'];
-  function planSwitch(v){ const a=PLAN_ORDER.indexOf(curView()), b=PLAN_ORDER.indexOf(v), root=document.documentElement; root.dataset.planDir=b>a?'fwd':'back';
-    if(v==='calendar') calToday=false;
-    const go=()=>new Promise(res=>{ NAV.idle(()=>{ try{ history.replaceState({sp:1},'','#'+v); }catch(_){} let p; try{ p=showView(v); }catch(_){} Promise.race([Promise.resolve(p).catch(()=>{}),new Promise(r=>setTimeout(r,700))]).then(res); }); });
-    const end=()=>{ delete root.dataset.planDir; };
-    if(document.startViewTransition&&!reduce()){ try{ const t=document.startViewTransition(go); t.finished.then(end,end); return; }catch(_){} }
-    go().then(end); }
-  const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:planTabs(v),
+  /* 2.18.0: a tab tap slides the track to that pane (the underline rides along); no View Transition, so nothing is snapshotted on top */
+  function planSwitch(v){ planTabsUi.go(PLAN_ORDER.indexOf(v),!reduce()); planShown(v); }
+  const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:'',shell:true,
     cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
     netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null},
     designs:async()=>{ if(!loaded) await loadSaved(); return all; }, shapeOf,
@@ -3837,6 +3877,8 @@ async function home(){
   if(location.hash==='#lab') setTimeout(openLab,200);
   { const k=keptLoad(); if(k){ all=k.all; cols=k.cols; member=true; loaded=true; paint(); } }   /* instant Saved: the last list paints at once, then loadSaved() refreshes it */
   loadSaved();
+  /* 2.18.0: the Plan page's code loads in the background once Home is up, so Calendar / Ideas / Goals open at once */
+  setTimeout(()=>{ (window.requestIdleCallback||(f=>setTimeout(f,0)))(()=>{ ['calendar','ideas','kpis'].forEach(n=>lazy(n,{css:1}).catch(()=>{})); },{timeout:4000}); },2500);
   calReady=true; calHome(); if(calPend){ const v=curView(); if(v==='calendar') showCalendar(); else if(v==='ideas') showIdeas(); else if(v==='goals') showGoals(); }
 }
 

@@ -106,14 +106,22 @@ function init(o){
         <div class="kp-chartbox">${chartSvg()}</div></section>`;
   }
   function draw(){
-    const keepY=window.scrollY, ok=state==='ok', here=month===nowKey();
+    const keepY=o.shell?root.scrollTop:window.scrollY, ok=state==='ok', here=month===nowKey();   /* 2.18.0 shell: the pane scrolls, not the window */
     const msg=state==='loading'?'<div class="cal-skel" aria-hidden="true"><span></span><span></span><span></span></div>'
       :state==='offline'?noteBox(ic('clock'),'You’re offline','Your goals come back when you’re online.',againBtn)
       :state==='slow'?noteBox(ic('clock'),'Still loading…','The connection is slow. Your goals show as soon as they arrive.',againBtn)
       :state==='out'?noteBox(ic('check'),'Goals are for your team','Sign in to set goals and see how you’re doing.','<button type="button" class="btn slim" data-kp-signin>Sign in</button>')
       :noteBox(ic('rotate'),'Could not load goals',esc(note),againBtn);
-    root.innerHTML=`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-kp-back aria-label="Back to home">${ic('back')}</button>
-        <div class="sp-title"><h1 id="kpH" tabindex="-1">Goals</h1></div>
+    const navH=`<div class="cal-nav"><button type="button" class="cal-arrow" data-kp-nav="-1" aria-label="Previous month">${ic('back')}</button>
+        <strong class="cal-title" aria-live="polite">${esc(Lm(month,{month:'long',year:'numeric'}))}</strong>
+        <button type="button" class="cal-arrow" data-kp-nav="1" aria-label="Next month">${ic('next')}</button></div>`,
+      editH=`<button type="button" class="mini kp-editbtn" data-kp-edit aria-label="Edit goals"${ok?'':' disabled'}>${ic('pencil')}<span>Edit</span></button>`,
+      todayH=here?'':'<button type="button" class="cal-today" data-kp-nav="0">This month</button>';
+    if(o.shell) root.innerHTML=`<div class="cal-top kp-top"><h1 id="kpH" class="sr-only" tabindex="-1">Goals</h1>
+      <div class="cal-bar kp-shbar">${navH}${todayH}${editH}</div></div>
+      <div class="kp-body">${ok?body():msg}</div>`;   /* 2.18.0 shell: one slim row (the tab says "Goals") */
+    else root.innerHTML=`<div class="cal-top"><div class="cal-head">${o.shell?'':`<button type="button" class="sp-back" data-kp-back aria-label="Back to home">${ic('back')}</button>`}
+        <div class="sp-title${o.shell?' sr-only':''}"><h1 id="kpH" tabindex="-1">Goals</h1></div>
         <button type="button" class="mini kp-editbtn" data-kp-edit${ok?'':' disabled'}>${ic('pencil')}<span>Edit goals</span></button></div>
       ${o.tabs||''}
       <div class="cal-bar"><div class="cal-nav"><button type="button" class="cal-arrow" data-kp-nav="-1" aria-label="Previous month">${ic('back')}</button>
@@ -121,7 +129,7 @@ function init(o){
         <button type="button" class="cal-arrow" data-kp-nav="1" aria-label="Next month">${ic('next')}</button></div>
         ${here?'':'<button type="button" class="cal-today" data-kp-nav="0">This month</button>'}</div></div>
       <div class="kp-body">${ok?body():msg}</div>`;
-    window.scrollTo({top:keepY,behavior:'instant'});
+    if(o.shell) root.scrollTop=keepY; else window.scrollTo({top:keepY,behavior:'instant'});
   }
 
   /* ---------- saving ---------- */
