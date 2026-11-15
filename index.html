@@ -16,13 +16,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>/* 2.21.0 home2: the "New Home" preview flag as an attribute before the first paint (Studio keeps it in sync on the studio:flag event) */(function(){var d=document.documentElement,on=function(v){if(v)d.setAttribute('data-home2','');else d.removeAttribute('data-home2')};try{on(localStorage.getItem('studio:flag:home2')==='1');var m=/[?&]flag-home2=(\w+)/.exec(location.search);if(m)on(m[1]!=='0')}catch(e){}document.addEventListener('studio:flag',function(e){if(e.detail&&e.detail.id==='home2')on(e.detail.on)})})();</script>
+<!-- 2.26.0 faststart: templates.css and welcome.css load with their features; the scripts are deferred (they download beside the styles, never in front of the first paint) -->
 <link rel="stylesheet" href="assets/studio.css">
 <link rel="stylesheet" href="assets/search.css">
-<link rel="stylesheet" href="assets/templates.css">
-<link rel="stylesheet" href="assets/welcome.css">
+<link rel="preload" as="script" href="brands/1stchoice/brand.js" fetchpriority="low">
+<link rel="preload" as="script" href="assets/config.js" fetchpriority="low">
+<link rel="preload" as="script" href="assets/cloud.js" fetchpriority="low">
+<script defer src="assets/studio.js"></script>
+<script defer src="brands/brands.js"></script>
+<script defer src="assets/search.js"></script>
 </head>
 <body class="hub">
 <a class="sr-only" href="#tools">Skip to tools</a>
@@ -103,11 +106,6 @@
   <a href="#saved" data-tab="saved" aria-current="false"><svg class="ic-off" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><svg class="ic-on" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Saved</span></a>
 </nav>
 <button type="button" class="fab" id="fab" aria-haspopup="dialog" aria-expanded="false" aria-label="New: start from a photo or a new design"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-<script src="assets/studio.js"></script>
-<script src="assets/search.js"></script>
-<script src="assets/templates.js"></script>
-<script src="assets/welcome.js"></script>
-<script src="brands/brands.js"></script>
-<script>Studio.home();</script>
+<script>/* 2.26.0 faststart: the deferred scripts (brands, studio, search) have all run by DOMContentLoaded */document.addEventListener('DOMContentLoaded',function(){Studio.home();});</script>
 </body>
 </html>
