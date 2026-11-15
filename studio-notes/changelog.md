@@ -13,6 +13,15 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.12.0 · 15 Nov 2026
+The background remover takes a hint: tap the background colour and the cut-out redraws at once.
+
+### Pick the background colour
+type: improve
+When the remover gets a photo of a printed logo wrong (a shadow, a gradient, a coloured frame), tap **Pick the background** in Team assets, then tap the background on the picture. The cut-out redraws at once. Pick up to 3 colours (tap × to drop one), tap inside a letter like O to clear it, and **Reset** goes back to automatic. Without a pick, the remover works exactly as before.
+![before](assets/whatsnew/2.12.0-remover-pick-before.jpg)
+![after](assets/whatsnew/2.12.0-remover-pick-after.jpg)
+
 ## 2.11.0 · 15 Nov 2026
 Studio can remind you about today's planned posts.
 
