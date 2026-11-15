@@ -21,6 +21,8 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
+  /* 2.21.0 Home restructure (home2 preview flag) */
+  [/assets\/studio\.(js|css)|index\.html/,['home2']],
   /* 2.5.3 same-name guard */
   [/assets\/cloud\.js|tests\/fakecloud\.js|assets\/studio\.js|assets\/search\.js/,['saved-words']],
   [/assets\/cloud\.js|tests\/fakecloud\.js|tools\/create\.js|assets\/studio\.js/,['same-name']],

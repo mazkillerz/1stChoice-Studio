@@ -1636,3 +1636,71 @@ body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
 @media (prefers-reduced-motion: reduce){ .st-tab,.st-l{transition:none} }
 .plan-shell .cal-top{margin-inline:0;padding:6px 0;border-bottom:0}
 .plan-shell .kp-shbar{gap:var(--sp-2)}
+
+/* ===== 2.21.0 home2: "New Home" (preview flag home2, off by default). Every visual rule below is under :root[data-home2]; index.html sets the attribute before first paint.
+   Top to bottom: slim header + one muted greeting line, search, Today (the hero card: Calendar | Ideas | Goals), a compact tools list. ===== */
+#todaySec{display:none}
+:root[data-home2] #todaySec{display:flex}
+:root[data-home2] #calRow{display:none}
+:root[data-home2] .hero h1{display:none}
+/* slim header: a smaller logo row, the greeting as one small muted line */
+:root[data-home2] nav.top{min-height:48px;padding-top:calc(var(--safe-t) + 2px);padding-bottom:0;gap:var(--sp-2)}
+:root[data-home2] .top a.home{min-height:44px;gap:8px}
+:root[data-home2] .top img{height:16px}
+:root[data-home2] .top img.studio-mark{height:20px}
+:root[data-home2] .top .studio{font-size:var(--fs-xs)}
+:root[data-home2] .top .wn-btn{width:44px;height:44px}
+:root[data-home2] .hero{padding-top:0;padding-bottom:0}
+:root[data-home2] .hero .hello,:root[data-home2] .hero .hello:empty{display:block;margin:0 0 var(--sp-3);font:500 var(--fs-s)/1.3 var(--sans);letter-spacing:0;color:var(--muted)}
+:root[data-home2] .hello-date{display:inline;min-height:0;padding:0;border:0;background:none;border-radius:0;font:inherit;color:inherit}
+:root[data-home2] .hello-date::before{content:"·";margin-inline:var(--sp-2)}
+:root[data-home2] .hero .usearch{margin-top:0}
+/* one strong heading level, 24px between sections */
+:root[data-home2] #homeView>.hub-sec{padding-top:var(--sp-5);gap:var(--sp-3)}
+:root[data-home2] .hub-sec h2{font:600 20px/1.25 var(--title);letter-spacing:-.01em}
+/* Today: the hero card */
+:root[data-home2] .td-card{background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-2,var(--shadow-1));overflow:hidden}
+:root[data-home2] .td-tabs{height:44px;padding-inline:var(--sp-3);border-bottom:1px solid var(--line)}
+:root[data-home2] .td-tab{min-height:44px;font-size:var(--fs-m)}
+:root[data-home2] .td-pane{height:214px;min-width:0}
+:root[data-home2] .td-in{height:100%;display:flex;flex-direction:column;padding-top:4px}
+:root[data-home2] .td-list{display:flex;flex-direction:column}
+:root[data-home2] .td-row{display:flex;align-items:center;gap:var(--sp-2);height:54px}
+:root[data-home2] .td-row+.td-row{border-top:1px solid var(--line)}
+:root[data-home2] .td-open{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-3);height:100%;padding:0 var(--sp-2) 0 var(--sp-4);border:0;background:none;color:var(--fg);font:inherit;text-align:start;cursor:pointer}
+:root[data-home2] .td-open:active{background:var(--chip)}
+:root[data-home2] .td-open:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:var(--r-m)}
+:root[data-home2] .td-t{flex:none;width:58px;font:600 var(--fs-s) var(--sans);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root[data-home2] .td-m{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+:root[data-home2] .td-m b{font:600 var(--fs-m)/1.3 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:root[data-home2] .td-m small{font:400 var(--fs-xs)/1.3 var(--sans);color:var(--muted)}
+:root[data-home2] .td-row .cal-home-post{position:static;transform:none;flex:none;margin-inline-end:var(--sp-3);min-height:44px;min-width:0;padding:0 14px}
+:root[data-home2] .td-new{flex:none;width:8px;height:8px;margin-inline-end:var(--sp-2);border-radius:50%;background:var(--accent)}
+:root[data-home2] .td-goal{flex-direction:column;align-items:stretch;justify-content:center;gap:8px;padding-inline-end:var(--sp-4)}
+:root[data-home2] .td-gl{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3)}
+:root[data-home2] .td-gl b{font:600 var(--fs-m) var(--sans)}
+:root[data-home2] .td-gl span{font:500 var(--fs-s) var(--sans);color:var(--muted);font-variant-numeric:tabular-nums}
+:root[data-home2] .td-bar{display:block;height:4px;border-radius:var(--r-pill);background:var(--chip);overflow:hidden}
+:root[data-home2] .td-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+:root[data-home2] .td-more{margin-top:auto;align-self:flex-start;min-height:44px;margin-inline-start:var(--sp-2);padding-inline:var(--sp-3)}
+:root[data-home2] .td-empty{align-items:center;justify-content:center;text-align:center;gap:var(--sp-1);padding-bottom:var(--sp-2)}
+:root[data-home2] .td-empty p{margin:0;color:var(--muted);font:400 var(--fs-m)/1.4 var(--sans)}
+:root[data-home2] .td-empty .td-more{margin:0;align-self:center}
+:root[data-home2] .td-in.hs-skel{padding:var(--sp-2) var(--sp-4) 0;gap:0}
+:root[data-home2] .td-sk{display:flex;flex-direction:column;justify-content:center;height:54px}
+/* your tools: a compact list (shorter rows, smaller thumbs; the camera stays inside its row and clear of the artwork) */
+:root[data-home2] #toolGrid{gap:var(--sp-2)}
+:root[data-home2] .tool-row{min-height:0;padding:5px var(--sp-3) 5px 5px;gap:var(--sp-3);border-radius:var(--r-l)}
+:root[data-home2] .tthumb{width:32px;border-radius:7px}
+:root[data-home2] .ttxt b{font:600 var(--fs-m)/1.3 var(--sans)}
+:root[data-home2] .ttxt span{font-size:var(--fs-xs)}
+:root[data-home2] .tool-item.has-cam .tool-row{padding-inline-end:60px}
+:root[data-home2] .tool-item .row-cam{width:44px;height:44px;margin-top:-22px;inset-inline-end:8px}
+:root[data-home2] .tool-skel{min-height:0;padding:5px var(--sp-3) 5px 5px}
+:root[data-home2] .tool-skel .hs-thumb{width:32px}
+:root[data-home2] .all-tools{min-height:56px;padding:6px var(--sp-3) 6px 6px;margin-bottom:var(--sp-2)}
+:root[data-home2] .at-ic{width:36px;height:36px}
+@media (prefers-reduced-motion: reduce){:root[data-home2] .td-open{transition:none}}
+/* Home appears all at once: no entrance replay on the new Home (the old rise/lk-rise handover re-played it a second later) */
+:root[data-home2] body.hub #homeView :is(.hero .hello,.hero .usearch,.hero h1,.hub-sec,.tool-item,.tool-row,.sv-card){animation:none}
+:root[data-home2] .pack-banner{margin-top:var(--sp-5)}
