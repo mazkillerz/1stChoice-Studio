@@ -48,11 +48,27 @@ function make(o){
   if(o.shell) root.classList.add('is-shell');
   let lastSig='', C=null, items=[], notes=[], openSheet=null, designs=[], cal={}, urls={}, state='loading', note='', run=0, slowT=0, built=false;
   let stage='idea', typeF='', q='', searchOpen=false, wasWide=wide();
+  let staleAt=null, dataAt=null, lastExtra='', pendingOpen=null, thumbsOnce=false, lastUnread=-1, saveT=0;
+  const CKEY='studio:plan:ideas:'+o.brand, SKEY='studio:ideas:seen:'+o.brand;
+  /* ---------- per-device memory: the Plan cache (paints at once) and when I last opened each idea ---------- */
+  const newest=(a,n)=>{ if(a.length<=n) return a; const keep=new Set(a.slice().sort((x,y)=>String(y.created_at).localeCompare(String(x.created_at))).slice(0,n)); return a.filter(x=>keep.has(x)); };   /* the newest n, in their own order */
+  const persist=()=>{ if(state!=='ok'||staleAt) return; const its=items.filter(x=>!x._pending&&!/^tmp/.test(x.id)), ns=notes.filter(x=>!x._pending);
+    wr(CKEY,{v:1,at:dataAt||new Date().toISOString(),items:newest(its,200),notes:newest(ns,600)}); };
+  const persistSoon=()=>{ clearTimeout(saveT); saveT=setTimeout(persist,250); };
+  const seenMap=()=>{ const m=rd(SKEY); return m&&typeof m==='object'&&!Array.isArray(m)?m:{}; };
+  function markSeen(id){ if(!id||/^tmp/.test(id)) return; const m=seenMap(); let t=new Date().toISOString();
+    notes.forEach(n=>{ if(n.idea_id===id&&n.created_at&&String(n.created_at)>t) t=String(n.created_at); }); m[id]=t;
+    const ks=Object.keys(m); if(ks.length>300){ ks.sort((a,b)=>String(m[a]).localeCompare(String(m[b]))); ks.slice(0,ks.length-300).forEach(k=>{ delete m[k]; }); } wr(SKEY,m); }
+  const hydrate=()=>{ const c=rd(CKEY); if(!c||c.v!==1||!Array.isArray(c.items)) return false; items=c.items; notes=Array.isArray(c.notes)?c.notes:[]; state='ok'; dataAt=c.at||null; lastSig=JSON.stringify([items,notes]); return true; };
+  /* only the designs and calendar entries that ideas point to can change what a card shows */
+  const extraSig=()=>JSON.stringify(items.map(x=>{ const g=x.design_id&&designOf(x.design_id), c=x.calendar_id&&cal[x.calendar_id]; return [g?g.name+(g.thumb_path||''):0,c?c.day+(c.at||''):0]; }));
+
   const authorName=()=>{ try{ return (o.who&&o.who.author&&o.who.author())||null; }catch(_){ return null; } };
   const designOf=id=>designs.find(d=>d.id===id);
   const againBtn='<button type="button" class="btn slim" data-reload>Try again</button>';
   const noteBox=(icn,title,text,btn)=>`<div class="sv-note"><span class="sn-ic" aria-hidden="true">${icn}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
 
+  try{ if(hydrate()) lastExtra=extraSig(); }catch(_){}
   /* ---------- load ---------- */
   async function ensure(){ if(!C) C=await o.cloud(); return C; }
   async function load(){
@@ -62,17 +78,19 @@ function make(o){
     try{
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
       await ensure(); if(my!==run) return;
-      if(!(await o.member())){ state='out'; drawTop(); drawBody(); return; }
+      if(!(await o.member())){ state='out'; items=[]; notes=[]; staleAt=null; lastSig=''; clearTimeout(saveT); wr(CKEY,null); drawTop(); drawBody(); return; }
       const now=new Date(), from=iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-90)), to=iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()+90));
       const [list0,dl,cl,nl]=await Promise.all([C.ideas(o.brand),Promise.resolve(o.designs?o.designs():[]).catch(()=>designs),C.calendar?C.calendar(o.brand,{from:from,to:to}).catch(()=>[]):[],C.ideaNotes?C.ideaNotes(o.brand).catch(()=>notes):[]]); if(my!==run) return;
       const list=list0.map(x=>x.stage==='inbox'?{...x,stage:'idea'}:x), keepN=notes.filter(n=>n._pending); notes=(nl||[]).concat(keepN);
       designs=dl||[]; cal={}; (cl||[]).forEach(x=>{ cal[x.id]=x; });
       const live=new Set(list.map(x=>x.id)), keepP=items.filter(x=>x._pending&&!live.has(x.id));
       items=keepP.concat(list);
-      const sig=JSON.stringify([items,notes,designs.map(d=>d.id+d.updated_at),cl]), same=state==='ok'&&sig===lastSig; lastSig=sig;   /* 2.5.0: no redraw when nothing changed (no flicker) */
-      state='ok'; if(!same){ drawTop(); drawBody(); thumbsFor(items); if(openSheet) openSheet.thread(); }
+      const sig=JSON.stringify([items,notes]), extra=extraSig(), same=state==='ok'&&sig===lastSig&&extra===lastExtra; lastSig=sig; lastExtra=extra;   /* no redraw when nothing changed (no flicker) */
+      const wasStale=!!staleAt; staleAt=null; dataAt=new Date().toISOString(); state='ok'; if(!same||wasStale){ drawTop(); drawBody(); if(openSheet) openSheet.thread(); } persistSoon();
+      if(!same||!thumbsOnce){ thumbsOnce=true; thumbsFor(items); }
+      if(pendingOpen){ const it=items.find(x=>x.id===pendingOpen); pendingOpen=null; if(it&&!document.querySelector('dialog.id-edit')) sheet(it); }
     }catch(err){ if(my!==run) return; const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
-      if(state==='ok'){ o.toast(net?'You’re offline. These are your ideas from before.':'Could not refresh the ideas: '+(err.message||err)); return; }
+      if(state==='ok'){ if(net||err.offline){ if(!staleAt){ staleAt=dataAt||new Date().toISOString(); drawBody(); } } else o.toast('Could not refresh the ideas: '+(err.message||err)); return; }
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); drawBody(); }
     finally{ if(my===run) clearTimeout(slowT); }
   }
@@ -161,6 +179,11 @@ function make(o){
   const nReplies=it=>notes.filter(n=>n.idea_id===it.id&&!n._pending).length;
   /* "new": the column exists (seen_at is null, not just missing), and the author is someone else */
   const isNew=it=>!pending(it)&&it.seen_at===null&&String(it.author||'')!==String(authorName()||'');
+  /* replies by others newer than my last open here (an idea I wrote and never opened here counts from its creation; someone else's from the moment anybody opened it) */
+  const unreadOf=it=>{ if(pending(it)) return 0; const me=String(authorName()||''), m=seenMap(); let base=m[it.id];
+    if(!base) base=String(it.author||'')===me?it.created_at:(it.seen_at||null); if(!base) return 0;
+    return notes.filter(n=>n.idea_id===it.id&&!n._pending&&String(n.author||'')!==me&&String(n.created_at)>String(base)).length; };
+  const emitUnread=()=>{ if(state!=='ok') return; const n=items.filter(x=>isNew(x)||unreadOf(x)>0).length; if(n!==lastUnread){ lastUnread=n; try{ o.onUnread&&o.onUnread(n); }catch(_){} } };
   const byLine=it=>{ const n=nReplies(it); return `<span class="id-by">${it.author?`<b class="id-av" aria-hidden="true">${esc(initial(it.author))}</b><span class="sr-only">${esc(it.author)}, </span>`:''}<bdi>${pending(it)?'Saving…':esc(ago(it.created_at))}</bdi>${n?`<span class="id-rc" title="Replies">${IC.chat}<bdi>${n}</bdi><span class="sr-only"> ${n===1?'reply':'replies'}</span></span>`:''}</span>`; };
   function card(it){
     const t=titleOf(it), snip=it.note?firstLine(it.note).slice(0,140):'', idx=STAGES.findIndex(s=>s[0]===it.stage), nxt=STAGES[idx+1];
@@ -168,7 +191,7 @@ function make(o){
     const meta=[it.audio_path?playerHtml(it.audio_path,it.audio_secs):'',linkChip(it),designMini(it),calChip(it)].filter(Boolean).join('');
     return `<article class="id-card${pending(it)?' pend':''}${isNew(it)?' is-new':''}" data-id="${esc(it.id)}"${!pending(it)?' draggable="true"':''}>
       <button type="button" class="id-main" data-open="${esc(it.id)}"${pending(it)?' disabled':''}>
-        <span class="id-top2">${isNew(it)?'<i class="id-new-dot" role="img" aria-label="New"></i>':''}${pill(it.type)}${byLine(it)}</span>
+        <span class="id-top2">${isNew(it)?'<i class="id-new-dot" role="img" aria-label="New"></i>':''}${pill(it.type)}${byLine(it)}${unreadOf(it)?`<span class="id-unread"><bdi>${unreadOf(it)}</bdi> new<span class="sr-only"> ${unreadOf(it)===1?'reply':'replies'}</span></span>`:''}</span>
         <span class="id-body2">${img}<span class="id-txt"><b class="id-title" dir="auto">${esc(t)}</b>${snip?`<span class="id-snip" dir="auto">${esc(snip)}</span>`:''}</span></span></button>
       ${meta?`<div class="id-meta">${meta}</div>`:''}
       ${pending(it)?'':`<div class="id-foot">${nxt?`<button type="button" class="id-next" data-next="${esc(it.id)}">Move to ${esc(nxt[1])}<span aria-hidden="true">›</span></button>`:'<span></span>'}</div>`}
@@ -200,7 +223,8 @@ function make(o){
       :state==='slow'?noteBox(ic('clock'),'Still loading…','The connection is slow. Your ideas show as soon as they arrive.',againBtn)
       :state==='out'?noteBox(IC.bulb,'Ideas are for your team','Sign in to keep and share ideas with your team.','<button type="button" class="btn slim" data-signin>Sign in</button>')
       :noteBox(ic('rotate'),'Could not load the ideas',esc(note),againBtn);
-    fillThumbs(el); paintAudio(); sTo(keepY);
+    if(state==='ok'&&staleAt){ el.insertAdjacentHTML('afterbegin',`<p class="id-stale small" role="status">Updated <bdi>${esc(ago(staleAt))}</bdi></p>`); }
+    fillThumbs(el); paintAudio(); sTo(keepY); if(state==='ok'){ emitUnread(); persistSoon(); }
   }
   function build(){ root.innerHTML='<div class="id-top"></div><div class="id-content"></div>'; drawTop(); }
 
@@ -257,13 +281,16 @@ function make(o){
   /* ---------- the idea sheet: edit + discussion thread ---------- */
   function sheet(src){
     if(!src||pending(src)) return;
-    const it={...src}; let img={blob:null,url:null,removed:false}, rec=null, busy=false;
+    const it={...src}; let img={blob:null,url:null,removed:false}, rec=null, busy=false, mode='read';
     const me=authorName(); const wasNew=isNew(src);
-    if(wasNew){ src.seen_at=new Date().toISOString(); src.seen_by=me; ensure().then(()=>C.markIdeaSeen&&C.markIdeaSeen(src.id,me)).catch(()=>{}); drawBody(); }
+    if(wasNew){ src.seen_at=new Date().toISOString(); src.seen_by=me; ensure().then(()=>C.markIdeaSeen&&C.markIdeaSeen(src.id,me)).catch(()=>{}); }
+    markSeen(src.id); drawBody();
     const hasImg=()=>!img.removed&&(img.url||it.image_path);
-    const d=o.dialog(`<div class="dlg-body id-sheet">
-      <form class="id-form" action="#" novalidate>
-      <div class="id-sh-head"><h3 id="idEH">Idea</h3><button type="button" class="cs-x" data-x aria-label="Close">${ic('close')}</button></div>
+    const d=o.dialog(`<div class="dlg-body id-sheet is-read">
+      <div class="id-sh-head"><h3 id="idEH">Idea</h3><button type="button" class="id-editbtn" data-edit>Edit</button><button type="button" class="cs-x" data-x aria-label="Close">${ic('close')}</button></div>
+      <div class="id-scroll">
+      <div class="id-read" id="idRead"></div>
+      <form class="id-form" action="#" novalidate hidden>
       <div class="field"><label class="lbl" for="idTitle">Title</label><input class="id-in" id="idTitle" dir="auto" autocomplete="off" value="${esc(it.title||'')}" placeholder="Name this idea"></div>
       <div class="field"><label class="lbl" for="idNote">Note</label><textarea class="id-in id-ta" id="idNote" dir="auto" rows="3" placeholder="Details, hooks, captions…">${esc(it.note||'')}</textarea></div>
       <div class="field"><span class="lbl" id="idTL">Type</span><div class="id-segw" role="group" aria-labelledby="idTL">${TYPES_ALL.map(([k,l])=>`<button type="button" class="id-sg" data-t="${k}" aria-pressed="${it.type===k}">${l}</button>`).join('')}</div></div>
@@ -274,8 +301,9 @@ function make(o){
       <div class="field"><span class="lbl">Calendar</span><div id="idCal"></div></div>
       <input type="file" id="idFile" accept="image/*" hidden>
       <div class="status" id="idSt" role="status"></div>
-      <div class="id-foot2"><button type="submit" class="btn" id="idSave">Save</button><button type="button" class="link" id="idDel">Move this idea to the archive</button></div></form>
+      <div class="id-foot2"><div class="id-saverow"><button type="submit" class="btn" id="idSave">Save</button><button type="button" class="mini" id="idCancel">Cancel</button></div><button type="button" class="link" id="idDel">Move this idea to the archive</button></div></form>
       <section class="id-tw" aria-labelledby="idTH"><h4 class="lbl" id="idTH">Discussion</h4><ul class="id-thread" id="idThread"></ul></section>
+      </div>
       <div class="id-composer"><div id="idRecHost" hidden></div>
         <div class="id-crow"><input class="id-in id-cin" id="idReply" dir="auto" autocomplete="off" enterkeyhint="send" aria-label="Write a reply" placeholder="Write a reply">
           <button type="button" class="id-cmic" data-cmic aria-label="Record a voice reply">${IC.mic}</button><button type="button" class="btn id-csend" data-csend>Send</button></div>
@@ -291,6 +319,15 @@ function make(o){
     const paintCal=()=>{ const c=it.calendar_id&&cal[it.calendar_id];
       $('#idCal').innerHTML=it.calendar_id?`<div class="id-calrow"><span class="id-chip id-cal big">${IC.cal}<bdi>${esc(c?parse(c.day).toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long'})+(c.at?' · '+TIMES_AMPM(c.at):''):'On the calendar')}</bdi></span></div>`
         :`<button type="button" class="id-add" data-plan>${IC.cal.replace(/width="16" height="16"/,'width="22" height="22"')}<span>Add to calendar</span></button>`; };
+    /* read mode: the idea as content (nothing to edit until "Edit"), then the thread */
+    const paintRead=()=>{ const t=titleOf(it), hp=!!it.image_path, u=hp&&urls[it.image_path], chips=[linkChip(it),designMini(it),calChip(it)].filter(Boolean).join('');
+      $('#idRead').innerHTML=`<div class="id-rtop">${pill(it.type)}${it.author?`<span class="id-by"><bdi>${esc(it.author)}</bdi> · <bdi>${esc(ago(it.created_at))}</bdi></span>`:''}</div>
+        <h4 class="id-rtitle" dir="auto">${esc(t)}</h4>${it.note?`<p class="id-rnote" dir="auto">${esc(it.note)}</p>`:''}
+        ${hp?`<img class="id-rpic" alt="Picture" decoding="async" data-path="${esc(it.image_path)}"${u?` src="${u}"`:''}>`:''}${chips?`<div class="id-rchips">${chips}</div>`:''}
+        <div class="id-qstage" role="group" aria-label="Stage">${STAGES.map(([k,l])=>`<button type="button" class="id-sg" data-qs="${k}" aria-pressed="${it.stage===k}">${l}</button>`).join('')}</div>`; fillThumbs(d); };
+    const setMode=m=>{ mode=m; const ed=m==='edit'; $('.id-sheet').classList.toggle('is-read',!ed); $('.id-form').hidden=!ed; $('#idRead').hidden=ed; $('.id-tw').hidden=ed; $('.id-composer').hidden=ed; $('[data-edit]').hidden=ed;
+      $('#idEH').textContent=ed?'Edit idea':'Idea'; $('.id-scroll').scrollTop=0; if(ed){ setTimeout(()=>{ try{ $('#idTitle').focus({preventScroll:true}); }catch(_){} },30); } };
+    const fillForm=()=>{ $('#idTitle').value=it.title||''; $('#idNote').value=it.note||''; $('#idLink').value=it.link||''; d.querySelectorAll('[data-t]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.t===it.type))); d.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.s===it.stage))); };
     /* the thread: the idea's own voice note first, then the replies, oldest first */
     const entries=()=>{ const e=[]; if(it.audio_path) e.push({id:'main',main:true,author:it.author,created_at:it.created_at,audio_path:it.audio_path,audio_secs:it.audio_secs,body:''});
       return e.concat(notes.filter(n=>n.idea_id===it.id).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)))); };
@@ -299,8 +336,8 @@ function make(o){
         ${e.body?`<p class="id-mtx" dir="auto">${esc(e.body)}</p>`:''}${e.audio_path?playerHtml(e.audio_path,e.audio_secs):''}</div></li>`; };
     const paintThread=(toEnd)=>{ const L=$('#idThread'); if(!L) return; const list=entries();
       L.innerHTML=list.length?list.map(msg).join(''):'<li class="id-none">No replies yet. Write one, or leave a voice note.</li>'; paintAudio(); if(toEnd&&list.length){ try{ L.lastElementChild.scrollIntoView({block:'nearest'}); }catch(_){} } };
-    paintPic(); paintDes(); paintCal(); paintThread(); thumbsFor([it]).then(()=>{ paintPic(); paintDes(); });
-    openSheet={thread:()=>paintThread()};
+    paintPic(); paintDes(); paintCal(); paintRead(); paintThread(); thumbsFor([it]).then(()=>{ paintPic(); paintDes(); paintRead(); });
+    openSheet={thread:()=>{ if(mode==='read'){ const cur=items.find(x=>x.id===it.id); if(cur){ Object.assign(it,cur); src=cur; paintRead(); } } paintThread(); markSeen(it.id); }};
     const setImage=async f=>{ if(!f) return; st('Preparing the picture…'); const b=await shrink(f); if(img.url) URL.revokeObjectURL(img.url); img={blob:b,url:URL.createObjectURL(b),removed:false}; st(''); paintPic(); };
     $('#idFile').onchange=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; setImage(f); };
     d.addEventListener('paste',e=>{ const f=imageFrom(e); if(f){ e.preventDefault(); setImage(f); } });
@@ -333,6 +370,9 @@ function make(o){
       catch(err){ rst(err.message||String(err)); } }
     d.addEventListener('click',e=>{ const t=e.target; let b;
       if(t.closest('[data-x]')&&t.closest('.id-sh-head')){ d.close(); return; }
+      if(t.closest('[data-edit]')){ setMode('edit'); return; }
+      if(t.closest('#idCancel')){ Object.assign(it,src); img={blob:null,url:null,removed:false}; fillForm(); paintPic(); paintDes(); paintCal(); st(''); setMode('read'); return; }
+      if((b=t.closest('[data-qs]'))){ const k=b.dataset.qs; if(it.stage===k) return; it.stage=k; hap('tick'); d.querySelectorAll('[data-qs]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); d.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.s===k))); patch(it.id,{stage:k}); return; }
       if(t.closest('[data-csend]')){ send(); return; }
       if(t.closest('[data-cmic]')){ startReply(); return; }
       if((b=t.closest('[data-mmore]'))){ const en=entries().find(x=>String(x.id)===b.dataset.mmore); if(en) entryMenu(en); return; }
@@ -349,14 +389,14 @@ function make(o){
       if(!item) return; it.calendar_id=item.id; cal[item.id]=item; if(it.stage==='idea'){ it.stage='planned'; d.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.s==='planned'))); }
       paintCal(); st('Added to the calendar. Press Save to keep the idea up to date.'); }
     $('#idDel').onclick=()=>{ d.close(); confirmArchive(src); };
-    d.addEventListener('close',()=>{ if(rec&&rec.active()) rec.cancel(); if(img.url) URL.revokeObjectURL(img.url); stopAudio(); openSheet=null; });
+    d.addEventListener('close',()=>{ if(rec&&rec.active()) rec.cancel(); if(img.url) URL.revokeObjectURL(img.url); stopAudio(); openSheet=null; markSeen(it.id); drawBody(); });
     d.querySelector('form').addEventListener('submit',async e=>{ e.preventDefault(); if(busy) return; if(rec&&rec.active()) return st('Stop the recording first.');
       busy=true; const sv=$('#idSave'); sv.disabled=true; st('Saving…');
       const link=$('#idLink').value.trim(), row={id:it.id,brand:o.brand,title:$('#idTitle').value.trim(),note:$('#idNote').value,type:it.type,stage:it.stage,link:link||null,design_id:it.design_id||null,calendar_id:it.calendar_id||null,sort:it.sort||0,author:it.author||authorName()||null};
       if(img.blob){ row.image=img.blob; row.image_path_old=it.image_path||undefined; } else if(img.removed&&it.image_path){ row.image_path=null; row.image_path_old=it.image_path; }
-      try{ await ensure(); const r=await C.saveIdea(row); const i=items.findIndex(x=>x.id===it.id); if(i>=0) items[i]={...items[i],...r}; d.close(); o.toast('Saved'); hap('tick'); drawTop(); drawBody(); thumbsFor([r]); }
+      try{ await ensure(); const r=await C.saveIdea(row); const i=items.findIndex(x=>x.id===it.id); if(i>=0){ items[i]={...items[i],...r}; src=items[i]; } Object.assign(it,src); if(img.url){ URL.revokeObjectURL(img.url); } img={blob:null,url:null,removed:false};
+        busy=false; sv.disabled=false; st(''); o.toast('Saved'); hap('tick'); drawTop(); drawBody(); paintRead(); paintPic(); paintDes(); paintCal(); fillForm(); setMode('read'); thumbsFor([src]).then(()=>{ paintRead(); paintPic(); }); }
       catch(err){ busy=false; sv.disabled=false; st('Could not save: '+(err.message||err)+' Try again.'); } });
-    setTimeout(()=>{ try{ if(!src.title) $('#idTitle').focus(); }catch(_){} },60);
   }
 
   /* ---------- quick capture: one sheet, seconds to save ---------- */
@@ -457,11 +497,13 @@ function make(o){
   matchMedia('(min-width:821px)').addEventListener('change',()=>{ if(wide()!==wasWide){ wasWide=wide(); if(built&&state==='ok') drawBody(); } });
 
   return {
-    show(){ const again=built&&state==='ok'&&root.querySelector('.id-content'); built=true; stopAudio(); if(!again){ lastSig=''; build(); drawBody(); }   /* coming back keeps the page on screen (no rebuild flash) */
+    show(){ const again=built&&state==='ok'&&root.querySelector('.id-content'); built=true; stopAudio(); if(!again){ if(state!=='ok') lastSig=''; build(); drawBody(); }   /* coming back keeps the page on screen (no rebuild flash) */
       load();
       const h=root.querySelector('#idH'); if(h&&!o.shell) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
     capture,
+    open(id){ const it=items.find(x=>x.id===id&&!x._pending); if(it){ if(!document.querySelector('dialog.id-edit')) sheet(it); return; }
+      pendingOpen=id; if(!built) this.show(); else if(state!=='loading') load(); },
     get items(){ return items; }
   };
 }

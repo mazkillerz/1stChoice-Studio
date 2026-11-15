@@ -222,3 +222,28 @@ a.id-lnk{min-height:44px;margin-block:-6px}
 .plan-shell .ideas-view .id-top{margin-inline:0;padding:6px 0 4px;border-bottom:0}
 .plan-shell .ideas-view .id-head{padding-top:0}
 :root .ideas-view .chip[aria-pressed="true"]{animation:none}   /* the board redraws on every tap: no re-pop */
+
+/* Session 8: the idea sheet opens as a read view (idea, then discussion), composer pinned at the bottom; "Edit" switches to the form */
+.dlg.id-edit[open]{display:flex;flex-direction:column;max-height:94dvh;overflow:hidden}
+.id-edit .id-sheet{flex:1;min-height:0;max-height:none;overflow:hidden;display:flex;flex-direction:column;gap:var(--sp-2)}
+.id-edit .id-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:var(--sp-4);margin-inline:-20px;padding:var(--sp-1) 20px var(--sp-3)}
+.id-edit .id-scroll[hidden],.id-edit [hidden]{display:none!important}
+.id-editbtn{min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid var(--line);background:none;color:var(--fg);font:600 var(--fs-s) var(--sans);cursor:pointer}
+.id-editbtn:active{background:var(--chip)}
+.id-editbtn:focus-visible,.id-qstage .id-sg:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.id-read{display:flex;flex-direction:column;gap:var(--sp-3)}
+.id-rtop{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.id-rtitle{margin:0;font:600 var(--fs-xl) var(--sans);line-height:1.25;overflow-wrap:anywhere}
+.id-rnote{margin:0;font:400 var(--fs-m) var(--sans);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+.id-rpic{width:100%;max-height:220px;object-fit:cover;border-radius:var(--r-m);background:var(--chip);display:block}
+.id-rchips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.id-qstage{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.id-qstage .id-sg{padding:0 12px;flex:1 1 auto}
+.id-saverow{display:flex;gap:var(--sp-2);align-items:center}
+.id-saverow .btn{flex:1}
+.id-saverow .mini{min-height:48px;padding:0 var(--sp-4)}
+.id-edit .id-tw{border-top:1px solid var(--line);padding-top:var(--sp-3)}
+.id-edit .id-composer{position:static;flex:none;margin-inline:-20px;padding:var(--sp-2) 20px 0;background:var(--surface);border-top:1px solid var(--line)}
+.id-unread{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font:600 var(--fs-xs) var(--sans)}
+.id-stale{margin:0 0 var(--sp-2);color:var(--muted);text-align:center}
+@media (max-width:560px){ .id-edit .id-scroll{margin-inline:-20px} }

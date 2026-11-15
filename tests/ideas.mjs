@@ -130,8 +130,10 @@ async function populated(dark){
   await pg.tap('.id-card:first-child [data-more]'); await pg.waitForSelector('.id-menu');
   ok(T+'the ⋯ menu: move to any stage, Open, Move to archive (no Inbox, no Delete)',/Move to Idea|Move to Posted/.test(await txt(pg,'.id-menu'))&&!/Inbox|Delete/.test(await txt(pg,'.id-menu'))&&/Open/.test(await txt(pg,'.id-menu'))&&/Move to archive/.test(await txt(pg,'.id-menu')));
   await pg.tap('.id-menu [data-a="edit"]'); await pg.waitForSelector('dialog.id-edit');
-  /* idea sheet */
-  ok(T+'idea sheet: title, note, type, stage, link, picture, design, calendar, discussion; no "Replace voice note"',await pg.evaluate(()=>{ const t=document.querySelector('dialog.id-edit').innerText; return /Title/.test(t)&&/Note/.test(t)&&/Type/.test(t)&&/Stage/.test(t)&&/Link/.test(t)&&/Picture/.test(t)&&/Discussion/.test(t)&&/Design/.test(t)&&/Calendar/.test(t)&&!/Record again|Replace voice/i.test(t); }));
+  /* idea sheet: opens as a read view; one Edit tap switches to the form */
+  ok(T+'the sheet opens read-only: content, Discussion and the composer; no form fields yet',await pg.evaluate(()=>{ const d=document.querySelector('dialog.id-edit'); return !!d.querySelector('.id-rtitle')&&!!d.querySelector('#idReply')&&d.querySelector('.id-form').hidden&&!!d.querySelector('[data-edit]')&&/Discussion/.test(d.innerText); }));
+  await pg.tap('dialog [data-edit]'); await pg.waitForSelector('dialog #idTitle',{state:'visible'});
+  ok(T+'edit form: title, note, type, stage, link, picture, design, calendar; no "Replace voice note"',await pg.evaluate(()=>{ const t=document.querySelector('dialog.id-edit').innerText; return /Title/.test(t)&&/Note/.test(t)&&/Type/.test(t)&&/Stage/.test(t)&&/Link/.test(t)&&/Picture/.test(t)&&/Design/.test(t)&&/Calendar/.test(t)&&!/Record again|Replace voice/i.test(t); }));
   await pg.fill('#idTitle','Weekend giveaway (edited)'); await pg.tap('dialog [data-t="story"]'); await pg.tap('dialog [data-s="progress"]'); await pg.fill('#idLink','example.net/x');
   await pg.tap('dialog [data-pic]');   // opens the file chooser path: the input is hidden, just attach
   await pg.setInputFiles('dialog #idFile',{name:'a.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64')});
@@ -139,7 +141,7 @@ async function populated(dark){
   const smallD=await smalls(pg);
   ok(T+'no control under 44px in the sheet',smallD.length===0,smallD);
   if(!dark) await pg.screenshot({path:SHOTS+'ideas-sheet-light.png'});
-  await pg.tap('#idSave'); await pg.waitForFunction(()=>!document.querySelector('dialog.id-edit'),null,{timeout:6000});
+  await pg.tap('#idSave'); await pg.waitForFunction(()=>document.querySelector('dialog.id-edit')&&document.querySelector('dialog.id-edit .id-form').hidden&&/edited/.test(document.querySelector('.id-rtitle').innerText),null,{timeout:6000}); await pg.evaluate(()=>document.querySelector('dialog.id-edit').close()); await pg.waitForTimeout(200);
   s=await stored(pg); const e=(s.ideas||[]).find(x=>/edited/.test(x.title));
   ok(T+'edits saved: title, type, stage, link and new picture',!!e&&e.type==='story'&&e.stage==='progress'&&e.link==='example.net/x'&&!!e.image_path,e&&{t:e.type,s:e.stage,l:e.link,i:!!e.image_path});
   /* voice player on a seeded card + plan from sheet */
@@ -148,7 +150,7 @@ async function populated(dark){
   ok(T+'playing a voice note flips the button to Pause (or finishes)',/Pause|Play/.test(await pg.getAttribute('.id-card[data-id="i1"] .id-play','aria-label')));
   await pg.tap('.id-card[data-id="i1"] .id-main'); await pg.waitForSelector('dialog.id-edit');
   ok(T+'sheet shows the voice note as the first entry of the discussion',!!(await pg.$('dialog .id-thread .id-msg:first-child .id-voice'))&&!/Record again/.test(await txt(pg,'dialog')));
-  await pg.tap('dialog [data-plan]'); await pg.waitForTimeout(800);
+  await pg.tap('dialog [data-edit]'); await pg.waitForSelector('dialog [data-plan]',{state:'visible'}); await pg.tap('dialog [data-plan]'); await pg.waitForTimeout(800);
   const planOpen=await pg.evaluate(()=>document.querySelectorAll('dialog[open]').length);
   ok(T+'"Add to calendar" opens the fast plan sheet',planOpen>=2,planOpen);
   await pg.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close())); await pg.waitForTimeout(200);
