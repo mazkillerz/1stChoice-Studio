@@ -8,9 +8,8 @@ const read=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
 /* every shipped file that can put a class on the page */
 const walk=d=>fs.readdirSync(path.join(ROOT,d),{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['vendor','whatsnew','thumbs','samples'].includes(e.name)?[]:walk(d+'/'+e.name)):[d+'/'+e.name]);
 const SRC=['index.html','whats-new.html',...['assets','tools','lab','brands'].flatMap(walk)].filter(f=>/\.(js|html)$/.test(f)).map(read).join('\n');
-/* classes built from a value at run time (`'grid view-'+toolsView`, `tp-${e.shape}`): listed here, each with where it is built */
+/* classes built from a value at run time (`tp-${e.shape}`): listed here, each with where it is built */
 const DYNAMIC={
-  'view-grid':"home(): $('toolGrid').className='grid view-'+toolsView",
   'tp-post':'templates.js: tp-${e.shape}', 'tp-square':'templates.js: tp-${e.shape}', 'tp-circle':'templates.js: tp-${e.shape}',
 };
 const used=c=>new RegExp('(?<![\\w-])'+c.replace(/[-]/g,'\\-')+'(?![\\w-])').test(SRC);
@@ -22,7 +21,7 @@ for(const f of ['assets/studio.css','assets/whatsnew.css','assets/welcome.css','
   ok(`${f}: every class it styles is used (${cls.length} classes)`,cls.length>10&&!dead.length,dead);
 }
 /* the dynamic list stays honest: each entry is still styled and its builder still exists */
-ok('dynamic classes: home() still builds view-<choice> for the tools grid',/className='grid view-'\+toolsView/.test(read('assets/studio.js')));
+ok('the tools grid view is gone (2.21.0): no toolsView, no view-grid in the shipped code',!/let toolsView|paintToolsView|view-grid/.test(read('assets/studio.js'))&&!/view-grid|vswitch/.test(read('assets/studio.css')));
 ok('dynamic classes: templates.js still builds tp-<shape>',/tp-\$\{e\.shape\}/.test(read('assets/templates.js')));
 /* the removed rules are kept, not deleted (CLAUDE.md: never delete, move to _archive) */
 const arch=path.join(ROOT,'_archive/unused css (2026-11-05)/removed.css');

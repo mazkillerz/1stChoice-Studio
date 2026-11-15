@@ -2786,15 +2786,11 @@ async function home(){
   function paintTools(){
     const pins=getPins(), n=Object.keys(TOOLS).length;
     $('toolGrid').innerHTML=pins.length?pins.map((id,i)=>toolRow(id,TOOLS[id],i)).join(''):'<p class="pin-empty">No tools pinned yet. Open <b>All tools</b> and tap the star on the ones you use most.</p>';
-    document.querySelectorAll('.vswitch[data-view="tools"]').forEach(v=>{ v.hidden=pins.length<2; });   // list or grid only matters for 2+ tools (1.35.0); Settings and search still switch it
     $('allToolsSub').textContent=pins.length>=n?'All '+n+' tools are pinned':n+' tools · tap a star to pin one here';
   }
   paintTools();
-  /* how your tools are shown: list or grid; each phone remembers its own choice (the old "compact" choice shows as grid) */
-  let toolsView=store('studio:toolsView')==='list'||!store('studio:toolsView')?'list':'grid';
-  function paintToolsView(){ $('toolGrid').className='grid view-'+toolsView;
-    document.querySelectorAll('[data-view="tools"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===toolsView))); }
-  paintToolsView();
+  /* 2.21.0: the tools grid view is gone; Home's tools are always a list (an old stored choice is forgotten) */
+  try{ localStorage.removeItem('studio:toolsView'); }catch(_){}
   /* a photo picked in any Quick start button (home or search) goes to its tool through IndexedDB */
   document.addEventListener('change',async e=>{ const inp=e.target, id=inp&&inp.dataset&&inp.dataset.quick; if(!id||!TOOLS[id]) return; const fs=[...(inp.files||[])]; inp.value=''; if(!fs.length) return;
     const lbl=inp.closest('label'); if(lbl) lbl.classList.add('busy');
@@ -2807,7 +2803,7 @@ async function home(){
   /* All tools: every tool in its group, with a star to pin or unpin it (this device only) */
   const pinBtn=id=>{ const on=getPins().includes(id), t=esc(TOOLS[id].title); return `<button type="button" class="pin-btn" data-pin="${id}" aria-pressed="${on}" aria-label="${on?'Unpin '+t+' from home':'Pin '+t+' to home'}">${on?ICON.starFill:ICON.star}</button>`; };
   function togglePin(id,fromSearch){ const on=setPin(id,!getPins().includes(id));
-    paintTools(); paintToolsView(); paintLib(id); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
+    paintTools(); paintLib(id); if(!fromSearch){ haptic('tick'); if(window.StudioSearch) StudioSearch.refresh(); } return on; }   // the search updates its own star
   /* All tools: the pinned tools first ("On your home", in their home order, each with a drag handle), then every other tool
      in its group. Press and drag the handle to change the order on the home screen; on a keyboard the arrow keys move it. */
   /* a tool that starts from photos gets the Home row's camera here too (pinned ones have it on Home): one tap to pick, like Home */
@@ -2823,7 +2819,7 @@ async function home(){
     box.innerHTML=libHtml();
     if(popId){ const b=box.querySelector(`[data-pin="${popId}"]`); if(b){ b.classList.add('pop'); if(had) b.focus({preventScroll:true}); } }
     if(focusSel) box.querySelector(focusSel)?.focus({preventScroll:true}); }
-  function pinsChanged(){ haptic('tick'); paintTools(); paintToolsView(); if(window.StudioSearch) StudioSearch.refresh(); }
+  function pinsChanged(){ haptic('tick'); paintTools(); if(window.StudioSearch) StudioSearch.refresh(); }
   function openLibrary(){
     const d=dialog(`<div class="dlg-body lib"><div class="lib-head"><h3>All tools</h3><button type="button" class="mini" id="libDone">Done</button></div><p class="small">Tap a star to pin a tool to your home on this ${devWord()}.</p><div class="lib-list">${libHtml()}</div></div>`,'lib-dlg');
     const list=d.querySelector('.lib-list');
@@ -3077,7 +3073,7 @@ async function home(){
   async function postNowHome(id,day){ try{ await calLib(); await window.StudioCalendar.postNow({id,day}); }catch(_){ hubToast('Could not open Post now. Check your connection and try again.'); } }
   function paintMini(row,inbox,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
     /* 2.5.0 (owner: no sideways scroll): three equal tiles that always fit; the count sits on a small second line */
-    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span class="pc-t"><b>Idea</b></span></button>`;
+    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button>`;
     if(mini.dataset.h===html) return; mini.dataset.h=html; mini.innerHTML=html; }
   /* 2.11.0 reminders (assets/remind.js, lazy): only while Settings → "Remind me about planned posts" is on (per device, off by default) */
   const remindOn=()=>{ try{ return localStorage.getItem('studio:remind')==='1'; }catch(_){ return false; } };
@@ -3291,7 +3287,6 @@ async function home(){
       ${row('brandkit',ICON.paint,'Brand kit','Logo, colours, fonts and approved words')}   <!-- brandpage -->
       ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}</div>
       <h4 class="set-gl">On this ${devWord()}</h4><div class="act-list set-list">
-      ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       <button type="button" class="act-row set-row" data-set="remind" role="switch" aria-checked="${remindOn()}">${ICON.bell}<span class="set-txt"><b>Remind me about planned posts</b><small>${esc(remindSub())}</small></span><span class="set-switch" aria-hidden="true"></span></button>
       ${standalone()?'':row('install',ICON.install,'Install Studio','Open it from your home screen like an app')}</div>
       <h4 class="set-gl">Help and more</h4><div class="act-list set-list">
@@ -3303,7 +3298,6 @@ async function home(){
     d.setAttribute('aria-labelledby','setH'); d.tabIndex=-1; d.focus();
     d.querySelector('[data-x]').onclick=()=>d.close();
     d.querySelector('.set').addEventListener('click',e=>{ const b=e.target.closest('[data-set]'); if(!b) return; const a=b.dataset.set; haptic('tick');
-      if(a==='view'){ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); b.querySelector('.set-end').textContent=toolsView==='list'?'List':'Grid'; b.firstElementChild.outerHTML=toolsView==='list'?ICON.list:ICON.grid; return; }
       if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · goes on saved designs'; }); return; }
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
       if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
@@ -3358,7 +3352,6 @@ async function home(){
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
              :{kind:'action',id:'act:signin',title:'Sign in',sub:'See and save your team’s designs',keys:'sign in log in login account team password saved designs',icon:ICON.user,run:()=>$('acct').click()});
     a.push({kind:'action',id:'act:new',title:'What’s new',sub:'Studio '+VERSION+' · every update',keys:"what's new whats news update updates changelog version release notes",icon:ICON.sparkle,href:ROOT+'whats-new.html'});
-    a.push({kind:'action',id:'act:view',title:toolsView==='list'?'Show your tools as a grid':'Show your tools as a list',sub:'How your pinned tools look',keys:'view layout grid list tools display',icon:toolsView==='list'?ICON.grid:ICON.list,run:()=>{ toolsView=toolsView==='list'?'grid':'list'; store('studio:toolsView',toolsView); paintToolsView(); }});
     if(!standalone()) a.push({kind:'action',id:'act:install',title:'Install Studio',sub:'Open it from your home screen like an app',keys:'install app home screen add shortcut',icon:ICON.install,run:()=>{ if(installEvt){ installEvt.prompt(); return; }
       const d=dialog(`<div class="dlg-body"><h3>Install Studio</h3><p class="small">${isIOS()?'Tap the Share button, then <b>Add to Home Screen</b>.':'Open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.'}</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>`); d.querySelector('[data-x]').onclick=()=>d.close(); }});
     a.push({kind:'action',id:'act:templates',title:'Templates',sub:'Ready-made stories, posts and covers',keys:'templates ready made start restock story post highlight cover library',icon:ICON.template,run:()=>openView('templates')});
@@ -3574,9 +3567,6 @@ async function home(){
     m.addEventListener('click',e=>{ const b=e.target.closest('[role=menuitem]'); if(!b) return; const it=items.find(x=>x.id===b.id); close(false); if(it) it.run(); });
     btns[0].focus({preventScroll:true});
   }
-  /* view switch for your tools (list or grid), remembered on this phone */
-  document.querySelectorAll('.vswitch[data-view="tools"]').forEach(sw=>sw.addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; toolsView=b.dataset.v; store('studio:toolsView',toolsView); paintToolsView(); }));
-
   /* Select (Saved page): tick several designs, then put them in a collection, take them out of the one you're looking at,
      or delete them, in one go. The bottom bar swaps for the actions; ✕, Escape, Back or leaving the page stops selecting. */
   const plural=(n,w)=>n+' '+w+(n===1?'':'s');

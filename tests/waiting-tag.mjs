@@ -1,6 +1,6 @@
 /* Studio 1.13.0: "N waiting" on the Restock / Photo story rows. Photos waiting in a tool's row (several photos picked,
    left before the last one) show a small calm tag on that tool's row in Your tools and in All tools; it goes when the
-   photos are cleared. Light and dark, phone (list and grid view) and computer; contrast, not a filled button, RTL-safe.
+   photos are cleared. Light and dark, phone and computer; contrast, not a filled button, RTL-safe.
    Also: the low-memory fallback message says "device" on a computer and "phone" on a phone (1.9.0 finding).
    Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
@@ -58,15 +58,6 @@ for(const vp of [{name:'phone light',width:390,height:844,touch:true,scheme:'lig
   const rtl=await pg.evaluate(()=>{ document.documentElement.dir='rtl'; const t=document.querySelector('#toolGrid [data-id="restock"] .wait-tag'), r=t.getBoundingClientRect(), row=t.closest('.tool-item').getBoundingClientRect();
     const o={txt:t.textContent, inside:r.left>=row.left&&r.right<=row.right, oneLine:r.height<=24}; document.documentElement.dir=''; return o; });
   ok(N+'right to left: still "2 waiting", one line, inside the row',rtl.txt==='2 waiting'&&rtl.inside&&rtl.oneLine,JSON.stringify(rtl));
-
-  if(vp.touch){
-    /* grid view: the tag wraps under the title in the narrow card instead of pushing out of it */
-    await pg.evaluate(()=>document.querySelector('[data-view="tools"] button[data-v="grid"]')?.click()); await pg.waitForTimeout(400);
-    const g=await pg.evaluate(()=>{ const t=document.querySelector('#toolGrid [data-id="restock"] .wait-tag'), it=t.closest('.tool-item'), r=t.getBoundingClientRect(), c=it.getBoundingClientRect(), b=t.closest('b');
-      return {grid:document.getElementById('toolGrid').classList.contains('view-grid'),inside:r.left>=c.left-1&&r.right<=c.right+1,over:b.scrollWidth>b.clientWidth+1,h:Math.round(r.height)}; });
-    ok(N+'grid view: the tag stays inside the card, nothing overflows',g.grid&&g.inside&&!g.over&&g.h<=24,JSON.stringify(g));
-    await pg.evaluate(()=>document.querySelector('[data-view="tools"] button[data-v="list"]')?.click()); await pg.waitForTimeout(200);
-  }
 
   /* Photo story too (not pinned): two photos, one waiting; it shows in All tools */
   await quick('photo-story',['pair.jpg','shelf.jpg']);
