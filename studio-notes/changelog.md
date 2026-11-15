@@ -13,6 +13,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.13.0 · 15 Nov 2026
+Saving several stories in a row to the team no longer stops to ask about the name.
+
+### Several stories in a row, no name question
+type: fix
+When you save a second or third story to the team on the same day and keep the automatic name (like “Restock – 15 Nov”), Studio no longer asks whether to update the first one. Each new story quietly takes the next number: “Restock – 15 Nov · 2”, “· 3”. A name you typed yourself still asks, so nothing is overwritten by mistake. Taps per extra story: 4 → 3.
+
 ## 2.12.0 · 15 Nov 2026
 The background remover takes a hint: tap the background colour and the cut-out redraws at once.
 
