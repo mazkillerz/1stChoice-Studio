@@ -171,7 +171,7 @@ async function phone(dark){
   ok(T+'Copy caption puts the caption on the clipboard and says so',(await pg.evaluate(()=>navigator.clipboard.readText()))==='New batch today\nsecond line #cold'&&/Caption copied/.test(await pg.evaluate(()=>document.body.innerText)));
   await pg.tap('.cal-item[data-id="c1"] .ci-more'); await pg.waitForSelector('dialog.cal-dlg[open] .cal-menu');
   const mrows=await pg.$$eval('dialog[open] .act-row',e=>e.map(x=>x.textContent.trim()));
-  ok(T+'⋯ menu: Mark as posted, Copy caption, Move to tomorrow, Delete',mrows.join('|')==='Mark as posted|Copy caption|Move to tomorrow|Delete',mrows);
+  ok(T+'⋯ menu: Post now (2.8.0), Mark as posted, Copy caption, Move to tomorrow, Delete',mrows.join('|')==='Post now|Mark as posted|Copy caption|Move to tomorrow|Delete',mrows);
   const d1=(await stored(pg)).find(x=>x.id==='c1').day;
   await pg.tap('dialog[open] [data-a="tomorrow"]'); await pg.waitForTimeout(600);
   ok(T+'Move to tomorrow moves it one day',(await stored(pg)).find(x=>x.id==='c1').day===nextDay(d1),[d1,(await stored(pg)).find(x=>x.id==='c1').day]);
