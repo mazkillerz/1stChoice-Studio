@@ -3200,6 +3200,7 @@ async function home(){
       +notes.map(d=>`<div class="rv-note st-${d.review}"><button type="button" class="rv-nt" data-rv="read" data-id="${esc(d.id)}" dir="auto">${d.review==='approved'?'Your design “'+esc(d.name)+'” was approved by '+esc(d.review_by):esc(d.review_by)+' asked for changes on “'+esc(d.name)+'”'}</button><button type="button" class="rv-nx" data-rv="dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">×</button></div>`).join('');
   }
   let tplApi=null;
+  let tplWant=null;   /* a category asked for before the Templates code had loaded (the occasion banner), shown once it is in */
   function showTemplates(){
     if(!$('templatesView')) return;
     if(!window.StudioTemplates){ lazy('templates',{css:1}).then(()=>{ if(curView()==='templates') showTemplates(); },()=>{}); return; }   /* 2.26.0 faststart: code + styles load the first time the tab opens */
@@ -3208,7 +3209,7 @@ async function home(){
       onBack:()=>goHome(),
       teamNote:()=>member?{text:'No team templates yet. Save a design with “Keep the photos” off, and it shows here for everyone.'}
                         :{text:'Templates your team saves show here.',action:{label:'Sign in',run:()=>$('acct').click()}}});
-    tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
+    const want=tplWant; tplWant=null; if(want) tplApi.show(want); else tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
   /* occasion banner (w2-packs, mega): a quiet card under the search while a pack is in season; dismissed per pack and season on this device */
   (function(){
     const hero=document.querySelector('#homeView .hero'); if(!hero||!(B.packList||[]).length) return;
@@ -3219,7 +3220,7 @@ async function home(){
     /* 2.21.0 home2: on the new Home the banner sits under Today (Today is the hero), not between the search and Today */
     const place=()=>{ const e2=$('packBanner'); if(!e2) return; (document.documentElement.hasAttribute('data-home2')&&$('todaySec')?$('todaySec'):hero).after(e2); };
     hero.after(el); place(); document.addEventListener('studio:flag',e=>{ if(e.detail&&e.detail.id==='home2') place(); });
-    el.querySelector('.pb-go').onclick=()=>{ haptic('tick'); openView('templates'); if(tplApi) tplApi.show(cat); };
+    el.querySelector('.pb-go').onclick=()=>{ haptic('tick'); tplWant=cat; openView('templates'); if(tplApi){ tplWant=null; tplApi.show(cat); } };
     el.querySelector('.pb-x').onclick=()=>{ haptic('tick'); store(key,1); el.remove(); };
   })();
   addEventListener('resize',()=>setTab(curView()));

@@ -38,7 +38,7 @@ for(const scheme of ['light','dark']){
   await ctx.addInitScript(()=>{ try{ localStorage.setItem('studio:welcome','seen'); }catch(_){} });
   const pg=await ctx.newPage(); watch(pg);
   await pg.goto(BASE+'index.html'); await pg.evaluate(()=>localStorage.clear());
-  const f='/tmp/rp/frame-'+scheme+'.png'; fs.writeFileSync(f,Buffer.from(await makePng(pg,600,400,DRAW),'base64'));
+  fs.mkdirSync('/tmp/rp',{recursive:true}); const f='/tmp/rp/frame-'+scheme+'.png'; fs.writeFileSync(f,Buffer.from(await makePng(pg,600,400,DRAW),'base64'));
   await pg.goto(BASE+'tools/restock.html'); await pg.waitForFunction(()=>window.Studio&&Studio.debug,null,{timeout:20000}); await pg.waitForTimeout(700);
   await pg.setInputFiles('#pick',[new URL('../brands/1stchoice/samples/pair.jpg',import.meta.url).pathname]); await pg.waitForTimeout(800);
   await pg.tap('#bar [data-open="layers"]'); await pg.waitForTimeout(300); await pg.tap('#addAsset'); await pg.waitForSelector('#assetTeam [data-team-browse]',{timeout:8000});

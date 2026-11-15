@@ -100,7 +100,8 @@ async function wnChecks(pg,tag){
     if(!cnt(t))continue;
     await pg.click('.wn-f[data-filter="'+t+'"]'); await pg.waitForTimeout(400);
     const got=await shownLines();
-    ok(tag+': '+l+' shows only '+t+' lines in opened versions',got.length>0&&got.every(x=>x===t),got.length+' lines');
+    const built=await pg.$$eval('.wn-line',(ls,tt)=>ls.some(x=>x.dataset.type===tt),t);   // the opened versions may hold no change of this kind (2.25–2.28 have no fix)
+    ok(tag+': '+l+' shows only '+t+' lines in opened versions',(got.length>0||!built)&&got.every(x=>x===t),got.length+' lines');
     ok(tag+': '+l+': pressed chip marked, rows without a match hidden, row chips count only matches',await pg.getAttribute('.wn-f[data-filter="'+t+'"]','aria-pressed')==='true'&&await pg.$$eval('.wn-ver',(l,tt)=>l.every(r=>{ const cc=[...r.querySelectorAll('.wn-cc')]; return r.hidden?cc.length===0:(cc.length===1&&cc[0].dataset.type===tt); }),t)&&await pg.$$eval('.wn-ver:not([hidden])',(l)=>l.length)===vers.slice(1).filter(v=>v.cards.some(c=>c.type===t)).length);
   }
   await pg.click('.wn-f[data-filter="all"]'); await pg.waitForTimeout(400);
