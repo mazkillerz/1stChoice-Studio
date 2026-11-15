@@ -125,10 +125,19 @@ function make(o){
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month','feed'/* 2.9.0 feed */].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
   let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
-  let lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
+  let pool=[], win=null, fetchedAt=0, lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='feed') return window.StudioFeed?StudioFeed.range():[addDays(new Date(),-60),addDays(new Date(),90)]; /* 2.9.0 feed */
     if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
     const f=new Date(anchor.getFullYear(),anchor.getMonth(),1), s=weekStart(f); return [s,addDays(s,41)]; };
+  /* shell mode: the pane is its own scroller (no window scroll, no swipe, no back button / tabs) */
+  const sh=!!o.shell, sy=()=>sh?root.scrollTop:scrollY, sTo=y=>{ if(sh) root.scrollTop=y; else scrollTo({top:y,behavior:'instant'}); };
+  const calm=()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){ return false; } };
+  /* the cache: everything fetched for one wide window (60 days back to 120 ahead, or around a far range); a view inside it draws at once */
+  const TTL=30000;
+  const winFor=(a,b)=>{ const t=new Date(), da=iso(addDays(t,-60)), db=iso(addDays(t,120)), ia=iso(a), ib=iso(b); return (ia>=da&&ib<=db)?[da,db]:[iso(addDays(a,-60)),iso(addDays(b,60))]; };
+  const covers=(a,b)=>!!win&&iso(a)>=win[0]&&iso(b)<=win[1];
+  const slice=()=>{ const [a,b]=range(), lo=iso(a), hi=iso(b); return pool.filter(x=>x.day>=lo&&x.day<=hi).concat(legacyItems(o.brand).filter(x=>x.day>=lo&&x.day<=hi)); };
+  const sigNow=()=>{ const [a,b]=range(); return JSON.stringify([iso(a),iso(b),mode,items,designs.map(d=>d.id+d.updated_at)]); };
   const designOf=id=>designs.find(d=>d.id===id);
   const shapeOf=dShape;
   const fmtOf=it=>it.format||shapeOf(it.design_ids.map(designOf).find(Boolean))||'post';
@@ -141,8 +150,8 @@ function make(o){
   const authorName=()=>{ try{ return (o.who&&o.who.author&&o.who.author())||null; }catch(_){ return null; } };
 
   /* ---------- load ---------- */
-  async function load(){
-    const my=++run; clearTimeout(slowT); const [a,b]=range();
+  async function load(opt){
+    opt=opt||{}; const my=++run; clearTimeout(slowT); const [a,b]=range();
     if(state!=='ok'){ state='loading'; draw(); }
     slowT=setTimeout(()=>{ if(my===run&&state!=='ok'){ state='slow'; draw(); } },8000);
     try{
@@ -150,23 +159,36 @@ function make(o){
       if(mode==='feed'&&!window.StudioFeed) await loadFeed(); /* 2.9.0 feed */
       C=await o.cloud(); if(my!==run) return;
       if(!(await o.member())){ state='out'; draw(); return; }
-      const [list,dl]=await Promise.all([C.calendar(o.brand,{from:iso(a),to:iso(b)}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
+      const w=winFor(a,b);
+      const [list,dl]=await Promise.all([C.calendar(o.brand,{from:w[0],to:w[1]}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
       designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
-      const lg=legacyItems(o.brand).filter(x=>x.day>=iso(a)&&x.day<=iso(b));
-      items=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})).concat(lg);
+      pool=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})); win=w; fetchedAt=Date.now();
+      items=slice();
       /* 2.5.0 (owner: "it flickers like it refreshes"): redraw only when something changed since what is on screen */
-      const sig=JSON.stringify([iso(a),iso(b),mode,items,designs.map(d=>d.id+d.updated_at)]); const same=state==='ok'&&sig===lastSig; lastSig=sig; state='ok'; if(!same) draw();
+      const sig=sigNow(); const same=state==='ok'&&sig===lastSig; lastSig=sig; state='ok'; if(!same) draw(opt.dir);
       if(toToday){ toToday=false; const t=root.querySelector('.cal-day.today'); if(t&&!wide()) t.scrollIntoView({block:'start'}); }
-      const need=[...new Set(items.flatMap(x=>x.design_ids).map(designOf).filter(Boolean).map(d=>d.thumb_path).filter(p=>p&&!urls[p]))];
-      if(need.length) C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbs(); }).catch(()=>{});
+      thumbsFor();
     }catch(err){ if(my!==run) return; const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
       if(state==='ok'){ o.toast(net?(slow?'The connection is slow. This is the calendar from before.':'You’re offline. This is the calendar from before.'):'Could not refresh the calendar: '+(err.message||err)); return; }
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); draw(); }
     finally{ if(my===run) clearTimeout(slowT); }
   }
+  function thumbsFor(){ const need=[...new Set(items.flatMap(x=>x.design_ids).map(designOf).filter(Boolean).map(d=>d.thumb_path).filter(p=>p&&!urls[p]))];
+    if(need.length&&C&&C.fileUrls) C.fileUrls(need).then(u=>{ Object.assign(urls,u); fillThumbs(); }).catch(()=>{}); }
+  /* switching view or week: draw from the cache at once, then refresh in the background only when the data is old (never a loading state when the cache has it) */
+  function view(dir){
+    const [a,b]=range();
+    if(state==='ok'&&covers(a,b)){
+      const go=()=>{ items=slice(); lastSig=sigNow(); draw(dir); thumbsFor(); if(Date.now()-fetchedAt>TTL) load(); };
+      if(mode==='feed'&&!window.StudioFeed){ loadFeed().then(go,()=>load()); return; }
+      go(); return; }
+    load({dir});
+  }
+  function preloadFeed(){ if(window.StudioFeed) return; const f=()=>{ loadFeed().catch(()=>{}); }; if(window.requestIdleCallback) requestIdleCallback(f,{timeout:3000}); else setTimeout(f,1200); }
   /* 2.9.0 feed: the Feed view lives in assets/feed.js (+ feed.css), loaded the first time it is chosen */
+  let feedP=null;
   function loadFeed(){ if(window.StudioFeed) return Promise.resolve(); if(!document.getElementById('lz-feed')){ const l=document.createElement('link'); l.id='lz-feed'; l.rel='stylesheet'; l.href=FEEDBASE+'feed.css'; document.head.appendChild(l); }
-    return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=FEEDBASE+'feed.js'; s.onload=()=>res(); s.onerror=()=>rej(Object.assign(new Error('Could not load the feed. Check the connection.'),{offline:true})); document.head.appendChild(s); }); }
+    if(feedP) return feedP; return feedP=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=FEEDBASE+'feed.js'; s.onload=()=>res(); s.onerror=()=>{ feedP=null; s.remove(); rej(Object.assign(new Error('Could not load the feed. Check the connection.'),{offline:true})); }; document.head.appendChild(s); }); }
   const feedHtml=()=>StudioFeed.html({items,designOf,urls,esc,fmtOf,todayIso:todayIso(),plus:ic('plus'),fmtIcon:k=>ICF[k],dayLabel:k=>L(parse(k),{day:'numeric',month:'short'})});
   /* /2.9.0 feed */
   function fillThumbs(){ root.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; }); }
@@ -202,8 +224,36 @@ function make(o){
       return `<div class="cal-cell${k===t?' today':''}${out?' out':''}" data-day="${k}"><button type="button" class="cc-num" data-week="${k}" aria-label="${esc(L(d,{weekday:'long',day:'numeric',month:'long'}))}${list.length?', '+list.length+(list.length===1?' item':' items'):''}">${d.getDate()}<span class="cc-dots" aria-hidden="true">${dots}</span></button>
         ${list.length?`<div class="cc-items">${list.slice(0,3).map(pill).join('')}${list.length>3?`<button type="button" class="cc-more" data-week="${k}">+${list.length-3} more</button>`:''}</div>`:''}</div>`; }).join('');
     return `<div class="cal-month"><div class="cm-head" aria-hidden="true">${head}</div><div class="cm-grid">${cells}</div></div>`; }
-  function draw(){
-    const keepY=window.scrollY;
+  /* the frame (top bar with the sliding Week | Month | Feed pill, arrows, title) is built once; only its text and the body change */
+  let navEls=[];
+  function frame(){
+    if(root.querySelector(':scope>.cal-top')) return;
+    const newBtn=`<button type="button" class="mini solid cal-new" data-add="${todayIso()}">${ic('plus')}<span>New</span></button>`,
+      segH=`<div class="cal-seg" role="group" aria-label="View"><span class="cs-pill" aria-hidden="true"></span><button type="button" class="chip" data-mode="week">Week</button><button type="button" class="chip" data-mode="month">Month</button><button type="button" class="chip" data-mode="feed">Feed</button></div>`,
+      navH=`<div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1">${ic('back')}</button><button type="button" class="cal-today" data-nav="0">Today</button><strong class="cal-title" aria-live="polite"></strong><button type="button" class="cal-arrow" data-nav="1">${ic('next')}</button></div>`;
+    root.innerHTML=(sh
+      ?`<div class="cal-top cal-top-shell"><h1 id="calH" class="sr-only" tabindex="-1">Calendar</h1><div class="cal-bar">${segH}${newBtn}</div><div class="cal-bar">${navH}</div></div>`
+      :`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
+        <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>${newBtn}</div>${o.tabs||''}
+      <div class="cal-bar">${segH}${navH}</div></div>`)+`<div class="cal-stage"><div class="cal-body"></div></div>`;
+    navEls=[...root.querySelectorAll('.cal-nav>*')]; const seg=root.querySelector('.cal-seg'); if(window.ResizeObserver) new ResizeObserver(()=>slidePill(false)).observe(seg);
+  }
+  function slidePill(anim){ const seg=root.querySelector('.cal-seg'), p=seg&&seg.querySelector('.cs-pill'), on=seg&&seg.querySelector('[aria-pressed="true"]'); if(!p||!on||!on.offsetWidth) return;
+    if(!anim||calm()){ p.style.transition='none'; } p.style.width=on.offsetWidth+'px'; p.style.transform='translateX('+on.offsetLeft+'px)';
+    if(!anim||calm()){ p.getBoundingClientRect(); p.style.transition=''; } }
+  function paintTop(live,here){
+    root.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.mode===mode)));
+    const feed=mode==='feed', mo=mode==='month';
+    const nav=root.querySelector('.cal-nav'), [pv,td,ttl,nx]=navEls; /* present only when they apply (no hidden controls); kept nodes keep focus */
+    const put=(el,want,before)=>{ if(want&&!el.isConnected) nav.insertBefore(el,before||null); else if(!want&&el.isConnected) el.remove(); };
+    put(pv,!feed,nav.firstChild); put(td,!here,ttl); put(nx,!feed,null);
+    pv.setAttribute('aria-label',mo?'Previous month':'Previous week'); nx.setAttribute('aria-label',mo?'Next month':'Next week');
+    root.querySelector('.cal-title').textContent=title();
+    const nw=root.querySelector('.cal-new'); nw.dataset.add=here?todayIso():iso(anchor); nw.disabled=!live;
+  }
+  /* dir: undefined = no animation; 0 = crossfade; +-1 = a short slide in the direction of travel. The old body is swapped out at once, then the new one fades in (never both visible). */
+  function draw(dir){
+    const keepY=sy(); frame();
     const body=state==='ok'?(mode==='feed'?feedHtml():mode==='month'?monthHtml():weekHtml()) /* 2.9.0 feed */
       :state==='loading'?'<div class="cal-skel" aria-hidden="true">'+'<span></span>'.repeat(5)+'</div>'
       :state==='offline'?noteBox(ic('clock'),'You’re offline','You can still make and save pictures. Your calendar comes back when you’re online.',againBtn)
@@ -212,18 +262,16 @@ function make(o){
       :noteBox(ic('rotate'),'Could not load the calendar',esc(note),againBtn);
     const live=state==='ok';
     const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb))||mode==='feed';
-    root.innerHTML=`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
-        <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>
-        <button type="button" class="mini solid cal-new" data-add="${here?todayIso():iso(anchor)}"${live?'':' disabled'}>${ic('plus')}<span>New</span></button></div>${o.tabs||''}
-      <div class="cal-bar"><div class="cal-seg" role="group" aria-label="View"><button type="button" class="chip" data-mode="week" aria-pressed="${mode==='week'}">Week</button><button type="button" class="chip" data-mode="month" aria-pressed="${mode==='month'}">Month</button><button type="button" class="chip" data-mode="feed" aria-pressed="${mode==='feed'}">Feed</button></div>
-        <div class="cal-nav">${mode==='feed'?'':`<button type="button" class="cal-arrow" data-nav="-1" aria-label="${mode==='month'?'Previous month':'Previous week'}">${ic('back')}</button>`}
-        ${here?'':'<button type="button" class="cal-today" data-nav="0">Today</button>'}<strong class="cal-title" aria-live="polite">${esc(title())}</strong>
-        ${mode==='feed'?'':`<button type="button" class="cal-arrow" data-nav="1" aria-label="${mode==='month'?'Next month':'Next week'}">${ic('next')}</button>`}</div></div></div>
-      <div class="cal-body">${body}</div>`;
-    window.scrollTo({top:keepY,behavior:'instant'});
+    paintTop(live,here); slidePill(dir!==undefined);
+    const stage=root.querySelector('.cal-stage'), el=root.querySelector('.cal-body'), h0=stage.offsetHeight;
+    if(dir!==undefined&&!calm()){ stage.style.minHeight=h0+'px'; clearTimeout(stage._t); stage._t=setTimeout(()=>{ stage.style.minHeight=''; },260); }
+    el.innerHTML=body;
+    sTo(keepY);
+    if(dir!==undefined&&!calm()&&el.animate&&live){ try{ el.getAnimations().forEach(x=>x.cancel());
+      el.animate(dir?[{opacity:0,transform:'translateX('+(12*dir)+'px)'},{opacity:1,transform:'none'}]:[{opacity:0},{opacity:1}],{duration:dir?180:160,easing:'cubic-bezier(.2,.8,.2,1)'}); }catch(_){} }
   }
-  function go(n){ if(mode==='feed') return; /* 2.9.0 feed */ if(n===0) anchor=new Date(); else if(mode==='month') anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1); else anchor=addDays(anchor,7*n); hap('tick'); load(); }
-  function setMode(m,day){ if(day) anchor=parse(day); mode=m; wr('studio:calMode',m); hap('tick'); state=state==='ok'?'ok':state; load(); }
+  function go(n){ if(mode==='feed') return; /* 2.9.0 feed */ const was=anchor.getTime(); if(n===0) anchor=new Date(); else if(mode==='month') anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1); else anchor=addDays(anchor,7*n); hap('tick'); view(n||(anchor.getTime()>was?1:anchor.getTime()<was?-1:0)); }
+  function setMode(m,day){ if(m===mode&&!day) return; if(day) anchor=parse(day); mode=m; wr('studio:calMode',m); hap('tick'); view(0); }
 
   /* ---------- save, move, status, delete ---------- */
   const keep=it=>({id:it.id,brand:o.brand,day:it.day,at:it.at||null,status:it.status,format:it.format||null,title:it.title||'',caption:it.caption||'',hashtags:it.hashtags||[],design_ids:it.design_ids||[],campaign_id:it.campaign_id||null,author:it.author||null});
@@ -397,16 +445,16 @@ function make(o){
     if(t.closest('[data-cal-signin]')){ o.signIn().then(ok=>{ if(ok) load(); }); return; }
     let b=t.closest('[data-nav]'); if(b) return go(+b.dataset.nav);
     b=t.closest('[data-mode]'); if(b) return setMode(b.dataset.mode);
-    b=t.closest('[data-week]'); if(b){ anchor=parse(b.dataset.week); mode='week'; wr('studio:calMode','week'); hap('tick'); load(); return; }
+    b=t.closest('[data-week]'); if(b){ anchor=parse(b.dataset.week); mode='week'; wr('studio:calMode','week'); hap('tick'); view(0); return; }
     b=t.closest('[data-add]'); if(b) return editSheet(null,b.dataset.add);
     b=t.closest('[data-copy]'); if(b) return copyCap(items.find(x=>x.id===b.dataset.copy));
     b=t.closest('[data-more]'); if(b) return menu(items.find(x=>x.id===b.dataset.more));
     { const dz=t.closest('[data-design]'); if(dz&&dz.dataset.tool){ e.preventDefault(); hap('tick'); location.href=designHref(dz.dataset.design,dz.dataset.tool); return; } }
     b=t.closest('[data-open]'); if(b){ const it=items.find(x=>x.id===b.dataset.open); if(it&&!it.legacy) editSheet(it); } });
   /* swipe sideways on the list: previous / next week (or month) */
-  root.addEventListener('touchstart',e=>{ const el=e.target.closest('.cal-body'); tx=el&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}:null; },{passive:true});
+  if(!sh){ root.addEventListener('touchstart',e=>{ const el=e.target.closest('.cal-body'); tx=el&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}:null; },{passive:true});
   root.addEventListener('touchend',e=>{ if(!tx||!e.changedTouches.length) return; const dx=e.changedTouches[0].clientX-tx.x, dy=e.changedTouches[0].clientY-tx.y, ms=Date.now()-tx.t; tx=null;
-    if(Math.abs(dx)>80&&Math.abs(dy)<45&&Math.abs(dx)>Math.abs(dy)*2&&ms<700&&state==='ok') go(dx<0?1:-1); },{passive:true});
+    if(Math.abs(dx)>80&&Math.abs(dy)<45&&Math.abs(dx)>Math.abs(dy)*2&&ms<700&&state==='ok') go(dx<0?1:-1); },{passive:true}); }
   /* drag to move (computers): items are draggable; every day (week row or month cell) takes a drop */
   root.addEventListener('dragstart',e=>{ const el=e.target.closest&&e.target.closest('[data-id][draggable="true"]'); if(!el){ return; } dragId=el.dataset.id; el.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain',dragId); e.dataTransfer.effectAllowed='move'; }catch(_){} });
   root.addEventListener('dragend',e=>{ dragId=null; root.querySelectorAll('.dragging,.drop').forEach(x=>x.classList.remove('dragging','drop')); });
@@ -416,7 +464,7 @@ function make(o){
 
   return {
     get mode(){ return mode; },
-    show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
+    show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load(); preloadFeed();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
       const h=root.querySelector('#calH'); if(h) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
     postNow,

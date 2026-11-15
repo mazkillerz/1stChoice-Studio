@@ -43,7 +43,7 @@ for(const scheme of ['light','dark']){
   ok(`1 ${scheme}: the toggle shows Week, Month and Feed`,labels.join()==='Week,Month,Feed',labels);
   await pg.tap('[data-mode="feed"]'); await pg.waitForSelector('.feed-tile',{timeout:8000}); await pg.waitForTimeout(600);
   const g=await geo(pg);
-  ok(`1 ${scheme}: Feed hides the week arrows`,await pg.$$eval('.cal-arrow',e=>e.length)===0);
+  ok(`1 ${scheme}: Feed hides the week arrows`,await pg.$$eval('#calendarView .cal-arrow',e=>e.length)===0);
   ok(`2 ${scheme}: 3 columns, tiles 3:4, 2px gaps`,g.cols===3&&g.gap==='2px'&&g.ratio.every(r=>Math.abs(r-0.75)<0.01),g);
   ok(`2 ${scheme}: newest first, stories and out-of-range items left out`,g.ids.join()===EXPECT_ORDER.join(),g.ids);
   ok(`2 ${scheme}: 5 tiles in 2 rows`,g.rows===2,g.rows);
