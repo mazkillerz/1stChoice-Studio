@@ -3104,7 +3104,10 @@ async function home(){
   const tdDir=t=>/^[^A-Za-z\u0590-\u08FF]*[\u0590-\u08FF]/.test(t||'')?'rtl':'ltr';   /* the title's own direction also sets which side its small second line sits on (dir=auto skips children that have a dir) */
   const tdLink=(go,t)=>`<button type="button" class="link td-more" data-go="${go}">${t}</button>`;
   const tdEmpty=(msg,go,t)=>`<div class="td-in td-empty">${msg?`<p>${msg}</p>`:''}${tdLink(go,t)}</div>`;
-  const tdCalHtml=list=>{ if(!list.length) return tdEmpty('Nothing planned for today','cal','Plan a post');
+  const tdDay=d=>{ try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }catch(_){ return d; } };
+  /* 2.29.0 polish: nothing today but posts coming up: say so in one quiet line and show the next two (day + time), so the card is never a big empty box */
+  const tdNextHtml=next=>`<div class="td-in"><p class="td-note">Nothing planned for today. Coming up:</p><div class="td-list">${next.map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t td-day"><bdi>${esc(tdDay(x.day))}</bdi></span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b><small>${[x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'',TD_FMT[x.f]||''].filter(Boolean).join(' · ')}</small></span></button></div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`;
+  const tdCalHtml=(list,next)=>{ if(!list.length) return next&&next.length?tdNextHtml(next):tdEmpty('Nothing planned for today','cal','Plan a post');
     return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t">${x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'Any time'}</span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b>${TD_FMT[x.f]?`<small>${TD_FMT[x.f]}</small>`:''}</span></button>${x.id&&x.dz?`<button type="button" class="cal-home-post" data-id="${esc(x.id)}" data-day="${esc(x.day||'')}" aria-label="Post now: ${esc(x.title||'Untitled')}">${ICON.share}<span>Post</span></button>`:''}</div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`; };
   const tdIdeasHtml=(list,me)=>{ if(!list.length) return tdEmpty('No ideas yet. Tap + to add one.','ideas','Open ideas');
     return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>{ const fresh=x.seen===null&&(x.author||'').trim().toLowerCase()!==me;
@@ -3114,7 +3117,7 @@ async function home(){
       return `<div class="td-row"><button type="button" class="td-open td-goal" data-go="goals"><span class="td-gl"><b>${l}</b><span><bdi>${d}</bdi> of <bdi>${t}</bdi></span></span><span class="td-bar"><i style="width:${pc}%"></i></span></button></div>`; }).join('')}</div>${tdLink('goals','Open goals')}</div>`; };
   /* final: the answer is in (or can't come), so a pane with no data shows its empty state instead of the placeholder */
   function paintToday(c,k,m,final){ if(!tdSec) return; const me=(whoRead().name||'').trim().toLowerCase();
-    [['cal',c.day===k?tdCalHtml(c.today||[]):null],['ideas',c.ideas?tdIdeasHtml(c.ideas,me):null],['goals',c.month===m&&c.goals?tdGoalsHtml(c.goals):null]].forEach(([id,html])=>{
+    [['cal',c.day===k?tdCalHtml(c.today||[],c.next):null],['ideas',c.ideas?tdIdeasHtml(c.ideas,me):null],['goals',c.month===m&&c.goals?tdGoalsHtml(c.goals):null]].forEach(([id,html])=>{
       const pane=$('tdp-'+id); if(!pane) return; if(html===null) html=final&&pane.querySelector('.hs-skel')?(id==='cal'?tdCalHtml([]):id==='ideas'?tdIdeasHtml([],me):tdGoalsHtml(null)):null;
       if(html!==null) swapIn(pane.querySelector('.td-in'),html,'afterbegin',pane); }); }
   async function calHome(){
@@ -3129,7 +3132,9 @@ async function home(){
       const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), safe=p=>p?p.catch(()=>null):Promise.resolve(null);
       const [cal,ids,km]=await Promise.all([safe(Cl.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})),PLAN_ON&&Cl.ideas?safe(Cl.ideas(B.id)):null,PLAN_ON&&Cl.kpiMonths?safe(Cl.kpiMonths(B.id,m,m)):null]);
       const c=store(PLANK)||{};
-      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at,f:x.format||null}));   /* 2.21.0 home2: f = format */ paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); remindSync(today); }
+      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at,f:x.format||null}));   /* 2.21.0 home2: f = format */ paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); remindSync(today);
+        /* 2.29.0: the next two planned posts after today, for Today's empty Calendar pane ("Coming up") */
+        c.next=cal.filter(x=>x.day>k&&x.status!=='posted').sort((p,q)=>(p.day+(p.at||'99')).localeCompare(q.day+(q.at||'99'))).slice(0,2).map(x=>({id:x.id,day:x.day,title:x.title,at:x.at,f:x.format||null})); }
       if(ids){ c.inbox=ids.filter(x=>x.stage==='inbox').length;
         c.ideas=ids.filter(x=>x.stage!=='posted').sort((p,q)=>String(q.created_at||'').localeCompare(String(p.created_at||''))).slice(0,3).map(x=>({id:x.id,title:x.title||'',type:x.type||'post',seen:'seen_at' in x?(x.seen_at||null):1,author:x.author||''})); }   /* 2.21.0 home2: the 3 newest for Today; seen is null only when seen_at is there and empty */
       if(km&&cal){ const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted'), keyK=['post','story','reel'].find(q=>+t[q]>0);
