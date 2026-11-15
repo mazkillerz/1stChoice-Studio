@@ -13,6 +13,23 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.10.0 · 15 Nov 2026
+A Simplify release: shorter Style sheets, one Sign in, faster checks, and every screen tested.
+
+### Background finishes in one row
+type: improve
+The 14 backgrounds now sit in one sideways row under Background (Plain first, then Gradients, Patterns and Textures, each after a small label), so the Style sheet is about 230px shorter in Restock, Photo story, Collage and Carousel. The one you picked is already in view when the sheet opens.
+![before](assets/whatsnew/2.10.0-backgrounds-before.jpg)
+![after](assets/whatsnew/2.10.0-backgrounds-after.jpg)
+
+### One Sign in on Home
+type: improve
+Signed out, Home showed two blue Sign in buttons (top right and in Saved designs). The one in Saved designs is now a quiet text button, so there is one clear place to sign in. In Settings, Who's using Studio has its own icon instead of sharing Sign in's.
+
+### Faster checks behind the scenes
+type: improve
+The six slowest test suites now run in parts, so the full check of every screen before a release finishes sooner. Nothing changes in the app.
+
 ## 2.9.0 · 15 Nov 2026
 See your Instagram grid before you post: the Calendar has a Feed view.
 
