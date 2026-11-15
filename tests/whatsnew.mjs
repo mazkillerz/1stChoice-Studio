@@ -54,7 +54,7 @@ async function wnChecks(pg,tag){
   /* a version with screenshots: they are all there after one tap, before/after side by side */
   const sv=vers.slice(1).find(v=>v.cards.some(c=>c.shot));
   if(sv){
-    const r=q('#v-'+CSS_ESC(sv.version)); await r.scrollIntoViewIfNeeded(); await r.locator('.wn-vbtn').click(); await pg.waitForTimeout(450);
+    const r=q('#v-'+CSS_ESC(sv.version)); await r.scrollIntoViewIfNeeded(); if(await r.locator('.wn-vbtn').getAttribute('aria-expanded')!=='true') await r.locator('.wn-vbtn').click(); await pg.waitForTimeout(450);   // it may be the row opened above
     const want=(md.split(/^## /m).slice(1).find(s=>s.startsWith(sv.version+' '))||'').split('\n').filter(l=>/^!\[(before|after)\]/i.test(l.trim())).length;
     await r.locator('.wn-fig img').last().scrollIntoViewIfNeeded(); await pg.waitForTimeout(600);
     ok(tag+': '+sv.version+' opens with all its screenshots ('+want+') loaded',await r.locator('.wn-fig').count()===want&&await r.locator('.wn-fig img').evaluateAll(l=>l.every(i=>i.complete&&i.naturalWidth>0)));
