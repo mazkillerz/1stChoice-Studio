@@ -13,6 +13,33 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.24.0 · 15 Nov 2026
+Search finds your ideas and planned posts.
+
+### Search finds ideas and planned posts
+type: feature
+Studio's search at the top of Home now also lists your ideas (by their title, notes, link, who added them, or words in the replies, Arabic too) and the posts on your calendar (by title, caption or hashtags, with their day and time), under "Ideas and planned posts". Tap an idea to open it, or a post to open the calendar on that week with the day lit up.
+
+## 2.23.0 · 15 Nov 2026
+Ideas open on the conversation, and show what's new.
+
+### Ideas open on the conversation
+type: improve
+Tap an idea and you see the idea itself and its discussion straight away, with the reply bar waiting at the bottom; the stage is one tap on its chips. Editing the idea is one **Edit** button away (Save or Cancel takes you back).
+![before](assets/whatsnew/2.23.0-ideasheet-before.jpg)
+![after](assets/whatsnew/2.23.0-ideasheet-after.jpg)
+
+### See what's new in Ideas
+type: feature
+An idea with replies you haven't read yet shows a small "2 new" tag, and the Ideas tab shows how many ideas have something new for you. It counts from the last time you opened each idea on this phone.
+
+## 2.22.0 · 15 Nov 2026
+Calendar, Ideas and Goals open instantly, even with no signal.
+
+### Plan pages open at once
+type: improve
+Calendar, Ideas and Goals now keep their last data on your phone. The second time you open them (or when the connection is gone) they appear at once with what you saw last, then quietly refresh in the background and only change what is new. With no signal a small line says when they were last updated ("Updated 5 min ago") instead of an error. Signing out clears it from the phone.
+
 ## 2.21.0 · 15 Nov 2026
 A calmer Home, and a new Home to try.
 
