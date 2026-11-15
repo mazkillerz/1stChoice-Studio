@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** round 4 (15 Nov 2026, ten releases 2.8.0–2.17.0, plan `studio-notes/round4.md`): 2.8.0 Post it now (team), 2.9.0 Feed preview (Mazoon), 2.10.0 **Simplify** (Background finishes in one row, one Sign in, suites split, full sweep), 2.11.0 Reminders (team), 2.12.0 remover colour pick (Mazoon), 2.13.0 automatic names never ask (team), 2.14.0 Team assets in Board (Mazoon), 2.15.0 Simplify (Settings in four groups), 2.16.0 Saved search by the words inside (team), 2.17.0 Brand kit page (Mazoon). Next: 2.18.0, a **team** session; next Simplify 2.20.0. Before that: 2.7.0 (14 Nov 2026, Mazoon).
+**Last session:** round 5 (15 Nov 2026, 15 sessions 2.18.0–2.30.0, plan `studio-notes/round5.md`): owner's six (Plan tabs, calendar speed, Ideas thread + archive, voice quality, Home + New Home preview, What's New one level), then instant Plan, Ideas discussion-first + unread, search of ideas/posts, Simplify 2.25.0, Today refresh, faster start, voice player, Coming up, Simplify 2.30.0. Next: 2.31.0, a **team** session; next Simplify 2.35.0.
 **Simplify session:** every 5th minor version. The next one is 2.5.0 (2.0.0 ran the pattern review and a Simplify pass over the round).
 
 ## Next up
@@ -140,3 +140,13 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 - 0.3.0: Quick start ready bar ("Looks good · Save" saves in one tap; Change words), bigger Text place pad on phones (cells 30 → 45px).
 - 0.2.0: Highlight covers tool (icon / word / photo, shared look, one PNG per cover), pager wording per tool (`pageNoun`), `cols` on seg fields, bigger Done on the main sheets + 48px hit area on every Done, hex box 44px.
 - 0.1.0: Quick start from a photo (Restock / Photo story / Collage), What's New page + badge, tap targets (hub view switch, Experimental, Create back / Design menu / page + / Done).
+
+## From round 5 (2.18.0–2.30.0, 15 Nov 2026)
+| # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
+|---|------|-----:|-------:|----:|-------:|------:|-------|
+| 73 | Owner's verdict on **New Home** (flag `home2`): make it the default, drop `#calRow` and the flag | 4 | 5 | 4 | 1 | 12 | What's New 2.21.0 has the switch. |
+| 74 | Try voice notes on a real Android and iPhone (48 kHz, NS/AGC on, EC off; Opus 96k / AAC 128k); adjust per phone if one sounds worse | 4 | 3 | 2 | 1 | 8 | Sandbox has no mic. |
+| 75 | Today's "Coming up" only sees this month (calHome fetches the month): fetch 14 days ahead at month end | 2 | 2 | 1 | 1 | 4 | |
+| 76 | Notify a teammate of a reply on their idea (push needs a server; today: badge + "N new" on open) | 4 | 3 | 4 | 4 | 7 | Owner's OK for a tiny edge function first. |
+| 77 | Calendar: move a post to another day by press-and-drag on a phone (week view), without fighting the tab swipe | 3 | 3 | 3 | 3 | 6 | |
+| 78 | Ideas: turn an idea into a design in one tap ("Make it" → the right tool/template, the design links back when saved) | 3 | 4 | 4 | 3 | 8 | |
