@@ -1,15 +1,17 @@
 (function(){
   'use strict';
   /* What's new page. Reads studio-notes/changelog.md (format: see the intro of that file).
-     The newest version is a hero card (version, date, summary, its changes grouped New / Improved / Fixed). Older versions are closed rows
-     (version, date, one-line summary, count chips) inside closed blocks of five minor versions. Each change is one line; tap it for the note and screenshots.
-     Filter chips (All / New / Improved / Fixed) hide the lines that do not match. Nothing is stored except the "seen" mark. */
+     ONE level: the newest version is a hero card, fully open (every change with its note and screenshots). Every older version is one row
+     (version, date, one-line summary, count chips); one tap opens everything inside (built on first open, then kept). No nested expanders.
+     A jump bar (latest versions + "All versions" sheet grouped by major) goes straight to any version; #v-<version> links do the same.
+     Filter chips (All / New / Improved / Fixed) hide the changes that do not match. Nothing is stored except the "seen" mark. */
   var list=document.getElementById('wnList'),foot=document.getElementById('wnFoot'),
       dlg=document.getElementById('wnDlg'),big=document.getElementById('wnBig'),
       closeBtn=document.getElementById('wnClose'),
       filtersBox=document.getElementById('wnFilters'),chips=document.getElementById('wnChips'),
       status=document.getElementById('wnStatus');
-  var BLOCK=5;                         /* minor versions per block: 0.1 to 0.5, 0.6 to 0.10, ... */
+  var jumpBox=document.getElementById('wnJump');
+  var RECENT=3;                        /* version chips in the jump bar, next to "All versions" */
   var svg=function(d){return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';};
   /* New: sparkle. Improved: trending arrow. Fixed: wrench. (Lucide-style strokes) */
   var TYPES=[
@@ -89,7 +91,7 @@
       if(grid){var vis=grid.querySelectorAll('.wn-fig:not([hidden])').length;
         grid.classList.toggle('two',vis>1);if(!vis)grid.hidden=true;}
     });
-    img.setAttribute('data-src',src);
+    img.src=src;                      /* a row builds its body only when opened, so nothing downloads for closed rows */
     b.appendChild(img);
     b.addEventListener('click',function(){open(src,img.alt);});
     f.appendChild(b);return f;
@@ -98,36 +100,19 @@
   /* ---------- building blocks ---------- */
   /* a note: plain text, with **words** in bold (never HTML from the file) */
   function rich(t,cls){var p=el('p',cls||null);p.setAttribute('dir','auto');String(t).split(/\*\*(.+?)\*\*/).forEach(function(part,i){if(!part)return;p.appendChild(i%2?el('b',null,part):document.createTextNode(part));});return p;}
-  /* an expanding panel: grid rows 0fr to 1fr, so it opens smoothly at any height */
-  function panel(inner){var w=el('div','wn-x');w.id='wnx'+(++uid);var i=el('div','wn-xi');i.appendChild(inner);w.appendChild(i);return w;}
-  /* pictures wait (data-src) until every panel around them is open, so closed rows download nothing */
-  function wake(root){Array.prototype.forEach.call(root.querySelectorAll('img[data-src]'),function(i){if(i.closest('.wn-x:not(.open)'))return;i.src=i.getAttribute('data-src');i.removeAttribute('data-src');});}
-  function setOpen(btn,w,on){btn.setAttribute('aria-expanded',on?'true':'false');w.classList.toggle('open',on);if(on)wake(w);}
-  function toggler(btn,w,after){btn.setAttribute('aria-controls',w.id);btn.setAttribute('aria-expanded','false');
-    btn.addEventListener('click',function(){var on=btn.getAttribute('aria-expanded')!=='true';setOpen(btn,w,on);if(after)after(on);});}
   function chevron(){var c=el('span','wn-chev');c.innerHTML=CHEV;return c;}
 
-  /* one change = one line (its title); the note, the preview switch and the screenshots open under it */
+  /* one change: its title, its note, the preview switch and the screenshots (before and after side by side), all visible */
   function lineEl(c){
     var li=el('li','wn-line');li.setAttribute('data-type',c.type);
-    var shot=c.after||c.before,hasMore=c.note.length||c.flag||c.before||c.after;
-    var head=hasMore?el('button','wn-lbtn'):el('div','wn-lbtn');
-    if(hasMore)head.type='button';
-    var t=el('span','wn-lt',c.title);t.setAttribute('dir','auto');head.appendChild(t);
-    if(shot){var th=el('img','wn-th');th.loading='lazy';th.decoding='async';th.alt='';th.setAttribute('data-src',shot);th.addEventListener('error',function(){th.remove();});head.appendChild(th);}
-    if(hasMore)head.appendChild(chevron());
-    li.appendChild(head);
-    if(hasMore){
-      var body=el('div','wn-lbody');
-      if(c.note.length)body.appendChild(rich(c.note.join(' ')));
-      if(c.flag)body.appendChild(flagRow(c.flag));
-      if(c.before||c.after){
-        var g=el('div','wn-shots'+(c.before&&c.after?' two':''));
-        if(c.before)g.appendChild(fig('before',c.before,c.title));
-        if(c.after)g.appendChild(fig('after',c.after,c.title));
-        body.appendChild(g);
-      }
-      var w=panel(body);li.appendChild(w);toggler(head,w);
+    var t=el('h4','wn-lt',c.title);t.setAttribute('dir','auto');li.appendChild(t);
+    if(c.note.length)li.appendChild(rich(c.note.join(' '),'wn-ln'));
+    if(c.flag)li.appendChild(flagRow(c.flag));
+    if(c.before||c.after){
+      var g=el('div','wn-shots'+(c.before&&c.after?' two':''));
+      if(c.before)g.appendChild(fig('before',c.before,c.title));
+      if(c.after)g.appendChild(fig('after',c.after,c.title));
+      li.appendChild(g);
     }
     return li;
   }
@@ -145,26 +130,6 @@
     paint();return wrap;
   }
 
-  function parts(ver){var m=/^(\d+)\.(\d+)/.exec(ver);return m?{major:+m[1],minor:+m[2]}:null;}
-  function groupVersions(older){
-    var map={},order=[];
-    older.forEach(function(v,i){
-      var p=parts(v.version),key=p?p.major+':'+Math.floor(Math.max(p.minor-1,0)/BLOCK):'v'+i;
-      var g=map[key];
-      if(!g){g=map[key]={major:p?p.major:null,minors:[],versions:[],name:p?'':v.version};order.push(g);}
-      g.versions.push(v);if(p)g.minors.push(p.minor);
-    });
-    return order;
-  }
-  function groupLabel(g){
-    if(g.name)return g.name;
-    var lo=Math.min.apply(null,g.minors),hi=Math.max.apply(null,g.minors);
-    return g.major+'.'+lo+(hi>lo?' – '+g.major+'.'+hi:'');
-  }
-  function groupDate(g){
-    var newest=g.versions[0].date,oldest=g.versions[g.versions.length-1].date;
-    return newest&&oldest&&newest!==oldest?oldest+' – '+newest:(newest||oldest||'');
-  }
   function plural(n){return n+(n===1?' change':' changes');}
   /* the one-line summary of a version: its lead line, else its titles joined */
   function summary(v){
@@ -173,120 +138,186 @@
   }
 
   /* ---------- render ---------- */
-  /* the changes of one version, grouped New / Improved / Fixed with an icon heading; every line is registered in the model for the filter */
-  function groupsEl(v,level,bucket){
-    var wrap=el('div','wn-groups');
+  /* the changes of one version, grouped New / Improved / Fixed with an icon heading; every change is registered on the version's record for the filter */
+  function groupsEl(rec){
+    var v=rec.v,wrap=el('div','wn-groups');
     TYPES.forEach(function(t){
       var cs=v.cards.filter(function(c){return c.type===t.id;});
       if(!cs.length)return;
       var sec=el('section','wn-grp');sec.setAttribute('data-type',t.id);
-      var h=el(level,'wn-gh');var ic=el('span','wn-gi');ic.innerHTML=t.icon;h.appendChild(ic);h.appendChild(el('span',null,t.label));
+      var h=el('h3','wn-gh');var ic=el('span','wn-gi');ic.innerHTML=t.icon;h.appendChild(ic);h.appendChild(el('span',null,t.label));
       var n=el('span','wn-gn');h.appendChild(n);sec.appendChild(h);
       var ul=el('ul','wn-ul'),recs=[];
-      cs.forEach(function(c){var li=lineEl(c);ul.appendChild(li);var rec={el:li,type:c.type};recs.push(rec);model.cards.push(rec);bucket.push(rec);});
+      cs.forEach(function(c){var li=lineEl(c);ul.appendChild(li);recs.push({el:li,type:c.type});});
       sec.appendChild(ul);wrap.appendChild(sec);
-      model.sections.push({el:sec,recs:recs,n:n});
+      rec.secs.push({el:sec,recs:recs,n:n});
+      rec.lines=rec.lines.concat(recs);
     });
     return wrap;
   }
-  /* "3 new · 2 fixed" chips for the lines of a version that are showing */
-  function paintChips(box,recs){
+  function matches(c){return filter==='all'||c.type===filter;}
+  /* "3 new · 2 fixed" chips for the changes of a version that are showing (counted from the data, so a closed row is right too) */
+  function paintChips(box,cards){
     box.textContent='';
     TYPES.forEach(function(t){
-      var n=recs.filter(function(r){return r.type===t.id&&!r.el.hidden;}).length;
+      var n=cards.filter(function(c){return c.type===t.id&&matches(c);}).length;
       if(n){var c=el('span','wn-cc',n+' '+t.chip);c.setAttribute('data-type',t.id);box.appendChild(c);}
     });
+  }
+  /* milestone banner (big version number, title, short intro); the newest version gets the larger one with the "Latest" badge */
+  function banner(v,latest){
+    var mb=el('div','wn-msban'),mn=/^(\d+\.\d+)/.exec(v.version);
+    var mrow=el('div','wn-msrow');mrow.appendChild(el('span','wn-badge wn-msbadge',(latest?'Latest · ':'Milestone · ')+v.version));if(v.date)mrow.appendChild(el('span','wn-msdate',v.date));mb.appendChild(mrow);
+    var bigN=el('span','wn-msnum',mn?mn[1]:v.version);bigN.setAttribute('aria-hidden','true');mb.appendChild(bigN);
+    var spark=el('span','wn-msspark');spark.setAttribute('aria-hidden','true');spark.innerHTML='<i></i><i></i><i></i><i></i><i></i>';mb.appendChild(spark);
+    var mh=el(latest?'h2':'p','wn-mst',v.milestone);if(latest)mh.id='wnLatestH';mb.appendChild(mh);
+    if(v.intro.length)mb.appendChild(rich(v.intro.join(' '),'wn-msintro'));
+    return mb;
+  }
+  /* an older version's body: built on its first open, then kept */
+  function buildRow(rec){
+    if(rec.built)return;rec.built=true;
+    if(rec.v.milestone)rec.xi.appendChild(banner(rec.v,false));
+    rec.xi.appendChild(groupsEl(rec));
+    applyRow(rec);
+  }
+  function applyRow(rec){
+    if(!rec.built)return;
+    rec.lines.forEach(function(r){r.el.hidden=!(filter==='all'||r.type===filter);});
+    rec.secs.forEach(function(s){var k=s.recs.filter(function(r){return !r.el.hidden;}).length;s.el.hidden=!k;s.n.textContent=String(k);});
+  }
+  function setRow(rec,on){
+    if(!rec.btn)return;
+    if(on)buildRow(rec);
+    rec.btn.setAttribute('aria-expanded',on?'true':'false');
+    if(on)void rec.panel.offsetHeight;            /* the body is new: let it settle at 0fr so it animates open */
+    rec.panel.classList.toggle('open',on);rec.el.classList.toggle('is-open',on);
   }
 
   function render(vers){
     filter='all';
-    model={cards:[],sections:[],versions:[],blocks:[],hero:null,heroCards:[],sech:null};
+    model={vers:[],byId:{},sech:null,total:0};
     list.textContent='';
     var idx=0;
     function enter(e){e.classList.add('wn-a');e.style.setProperty('--i',Math.min(idx++,6));return e;}
+    vers.forEach(function(v){model.total+=v.cards.length;});
 
-    /* the latest version: one hero card */
+    /* the latest version: one hero card, fully open */
     var latest=vers[0];
     var hero=enter(el('section','wn-latest'+(latest.milestone?' wn-ms':'')));hero.setAttribute('aria-labelledby','wnLatestH');hero.id='v-'+latest.version;
-    if(latest.milestone){
-      /* a milestone (e.g. 1.0.0): a banner with the big version number, a title and a short intro, above the changes */
-      var mb=el('div','wn-msban'),mn=/^(\d+\.\d+)/.exec(latest.version);
-      var mrow=el('div','wn-msrow');mrow.appendChild(el('span','wn-badge wn-msbadge','Latest · '+latest.version));if(latest.date)mrow.appendChild(el('span','wn-msdate',latest.date));mb.appendChild(mrow);
-      var bigN=el('span','wn-msnum',mn?mn[1]:latest.version);bigN.setAttribute('aria-hidden','true');mb.appendChild(bigN);
-      var spark=el('span','wn-msspark');spark.setAttribute('aria-hidden','true');spark.innerHTML='<i></i><i></i><i></i><i></i><i></i>';mb.appendChild(spark);
-      var mh=el('h2','wn-mst',latest.milestone);mh.id='wnLatestH';mb.appendChild(mh);
-      if(latest.intro.length)mb.appendChild(rich(latest.intro.join(' '),'wn-msintro'));
-      hero.appendChild(mb);
-    } else {
+    var hrec={v:latest,el:hero,secs:[],lines:[],built:true,hero:true};
+    if(latest.milestone)hero.appendChild(banner(latest,true));
+    else {
       var lh=el('div','wn-lhead');
       var badge=el('h2','wn-badge','Latest · '+latest.version);badge.id='wnLatestH';
       lh.appendChild(badge);if(latest.date)lh.appendChild(el('span','wn-date',latest.date));
       hero.appendChild(lh);
       var sm=summary(latest);if(sm)hero.appendChild(rich(sm,'wn-lintro'));
     }
-    hero.appendChild(groupsEl(latest,'h3',model.heroCards));
-    model.hero=hero;list.appendChild(hero);wake(hero);
+    hero.appendChild(groupsEl(hrec));
+    model.vers.push(hrec);model.byId[hero.id]=hrec;list.appendChild(hero);
 
-    /* older versions: closed blocks of five minor versions, each version a closed row */
+    /* older versions: one row each; the body is built when the row is first opened */
     var older=vers.slice(1);
     if(older.length){
       var sech=enter(el('h2','wn-sech','Earlier versions'));model.sech=sech;list.appendChild(sech);
-      var wrap=el('div','wn-blocks');
-      groupVersions(older).forEach(function(g){
-        var box=enter(el('div','wn-block'));
-        var bb=el('button','wn-bbtn');bb.type='button';
-        var txt=el('span','wn-gtxt');
-        txt.appendChild(el('span','wn-glab',groupLabel(g)));
-        var meta=el('span','wn-gmeta'),d=groupDate(g),count=el('span','wn-gcount');
-        if(d){meta.appendChild(el('span',null,d));meta.appendChild(el('span','wn-sep','·'));}
-        meta.appendChild(count);txt.appendChild(meta);
-        bb.appendChild(txt);bb.appendChild(chevron());box.appendChild(bb);
-        var inner=el('div','wn-bbody'),rec={el:box,btn:bb,count:count,cards:[],versions:[],was:undefined};
-        g.versions.forEach(function(v){
-          var vr=el('div','wn-ver'+(v.milestone?' wn-vms':''));vr.id='v-'+v.version;
-          var vb=el('button','wn-vbtn');vb.type='button';
-          var top=el('span','wn-vtop');
-          top.appendChild(el('span','wn-vnum',v.version));
-          if(v.date)top.appendChild(el('span','wn-vdate',v.date));
-          vb.appendChild(top);
-          var sm2=(v.milestone?v.milestone+'. ':'')+summary(v);
-          var sl=el('span','wn-vsum',sm2);sl.setAttribute('dir','auto');
-          var chipBox=el('span','wn-vchips');
-          var col=el('span','wn-vcol');col.appendChild(top);col.appendChild(sl);col.appendChild(chipBox);
-          vb.textContent='';vb.appendChild(col);vb.appendChild(chevron());vr.appendChild(vb);
-          var vcards=[];
-          var gw=groupsEl(v,'h4',vcards);
-          var pw=panel(gw);vr.appendChild(pw);toggler(vb,pw);
-          var vrec={el:vr,btn:vb,wrap:pw,cards:vcards,chips:chipBox};
-          model.versions.push(vrec);rec.versions.push(vrec);vcards.forEach(function(x){rec.cards.push(x);});
-          inner.appendChild(vr);
-        });
-        var bw=panel(inner);box.appendChild(bw);rec.wrap=bw;toggler(bb,bw);
-        model.blocks.push(rec);wrap.appendChild(box);
+      var wrap=el('div','wn-rows');
+      older.forEach(function(v){
+        var vr=el('div','wn-ver'+(v.milestone?' wn-vms':''));vr.id='v-'+v.version;
+        var rec={v:v,el:vr,secs:[],lines:[],built:false};
+        var vb=el('button','wn-vbtn');vb.type='button';
+        var top=el('span','wn-vtop');
+        top.appendChild(el('span','wn-vnum',v.version));
+        if(v.date)top.appendChild(el('span','wn-vdate',v.date));
+        var sl=el('span','wn-vsum',(v.milestone?v.milestone+'. ':'')+summary(v));sl.setAttribute('dir','auto');
+        var chipBox=el('span','wn-vchips');
+        var col=el('span','wn-vcol');col.appendChild(top);col.appendChild(sl);col.appendChild(chipBox);
+        vb.appendChild(col);vb.appendChild(chevron());vr.appendChild(vb);
+        var w=el('div','wn-x'),xi=el('div','wn-xi');w.id='wnx'+(++uid);w.appendChild(xi);vr.appendChild(w);
+        vb.setAttribute('aria-controls',w.id);vb.setAttribute('aria-expanded','false');
+        rec.btn=vb;rec.panel=w;rec.xi=xi;rec.chips=chipBox;
+        vb.addEventListener('click',function(){setRow(rec,vb.getAttribute('aria-expanded')!=='true');});
+        model.vers.push(rec);model.byId[vr.id]=rec;wrap.appendChild(vr);
       });
       list.appendChild(wrap);
     }
     buildChips();
+    buildJump(vers);
     apply();
+    sizeBar();
     foot.textContent='Studio '+latest.version;foot.hidden=false;
     try{localStorage.setItem('studio:seenVersion',JSON.stringify(latest.version));}catch(e){}
     openHash();
   }
-  /* a link such as whats-new.html#v-2.3.0 opens that version (and its block) and scrolls to it */
+
+  /* ---------- jump to a version ---------- */
+  /* the sticky filter bar's height, so a jump lands just under it */
+  function sizeBar(){document.documentElement.style.setProperty('--wnf',filtersBox.offsetHeight+'px');}
+  addEventListener('resize',sizeBar);
+  function goTo(id){
+    var rec=model&&model.byId[id];if(!rec)return;
+    if(filter!=='all')setFilter('all');            /* a filtered-out version would be hidden */
+    setRow(rec,true);
+    setTimeout(function(){rec.el.scrollIntoView({block:'start',behavior:REDUCED()?'auto':'smooth'});},40);
+  }
+  /* a link such as whats-new.html#v-2.3.0 opens that version and scrolls to it */
   function openHash(){
     var id=decodeURIComponent((location.hash||'').slice(1));if(!/^v-/.test(id)||!model)return;
-    var t=document.getElementById(id);if(!t)return;
-    model.blocks.forEach(function(b){if(b.el.contains(t))setOpen(b.btn,b.wrap,true);});
-    model.versions.forEach(function(v){if(v.el===t)setOpen(v.btn,v.wrap,true);});
-    setTimeout(function(){t.scrollIntoView({block:'start',behavior:REDUCED()?'auto':'smooth'});},60);
+    goTo(id);
   }
   addEventListener('hashchange',openHash);
+
+  var sheet=null;
+  function buildJump(vers){
+    jumpBox.textContent='';
+    jumpBox.appendChild(el('span','wn-jlab','Jump to'));
+    var row=el('div','wn-jrow');
+    vers.slice(0,RECENT).forEach(function(v,i){
+      var b=el('button','wn-jc',v.version);b.type='button';b.setAttribute('data-jump','v-'+v.version);
+      b.addEventListener('click',function(){goTo('v-'+v.version);});row.appendChild(b);
+    });
+    var all=el('button','wn-jc wn-jall','All versions');all.type='button';all.setAttribute('aria-haspopup','dialog');
+    all.addEventListener('click',function(){openSheet(vers);});
+    row.appendChild(all);jumpBox.appendChild(row);jumpBox.hidden=false;
+  }
+  /* every version as a dense wrapped grid, grouped by major (2.x, 1.x, 0.x); tap one: the sheet closes and that version opens */
+  function openSheet(vers){
+    if(!sheet){
+      sheet=el('dialog','wn-sheet');sheet.setAttribute('aria-label','All versions');
+      var hd=el('div','wn-sh');hd.appendChild(el('h2',null,'All versions'));
+      var cl=el('button','wn-close wn-shclose','Close');cl.type='button';cl.addEventListener('click',function(){sheet.close();});hd.appendChild(cl);
+      sheet.appendChild(hd);
+      var body=el('div','wn-sb'),groups=[],map={};
+      vers.forEach(function(v){
+        var m=/^(\d+)\./.exec(v.version),key=m?m[1]+'.x':'Other';
+        if(!map[key]){map[key]={key:key,vs:[]};groups.push(map[key]);}
+        map[key].vs.push(v);
+      });
+      groups.forEach(function(g){
+        var sec=el('section','wn-sg');
+        var h=el('h3',null,g.key);h.appendChild(el('span',null,g.vs.length+(g.vs.length===1?' version':' versions')));sec.appendChild(h);
+        var grid=el('div','wn-sgrid');
+        g.vs.forEach(function(v,i){
+          var b=el('button','wn-sc'+(v.milestone?' ms':''),v.version);b.type='button';
+          if(v===vers[0])b.classList.add('now');
+          b.addEventListener('click',function(){var id='v-'+v.version;sheet.close();goTo(id);});
+          grid.appendChild(b);
+        });
+        sec.appendChild(grid);body.appendChild(sec);
+      });
+      sheet.appendChild(body);document.body.appendChild(sheet);
+      sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.close();});
+      sheet.addEventListener('close',function(){Nv.drop('wnJump');});
+    }
+    sheet.showModal();
+    Nv.push('wnJump',function(){sheet.close();});
+  }
 
   /* ---------- filters ---------- */
   function buildChips(){
     chips.textContent='';
-    var all=[{id:'all',label:'All',n:model.cards.length}];
-    TYPES.forEach(function(t){all.push({id:t.id,label:t.label,n:model.cards.filter(function(c){return c.type===t.id;}).length});});
+    var all=[{id:'all',label:'All',n:model.total}];
+    TYPES.forEach(function(t){var n=0;model.vers.forEach(function(r){n+=r.v.cards.filter(function(c){return c.type===t.id;}).length;});all.push({id:t.id,label:t.label,n:n});});
     all.forEach(function(t){
       if(t.id!=='all'&&!t.n)return;                                  /* nothing of this kind yet: no chip */
       var b=el('button','wn-f');b.type='button';b.setAttribute('data-filter',t.id);
@@ -297,45 +328,37 @@
     });
     filtersBox.hidden=false;
   }
-  function shown(c){return !c.el.hidden;}
   function apply(){
-    var n=0;
-    model.cards.forEach(function(c){var on=filter==='all'||c.type===filter;c.el.hidden=!on;if(on)n++;});
-    model.sections.forEach(function(s){var k=s.recs.filter(shown).length;s.el.hidden=!k;s.n.textContent=String(k);});
-    model.versions.forEach(function(v){v.el.hidden=!v.cards.some(shown);paintChips(v.chips,v.cards);});
-    model.blocks.forEach(function(g){
-      var k=g.cards.filter(shown).length;
-      g.el.hidden=!k;g.count.textContent=plural(k);
+    var n=0,anyOlder=false;
+    model.vers.forEach(function(r){
+      var k=r.v.cards.filter(matches).length;n+=k;
+      r.el.hidden=!k;
+      if(!r.hero){paintChips(r.chips,r.v.cards);if(k)anyOlder=true;}
+      applyRow(r);
     });
-    model.hero.hidden=!model.heroCards.some(shown);
-    if(model.sech)model.sech.hidden=!model.blocks.some(function(g){return !g.el.hidden;});
+    if(model.sech)model.sech.hidden=!anyOlder;
     status.textContent=filter==='all'?'Showing all '+plural(n):'Showing '+plural(n)+': '+typeOf(filter).label;
   }
   function setFilter(id){
     if(id===filter||!model)return;
-    var prev=filter;filter=id;
+    filter=id;
     Array.prototype.forEach.call(chips.children,function(b){b.setAttribute('aria-pressed',b.getAttribute('data-filter')===id?'true':'false');});
-    if(prev==='all')model.blocks.forEach(function(g){g.was=g.btn.getAttribute('aria-expanded')==='true';});   /* remember what the reader had open */
-    apply();
-    model.blocks.forEach(function(g){
-      if(id==='all'){if(g.was!==undefined)setOpen(g.btn,g.wrap,g.was);}
-      else setOpen(g.btn,g.wrap,g.cards.some(shown));                    /* show the matches */
-    });
+    apply();sizeBar();
     /* keep the reader at the top of the (now shorter or longer) list */
     var y=list.getBoundingClientRect().top+window.pageYOffset-filtersBox.offsetHeight-8;
     if(window.pageYOffset>y)window.scrollTo(0,Math.max(0,y));
   }
-  /* an entrance animation plays once; drop its class so showing a hidden block again does not replay it */
+  /* an entrance animation plays once; drop its class so showing a hidden row again does not replay it */
   document.addEventListener('animationend',function(e){if(e.target.classList&&e.target.classList.contains('wn-a'))e.target.classList.remove('wn-a');});
 
   /* ---------- states ---------- */
   function skeleton(){
-    foot.hidden=true;filtersBox.hidden=true;status.textContent='';list.textContent='';
+    foot.hidden=true;filtersBox.hidden=true;jumpBox.hidden=true;status.textContent='';list.textContent='';
     list.appendChild(el('div','wn-skel big'));
     for(var i=0;i<2;i++)list.appendChild(el('div','wn-skel row'));
   }
   function error(){
-    filtersBox.hidden=true;foot.hidden=true;list.textContent='';
+    filtersBox.hidden=true;jumpBox.hidden=true;foot.hidden=true;list.textContent='';
     var box=el('div','wn-err');
     box.appendChild(el('p',null,"Couldn't load what's new. Check your connection and try again."));
     var b=el('button','mini solid','Retry');b.type='button';b.addEventListener('click',load);
