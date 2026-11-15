@@ -209,12 +209,15 @@ async function healCover(C,d,make){
 /* 2.5.3 (owner: "there's still a duplication issue"): before a save makes a NEW design, look for a saved design of this tool with the
    same name. An explicit "Save as a copy" quietly gets a "(copy)" name; any other new save asks: update the saved one, keep both, or cancel.
    Returns {mode:'new'|'update'|'cancel', id?, name?}. exceptId: the design open now (its own name is not a clash for an update). */
-async function sameNameCheck(C,brand,tool,name,exceptId,explicitCopy){
+async function sameNameCheck(C,brand,tool,name,exceptId,explicitCopy,auto){
   if(!C||!C.designsNamed||!String(name||'').trim()) return {mode:'new'};
   const named=async n=>{ try{ return await C.designsNamed(brand,tool,n); }catch(_){ return []; } };
   const copyName=async()=>{ let c=name+' (copy)', k=2; while(k<30&&(await named(c)).length) c=name+' (copy '+(k++)+')'; return c; };
   const all=await named(name);
   if(explicitCopy) return all.length?{mode:'new',name:await copyName()}:{mode:'new'};
+  /* 2.13.0 (team: three shops in a row each asked "already in Saved"): an automatic name nobody typed ("Restock – 15 Nov") is not a
+     clash the person chose, so a new design quietly takes the next free number: "Restock – 15 Nov · 2", "· 3"… A typed name still asks. */
+  if(auto&&all.some(x=>x.id!==exceptId)){ let k=2, c=name+' · 2'; while(k<60&&(await named(c)).length) c=name+' · '+(++k); return {mode:'new',name:c}; }
   const same=all.filter(x=>x.id!==exceptId); if(!same.length) return {mode:'new'};
   return await new Promise(res=>{ let v={mode:'cancel'};
     const d=dialog(`<div class="dlg-body"><h3 dir="auto">“${esc(name)}” is already in Saved</h3><p class="small">Update that saved design with this one, or keep both?</p>
@@ -1665,7 +1668,7 @@ async function tool(cfg){
     await whoOnce();
     if(!design&&designLost&&!o.asNew) throw new Error('That saved design did not open, so saving now would make a copy. Reload the page to open it first.');
     let asNew=!!o.asNew||!design, name=(o.name||'').trim()||(design?design.name:defaultName()), target=asNew?null:design.id;
-    if(asNew&&!(o.keep===false&&hasPhotosNow())){ const r=await sameNameCheck(C,B.id,cfg.id,name,design&&design.id,!!(o.asNew&&design));   // 2.5.3: no silent second design with the same name
+    if(asNew&&!(o.keep===false&&hasPhotosNow())){ const r=await sameNameCheck(C,B.id,cfg.id,name,design&&design.id,!!(o.asNew&&design),!design&&name===defaultName());   // 2.5.3: no silent second design with the same name
       if(r.mode==='cancel') throw new Error('Not saved.'); if(r.mode==='update'){ asNew=false; target=r.id; } else if(r.name) name=r.name; }
     const sameRow=!asNew&&!!design&&target===design.id;
     /* 2.5.0 (owner: "re-saving makes a second design"): a design with no photos of its own used to be stored as a TEMPLATE, and saving
