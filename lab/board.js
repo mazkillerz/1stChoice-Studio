@@ -74,9 +74,12 @@ BD.util={bleedOf,kind,isFrame,isObj,isLocked,frames,items,fsize,wrect,unionRect,
 
 /* ---------- photos ---------- */
 async function imgFromBlob(blob){ const el=await L.loadFile(blob); return {el,w:el.width,h:el.height}; }
+const TEAMP=new Map();   /* 'team:<id>' -> its file path in the team bucket, noted when a board or a paste is read */
+async function teamCloud(){ return L.cloud?await L.cloud():window.StudioCloud; }
 async function getImg(id){
   if(IMGS.has(id)) return IMGS.get(id);
   try{
+    if(id.startsWith('team:')){ const path=TEAMP.get(id); if(!path) return null; const blob=await (await teamCloud()).download(path); const v=await imgFromBlob(blob); IMGS.set(id,v); return v; }   // a team asset: loaded again from its own file
     if(id.startsWith('brand:')){ const a=L.brandAssets().find(x=>x.id===id.slice(6)); if(!a) return null; const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=L.assetUrl(a); }); const v={el:im,w:im.width,h:im.height}; IMGS.set(id,v); return v; }
     const blob=await L.idb.get('bimg:'+id); if(!blob) return null; const v=await imgFromBlob(blob); IMGS.set(id,v); return v;
   }catch(_){ return null; }
@@ -251,7 +254,13 @@ async function addPhotos(files,at){
 async function addAsset(a,at){ const id='brand:'+a.id; const im=await getImg(id); if(!im){ toast(a.label+' is not added to the brand kit yet.'); return; }
   const f=at?frameAt(at):targetFrame(), box=f?fsize(f):{w:1080,h:1080}, k=Math.min(1,box.w*.6/im.w,box.h*.6/im.h);
   const n=makeImage(id,Math.round(im.w*k),Math.round(im.h*k),'asset'); n.setAttr('label',a.label); return place(n,{frame:f,at}); }
-BD.addPhotos=addPhotos; BD.addAsset=addAsset;
+/* a team asset (table team_assets): an 'asset' image at <= 40% of its frame, centred; keeps ref, path and label so save, undo, copies and reopening find it again */
+async function addTeamAsset(r,at){ const id='team:'+r.id; TEAMP.set(id,r.path); busy('Adding the picture…');
+  try{ const im=await getImg(id); if(!im){ toast('Could not add that picture. Check your connection.'); return null; }
+    const f=at?frameAt(at):targetFrame(), box=f?fsize(f):{w:1080,h:1080}, k=Math.min(1,box.w*.4/im.w,box.h*.4/im.h);
+    const n=makeImage(id,Math.max(2,Math.round(im.w*k)),Math.max(2,Math.round(im.h*k)),'asset'); n.setAttrs({label:(r.name||'Team asset').slice(0,40),ref:'team:'+r.id,path:r.path}); return place(n,{frame:f,at});
+  }catch(_){ toast('Could not add that picture. Check your connection.'); return null; } finally{ busy(null); } }
+BD.addPhotos=addPhotos; BD.addAsset=addAsset; BD.addTeamAsset=addTeamAsset;
 
 /* ---------- selection ---------- */
 function canTransform(list){ return list.length&&list.every(n=>!isLocked(n)); }
@@ -762,7 +771,7 @@ BD.copy=copy; BD.paste=paste;
 const SKIP=new Set(['image','filters','sceneFunc','dragBoundFunc','container']);
 function toObj(n){ const a={}; Object.entries(n.attrs).forEach(([k,v])=>{ if(SKIP.has(k)||typeof v==='function'||v==null) return; if(typeof v==='object'&&!Array.isArray(v)&&v.constructor!==Object) return; a[k]=v; });
   const o={c:n.getClassName(),a}; if(n.getChildren) o.k=n.getChildren().map(toObj); return o; }
-function collectImgs(o,set){ if(o.a&&o.a.imgId) set.add(o.a.imgId); (o.k||[]).forEach(k=>collectImgs(k,set)); return set; }
+function collectImgs(o,set){ if(o.a&&o.a.imgId){ set.add(o.a.imgId); if(o.a.path&&String(o.a.imgId).startsWith('team:')) TEAMP.set(o.a.imgId,o.a.path); } (o.k||[]).forEach(k=>collectImgs(k,set)); return set; }
 function rebuild(o,fresh){ const a=Object.assign({},o.a); if(fresh&&a.id) a.id=uid();
   const n=new Konva[o.c](a); (o.k||[]).forEach(k=>n.add(rebuild(k,fresh)));
   if(o.c==='Image'){ const im=IMGS.get(a.imgId); if(im) n.image(im.el); applyCrop(n); }
@@ -852,7 +861,7 @@ BD.renderFrame=renderFrame; BD.exportFrame=exportFrame; BD.exportSelection=expor
 
 /* ---------- board files (.board): the whole board with its photos, to move it to another computer ---------- */
 async function exportBoardFile(){ await saveNow(); const d=JSON.parse(docJson()); const ids=new Set(); d.nodes.forEach(o=>collectImgs(o,ids)); d.files={};
-  for(const id of ids){ if(id.startsWith('brand:')) continue; const blob=await L.idb.get('bimg:'+id); if(blob) d.files[id]={type:blob.type,data:await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); })}; }
+  for(const id of ids){ if(id.startsWith('brand:')||id.startsWith('team:')) continue; const blob=await L.idb.get('bimg:'+id); if(blob) d.files[id]={type:blob.type,data:await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); })}; }
   return new Blob([JSON.stringify(d)],{type:'application/json'}); }
 async function importBoardFile(file){ const d=JSON.parse(await file.text()); if(!d||!d.nodes) throw new Error('That is not a board file.');
   const id=uid(); const map={};
