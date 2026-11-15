@@ -1659,3 +1659,7 @@ body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
 @media (prefers-reduced-motion: reduce){ .st-tab,.st-l{transition:none} }
 .plan-shell .cal-top{margin-inline:0;padding:6px 0;border-bottom:0}
 .plan-shell .kp-shbar{gap:var(--sp-2)}
+/* shell: a module's own Back and page title give way to the tab bar (the modules also skip them when ctx.shell is set) */
+.plan-shell .pv-pane .cal-head .sp-back,.plan-shell .pv-pane .id-head .sp-back{display:none}
+.plan-shell .pv-pane .cal-head .sp-title,.plan-shell .pv-pane .id-head .sp-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.plan-shell .pv-pane .cal-head,.plan-shell .pv-pane .id-head{justify-content:flex-end}

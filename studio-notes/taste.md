@@ -120,3 +120,11 @@ Counts = separate versions or briefs where the issue was raised. "Exists" = alre
 - 2.5.1 [S]: flicker on the Home Calendar row and when switching Plan tabs (redraws); a horizontally scrolling chip row is rejected ("make it fixed, no scrolling"); page-wide slide/resize between tabs rejected ("the bar fixed, the content fixed, no animation of resizing the entire page"); the browser's "Leave site?" on Back is wrong (wants the Update prompt); sheets must slide up and close on an outside tap. Checks: `ideas`/`calendar`/`kpis` (no-redraw), `home7-hub`, `nav`.
 - 2.5.2 [S]: page switchers within thumb reach (bottom), never at the top of a phone page; the bottom bar must stretch with no gap; a highlight must never overshoot its box (no spring on bounded movers); "make the new look the default"; Back must ask before losing work in EVERY tool, not only saved designs. Checks: `home7-hub` (+ inside the bar), `smoke`, `nav`.
 
+
+## Round 5 (15 Nov 2026, 15-session round) [S]
+- Calendar / Ideas / Goals: the floating strip above the bottom bar "covers content and looks crowded", switching was slow and old text overlapped the new one. He now wants **swipeable tabs at the top of the section, like Instagram profile tabs**, with an indicator that follows, instant switching (all three kept ready) and zero overlap. This replaces the 2.5.2 wish for switchers at the bottom (newest evidence wins). Check: `nav`, `kpis`, `calendar`, `ideas` (shell), `plantabs`.
+- Calendar Week / Month / Feed switching must be instant and smooth (draw from cache, no reload). Check: `calspeed`.
+- Ideas: no inbox (straight to the board, "new" dot until opened), a discussion thread per idea (text + voice replies, who and when), several voice notes, and **voice notes must never be lost by accident** (confirm + archive + restore). Check: `ideas`, `ideas-thread`.
+- Voice notes must sound clear (high quality speech), not heavily compressed.
+- Home: rejected the big tools grid ("really bad: huge cards, only two visible, camera button covering the artwork, bad crops") and the "+ Idea" pill. Wants a hierarchy: slim header, search, Today (tabs with today's posts), compact tools list; all at once with placeholders. Check: `home2`.
+- What's New: max one level of opening ("4–5 taps" to reach an older version was rejected); a jump bar to any version. Check: `whatsnew`.
