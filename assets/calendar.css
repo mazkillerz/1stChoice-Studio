@@ -201,3 +201,11 @@
 .cal-post .cp-cap{margin:0;padding:10px 14px;max-height:7.5em;overflow:auto;border-radius:var(--r-m);background:var(--bg);font:400 var(--fs-m) var(--sans);white-space:pre-wrap;overflow-wrap:anywhere}
 .cal-post .link{align-self:center;min-height:44px}
 .cal-post .cp-note{margin:0;text-align:center}
+
+/* Instant Plan (Session 7): quiet "Updated 5 min ago" when offline, and the soft ring on a day card that search jumps to */
+.cal-stale{margin:0;padding:4px 16px 0;font:400 var(--fs-s) var(--sans);color:var(--muted);text-align:center}
+.cal-stale[hidden]{display:none}
+.cal-ring{position:relative}
+.cal-ring::after{content:"";position:absolute;inset:0;border-radius:inherit;border:3px solid var(--accent);pointer-events:none;animation:calRing 1.2s var(--ease) forwards}
+@keyframes calRing{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion: reduce){.cal-ring::after{animation:none}}

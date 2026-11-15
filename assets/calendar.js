@@ -1,5 +1,5 @@
 /* Studio content calendar (brand-agnostic, behind the "team" preview flag). Lazy-loaded the first time #calendar opens.
-   StudioCalendar.init({root,brand,cloud,member,signIn,netDown,esc,haptic,icons,dialog,toast,who,store,onBack,flagOn?}) -> {show({today?}),refresh(),mode}.
+   StudioCalendar.init({root,brand,cloud,member,signIn,netDown,esc,haptic,icons,dialog,toast,who,store,onBack,flagOn?}) -> {show({today?,day?}),refresh(),mode}.
    Items live in the cloud (C.calendar / C.saveCalendarItem / C.deleteCalendarItem): {id,brand,day:'YYYY-MM-DD',at:'HH:MM'|null,status,format:'post'|'story'|null,title,caption,hashtags[],design_ids[],campaign_id,author}.
    Phone: a vertical week list (7 day rows, today marked), swipe or arrows for the week, a month toggle (dots per status, tap a day -> that week),
    a visible ⋯ on each item opens its menu (Post now (2.8.0), Mark as posted/ready, Copy caption, Move to tomorrow, Delete), tap an item to edit it (calendar-simple). Computer: month grid with the items inside, drag one to move it.
@@ -125,6 +125,7 @@ function make(o){
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month','feed'/* 2.9.0 feed */].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
   let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
+  let stale=false, dataAt=0, ringDay=null, ringT=0;
   let pool=[], win=null, fetchedAt=0, lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='feed') return window.StudioFeed?StudioFeed.range():[addDays(new Date(),-60),addDays(new Date(),90)]; /* 2.9.0 feed */
     if(mode==='week'){ const s=weekStart(anchor); return [s,addDays(s,6)]; }
@@ -149,6 +150,20 @@ function make(o){
   const noteBox=(icn,title,text,btn)=>`<div class="sv-note cal-note"><span class="sn-ic" aria-hidden="true">${icn}</span><div class="sn-txt"><b>${title}</b><p>${text}</p></div>${btn||''}</div>`;
   const authorName=()=>{ try{ return (o.who&&o.who.author&&o.who.author())||null; }catch(_){ return null; } };
 
+  /* ---------- instant plan (Session 7): the last good data lives on this device and paints at once; fresh data replaces it quietly ---------- */
+  const CKEY='studio:plan:cal:'+o.brand;
+  const shapeRows=list=>list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]}));
+  const slimD=d=>({id:d.id,name:d.name,tool:d.tool,kind:d.kind,format:d.format,thumb_path:d.thumb_path,caption:d.caption,hashtags:d.hashtags,campaign_id:d.campaign_id,updated_at:d.updated_at,collections:d.collections,words:d.words});
+  const saveCache=(list,w)=>{ wr(CKEY,{v:1,at:Date.now(),from:w[0],to:w[1],items:list,designs:designs.map(slimD)}); };
+  { const c=rd(CKEY); if(c&&c.v===1&&Array.isArray(c.items)&&c.from&&c.to){ pool=shapeRows(c.items); designs=Array.isArray(c.designs)?c.designs:[]; win=[c.from,c.to]; dataAt=+c.at||0; fetchedAt=0; items=slice(); lastSig=sigNow(); state='ok'; } }
+  const ago=t=>{ const m=Math.max(0,Math.round((Date.now()-t)/60000)); return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+(m<2880?' day ago':' days ago'); };
+  function paintStale(){ const el=root.querySelector('.cal-stale'); if(!el) return; const on=stale&&state==='ok'&&dataAt>0; el.hidden=!on; if(on) el.innerHTML='Updated <bdi>'+ago(dataAt)+'</bdi>'; }
+  window.addEventListener('online',()=>{ if(built&&stale) load(); });
+  /* the soft ring on a day card (search jumps here): fades over 1.2 s; reduced motion keeps it still for the same time */
+  function ringIt(){ if(!ringDay) return; const el=root.querySelector('[data-day="'+ringDay+'"]'); if(!el||state!=='ok') return; ringDay=null;
+    if(sh){ const r=el.getBoundingClientRect(), p=root.getBoundingClientRect(); sTo(Math.max(0,sy()+r.top-p.top-120)); } else el.scrollIntoView({block:'center'});
+    root.querySelectorAll('.cal-ring').forEach(x=>x.classList.remove('cal-ring')); void el.offsetWidth; el.classList.add('cal-ring'); clearTimeout(ringT); ringT=setTimeout(()=>{ el.classList.remove('cal-ring'); },1250); }
+
   /* ---------- load ---------- */
   async function load(opt){
     opt=opt||{}; const my=++run; clearTimeout(slowT); const [a,b]=range();
@@ -158,17 +173,19 @@ function make(o){
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
       if(mode==='feed'&&!window.StudioFeed) await loadFeed(); /* 2.9.0 feed */
       C=await o.cloud(); if(my!==run) return;
-      if(!(await o.member())){ state='out'; draw(); return; }
+      if(!(await o.member())){ wr(CKEY,null); pool=[]; items=[]; stale=false; state='out'; draw(); return; }
       const w=winFor(a,b);
       const [list,dl]=await Promise.all([C.calendar(o.brand,{from:w[0],to:w[1]}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
       designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
-      pool=list.map(x=>({...x,at:hhmm(x.at)||null,hashtags:x.hashtags||[],design_ids:x.design_ids||[]})); win=w; fetchedAt=Date.now();
+      pool=shapeRows(list); win=w; fetchedAt=Date.now(); dataAt=fetchedAt; stale=false; saveCache(list,w);
       items=slice();
       /* 2.5.0 (owner: "it flickers like it refreshes"): redraw only when something changed since what is on screen */
-      const sig=sigNow(); const same=state==='ok'&&sig===lastSig; lastSig=sig; state='ok'; if(!same) draw(opt.dir);
+      const sig=sigNow(); const same=state==='ok'&&sig===lastSig; lastSig=sig; state='ok'; if(!same) draw(opt.dir); else paintStale();
+      ringIt();
       if(toToday){ toToday=false; const t=root.querySelector('.cal-day.today'); if(t&&!wide()) t.scrollIntoView({block:'start'}); }
       thumbsFor();
     }catch(err){ if(my!==run) return; const net=o.netDown(err), slow=net&&/slow/i.test(err.message||'');
+      if(state==='ok'&&net&&dataAt>0){ stale=true; paintStale(); return; }
       if(state==='ok'){ o.toast(net?(slow?'The connection is slow. This is the calendar from before.':'You’re offline. This is the calendar from before.'):'Could not refresh the calendar: '+(err.message||err)); return; }
       state=net?(slow?'slow':'offline'):'error'; note=err.message||String(err); draw(); }
     finally{ if(my===run) clearTimeout(slowT); }
@@ -232,10 +249,10 @@ function make(o){
       segH=`<div class="cal-seg" role="group" aria-label="View"><span class="cs-pill" aria-hidden="true"></span><button type="button" class="chip" data-mode="week">Week</button><button type="button" class="chip" data-mode="month">Month</button><button type="button" class="chip" data-mode="feed">Feed</button></div>`,
       navH=`<div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1">${ic('back')}</button><button type="button" class="cal-today" data-nav="0">Today</button><strong class="cal-title" aria-live="polite"></strong><button type="button" class="cal-arrow" data-nav="1">${ic('next')}</button></div>`;
     root.innerHTML=(sh
-      ?`<div class="cal-top cal-top-shell"><h1 id="calH" class="sr-only" tabindex="-1">Calendar</h1><div class="cal-bar">${segH}${newBtn}</div><div class="cal-bar">${navH}</div></div>`
+      ?`<div class="cal-top cal-top-shell"><h1 id="calH" class="sr-only" tabindex="-1">Calendar</h1><div class="cal-bar">${segH}${newBtn}</div><div class="cal-bar">${navH}</div><p class="cal-stale" role="status" hidden></p></div>`
       :`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
         <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>${newBtn}</div>${o.tabs||''}
-      <div class="cal-bar">${segH}${navH}</div></div>`)+`<div class="cal-stage"><div class="cal-body"></div></div>`;
+      <div class="cal-bar">${segH}${navH}</div><p class="cal-stale" role="status" hidden></p></div>`)+`<div class="cal-stage"><div class="cal-body"></div></div>`;
     navEls=[...root.querySelectorAll('.cal-nav>*')]; const seg=root.querySelector('.cal-seg'); if(window.ResizeObserver) new ResizeObserver(()=>slidePill(false)).observe(seg);
   }
   function slidePill(anim){ const seg=root.querySelector('.cal-seg'), p=seg&&seg.querySelector('.cs-pill'), on=seg&&seg.querySelector('[aria-pressed="true"]'); if(!p||!on||!on.offsetWidth) return;
@@ -254,7 +271,8 @@ function make(o){
   /* dir: undefined = no animation; 0 = crossfade; +-1 = a short slide in the direction of travel. The old body is swapped out at once, then the new one fades in (never both visible). */
   function draw(dir){
     const keepY=sy(); frame();
-    const body=state==='ok'?(mode==='feed'?feedHtml():mode==='month'?monthHtml():weekHtml()) /* 2.9.0 feed */
+    const body=state==='ok'&&mode==='feed'&&!window.StudioFeed?'<div class="cal-skel" aria-hidden="true">'+'<span></span>'.repeat(5)+'</div>'   /* the cached data is here, the Feed view's own script is not yet */
+      :state==='ok'?(mode==='feed'?feedHtml():mode==='month'?monthHtml():weekHtml()) /* 2.9.0 feed */
       :state==='loading'?'<div class="cal-skel" aria-hidden="true">'+'<span></span>'.repeat(5)+'</div>'
       :state==='offline'?noteBox(ic('clock'),'You’re offline','You can still make and save pictures. Your calendar comes back when you’re online.',againBtn)
       :state==='slow'?noteBox(ic('clock'),'Still loading…','The connection is slow. Your calendar shows as soon as it arrives.',againBtn)
@@ -262,13 +280,14 @@ function make(o){
       :noteBox(ic('rotate'),'Could not load the calendar',esc(note),againBtn);
     const live=state==='ok';
     const [ra,rb]=range(), here=mode==='month'?(anchor.getFullYear()===new Date().getFullYear()&&anchor.getMonth()===new Date().getMonth()):(todayIso()>=iso(ra)&&todayIso()<=iso(rb))||mode==='feed';
-    paintTop(live,here); slidePill(dir!==undefined);
+    paintTop(live,here); paintStale(); slidePill(dir!==undefined);
     const stage=root.querySelector('.cal-stage'), el=root.querySelector('.cal-body'), h0=stage.offsetHeight;
     if(dir!==undefined&&!calm()){ stage.style.minHeight=h0+'px'; clearTimeout(stage._t); stage._t=setTimeout(()=>{ stage.style.minHeight=''; },260); }
     el.innerHTML=body;
     sTo(keepY);
     if(dir!==undefined&&!calm()&&el.animate&&live){ try{ el.getAnimations().forEach(x=>x.cancel());
       el.animate(dir?[{opacity:0,transform:'translateX('+(12*dir)+'px)'},{opacity:1,transform:'none'}]:[{opacity:0},{opacity:1}],{duration:dir?180:160,easing:'cubic-bezier(.2,.8,.2,1)'}); }catch(_){} }
+    ringIt();
   }
   function go(n){ if(mode==='feed') return; /* 2.9.0 feed */ const was=anchor.getTime(); if(n===0) anchor=new Date(); else if(mode==='month') anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1); else anchor=addDays(anchor,7*n); hap('tick'); view(n||(anchor.getTime()>was?1:anchor.getTime()<was?-1:0)); }
   function setMode(m,day){ if(m===mode&&!day) return; if(day) anchor=parse(day); mode=m; wr('studio:calMode',m); hap('tick'); view(0); }
@@ -464,7 +483,11 @@ function make(o){
 
   return {
     get mode(){ return mode; },
-    show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load(); preloadFeed();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
+    show(opt){ opt=opt||{};
+      if(mode==='feed'&&!window.StudioFeed) loadFeed().then(()=>{ if(state==='ok'&&mode==='feed'){ lastSig=''; items=slice(); draw(); thumbsFor(); } },()=>{});
+      if(opt.day&&/^\d{4}-\d{2}-\d{2}$/.test(opt.day)){ anchor=parse(opt.day); if(mode==='feed') mode='week'; ringDay=opt.day; built=true; const [a,b]=range();
+        if(state==='ok'&&covers(a,b)){ items=slice(); lastSig=sigNow(); draw(0); thumbsFor(); if(Date.now()-fetchedAt>TTL) load(); } else load({dir:0});
+        const h=root.querySelector('#calH'); if(h) h.focus({preventScroll:true}); return; } if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load(); preloadFeed();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
       const h=root.querySelector('#calH'); if(h) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
     postNow,
@@ -472,5 +495,5 @@ function make(o){
   };
 }
 let cur=null;
-window.StudioCalendar={ init(o){ cur=make(o); return cur; }, postNow(ref){ return cur?cur.postNow(ref):Promise.resolve(); }, CAL_ICON:CAL_IC, pick:pickSheet, quick:quickSheet, shape:dShape };
+window.StudioCalendar={ init(o){ cur=make(o); return cur; }, api:()=>cur, postNow(ref){ return cur?cur.postNow(ref):Promise.resolve(); }, CAL_ICON:CAL_IC, pick:pickSheet, quick:quickSheet, shape:dShape };
 })();
