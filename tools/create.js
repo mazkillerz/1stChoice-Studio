@@ -560,7 +560,7 @@ async function teamSave1(o){ o=o||{};
   if(tpl) doc=templateDoc(doc);
   const imgs=tpl?[]:imgs0; let name=(o.name||'').trim()||(st.design&&!asNew?st.design.name:defaultName()), target=asNew?null:st.design.id;
   /* 2.5.3 (owner: "there's still a duplication issue"): a NEW design never silently gets the name of one already in Saved */
-  if(asNew&&!tpl&&L.sameNameCheck){ const r=await L.sameNameCheck(C,B.id,TOOL,name,st.design&&st.design.id,!!(o.asNew&&st.design));
+  if(asNew&&!tpl&&L.sameNameCheck){ const r=await L.sameNameCheck(C,B.id,TOOL,name,st.design&&st.design.id,!!(o.asNew&&st.design),!st.design&&!($('crName').value||'').trim());
     if(r.mode==='cancel') throw new Error('Not saved.'); if(r.mode==='update'){ asNew=false; target=r.id; } else if(r.name) name=r.name; }
   const sameRow=!asNew&&!!st.design&&target===st.design.id;
   const photos=await Promise.all(imgs.map(async id=>{ const p=st.paths.get(id); if(p&&sameRow) return {path:p}; const b=await blobOf(id); return b?{blob:b}:null; }));

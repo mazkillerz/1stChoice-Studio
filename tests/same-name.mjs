@@ -68,5 +68,17 @@ const col2=await pg.$('#teamCols [data-col="Stories"]'); if(col2&&(await col2.ge
 await pg.tap('#teamOnly'); ok('restock: a second new "Jumaa" asks too',await asked());
 await pg.tap('#snUpd'); await pg.waitForTimeout(2500);
 const R2=(await designs()).filter(d=>d.tool==='restock'); ok('restock: Update keeps one "Jumaa"',R2.length===R1.length,R2.map(d=>d.name));
+/* 2.13.0: an automatic name nobody typed never asks: the second (and third) new design takes "· 2", "· 3" */
+async function autoSave(){ await pg.goto(BASE+'tools/restock.html?a='+Math.random()); await pg.waitForTimeout(900); await pg.setInputFiles('#pick',[S+'pair.jpg']); await pg.waitForTimeout(800);
+  await pg.tap('#barSave'); await pg.waitForSelector('#sh-save.open',{timeout:8000}); await pg.waitForTimeout(300); await pg.tap('#saveWhere [data-where="team"]'); await pg.waitForTimeout(400);
+  const c=await pg.$('#teamCols [data-col="Stories"]'); if(c&&(await c.getAttribute('aria-pressed'))!=='true') await c.tap();
+  const nm=await pg.inputValue('#teamName'); await pg.tap('#teamOnly');
+  const q=await pg.waitForSelector('#snUpd',{timeout:4000}).then(()=>true).catch(()=>false);
+  await pg.waitForFunction(()=>/Saved to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:30000}).catch(()=>{}); return {nm,q}; }
+const a1=await autoSave(), a2=await autoSave(), a3=await autoSave();
+const AN=(await designs()).filter(d=>d.tool==='restock').map(d=>d.name);
+ok('auto names: the field holds the automatic "Restock – <day>" name',/^Restock – \d+ \w+$/.test(a1.nm),a1.nm);
+ok('auto names: no "already in Saved" question for an automatic name',!a1.q&&!a2.q&&!a3.q,[a1.q,a2.q,a3.q]);
+ok('auto names: the second and third take "· 2" and "· 3"',AN.includes(a1.nm)&&AN.includes(a1.nm+' · 2')&&AN.includes(a1.nm+' · 3'),AN);
 ok('no page errors',!errs.length,errs.slice(0,3));
 await b.close(); process.exit(fails?1:0);
