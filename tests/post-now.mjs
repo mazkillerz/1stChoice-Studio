@@ -166,6 +166,10 @@ for(const dark of [false,true]){ tag=(dark?'dark':'light')+' home: ';
   ok('computer: a carousel comes as one ZIP',/-pictures-\d{8}-\d{4}\.zip$/.test(z.suggestedFilename()),z.suggestedFilename());
   await ctx.close(); }
 
+/* SHOTS=<dir>: What's New pictures (390 wide at 2x, JPEG 72): before = the old item menu, after = the Post now sheet after sharing */
+if(process.env.SHOTS){ tag='shots: '; const ctx=await mk(PHONE,{db:DB}); const pg=await newPage(ctx); await gotoCal(pg); await openMenu(pg,'pStory');
+  await pg.screenshot({path:process.env.SHOTS+'/post-now-'+(process.env.SHOTSIDE||'after')+'-menu.jpg',type:'jpeg',quality:72});
+  if(process.env.SHOTSIDE!=='before'){ await pg.tap('.cal-menu [data-a="post"]'); await pg.waitForSelector('.cal-post'); await settle(pg); await pg.waitForTimeout(400); await pg.screenshot({path:process.env.SHOTS+'/post-now-after-sheet.jpg',type:'jpeg',quality:72}); } await ctx.close(); }
 ok('no page errors',!errs.length,errs.slice(0,3).join(' | '));
 await b.close();
 console.log(res.join('\n')); const bad=res.filter(x=>x.startsWith('FAIL')).length; console.log((res.length-bad)+' pass, '+bad+' fail'); process.exit(bad?1:0);
