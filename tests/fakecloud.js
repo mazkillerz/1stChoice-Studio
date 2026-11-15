@@ -94,13 +94,28 @@ const db=()=>JSON.parse(localStorage.getItem(K)||'{"designs":{},"files":{},"cols
 const off=()=>localStorage.getItem('fakecloud-noplan')==='1', now=()=>new Date().toISOString();
 const toData=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});
 const t=(d,n)=>(d[n]=d[n]||[]), uid=()=>'i'+Math.random().toString(36).slice(2,10);
-C.ideas=async brand=>off()?[]:t(db(),'ideas').filter(x=>x.brand===brand).slice().sort((a,b)=>(a.sort-b.sort)||String(b.created_at).localeCompare(String(a.created_at)));
-C.saveIdea=async o=>{ if(off()) throw new Error('Save idea: the ideas table is not there yet'); const d=db(); const id=o.id||uid(); const row={title:'',note:'',type:'post',stage:'inbox',sort:0,...o,id}; delete row.image; delete row.audio; delete row.image_path_old; delete row.audio_path_old;
+const nothread=()=>localStorage.getItem('fakecloud-nothread')==='1', SW='This switches on once the owner updates the database.';
+C.ideas=async brand=>off()?[]:t(db(),'ideas').filter(x=>x.brand===brand&&!x.deleted_at).slice().sort((a,b)=>(a.sort-b.sort)||String(b.created_at).localeCompare(String(a.created_at)));
+C.saveIdea=async o=>{ if(off()) throw new Error('Save idea: the ideas table is not there yet'); const d=db(); const id=o.id||uid(); const row={title:'',note:'',type:'post',stage:'idea',sort:0,...o,id}; delete row.image; delete row.audio; delete row.image_path_old; delete row.audio_path_old;
   if(o.image){ const p=o.brand+'/ideas/'+id+'/pic-'+uid()+'.jpg'; d.files[p]=await toData(o.image); row.image_path=p; }
   if(o.audio){ const p=o.brand+'/ideas/'+id+'/voice-'+uid()+'.webm'; d.files[p]=await toData(o.audio); row.audio_path=p; }
-  const L=t(d,'ideas'), i=L.findIndex(x=>x.id===id); const full={...(i>=0?L[i]:{created_at:now()}),...row,updated_at:now()}; if(i>=0) L[i]=full; else L.push(full); put(d); return full; };
+  const L=t(d,'ideas'), i=L.findIndex(x=>x.id===id); const fresh=nothread()?{}:{seen_at:null,seen_by:null,deleted_at:null,deleted_by:null}; const full={...(i>=0?L[i]:{created_at:now(),...fresh}),...row,updated_at:now()}; if(i>=0) L[i]=full; else L.push(full); put(d); return full; };
 C.updateIdea=async(id,patch)=>{ const d=db(), r=t(d,'ideas').find(x=>x.id===id); if(!r) throw new Error('Idea: not found'); Object.assign(r,patch,{updated_at:now()}); put(d); return r; };
-C.deleteIdea=async id=>{ const d=db(), r=t(d,'ideas').find(x=>x.id===id); d.ideas=t(d,'ideas').filter(x=>x.id!==id); if(r) [r.image_path,r.audio_path].forEach(p=>{ if(p) delete d.files[p]; }); put(d); };
+const gate=()=>{ if(off()||nothread()) throw new Error(SW); };
+C.ideaNotes=async brand=>off()||nothread()?[]:t(db(),'idea_notes').filter(x=>x.brand===brand&&!x.deleted_at).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
+C.addIdeaNote=async o=>{ gate(); const d=db(), id=uid(); let p=null; if(o.audio){ const ty=(o.audio.type||'audio/webm').split(';')[0]; p=o.brand+'/ideas/'+o.idea_id+'/notes/'+id+(ty.includes('mp4')?'.m4a':'.webm'); d.files[p]=await toData(o.audio); }
+  const row={id,brand:o.brand,idea_id:o.idea_id,author:o.author||null,body:o.body||'',audio_path:p,audio_secs:p?(o.secs||null):null,created_at:now(),deleted_at:null,deleted_by:null}; t(d,'idea_notes').push(row); put(d); return row; };
+const flag=(n,id,p)=>{ gate(); const d=db(), r=t(d,n).find(x=>x.id===id); if(!r) throw new Error('Not found'); Object.assign(r,p); put(d); return r; };
+C.archiveIdeaNote=async(id,by)=>flag('idea_notes',id,{deleted_at:now(),deleted_by:by||null});
+C.restoreIdeaNote=async id=>flag('idea_notes',id,{deleted_at:null,deleted_by:null});
+C.archiveIdea=async(id,by)=>flag('ideas',id,{deleted_at:now(),deleted_by:by||null});
+C.restoreIdea=async id=>flag('ideas',id,{deleted_at:null,deleted_by:null});
+C.deleteIdea=async(id,by)=>C.archiveIdea(id,by);
+C.archivedIdeas=async brand=>off()||nothread()?{ideas:[],notes:[]}:{ideas:t(db(),'ideas').filter(x=>x.brand===brand&&x.deleted_at).sort((a,b)=>String(b.deleted_at).localeCompare(String(a.deleted_at))),notes:t(db(),'idea_notes').filter(x=>x.brand===brand&&x.deleted_at).sort((a,b)=>String(b.deleted_at).localeCompare(String(a.deleted_at)))};
+C.markIdeaSeen=async(id,by)=>{ if(off()||nothread()) return; const d=db(), r=t(d,'ideas').find(x=>x.id===id); if(r&&r.seen_at===null){ r.seen_at=now(); r.seen_by=by||null; put(d); } };
+C.archiveIdeaVoice=async(id,by)=>{ gate(); const d=db(), r=t(d,'ideas').find(x=>x.id===id); if(!r||!r.audio_path) return null;
+  t(d,'idea_notes').push({id:uid(),brand:r.brand,idea_id:id,author:r.author||null,body:'',audio_path:r.audio_path,audio_secs:r.audio_secs||null,created_at:r.created_at,deleted_at:now(),deleted_by:by||null});
+  r.audio_path=null; r.audio_secs=null; r.updated_at=now(); put(d); return r; };
 C.kpiMonths=async(brand,from,to)=>off()?[]:t(db(),'kpi_months').filter(x=>x.brand===brand&&(!from||x.month>=from)&&(!to||x.month<=to)).sort((a,b)=>a.month.localeCompare(b.month));
 C.saveKpiMonth=async o=>{ if(off()) throw new Error('Save goals: the table is not there yet'); const d=db(), L=t(d,'kpi_months'), i=L.findIndex(x=>x.brand===o.brand&&x.month===o.month); const row={targets:{},engagement:{},note:'',...(i>=0?L[i]:{id:uid()}),...o,updated_at:now()}; if(i>=0) L[i]=row; else L.push(row); put(d); return row; };
 C.setFormat=async(id,format)=>{ const d=db(); if(d.designs[id]){ d.designs[id].format=format; put(d); } };

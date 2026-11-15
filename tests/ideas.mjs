@@ -1,4 +1,4 @@
-/* Ideas (assets/ideas.js, behind the "plan" preview): capture (text, link, picture, voice), Inbox, Board, idea sheet, desktop drag.
+/* Ideas (assets/ideas.js, behind the "plan" preview): capture (text, link, picture, voice) straight onto the Board (no Inbox), idea sheet, desktop drag.
    Run: node tests/ideas.mjs (server on :8080, or BASE=...). Real MediaRecorder on Chromium's fake microphone. */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -53,18 +53,18 @@ async function flow(dark){
   const ctx=await mk({...PH,colorScheme:dark?'dark':'light'},base()); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(T+e.message)); pg.on('console',m=>{ if(m.type()==='error'&&!/fonts|ERR_FAILED|net::|favicon/i.test(m.text())) errs.push(T+'console '+m.text()); });
   await open(pg);
   ok(T+'#ideas opens; empty: lands on the Board with a friendly empty state',/Your board is empty/.test(await txt(pg,'.id-content'))&&await pg.evaluate(()=>!document.getElementById('ideasView').hidden),await txt(pg,'.id-content'));
-  await pg.tap('[data-tab="inbox"]'); const em=await txt(pg,'.id-content');
-  ok(T+'empty Inbox: "Inbox is clear" + New idea button',/Inbox is clear/.test(em)&&/New idea/.test(em),em);
+  ok(T+'no Inbox tab and no "sort later" step anywhere',!(await pg.$('#ideasView [data-tab]'))&&!/Inbox/.test(await txt(pg,'#ideasView')));
+  ok(T+'empty board has a New idea button',/New idea/.test(await txt(pg,'.id-content')));
   /* capture by typing + link + type, Ctrl+Enter */
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg textarea');
   ok(T+'New opens a sheet with the idea box focused',await pg.waitForFunction(()=>document.activeElement&&document.activeElement.id==='idCT',null,{timeout:3000}).then(()=>true).catch(()=>false));
   await pg.fill('#idCT','Reel idea: pour in slow motion https://example.org/ref/1\nSecond line of notes');
   ok(T+'a URL in the text becomes a link chip',/example\.org/.test(await txt(pg,'#idAtt')),await txt(pg,'#idAtt'));
   await pg.tap('[data-ct="reel"]'); const t0=Date.now(); await pg.press('#idCT','Control+Enter');
-  ok(T+'saving closes the sheet at once and the card shows in the inbox',await pg.waitForFunction(()=>!document.querySelector('dialog.id-capdlg')&&/pour in slow motion/.test(document.querySelector('.id-content').innerText),null,{timeout:2500}).then(()=>true).catch(()=>false)&&Date.now()-t0<2500);
+  ok(T+'saving closes the sheet at once and the card shows on the board',await pg.waitForFunction(()=>!document.querySelector('dialog.id-capdlg')&&/pour in slow motion/.test(document.querySelector('.id-content').innerText),null,{timeout:2500}).then(()=>true).catch(()=>false)&&Date.now()-t0<2500);
   await pg.waitForFunction(()=>JSON.parse(localStorage.getItem('fakecloud')).ideas&&JSON.parse(localStorage.getItem('fakecloud')).ideas.length===1,null,{timeout:5000}).catch(()=>{});
   let s=await stored(pg), r=(s.ideas||[])[0]||{};
-  ok(T+'stored in the cloud: title, note, link, type, stage inbox, author',r.title&&/Reel idea/.test(r.title)&&r.note==='Second line of notes'&&r.link==='https://example.org/ref/1'&&r.type==='reel'&&r.stage==='inbox'&&r.author==='Sara',r);
+  ok(T+'stored in the cloud: title, note, link, type, stage idea, author',r.title&&/Reel idea/.test(r.title)&&r.note==='Second line of notes'&&r.link==='https://example.org/ref/1'&&r.type==='reel'&&r.stage==='idea'&&r.author==='Sara',r);
   /* picture: 3000x2000 -> <= 1600 jpeg */
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg');
   const big=await pg.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=3000; c.height=2000; const g=c.getContext('2d'); g.fillStyle='#c33'; g.fillRect(0,0,3000,2000); g.fillStyle='#fff'; g.fillRect(500,500,1500,800); return (await new Promise(r=>c.toBlob(r,'image/png'))).arrayBuffer().then(a=>Array.from(new Uint8Array(a)).length&&btoa(String.fromCharCode(...new Uint8Array(a).slice(0,0)))||'x'); }).catch(()=>'x');
@@ -90,12 +90,8 @@ async function flow(dark){
   s=await stored(pg); const v=(s.ideas||[]).find(x=>x.audio_path);
   ok(T+'voice note stored as audio with its length, attached to the idea',!!v&&/^data:audio\//.test(s.files[v.audio_path]||'')&&v.audio_secs>=2&&v.audio_secs<=5,v&&{p:v.audio_path,s:v.audio_secs});
   await pg.waitForSelector('.id-card[data-id="'+(v&&v.id)+'"] .id-voice',{timeout:4000}).catch(()=>{});
-  ok(T+'the inbox card has a voice player with the duration',/0:0[2-5]/.test(await txt(pg,'.id-card:first-child .id-voice')),await txt(pg,'.id-card:first-child .id-voice'));
-  /* sort */
-  const nIn=await pg.$$eval('.id-card',e=>e.length);
-  await pg.tap('.id-card:nth-child(3) [data-sort][data-t="reel"]'); await pg.waitForTimeout(400);
-  s=await stored(pg);
-  ok(T+'tapping Reel on an inbox card moves it to the board (stage idea, type reel) with a toast',(s.ideas||[]).filter(x=>x.stage==='idea'&&x.type==='reel').length===1&&/Moved to the board/.test(await txt(pg,'#hubToast'))&&(await pg.$$eval('.id-card',e=>e.length))===nIn-1,await txt(pg,'#hubToast'));
+  ok(T+'the board card has a voice player with the duration',/0:0[2-5]/.test(await txt(pg,'.id-card:first-child .id-voice')),await txt(pg,'.id-card:first-child .id-voice'));
+  ok(T+'every captured idea sits in the Idea stage (3 cards), no sort buttons',(await pg.$$eval('.id-card',e=>e.length))===3&&!(await pg.$('[data-sort]'))&&(s.ideas||[]).every(x=>x.stage==='idea'),(s.ideas||[]).map(x=>x.stage));
   if(!dark){ await pg.screenshot({path:SHOTS+'ideas-capture-light.png'}); }
   await ctx.close();
 }
@@ -106,15 +102,14 @@ async function populated(dark){
   const T=(dark?'dark ':'light ')+'board: ';
   const ctx=await mk({...PH,colorScheme:dark?'dark':'light'},seeded()); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(T+e.message));
   await open(pg);
-  const first=await pg.evaluate(()=>({inboxOn:document.querySelector('[data-tab="inbox"]').getAttribute('aria-pressed'),n:document.querySelectorAll('.id-card').length,badge:document.querySelector('[data-tab="inbox"] i')?.textContent}));
-  ok(T+'opens on Inbox when it has ideas (3), newest first',first.inboxOn==='true'&&first.n===3&&first.badge==='3'&&/brewing day/.test(await txt(pg,'.id-card:first-child')),first);
+  const first=await pg.evaluate(()=>({tab:!!document.querySelector('#ideasView [data-tab]'),n:document.querySelectorAll('.id-card').length,on:document.querySelector('[data-stage-tab][aria-pressed="true"]')?.dataset.stageTab}));
+  ok(T+'opens on the Board, Idea stage: old inbox rows (3) show as ideas next to the 2 others, newest first',!first.tab&&first.on==='idea'&&first.n===5&&/brewing day/.test(await txt(pg,'.id-card:first-child')),first);
   await pg.waitForFunction(()=>{ const i=document.querySelector('.id-card img.id-thumb'); return i&&i.complete&&i.naturalWidth>0; },null,{timeout:6000}).catch(()=>{});
-  ok(T+'inbox card shows picture thumb, link domain, author initial',!!(await pg.$('.id-card .id-thumb'))&&/example\.com/.test(await txt(pg,'#ideasView'))&&/^S/.test(await txt(pg,'.id-av')));
+  ok(T+'idea card shows picture thumb, link domain, author initial',!!(await pg.$('.id-card .id-thumb'))&&/example\.com/.test(await txt(pg,'#ideasView'))&&/^S/.test(await txt(pg,'.id-av')));
   if(!dark) await pg.screenshot({path:SHOTS+'ideas-inbox-light.png'}); else await pg.screenshot({path:SHOTS+'ideas-inbox-dark.png'});
-  await pg.tap('[data-tab="board"]');
-  ok(T+'Board: stage tabs with counts (2 · 1 · 1 · 1) and the Idea list',/Idea\s*2\s*Planned\s*1\s*In progress\s*1\s*Posted\s*1/.test(await txt(pg,'.id-stages')),await txt(pg,'.id-stages'));
+  ok(T+'Board: stage tabs with counts (5 · 1 · 1 · 1) and the Idea list',/Idea\s*5\s*Planned\s*1\s*In progress\s*1\s*Posted\s*1/.test(await txt(pg,'.id-stages')),await txt(pg,'.id-stages'));
   const bc=await pg.$eval('.id-card',e=>({pill:e.querySelector('.id-pill')?.textContent,next:e.querySelector('[data-next]')?.textContent}));
-  ok(T+'board card: type pill + "Move to Planned"',/Giveaway/.test(bc.pill||'')&&/Move to Planned/.test(bc.next||''),bc);
+  ok(T+'board card: type pill + "Move to Planned"',/Post/.test(bc.pill||'')&&/Move to Planned/.test(bc.next||''),bc);
   await pg.tap('[data-stage-tab="planned"]'); await pg.waitForTimeout(250);
   await pg.waitForFunction(()=>/\w{3} \d+ \w{3} · 7:00 pm/.test(document.querySelector('.id-cal')?.innerText||''),null,{timeout:5000}).catch(()=>{});
   const pc=await txt(pg,'.id-card');
@@ -125,18 +120,18 @@ async function populated(dark){
   await pg.tap('[data-type=""]');
   await pg.tap('[data-search]'); await pg.fill('#idQ','win a case'); await pg.waitForTimeout(150);
   ok(T+'search matches the note text',(await pg.$$eval('.id-card',e=>e.length))===1&&/giveaway/.test(await txt(pg,'.id-card')));
-  await pg.fill('#idQ','القهوة'); await pg.tap('[data-tab="inbox"]'); await pg.waitForTimeout(150);
-  ok(T+'Arabic search finds the Arabic inbox idea',(await pg.$$eval('.id-card',e=>e.length))===1,await txt(pg,'.id-content'));
-  await pg.tap('[data-search]'); await pg.tap('[data-tab="board"]'); await pg.tap('[data-stage-tab="idea"]');
+  await pg.fill('#idQ','القهوة'); await pg.waitForTimeout(150);
+  ok(T+'Arabic search finds the Arabic idea',(await pg.$$eval('.id-card',e=>e.length))===1,await txt(pg,'.id-content'));
+  await pg.tap('[data-search]'); await pg.tap('[data-stage-tab="idea"]');
   await pg.tap('.id-card:first-child [data-next]'); await pg.waitForTimeout(400);
   let s=await stored(pg);
   ok(T+'"Move to Planned ›" moves the idea (stored)',(s.ideas||[]).filter(x=>x.stage==='planned').length===2,(s.ideas||[]).map(x=>x.id+':'+x.stage).join(' '));
   /* menu */
   await pg.tap('.id-card:first-child [data-more]'); await pg.waitForSelector('.id-menu');
-  ok(T+'the ⋯ menu: move to any stage, Edit, Delete',/Move to Inbox/.test(await txt(pg,'.id-menu'))&&/Edit/.test(await txt(pg,'.id-menu'))&&/Delete/.test(await txt(pg,'.id-menu')));
+  ok(T+'the ⋯ menu: move to any stage, Open, Move to archive (no Inbox, no Delete)',/Move to Idea|Move to Posted/.test(await txt(pg,'.id-menu'))&&!/Inbox|Delete/.test(await txt(pg,'.id-menu'))&&/Open/.test(await txt(pg,'.id-menu'))&&/Move to archive/.test(await txt(pg,'.id-menu')));
   await pg.tap('.id-menu [data-a="edit"]'); await pg.waitForSelector('dialog.id-edit');
   /* idea sheet */
-  ok(T+'idea sheet: title, note, type, stage, link, picture, voice, design, calendar',await pg.evaluate(()=>{ const t=document.querySelector('dialog.id-edit').innerText; return /Title/.test(t)&&/Note/.test(t)&&/Type/.test(t)&&/Stage/.test(t)&&/Link/.test(t)&&/Picture/.test(t)&&/Voice note/.test(t)&&/Design/.test(t)&&/Calendar/.test(t); }));
+  ok(T+'idea sheet: title, note, type, stage, link, picture, design, calendar, discussion; no "Replace voice note"',await pg.evaluate(()=>{ const t=document.querySelector('dialog.id-edit').innerText; return /Title/.test(t)&&/Note/.test(t)&&/Type/.test(t)&&/Stage/.test(t)&&/Link/.test(t)&&/Picture/.test(t)&&/Discussion/.test(t)&&/Design/.test(t)&&/Calendar/.test(t)&&!/Record again|Replace voice/i.test(t); }));
   await pg.fill('#idTitle','Weekend giveaway (edited)'); await pg.tap('dialog [data-t="story"]'); await pg.tap('dialog [data-s="progress"]'); await pg.fill('#idLink','example.net/x');
   await pg.tap('dialog [data-pic]');   // opens the file chooser path: the input is hidden, just attach
   await pg.setInputFiles('dialog #idFile',{name:'a.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64')});
@@ -147,20 +142,20 @@ async function populated(dark){
   await pg.tap('#idSave'); await pg.waitForFunction(()=>!document.querySelector('dialog.id-edit'),null,{timeout:6000});
   s=await stored(pg); const e=(s.ideas||[]).find(x=>/edited/.test(x.title));
   ok(T+'edits saved: title, type, stage, link and new picture',!!e&&e.type==='story'&&e.stage==='progress'&&e.link==='example.net/x'&&!!e.image_path,e&&{t:e.type,s:e.stage,l:e.link,i:!!e.image_path});
-  /* voice player on a seeded inbox card + plan from sheet */
-  await pg.tap('[data-tab="inbox"]'); await pg.waitForSelector('.id-card .id-voice');
-  await pg.tap('.id-card:first-child .id-play'); await pg.waitForTimeout(500);
-  ok(T+'playing a voice note flips the button to Pause (or finishes)',/Pause|Play/.test(await pg.getAttribute('.id-card:first-child .id-play','aria-label')));
-  await pg.tap('.id-card:first-child .id-main'); await pg.waitForSelector('dialog.id-edit');
-  ok(T+'sheet shows the voice player with Record again / Remove',!!(await pg.$('dialog .id-voice'))&&/Record again/.test(await txt(pg,'dialog #idVoice'))&&/Remove/.test(await txt(pg,'dialog #idVoice')));
+  /* voice player on a seeded card + plan from sheet */
+  await pg.tap('[data-stage-tab="progress"]'); await pg.waitForSelector('.id-card[data-id="i1"] .id-voice');
+  await pg.tap('.id-card[data-id="i1"] .id-play'); await pg.waitForTimeout(500);
+  ok(T+'playing a voice note flips the button to Pause (or finishes)',/Pause|Play/.test(await pg.getAttribute('.id-card[data-id="i1"] .id-play','aria-label')));
+  await pg.tap('.id-card[data-id="i1"] .id-main'); await pg.waitForSelector('dialog.id-edit');
+  ok(T+'sheet shows the voice note as the first entry of the discussion',!!(await pg.$('dialog .id-thread .id-msg:first-child .id-voice'))&&!/Record again/.test(await txt(pg,'dialog')));
   await pg.tap('dialog [data-plan]'); await pg.waitForTimeout(800);
   const planOpen=await pg.evaluate(()=>document.querySelectorAll('dialog[open]').length);
   ok(T+'"Add to calendar" opens the fast plan sheet',planOpen>=2,planOpen);
   await pg.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close())); await pg.waitForTimeout(200);
   /* delete */
-  await pg.tap('[data-tab="board"]'); await pg.tap('[data-stage-tab="posted"]'); await pg.tap('.id-card:first-child [data-more]'); await pg.tap('.id-menu [data-a="del"]'); await pg.waitForSelector('[data-yes]');
-  const before=(await stored(pg)).ideas.length; await pg.tap('[data-yes]'); await pg.waitForTimeout(400);
-  ok(T+'Delete asks first, then removes the idea',(await stored(pg)).ideas.length===before-1);
+  await pg.tap('[data-stage-tab="posted"]'); await pg.tap('.id-card:first-child [data-more]'); await pg.tap('.id-menu [data-a="del"]'); await pg.waitForSelector('[data-yes]');
+  const live=async()=>(await stored(pg)).ideas.filter(x=>!x.deleted_at).length, before=await live(), tot=(await stored(pg)).ideas.length; await pg.tap('[data-yes]'); await pg.waitForTimeout(400);
+  ok(T+'Move to archive asks first, then hides the idea (the row stays)',(await live())===before-1&&(await stored(pg)).ideas.length===tot);
   const sm=await smalls(pg); ok(T+'no control under 44px on the page',sm.length===0,sm);
   await ctx.close();
 }
@@ -173,19 +168,18 @@ await populated(false); await populated(true);
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg'); await pg.tap('[data-tool="voice"]'); await pg.waitForTimeout(400);
   ok('mic denied: a clear one-line message, nothing breaks',/microphone is blocked/i.test(await txt(pg,'#idSt'))&&!(await pg.$('.id-rec')),await txt(pg,'#idSt'));
   await pg.evaluate(()=>document.querySelector('dialog').close());
-  for(const t of ['inbox','board']){ await pg.tap('[data-tab="'+t+'"]'); await pg.waitForTimeout(150);
-    ok('360 px: no sideways scroll on '+t,await pg.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),await pg.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth])); }
+  ok('360 px: no sideways scroll on the board',await pg.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),await pg.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]));
   await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg');
   ok('360 px: no sideways scroll in the capture sheet',await pg.evaluate(()=>{ const d=document.querySelector('dialog'); return d.scrollWidth<=d.clientWidth; }));
   await ctx.close(); }
 
 /* desktop: four columns + drag */
 { const ctx=await mk({viewport:{width:1280,height:800}},seeded()); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('desktop: '+e.message));
-  await open(pg); await pg.tap?.call(pg,'[data-tab="board"]').catch(()=>{}); await pg.click('[data-tab="board"]'); await pg.waitForSelector('.id-cols');
+  await open(pg); await pg.waitForSelector('.id-cols');
   ok('desktop: four columns side by side',(await pg.$$eval('.id-col',e=>e.map(x=>Math.round(x.getBoundingClientRect().top)))).every((t,i,a)=>t===a[0])&&(await pg.$$('.id-col')).length===4);
-  await pg.dragAndDrop('.id-col[data-stage="idea"] .id-card[data-id="i4"]','.id-col[data-stage="progress"] .id-list'); await pg.waitForTimeout(500);
+  await pg.dragAndDrop('.id-col[data-stage="idea"] .id-card[data-id="i2"] .id-title','.id-col[data-stage="progress"] .id-list'); await pg.waitForTimeout(500);
   const s=await stored(pg);
-  ok('desktop: dragging a card to another column moves its stage',(s.ideas||[]).find(x=>x.id==='i4').stage==='progress',(s.ideas||[]).find(x=>x.id==='i4').stage);
+  ok('desktop: dragging a card to another column moves its stage',(s.ideas||[]).find(x=>x.id==='i2').stage==='progress',(s.ideas||[]).find(x=>x.id==='i2').stage);
   await pg.screenshot({path:SHOTS+'ideas-board-desktop.png'}); await ctx.close(); }
 
 ok('no page errors',errs.length===0,errs.slice(0,5));
