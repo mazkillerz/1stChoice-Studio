@@ -34,7 +34,7 @@ const wait=(pg,f,a)=>pg.waitForFunction(f,a,{timeout:6000}).then(()=>true).catch
 const open=async pg=>{ await pg.goto(BASE+'index.html#ideas'); await pg.waitForSelector('#ideasView .id-top',{timeout:10000}); await pg.waitForFunction(()=>!document.querySelector('#ideasView .id-skel'),null,{timeout:10000});
   await pg.tap('.id-card[data-id="i1"] .id-main'); await pg.waitForSelector('dialog .id-thread .id-voice'); };
 const V=i=>`dialog .id-thread .id-msg:nth-child(${i+1}) .id-voice`;   /* 0 = idea's own voice note, 1..5 = replies */
-const barPt=async(pg,i,f)=>{ const r=await (await pg.$(V(i)+' .id-vbar')).boundingBox(); return {x:r.x+r.width*f,y:r.y+r.height/2,r}; };
+const barPt=async(pg,i,f)=>{ const el=await pg.$(V(i)+' .id-vbar'); await pg.waitForFunction(()=>!document.getAnimations().some(a=>a.playState==='running'),null,{timeout:3000,polling:50}).catch(()=>{}); await el.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'})); await pg.waitForTimeout(80);   /* measure after the sheet has slid in */ const r=await el.boundingBox();   /* the player can sit below the fold in the read-first sheet */ return {x:r.x+r.width*f,y:r.y+r.height/2,r}; };
 const cur=(pg,k=-1)=>pg.evaluate(k=>{ const a=window.__auds.at(k); return a?{t:a.currentTime,d:a.duration,paused:a.paused,rate:a.playbackRate,pp:a.preservesPitch,pre:a.preload}:null; },k);
 const pauseAll=pg=>pg.evaluate(()=>window.__auds.forEach(a=>a.pause()));
 const onPath=pg=>pg.evaluate(()=>{ const v=document.querySelector('.id-voice.on'); return v?v.dataset.path.split('/').pop():null; });
