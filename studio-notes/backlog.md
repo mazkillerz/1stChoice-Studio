@@ -2,7 +2,7 @@
 
 Ranked ideas and bugs. Score = team impact + Mazoon impact + wow − effort (each 1–5). Highest first.
 
-**Last session:** 2.7.0 (14 Nov 2026, Mazoon session: Same layout in Highlight covers + Carousel; slim offer lines). Next: 2.8.0, a **team** session; next Simplify 2.10.0. Before that: 2.6.0 (team: Same layout as last time). Before that: round 3 (11 Nov 2026, 2.3.0: Save asks where it goes, one back stack, team assets + logo-grade remover, more backgrounds, the New Studio look preview; plan `studio-notes/round3.md`). Before that:  the mega round (7–8 Nov 2026, one lead + sonnet builders in parallel, plan `studio-notes/mega-plan.md`, log `studio-notes/mega-round.md`): 1.54.0 foundation (Update vs Save as new, versions, covers, Who's using, self-hosted fonts, tokens, faster tests + goldens, preview flags, Supabase tables), 1.55.0 features (brand check, resize, occasion packs, shared components; previews: team workflow, Claude Design import, moving stories), 2.0.0 power and polish (previews: remove background, live stock; Simplify pass). The next session, 2.1.0, is a **team** session; the next Simplify is 2.5.0.
+**Last session:** round 4 (15 Nov 2026, ten releases 2.8.0–2.17.0, plan `studio-notes/round4.md`): 2.8.0 Post it now (team), 2.9.0 Feed preview (Mazoon), 2.10.0 **Simplify** (Background finishes in one row, one Sign in, suites split, full sweep), 2.11.0 Reminders (team), 2.12.0 remover colour pick (Mazoon), 2.13.0 automatic names never ask (team), 2.14.0 Team assets in Board (Mazoon), 2.15.0 Simplify (Settings in four groups), 2.16.0 Saved search by the words inside (team), 2.17.0 Brand kit page (Mazoon). Next: 2.18.0, a **team** session; next Simplify 2.20.0. Before that: 2.7.0 (14 Nov 2026, Mazoon).
 **Simplify session:** every 5th minor version. The next one is 2.5.0 (2.0.0 ran the pattern review and a Simplify pass over the round).
 
 ## Next up
@@ -29,15 +29,25 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 61 | ~~Owner approves the `team_assets` table~~ done 11 Nov 2026 (applied with his approval; row counts unchanged). Next: try Team assets on the live site with a real logo | 5 | 4 | 3 | 1 | 11 | |
 | 62 | Owner's verdict on the New Studio look (flag `next`): make it the default, fold `next.css` in, archive the old bar and Saved | 4 | 5 | 5 | 2 | 12 | What's New card has the switch. |
 | 63 | Full test round (owner said testing comes later): `node tests/run.mjs --all`, contrast, tapscan, taste, RTL; suites not yet moved to the new Save flow show up here | 3 | 3 | 1 | 3 | 4 | `taste`, `simplify15`, `review`, `queue`, `highlight-emoji` were being updated when the save builder stopped. |
-| 64 | Campaigns "Save all" writes new team designs with no collection picker: ask for one collection for the set | 2 | 3 | 1 | 2 | 4 | The only writer left outside the new Save rule. |
-| 65 | Asset remover: coloured glows / shadows stay as a pale halo; a logo part close to the ground colour is eaten; a "tap the ground colour" picker would fix both | 2 | 3 | 3 | 2 | 6 | |
-| 66 | Team assets in Board; "Most used" across the team (needs a counter column); replace a picture but keep the id | 2 | 3 | 2 | 2 | 5 | |
-| 67 | Schedule reminders for planned posts (a push from the installed app at the planned time) | 3 | 4 | 4 | 3 | 8 | Needs notification permission; no server needed with the Notification Triggers fallback = check on open. |
+| 64 | ~~Campaigns Save all~~ closed in round 4: Save all only saves pictures (StudioRender), it never writes team designs | | | | | | |
+| 65 | ~~done in 2.12.0 (Pick the background)~~ Asset remover: coloured glows / shadows stay as a pale halo; a logo part close to the ground colour is eaten; a "tap the ground colour" picker would fix both | 2 | 3 | 3 | 2 | 6 | |
+| 66 | ~~Team assets in Board done in 2.14.0~~; left: "Most used" across the team (needs a counter column); replace a picture but keep the id | 2 | 3 | 2 | 2 | 5 | |
+| 67 | ~~done in 2.11.0 (badge + in-app note + notification while open)~~ Schedule reminders for planned posts (a push from the installed app at the planned time) | 3 | 4 | 4 | 3 | 8 | Needs notification permission; no server needed with the Notification Triggers fallback = check on open. |
 | 68 | ~~Restock "repeat last"~~ shipped in 2.6.0 as **Same layout as last time** (one-page tools). Follow-ups: #71 | | | | | | |
 | 71 | ~~Paged tools~~ done in 2.7.0. Left: Same layout for Create; a Settings switch "always use my last layout" if the team taps Use it every day | 3 | 2 | 2 | 2 | 5 | From 2.6.0. Ask the team first. |
 | 72 | ~~done in 2.7.0 (`.slim-bar`)~~ Slim one-line banners for the draft and queue offers too (they cover ~108px of the preview top on a phone today, like the 2.6.0 pill fixed for its own offer) | 3 | 3 | 1 | 1 | 6 | Start fresh would become ×: a familiar button moves, so give the reason in What's New. |
 | 69 | Brand kit editor in Studio (colours, fonts, phrases, logo) so a second brand needs no code | 2 | 5 | 5 | 4 | 8 | Step toward "beyond 1st Choice". |
 | 70 | Video and Board save sheets on the shared Save component (three copies of the where/collection UI today) | 1 | 2 | 1 | 2 | 2 | |
+
+## From round 4 (15 Nov 2026)
+| # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
+|---|------|-----:|-------:|----:|-------:|------:|-------|
+| 73 | Feed preview: drag tiles to reorder the planned posts (swaps their days) | 2 | 4 | 4 | 2 | 8 | From 2.9.0. |
+| 74 | Brand kit editor (#69 next step): edit colours / phrases in the Brand kit page, saved for the owner to approve | 2 | 5 | 5 | 4 | 8 | 2.17.0 shows the kit read-only. Needs a table: owner's OK first. |
+| 75 | Saved words for old designs: a one-off "refresh words" for designs saved before 2.16.0 (open in a render frame, save words only) | 3 | 2 | 1 | 2 | 4 | Today they get words on their next save. |
+| 76 | Board: a team picture is not embedded in a Board file export and shows blank when signed out | 1 | 2 | 1 | 2 | 2 | From 2.14.0. |
+| 77 | Reminders when Studio is closed would need Web Push (a server); only if the owner wants one | 3 | 3 | 3 | 4 | 5 | 2.11.0 is badge + in-app + notification while open. |
+| 78 | Owner to approve UI wording from round 4 (none lands in a picture): Post now sheet, Feed "Profile preview", reminders, Brand kit lines | 1 | 1 | 1 | 1 | 2 | Listed in `studio-notes/pending/done/*.md`. |
 
 ## From the mega round (8 Nov 2026)
 | # | Idea | Team | Mazoon | Wow | Effort | Score | Notes |
@@ -52,9 +62,11 @@ _Video editor follow-ups (30 Oct 2026): the owner saw a blank white preview on t
 | 57 | Campaign words on covers: a campaign word change shows on a design's cover only after it is opened and saved | 2 | 2 | 1 | 2 | 3 | Save all always uses the new words. |
 | 58 | Brand check: a word list for "never name the types of sale points" (`rules.sale.words` in brand.js) from the owner | 2 | 2 | 1 | 1 | 4 | Check does nothing until the list exists. |
 | 59 | Paid AI (image generation, captions) only if the owner later allows paid APIs | 2 | 4 | 5 | 3 | 8 | Owner said free only (Nov 2026). |
-| 60 | Split the >120 s suites (full, saved-versions, video-timeline, video, backgrounds, create-resize) into PARTs to bring the full sweep under 10 min | 1 | 1 | 1 | 2 | 1 | 16–25 min today on 4 CPUs. |
+| 60 | ~~done in 2.10.0 (six suites in parts)~~ Split the >120 s suites (full, saved-versions, video-timeline, video, backgrounds, create-resize) into PARTs to bring the full sweep under 10 min | 1 | 1 | 1 | 2 | 1 | 16–25 min today on 4 CPUs. |
 
 ## UX audit findings (open)
+- 2.15.0 sweep: `taste` crashed once on `page.goto(index.html?welcome=1)` with net::ERR_ABORTED under 4-way load, then passed 3 of 3 alone; if it repeats, wait for the previous page's navigation to settle before that goto.
+- 2.8.0 release: `saveflow` crashed at launch under load 12 (builders + `--changed` at JOBS=3), passed 43/0 alone.
 - 1.49.0 release: `draw-edges` "same pixels as before 1.49.0" fails a whole tool's group (Restock, Offer or Carousel) in about 1 run in 4 under load, then passes alone. On failure the suite now prints both pages' loaded fonts: identical, so not fonts. Next: hash per region or dump both canvases to find what differs (suspect an asset such as the HD can arriving at a different moment in the old-file page).
 - 1.46.0 release: `create-render` "pixel-identical to Create’s own 2x Save" fails under 4-way load with the same 3880 px every time (1.43 and 1.46 releases), passes alone. A fixed count points at one element (likely a font not yet in for one of the two Creates). Look at it in 1.50. 1.49.0 lead: 1 of 8 runs fails under 4× `create-render` at once, with or without a font wait + re-measure in `exportFrame()` (tried and reverted), so it is not the late-font path. Next: dump both PNGs on the failing run and diff where the 3880 px sit.
 - 1.43.0: a Google Fonts stylesheet that hangs (not fails) blocks the whole page from showing: `studio.css` starts with an `@import` of the interface font and pages link brand fonts in `<head>`. Offline it fails fast and is fine. If it matters, load the font CSS without blocking (`media="print" onload`) and keep the 12 s cap in `fontsReady()`.

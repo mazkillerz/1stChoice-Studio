@@ -5,6 +5,7 @@ What worked, what failed, and process tweaks. Newest session first.
 ## Scoreboard (self-score at the end of every session; see the skill's Reflect step)
 | Session | Version | Quality (1–5) | Speed (1–5) | Owner-reported issues after the previous release | Taste checks | Do better next time |
 |---|---|---|---|---|---|---|
+| round 4 | 2.10.0–2.17.0 | 4 (two full sweeps with `--all`: 2.10 139/140 then 140 after fixing `templates`, red on main since 2.5.2; 2.15 143/144, the one red a load crash that passed 3/3 alone; contrast and tapscan clean; every release `--changed` green) | 4 (8 builders in 3 waves of ≤3, ten releases in one session; one lead edit wiped taste.md and was caught before push; two merges needed a Settings / run.mjs resolve) | 0 | pass | Never rewrite a notes file with a string-index edit: use line-by-line edits and check `wc -l` before committing |
 | round 4 | 2.9.0 | 4 (feed 26/0 incl. 360 + desktop; `--changed` 10 suites green) | 5 (builder done in ~13 min; one run.mjs conflict, keep both) | 0 known about 2.8.0 | pass | Builders on the same file (calendar.js) stayed conflict-free by keeping one in a new module with a marked hook |
 | round 4 | 2.8.0 | 4 (post-now 52/0; `--changed` 80 suites, 79 green, `saveflow` crashed at start under load 12 and passed 43/0 alone) | 4 (builder ~25 min; the lead's Simplify cuts rode along unannounced until 2.10.0) | 0 known about 2.7.0 | pass | Run `--changed` with builders paused or JOBS=2: load 12 made a suite crash at launch |
 | 63 | 2.7.0 | 4 (new `pagedlayout` 25/0 light + dark at 390/360; `--changed` before merge; before/after phone shots from a worktree of HEAD) | 5 (two backlog items in one pass, no subagents needed) | 0 known about 2.6.0 | pass | A paged tool's Quick start input exists only when the tool is pinned: pin it in the test first |
@@ -88,3 +89,12 @@ Sessions 16–31 (1.5.0–1.20.0) and their scoreboard rows were moved to `_arch
 Folded into the skill (Repo notes, Testing, Engine gotchas) and `taste.md` at the 1.10.0 pattern review. The full text is in `_archive/lessons sessions 1-15 (2026-10-28)/lessons.md`. Still worth a line here:
 - Check that a backlog finding still holds before picking it (0.2.0, 1.11.0: #20 had been handled since 1.4.0).
 - Board: panel/seg clicks within 250 ms merge into one undo step; wait ≥ 400 ms in tests (0.4.0).
+
+## Round 4 (15 Nov 2026, 2.8.0–2.17.0)
+- Three sonnet builders at a time with one shared brief file (`brief-common.md` in the scratchpad) + a short per-topic brief worked: 8 builders, no usage stop, each with its own suite. Builders that did not own `VERSION`/`sw.js`/changelog left the lead nothing to untangle but list conflicts in `run.mjs` (HUB_SUITES, MAP rows): a tiny "union the list" resolver did each one in a second.
+- Two builders on one file (calendar.js) stayed conflict-free when one of them put its code in a new module with a small marked hook.
+- A builder's "before" shot taken by hiding the new row is not a before shot: take it from a worktree of the base commit, or ship only the after shot.
+- Check a stale backlog item before briefing it (#64 described a writer that did not exist).
+- A sweep suite red on main for weeks (`templates`, since 2.5.2 changed the press scale) hides behind "known flaky": the full sweep at a Simplify release is where it gets fixed.
+- A service-worker `notificationclick` must not navigate an open Studio tab (it could leave a design mid-edit): focus it only.
+

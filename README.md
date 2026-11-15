@@ -59,6 +59,22 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 
 ## On a phone
 
+**Post it now** (2.8.0): Home's calendar row shows **Post** when today's next planned item has a design; it (and the first row of any calendar item's ⋯ menu) opens Post now: **Share picture** copies the caption and opens the share sheet with the full-quality picture (a ZIP on a computer), then **Mark as posted**.
+
+**Feed preview** (2.9.0): Calendar → **Feed** (next to Week and Month) shows posts and reels as the Instagram 3-column profile grid, planned ones first with their date; tap a tile to edit it.
+
+**Reminders** (2.11.0): Settings → On this phone → **Remind me about planned posts** (off by default, per device): an app-icon badge with today's planned posts, a note 15 min before each planned time while Studio is open, and a system notification if allowed. No server, so nothing while Studio is closed.
+
+**Names in a row** (2.13.0): a new design saved to the team with the untouched automatic name (“Restock – 15 Nov”) quietly takes the next number (“· 2”, “· 3”) when the name is taken; a typed name still asks.
+
+**Saved search by words** (2.16.0): Saved's search and the hub search also match the words written on a design (stored as a short `words` text in the recipe on every team save; designs saved earlier match after their next save).
+
+**Brand kit page** (2.17.0): Settings → Brand and team → **Brand kit** (or search): logo, colours (tap to copy the hex), fonts, approved words (search, tap to copy), brand pictures and looks. Read-only.
+
+**Pick the background** (2.12.0): in Team assets' remover (Logo), tap **Pick the background**, then tap the background on the picture (up to 3 colours, tap inside a letter to clear it, Reset for automatic).
+
+**Settings groups** (2.15.0): You · Brand and team · On this phone · Help and more.
+
 **Saving** (2.3.0): the Save sheet starts with **Save to**: My phone (always the start) or Phone + Team. Nothing reaches the team by itself. For the team a collection is required, and the button names it ("Save to “Restocks”"). A design opened from Saved starts on Phone + Team and reads Update “name”. Create and Video follow the same rule.
 
 **One design, not copies** (2.5.0): once a design is in the team, saving it again (same visit, after going back, or after reopening it from Saved) updates that design; every update keeps the one before in Versions. **Save as a copy** under the main button makes a separate design when you really want one. A design with no photos of its own is a normal design (before 2.5.0 it was stored as a team template, and every save after that made a new design). Templates come only from **Save as a team template** or **Keep the photos** switched off.
@@ -67,7 +83,7 @@ Every tool has a **White** look (the main look, now first) and a **Cream** look.
 
 **Team assets** (2.3.0): Layers → Asset → **Add or browse** under Team (also Settings → Team assets, or search). Anyone on the team adds a picture; everyone gets it. Each has a name, a folder and tags; the library searches and sorts. Adding offers **Keep · Logo · Photo**: Logo cuts a logo off a plain ground with clean edges (on the phone, no download); Photo cuts out a can or a person (first use downloads about 15 MB). Removing an asset from the library never breaks stories that already use it.
 
-**Backgrounds** (2.3.0): Style → Background has Plain, Gradients (Fade, Glow, Sweep, Spot, Mesh), Patterns (Dots, Lines, Grid, Waves, Rings) and Textures (Grain, Paper, Linen), each Soft, Medium or Strong.
+**Backgrounds** (2.3.0): Style → Background (one sideways row since 2.10.0) has Plain, Gradients (Fade, Glow, Sweep, Spot, Mesh), Patterns (Dots, Lines, Grid, Waves, Rings) and Textures (Grain, Paper, Linen), each Soft, Medium or Strong.
 
 **Several photos** (1.48.0): photos still waiting from an earlier row join a new Restock or Photo story after the new photos, so **Next photo** reaches them without going back to Home. Close the pick-a-tool sheet after sharing a photo and it waits on Home as **Your photo is in**.
 
@@ -151,6 +167,7 @@ A small **Experimental** button at the end of the home page opens the lab after 
 The passcode only hides the area from everyday use; it is not security. Nothing in the lab changes the studio tools or the team's saved designs.
 
 **Board** (`lab/board.html`) is a free canvas editor, made for a computer (works on a phone/tablet for simple edits):
+- **Team assets** (2.14.0): Assets → Brand → **Team assets** places a shared logo or cut-out in the middle of the frame (linked to the team file, re-fetched on reopen; not embedded in a Board file export).
 - **Moving around:** scroll or Space+drag (or the Hand tool) to move, pinch or Ctrl/⌘+scroll to zoom (2%–800%), mini map, Fit. Rulers along the top and left (Shift+R) measure from the frame you're in; drag from a ruler to add a guide, drag it back to remove it.
 - **Tools** sit in a floating bar at the bottom: Move/Hand, Frame, Shapes (rectangle, ellipse, triangle, star, line, arrow), Text (and curved text), Draw (pen, highlighter, eraser), Upload, Brand kit, and More (barcode, QR code, mask, repeat, find and replace, replace a colour, versions). The small arrow on a tool, or tapping it again, shows its options. **Ctrl/⌘ K** finds any tool or action by typing.
 - **Quick-edit bar** above whatever is selected: font, size, colour, bold, alignment; fill and outline; crop and photo looks; size; group, mask, duplicate, delete.
