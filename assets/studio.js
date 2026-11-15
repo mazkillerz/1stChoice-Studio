@@ -3145,7 +3145,9 @@ async function home(){
      (View Transitions where the phone has them, a CSS slide otherwise; none with reduced motion). The new page has up to 700 ms to draw. */
   /* 2.18.0: a tab tap slides the track to that pane (the underline rides along); no View Transition, so nothing is snapshotted on top */
   function planSwitch(v){ planTabsUi.go(PLAN_ORDER.indexOf(v),!reduce()); planShown(v); }
-  const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:'',shell:true,
+  /* 2.23.0: ideas with something new for me (new idea, or replies by others since I last opened it) put a small count on the Ideas tab */
+  const planUnread=n=>{ const t=$('pvt-ideas'); if(!t) return; let b=t.querySelector('.st-badge'); if(!n){ if(b) b.remove(); return; } if(!b){ b=document.createElement('em'); b.className='st-badge'; t.appendChild(b); } b.textContent=n>9?'9+':String(n); b.setAttribute('aria-label',n+' with something new'); };
+  const planCtx=(v)=>({root:$(v+'View'),brand:B.id,esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),tabs:'',shell:true,onUnread:planUnread,
     cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
     netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null},
     designs:async()=>{ if(!loaded) await loadSaved(); return all; }, shapeOf,
@@ -3159,6 +3161,9 @@ async function home(){
   async function showIdeas(){ const root=$('ideasView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await ideasLib()).show(); }catch(_){ planFail(root,showIdeas,'Ideas'); } }
   async function showGoals(){ const root=$('goalsView'); if(!root) return; if(!calReady){ calPend=true; return; } try{ (await goalsLib()).show(); }catch(_){ planFail(root,showGoals,'Goals'); } }
   /* quick capture from anywhere on the hub: the + menu, search, Home's Ideas button. mode: 'text' | 'voice' | 'image' | 'link' */
+  /* 2.24.0: search opens an idea's sheet, or the calendar on that day's week */
+  async function openIdea(id){ if(curView()!=='ideas') openView('ideas'); try{ const a=await ideasLib(); if(a&&a.open) a.open(id); }catch(_){} }
+  async function openCalDay(day){ if(curView()!=='calendar') openView('calendar'); try{ await calLib(); if(calApi&&calApi.show) setTimeout(()=>calApi.show({day}),60); }catch(_){} }
   async function newIdea(mode){ try{ (await ideasLib()).capture({mode:mode||'text'}); }catch(err){ hubToast('Ideas did not open: '+(err.message||err)); } }
   document.addEventListener('click',e=>{ if(e.target.closest('[data-new-idea]')){ e.preventDefault(); haptic('tick'); newIdea('text'); } });
 
@@ -3370,6 +3375,13 @@ async function home(){
     (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),opened:()=>tplUsed('p:'+p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
       out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design')+' '+(d.words||''),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
+    /* 2.24.0: ideas and planned posts, from the Plan pages' last data on this device (studio:plan:ideas / studio:plan:cal) */
+    try{ const pi=store('studio:plan:ideas:'+B.id), TY={reel:'Reel',post:'Post',story:'Story',giveaway:'Giveaway',other:'Other'}, ST={inbox:'Idea',idea:'Idea',planned:'Planned',progress:'In progress',posted:'Posted'};
+      const notes={}; ((pi&&pi.notes)||[]).forEach(n=>{ if(n.body) (notes[n.idea_id]=notes[n.idea_id]||[]).push(n.body); });
+      ((pi&&pi.items)||[]).filter(x=>x&&x.id&&!x.deleted_at&&!x._pending).forEach(x=>out.push({kind:'plan',id:'idea:'+x.id,title:x.title||String(x.note||'').split('\n')[0]||'Untitled idea',sub:'Idea · '+(TY[x.type]||'Post')+' · '+(ST[x.stage]||'Idea'),keys:['idea ideas',x.note,x.link,x.author,(notes[x.id]||[]).join(' ')].filter(Boolean).join(' '),icon:IDEA_SVG,run:()=>openIdea(x.id)}));
+      const pc=store('studio:plan:cal:'+B.id), today=dayKey(new Date());
+      ((pc&&pc.items)||[]).filter(x=>x&&x.id&&x.day).sort((a,b)=>Math.abs(new Date(a.day)-new Date(today))-Math.abs(new Date(b.day)-new Date(today))).slice(0,150).forEach(x=>{ const d=new Date(x.day+'T12:00:00');
+        out.push({kind:'plan',id:'post:'+x.id,title:x.title||'Untitled post',sub:'Calendar · '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+(x.at?' · '+nxTime(x.at):'')+(x.status==='posted'?' · Posted':''),keys:['calendar planned post',x.format,x.caption,(x.hashtags||[]).join(' '),x.status].filter(Boolean).join(' '),icon:ICON.clock,run:()=>openCalDay(x.day)}); }); }catch(_){}
     cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));
     return out.concat(searchActions());
   }

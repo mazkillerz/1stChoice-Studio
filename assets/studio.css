@@ -1708,3 +1708,5 @@ body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
 /* Home appears all at once: no entrance replay on the new Home (the old rise/lk-rise handover re-played it a second later) */
 :root[data-home2] body.hub #homeView :is(.hero .hello,.hero .usearch,.hero h1,.hub-sec,.tool-item,.tool-row,.sv-card){animation:none}
 :root[data-home2] .pack-banner{margin-top:var(--sp-5)}
+/* 2.23.0: a small count on a tab (Ideas: ideas with something new for me) */
+.st-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-inline-start:6px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--on-accent,#fff);font:600 11px/1 var(--sans);font-style:normal;vertical-align:2px}

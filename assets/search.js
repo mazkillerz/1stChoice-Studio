@@ -5,7 +5,7 @@
 'use strict';
 const KEY='studio:recentSearches', MAX_RECENT=6;
 /* kind -> heading and how many rows show before "Show N more" */
-const GROUPS=[['tool','Tools',1e9],['draft','Continue editing',3],['template','Templates',5],['design','Saved designs',6],['action','Settings and actions',5]];
+const GROUPS=[['tool','Tools',1e9],['draft','Continue editing',3],['template','Templates',5],['design','Saved designs',6],['plan','Ideas and planned posts',5],['action','Settings and actions',5]];
 /* Arabic-aware matching (marks, letter forms, Arabic digits) comes from the engine, so Create's template search matches the same way */
 const nmap=s=>Studio.normMap(s), norm=s=>Studio.normText(s);
 /* our own clear button (the browser's native one jumps onto the magnifier when the text is Arabic): a soft disc with a small x */
