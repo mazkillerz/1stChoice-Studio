@@ -127,31 +127,31 @@ for(const dark of [false,true]){ tag=dark?'dark: ':'light: ';
 for(const dark of [false,true]){ tag=(dark?'dark':'light')+' home: ';
   const ctx=await mk(PHONE,{db:DB,scheme:dark?'dark':'light'}); const pg=await newPage(ctx);
   await pg.goto(BASE+'index.html'); await pg.waitForSelector('#calRow .cal-home-post',{timeout:12000}); await pg.waitForTimeout(500);
-  const hp=await pg.evaluate(()=>{ const p=document.querySelector('.cal-home-post'), row=document.querySelector('.cal-home-row'), pr=p.getBoundingClientRect(), rr=row.getBoundingClientRect(), cs=getComputedStyle(p);
+  const hp=await pg.evaluate(()=>{ const p=document.querySelector('#calRow .cal-home-post'), row=document.querySelector('.cal-home-row'), pr=p.getBoundingClientRect(), rr=row.getBoundingClientRect(), cs=getComputedStyle(p);
     return {h:Math.round(pr.height),w:Math.round(pr.width),text:p.textContent.trim(),outlined:cs.backgroundColor!==getComputedStyle(document.documentElement).getPropertyValue('--accent'),bg:cs.backgroundColor,accent:cs.borderTopColor,color:cs.color,
       inside:pr.left>=rr.left&&pr.right<=rr.right+1,overlapText:(()=>{ const t=row.querySelector('.ch-txt').getBoundingClientRect(); return pr.left<t.right-0.5&&pr.right>t.left; })(),title:row.querySelector('b').textContent,nested:!!p.closest('.cal-home-row'),scrollX:document.documentElement.scrollWidth>innerWidth}; });
   ok('Home: Post pill >= 44px, outlined (not the filled accent), inside the row, no overlap with the title',hp.h>=44&&hp.w>=44&&hp.text==='Post'&&hp.bg!==hp.accent&&hp.inside&&!hp.overlapText&&!hp.nested&&!hp.scrollX,hp);
   if(!dark) await pg.screenshot({path:'/tmp/post-now-home-light.png'}); else await pg.screenshot({path:'/tmp/post-now-home-dark.png'});
-  await pg.tap('.cal-home-post'); await pg.waitForSelector('.cal-post',{timeout:15000}); await settle(pg);
+  await pg.tap('#calRow .cal-home-post'); await pg.waitForSelector('.cal-post',{timeout:15000}); await settle(pg);
   ok('Home: the pill opens the Post now sheet for that item',/New batch today/.test(await pg.textContent('.cp-cap'))&&(await pg.textContent('#cpGo'))==='Share picture'&&await pg.evaluate(()=>location.hash==='')&&!(await pg.$('.cal-body:not([hidden])')));
   await pg.tap('#cpGo'); await pg.waitForFunction(()=>window.__shared,null,{timeout:60000});
   await pg.waitForFunction(()=>document.querySelector('#cpGo').textContent==='Mark as posted',null,{timeout:5000}); await pg.tap('#cpGo'); await pg.waitForSelector('.cal-post',{state:'detached'});
-  await pg.waitForFunction(()=>!/Post\b/.test(document.querySelector('.cal-home-post')?document.querySelector('.cal-home-post').getAttribute('data-id')+'x':'')||document.querySelector('.cal-home-post').dataset.id!=='pStory',null,{timeout:8000}).catch(()=>{});
+  await pg.waitForFunction(()=>!/Post\b/.test(document.querySelector('#calRow .cal-home-post')?document.querySelector('#calRow .cal-home-post').getAttribute('data-id')+'x':'')||document.querySelector('#calRow .cal-home-post').dataset.id!=='pStory',null,{timeout:8000}).catch(()=>{});
   const st=(await stored(pg)).calendar.find(x=>x.id==='pStory').status;
-  ok('Home: marked posted from Home; the row moves on to the next item',st==='posted'&&await pg.evaluate(()=>{ const p=document.querySelector('.cal-home-post'); return !p||p.dataset.id!=='pStory'; }),st);
+  ok('Home: marked posted from Home; the row moves on to the next item',st==='posted'&&await pg.evaluate(()=>{ const p=document.querySelector('#calRow .cal-home-post'); return !p||p.dataset.id!=='pStory'; }),st);
   /* the row itself still opens the calendar */
   await pg.tap('.cal-home-row'); await pg.waitForSelector('#calendarView .cal-body',{timeout:8000}); ok('Home: tapping the row opens the calendar',await pg.evaluate(()=>location.hash==='#calendar'));
   await ctx.close(); }
 { tag='home none: '; const d3=withCal([item('pCap','09:00','draft',null,'Just words',[],'post'),item('pStory','10:00','draft','dStory',CAP,[],'story')]);
   const ctx=await mk(PHONE,{db:d3}); const pg=await newPage(ctx); await pg.goto(BASE+'index.html'); await pg.waitForSelector('#calRow .cal-home-row.today',{timeout:12000}); await pg.waitForTimeout(800);
-  ok('Home: no Post pill when the next item has no design',!(await pg.$('.cal-home-post')));
+  ok('Home: no Post pill when the next item has no design',!(await pg.$('#calRow .cal-home-post')));
   await ctx.close();
   const d4=withCal([item('pStory','09:00','posted','dStory',CAP,[],'story')]); const c4=await mk(PHONE,{db:d4}); const p4=await newPage(c4); await p4.goto(BASE+'index.html'); await p4.waitForSelector('#calRow .cal-home-row',{timeout:12000}); await p4.waitForTimeout(800);
-  ok('Home: no Post pill when today has nothing left to post',!(await p4.$('.cal-home-post'))); await c4.close();
+  ok('Home: no Post pill when today has nothing left to post',!(await p4.$('#calRow .cal-home-post'))); await c4.close();
   /* an old cache (no ids) paints no pill and does not break */
   const init=`try{ localStorage.setItem('studio:home:plan:1stchoice',JSON.stringify({day:'${TODAY}',today:[{title:'Old cache post',at:'09:00'}],inbox:0})); }catch(e){}`;
   const c5=await mk(PHONE,{db:{...DB,calendar:[]},init:init+"localStorage.setItem('fakecloud-signedout','1');"}); const p5=await newPage(c5); await p5.goto(BASE+'index.html'); await p5.waitForSelector('#calRow .cal-home-row.today',{timeout:8000});
-  ok('Home: an old cache without ids still paints the row, no pill',/Old cache post/.test(await p5.textContent('#calRow .cal-home-row'))&&!(await p5.$('.cal-home-post'))); await c5.close(); }
+  ok('Home: an old cache without ids still paints the row, no pill',/Old cache post/.test(await p5.textContent('#calRow .cal-home-row'))&&!(await p5.$('#calRow .cal-home-post'))); await c5.close(); }
 
 /* 9 computer */
 { tag='desktop: '; const ctx=await mk(DESK,{touch:false,db:DB,stub:false}); const pg=await newPage(ctx);

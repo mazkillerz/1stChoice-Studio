@@ -22,8 +22,8 @@ for(const [w,h,mob,scheme] of [[390,844,true,'light'],[390,844,true,'dark'],[128
   ok(N+'headings start where the row icons start (±1px)',m.heads.every(x=>Math.abs(x.x-m.icons[0].x)<=1),{heads:m.heads,icon:m.icons[0].x});
   const dup=m.icons.filter((a,i)=>m.icons.findIndex(b=>b.svg===a.svg)!==i).map(a=>a.id);
   ok(N+'no two Settings rows share an icon',!dup.length,dup);
-  ok(N+'Brand check, Team assets in Brand and team; Reminders, Your tools in On this phone/device',await pg.evaluate(()=>{ const L=[...document.querySelectorAll('dialog[open] .set-list')]; const ids=l=>[...l.querySelectorAll('[data-set]')].map(x=>x.dataset.set);
-    return ids(L[1]).includes('rules')&&ids(L[1]).includes('teamassets')&&ids(L[2]).includes('view')&&ids(L[2]).includes('remind')&&ids(L[3]).includes('previews')&&ids(L[3]).includes('lab'); }));
+  ok(N+'Brand check, Team assets in Brand and team; Reminders in On this phone/device (2.21.0: the list/grid row is gone)',await pg.evaluate(()=>{ const L=[...document.querySelectorAll('dialog[open] .set-list')]; const ids=l=>[...l.querySelectorAll('[data-set]')].map(x=>x.dataset.set);
+    return ids(L[1]).includes('rules')&&ids(L[1]).includes('teamassets')&&!ids(L[2]).includes('view')&&ids(L[2]).includes('remind')&&ids(L[3]).includes('previews')&&ids(L[3]).includes('lab'); }));
   ok(N+'switches still work (Brand check toggles)',await pg.evaluate(async()=>{ const r=document.querySelector('dialog[open] [data-set="rules"]'), a=r.getAttribute('aria-checked'); r.click(); await new Promise(z=>setTimeout(z,50)); const c=r.getAttribute('aria-checked'); r.click(); return a!==c; }));
   ok(N+'no sideways scroll',m.sw);
   await ctx.close(); }
