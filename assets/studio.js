@@ -3301,7 +3301,7 @@ async function home(){
       out.push({kind:'template',id:'reel:'+id,title:m?m.title:reelHuman(id),sub:'Template · Video'+(d?' · '+d+' s':''),keys:'reel reels video template '+id.replace(/[-_]+/g,' '),thumb:tplThumb('reel-'+id),shape:'story',icon:ICON.template,href:toolPage('video')+'?reel='+encodeURIComponent(id),opened:()=>tplUsed('r:'+id)}); });
     (B.presets||[]).forEach(p=>{ if(TOOLS[p.tool]) out.push({kind:'template',id:'pre:'+p.id,title:p.label,sub:'Template · '+TOOLS[p.tool].title,keys:'template '+TOOLS[p.tool].title+' '+(p.cat||''),thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),icon:ICON.template,href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),opened:()=>tplUsed('p:'+p.id)}); });
     all.forEach(d=>{ const cn=d.collections.map(colName).filter(Boolean), tpl=d.kind==='template';
-      out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design'),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
+      out.push({kind:tpl?'template':'design',id:'design:'+d.id,title:d.name,sub:(tpl?'Team template · ':'')+toolName(d.tool)+(cn.length?' · '+cn.join(', '):'')+' · '+ago(d.updated_at),keys:cn.join(' ')+' '+toolName(d.tool)+(tpl?' team template':' saved design')+' '+(d.words||''),thumb:urls[d.thumb_path]||null,thumbAsync:()=>thumbFor(d.thumb_path),icon:ICON.bookmark,run:()=>designSheet(d)}); });
     cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));
     return out.concat(searchActions());
   }
@@ -3479,7 +3479,7 @@ async function home(){
     const back=n=>{ const x=new Date(day); x.setDate(x.getDate()-n); return +x; };
     return k==='today'?t>=+day:k==='yesterday'?t>=back(1)&&t<+day:t>=back(6); }
   function findHit(d){ if(!findQ.trim()) return true;
-    const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName),...(d.author?[d.author]:[])].join(' '));
+    const hay=normText([d.name,toolName(d.tool),...d.collections.map(colName),...(d.author?[d.author]:[]),d.words||''].join(' '));
     let q=' '+normText(findQ)+' ';
     for(const [k,w] of getDayWords()) while(q.includes(' '+w+' ')){ if(!hay.includes(w)&&!onDay(d,k)) return false; q=q.replace(' '+w+' ',' '); }
     return q.split(' ').filter(Boolean).every(w=>hay.includes(w)); }

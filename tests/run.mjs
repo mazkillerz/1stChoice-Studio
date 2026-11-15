@@ -22,6 +22,7 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   /* 2.5.3 same-name guard */
+  [/assets\/cloud\.js|tests\/fakecloud\.js|assets\/studio\.js|assets\/search\.js/,['saved-words']],
   [/assets\/cloud\.js|tests\/fakecloud\.js|tools\/create\.js|assets\/studio\.js/,['same-name']],
   [/assets\/studio\.js|assets\/calendar\./,['post-now']],
   /* 2.11.0 reminders */

@@ -13,6 +13,10 @@ function tidy(d,id){ const x=d.designs[id], keep=new Set([x.thumb_path,...(x.rec
   Object.keys(d.files).forEach(p=>{ if(p.startsWith(x.brand+'/'+id+'/')&&!keep.has(p)) delete d.files[p]; }); }
 const tbl=(d,n)=>(d[n]=d[n]||[]), now=()=>new Date().toISOString();
 const upsertRow=(d,n,r)=>{ const t=tbl(d,n); const i=t.findIndex(x=>x.id===r.id); const row={...(i>=0?t[i]:{created_at:now()}),...r,updated_at:now()}; if(i>=0) t[i]=row; else t.push(row); return row; };
+function recipeWords(r){ const out=new Set(); const skip={photoPaths:1,imgs:1,media:1,docSite:1};
+  const walk=(n,d)=>{ if(!n||typeof n!=='object'||d>14) return; if(Array.isArray(n)){ n.forEach(x=>walk(x,d+1)); return; } if(n.on===false) return;
+    for(const k in n){ const v=n[k]; if(skip[k]) continue; if((k==='text'||k==='value')&&typeof v==='string'){ const t=v.replace(/\s+/g,' ').trim(); if(t) out.add(t); } else walk(v,d+1); } };
+  walk(r,0); return [...out].join(' ').slice(0,400).trim(); }
 window.StudioCloud={
   teamEmail:'team@1stchoice.cloud',
   client:async()=>({}), session:async()=>({user:me}), user:async()=>me, isMember:async()=>true, signInTeam:async()=>{}, signOut:async()=>{}, onAuth(){},
@@ -23,12 +27,12 @@ window.StudioCloud={
     if(prev) keepVersion(d,prev,o.author);   /* an update keeps the row it replaces as a version (newest 20) */
     const thumb=o.brand+'/'+id+'/'+(prev?'thumb-'+uid()+'.jpg':'thumb.jpg'); d.files[thumb]=await toData(o.thumb);
     const extra={}; if(prev) ['review','review_by','review_at','caption','hashtags','campaign_id','author'].forEach(k=>{ if(prev[k]!==undefined) extra[k]=prev[k]; }); if(o.author) extra.author=o.author; if(o.format) extra.format=o.format;
-    d.designs[id]={...extra,id,brand:o.brand,tool:o.tool,name:o.name,kind:o.kind,recipe:{...o.recipe,photoPaths:paths},thumb_path:thumb,cols:o.collections||[],updated_at:new Date().toISOString()};
+    d.designs[id]={...extra,id,brand:o.brand,tool:o.tool,name:o.name,kind:o.kind,recipe:{...o.recipe,photoPaths:paths,words:recipeWords(o.recipe)},thumb_path:thumb,cols:o.collections||[],updated_at:new Date().toISOString()};
     if(prev) tidy(d,id);
     (o.collections||[]).forEach(n=>{ d.cols[n]={id:n,name:n,brand:o.brand}; }); put(d); return id; },
   async designsNamed(brand,tool,name){ const n=String(name||'').trim(); return Object.values(db().designs).filter(d=>d.brand===brand&&d.tool===tool&&d.kind!=='template'&&String(d.name).trim()===n).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>({id:d.id,name:d.name,kind:d.kind,updated_at:d.updated_at})); },
   async getDesign(id){ const x=db().designs[id]; if(!x) throw new Error('not found'); return {...x,collectionNames:x.cols}; },
-  async designs(brand){ return Object.values(db().designs).filter(d=>d.brand===brand).map(d=>({...d,collections:[...(d.cols||[])]})); },
+  async designs(brand){ return Object.values(db().designs).filter(d=>d.brand===brand).map(d=>({...d,words:(d.recipe&&d.recipe.words)||'',collections:[...(d.cols||[])]})); },
   async download(path){ return toBlob(db().files[path]); },
   async fileUrl(p){ return db().files[p]||null; }, async fileUrls(ps){ const f=db().files, o={}; ps.forEach(p=>{ if(f[p]) o[p]=f[p]; }); return o; },
   touchUsed:async()=>{},
