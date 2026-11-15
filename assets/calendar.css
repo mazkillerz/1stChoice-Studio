@@ -11,14 +11,24 @@
 .cal-bar{display:flex;align-items:center;gap:var(--sp-2);padding:2px 0}
 .cal-nav{display:flex;align-items:center;gap:2px;flex:1;min-width:0}
 .cal-today{min-height:44px;padding:0 10px;border:0;background:none;color:var(--accent);font:600 var(--fs-s) var(--sans);cursor:pointer;flex:none}
-.cal-title{font:600 var(--fs-l) var(--sans);flex:1;text-align:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-title{font:600 var(--fs-m) var(--sans);flex:1;text-align:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-arrow{width:var(--tap);height:var(--tap);flex:none;border-radius:50%;border:0;background:none;color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cal-arrow:active{background:var(--chip)}
 .cal-arrow svg{width:22px;height:22px}
 .cal-arrow:focus-visible,.cal-today:focus-visible,.ci-main:focus-visible,.ci-more:focus-visible,.cd-add:focus-visible,.cc-num:focus-visible,.cal-pill:focus-visible,.cal-pcard:focus-visible,.cal-tile:focus-visible,.cf-btn:focus-visible,.cs3:focus-visible,.ci-copy:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.cal-seg{display:flex;gap:var(--sp-1)}
+.cal-seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;flex:none;padding:3px;border-radius:var(--r-pill);background:var(--chip)}
+.cal-view .cal-seg .chip{position:relative;z-index:1;justify-content:center;min-width:48px;padding:0 8px;border:0;background:none;color:var(--muted);box-shadow:none;animation:none;transition:color 200ms var(--ease)}
+.cal-view .cal-seg .chip[aria-pressed="true"]{background:none;color:var(--fg);font-weight:600;box-shadow:none;animation:none}
+.cs-pill{position:absolute;z-index:0;top:3px;bottom:3px;left:0;width:0;border-radius:var(--r-pill);background:var(--raised);box-shadow:var(--shadow-1);transition:transform 200ms var(--ease),width 200ms var(--ease);pointer-events:none}
+.cal-stage{min-width:0}
+.cal-body{min-width:0}
+.cal-arrow[hidden],.cal-today[hidden]{display:none}
+.cal-top-shell{padding-top:4px}
+.cal-top-shell .cal-bar{padding:2px 0}
+.cal-top-shell .cal-bar:first-of-type .cal-seg{flex:1}
+.cal-top-shell .cal-new{flex:none;min-height:44px}
+@media (prefers-reduced-motion: reduce){.cs-pill,.cal-seg .chip{transition:none}}
 .cal-view .chip,.cal-dlg .chip{min-height:44px}
-.cal-seg .chip{padding:0 14px}
 .cal-view button:focus:not(:focus-visible),.cal-dlg button:focus:not(:focus-visible){outline:none}
 
 /* week list */
