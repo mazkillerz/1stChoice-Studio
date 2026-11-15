@@ -2,7 +2,7 @@
    StudioCalendar.init({root,brand,cloud,member,signIn,netDown,esc,haptic,icons,dialog,toast,who,store,onBack,flagOn?}) -> {show({today?}),refresh(),mode}.
    Items live in the cloud (C.calendar / C.saveCalendarItem / C.deleteCalendarItem): {id,brand,day:'YYYY-MM-DD',at:'HH:MM'|null,status,format:'post'|'story'|null,title,caption,hashtags[],design_ids[],campaign_id,author}.
    Phone: a vertical week list (7 day rows, today marked), swipe or arrows for the week, a month toggle (dots per status, tap a day -> that week),
-   a visible ⋯ on each item opens its menu (Mark as posted/ready, Copy caption, Move to tomorrow, Delete), tap an item to edit it (calendar-simple). Computer: month grid with the items inside, drag one to move it.
+   a visible ⋯ on each item opens its menu (Post now (2.8.0), Mark as posted/ready, Copy caption, Move to tomorrow, Delete), tap an item to edit it (calendar-simple). Computer: month grid with the items inside, drag one to move it.
    The old local "posted" log (if a device kept one) shows as read-only posted items; nothing is migrated or deleted. */
 (function(){
 'use strict';
@@ -298,13 +298,85 @@ function make(o){
     if(!it||it.legacy||document.querySelector('dialog[open]')) return;
     const row=(a,icn,l,cls)=>`<button type="button" class="act-row${cls?' '+cls:''}" data-a="${a}">${icn}<span>${l}</span></button>`, posted=it.status==='posted';
     const d=o.dialog(`<div class="dlg-body cal-menu"><h3 id="calMH" dir="auto">${esc(it.title||'Untitled')}</h3><p class="small"><bdi>${esc(L(parse(it.day),{weekday:'long',day:'numeric',month:'long'}))}</bdi>${it.at?' · <bdi>'+esc(fmtTime(it.at))+'</bdi>':''} · ${esc(SLABEL[it.status]||it.status)}</p>
-      <div class="act-list">${row('mark',ic('check'),posted?'Mark as ready':'Mark as posted')}${capOf(it)?row('copy',ic('copy'),'Copy caption'):''}${row('tomorrow',ic('move'),'Move to tomorrow')}${row('del',ic('trash'),'Delete','danger')}</div>
+      <div class="act-list">${!posted&&((it.design_ids||[]).length||capOf(it))?row('post',ic('share'),'Post now'):''}${row('mark',ic('check'),posted?'Mark as ready':'Mark as posted')}${capOf(it)?row('copy',ic('copy'),'Copy caption'):''}${row('tomorrow',ic('move'),'Move to tomorrow')}${row('del',ic('trash'),'Delete','danger')}</div>
       <button type="button" class="link" id="calMX">Close</button></div>`,'cal-dlg');
     d.setAttribute('aria-labelledby','calMH'); d.querySelector('#calMX').onclick=()=>d.close();
     d.querySelector('.act-list').addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a; d.close();
-      if(a==='del') return confirmDelete(it); if(a==='copy') return copyCap(it);
+      if(a==='del') return confirmDelete(it); if(a==='copy') return copyCap(it); if(a==='post') return postSheet(it);
       if(a==='tomorrow') return move(it.id,iso(addDays(parse(it.day),1)));
       if(a==='mark'){ it.status=posted?'approved':'posted'; persist(it,'Marked '+SLABEL[it.status].toLowerCase()+'.'); } });
+  }
+
+  /* ---------- Post now (2.8.0): the picture and the caption, ready for Instagram in three taps ----------
+     Share picture copies the caption first, draws the linked design(s) at full quality (the same pictures as Save) and opens the phone's share sheet
+     (a computer downloads them, several as one ZIP). Then Mark as posted (the only cloud write) or Not yet. Nothing about the design changes. */
+  const postText=it=>{ const c=capOf(it), have=new Set(tagsOf(c)), t=(it.hashtags||[]).filter(x=>!have.has(x)); return (c+(t.length?(c?'\n\n':'')+t.join(' '):'')).trim(); };
+  const fname=(s,i)=>(String(s||'').trim().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60)||'picture')+(i?'-'+i:'');
+  const save=(blob,name)=>{ const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(u); },4000); };
+  async function postSheet(it){
+    if(!it||it.legacy||it.status==='posted') return;
+    const gs=(it.design_ids||[]).map(designOf).filter(Boolean), pics=gs.filter(g=>g.tool&&g.kind!=='template'&&g.tool!=='video'), cover=gs[0];
+    const text=postText(it), touch=matchMedia('(pointer:coarse)').matches, lab=window.Studio&&Studio.lab;
+    const d=o.dialog(`<div class="dlg-body cal-post"><h3 id="cpH">Post now</h3>
+      ${cover?`<div class="cp-pic"><img alt="" decoding="async" data-path="${esc(cover.thumb_path||'')}"${urls[cover.thumb_path]?` src="${urls[cover.thumb_path]}"`:''}></div>`:''}
+      ${text?`<p class="cp-cap" dir="auto">${esc(text)}</p><button type="button" class="link" id="cpCopy">Copy caption</button>`:''}
+      <p class="small cp-note" id="cpNote" role="status" dir="auto" hidden></p>
+      <div class="dlg-actions col"><button type="button" class="btn" id="cpGo">${pics.length?'Share picture':'Copy caption'}</button><button type="button" class="link" id="cpX">Close</button></div></div>`,'cal-dlg');
+    d.setAttribute('aria-labelledby','cpH'); fillThumbsIn(d);
+    const $=s=>d.querySelector(s), go=$('#cpGo'), note=$('#cpNote'), say=t=>{ note.hidden=!t; note.textContent=t||''; };
+    let files=null, busy=false; const was=it.status;
+    $('#cpX').onclick=()=>d.close();
+    if($('#cpCopy')) $('#cpCopy').onclick=async()=>{ hap('tick'); o.toast((await copyText(text))?'Caption copied':'Could not copy the caption.'); };
+    d.addEventListener('close',()=>{ busy=false; });
+    const posted=()=>{ busy=false; say(''); $('#cpH').textContent='Did you post it?'; go.disabled=false; go.textContent='Mark as posted'; go.onclick=mark;
+      const x=$('#cpX'); x.textContent='Not yet'; };
+    const mark=async()=>{ if(busy) return; busy=true; go.disabled=true; hap('tick'); it.status='posted';
+      try{ await C.saveCalendarItem(keep(it)); d.close(); o.toast('Marked posted.'); if(built) await load(); if(o.onPosted) o.onPosted(it); }
+      catch(err){ it.status=was; busy=false; go.disabled=false; say('Could not save: '+(err.message||err)+' Try again.'); } };
+    const copied=async()=>{ if(!text) return true; const ok=await copyText(text); o.toast(ok?'Caption copied: paste it in Instagram':'Could not copy the caption.'); return ok; };
+    const give=async()=>{ if(touch&&navigator.canShare&&navigator.canShare({files})){
+        let r='x'; try{ await navigator.share({files}); r='shared'; }catch(err){ r=err&&err.name==='AbortError'?'cancelled':err&&err.name==='NotAllowedError'?'needtap':'x'; }
+        if(r==='shared') return posted();
+        if(r==='cancelled'){ say('Not shared yet. Tap Share picture when you are ready.'); }
+        else if(r==='needtap'){ say('Your picture is ready. Tap Share picture to open the share sheet.'); }
+        else { say('The share sheet did not open. Tap Share picture to try again.'); }
+        go.disabled=false; go.textContent='Share picture'; busy=false; return; }
+      /* a computer: the pictures go to downloads (several as one ZIP) */
+      if(files.length>1){ let zip=null; try{ const B=await Studio.lazy('batch'); zip=await B.zip(files,new Date()); }catch(_){ zip=null; }
+        if(zip){ const n=new Date(), z=x=>String(x).padStart(2,'0'); save(zip,o.brand+'-pictures-'+n.getFullYear()+z(n.getMonth()+1)+z(n.getDate())+'-'+z(n.getHours())+z(n.getMinutes())+'.zip'); say('Your pictures are in your downloads in one ZIP.'); return posted(); } }
+      for(const f of files){ save(f,f.name); await new Promise(r=>setTimeout(r,250)); }
+      say('Your picture is in your downloads.'); posted(); };
+    go.onclick=async()=>{ if(busy) return; busy=true; go.disabled=true; hap('tick');
+      await copied();
+      if(!pics.length){ say(''); return posted(); }
+      if(!files){
+        go.textContent='Getting your picture ready…'; say('');
+        try{
+          if(navigator.onLine===false) throw new Error('offline');
+          const R=await Studio.lazy('render'), out=[], names=new Set(); let K=0;
+          for(const g of pics){ const r=await R.design({id:g.id,tool:g.tool,name:g.name},{now:false},K);
+            if(!r||r.error||!r.out||!r.out.length) throw new Error(r&&r.error||'failed');
+            let base=fname(g.name), n=2; while(names.has(base.toLowerCase())) base=fname(g.name)+'-'+n++; names.add(base.toLowerCase());
+            r.out.forEach((x,i)=>{ K=K?Math.min(K,x.K):x.K; out.push(new File([x.blob],(r.out.length>1?base+'-'+(i<9?'0':'')+(i+1):base)+'.png',{type:'image/png'})); }); }
+          files=out;
+        }catch(err){ say((err&&err.message==='offline'?'You are offline, so the picture could not be made. ':'The picture could not be made. ')+(text?'The caption is copied, so you can still paste it in Instagram.':'Try again in a moment.'));
+          go.disabled=false; go.textContent='Try again'; busy=false; return; }
+      }
+      await give(); };
+    go.focus({preventScroll:true});
+  }
+  /* Post now from anywhere (Home): a calendar item by id (and day), or a whole item; its designs, thumbnails and caption are loaded here */
+  async function postNow(ref){
+    try{
+      C=C||await o.cloud(); let it=ref&&ref.id&&items.find(x=>x.id===ref.id);
+      if(!it){ const day=ref.day||todayIso(), list=await C.calendar(o.brand,{from:day,to:day}); const f=(list||[]).find(x=>x.id===ref.id); if(!f){ o.toast('That post is not in the calendar any more.'); return; }
+        it={...f,at:hhmm(f.at)||null,hashtags:f.hashtags||[],design_ids:f.design_ids||[]}; }
+      if((it.design_ids||[]).length&&!it.design_ids.every(designOf)&&C.designs){ try{ designs=(await C.designs(o.brand))||designs; }catch(_){} }
+      const need=(it.design_ids||[]).map(designOf).filter(Boolean).map(g=>g.thumb_path).filter(p=>p&&!urls[p]);
+      if(need.length&&C.fileUrls){ try{ Object.assign(urls,await C.fileUrls(need)); }catch(_){} }
+      if(document.querySelector('dialog[open]')) return;
+      return postSheet(it);
+    }catch(err){ o.toast(o.netDown&&o.netDown(err)?'You are offline. Try again when you are back online.':'Could not open Post now. Try again.'); }
   }
 
   /* ---------- events (one set, on the root) ---------- */
@@ -338,9 +410,10 @@ function make(o){
     show(opt){ opt=opt||{}; if(opt.today){ anchor=new Date(); toToday=true; } const again=built&&state==='ok'&&!opt.today; built=true; if(!again){ lastSig=''; draw(); } load();   /* 2.5.0: coming back shows the page as it was, then refreshes only what changed */
       const h=root.querySelector('#calH'); if(h) h.focus({preventScroll:true}); },
     refresh(){ if(built) load(); },
+    postNow,
     get items(){ return items; }
   };
 }
 let cur=null;
-window.StudioCalendar={ init(o){ cur=make(o); return cur; }, CAL_ICON:CAL_IC, pick:pickSheet, quick:quickSheet, shape:dShape };
+window.StudioCalendar={ init(o){ cur=make(o); return cur; }, postNow(ref){ return cur?cur.postNow(ref):Promise.resolve(); }, CAL_ICON:CAL_IC, pick:pickSheet, quick:quickSheet, shape:dShape };
 })();

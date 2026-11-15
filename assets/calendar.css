@@ -189,3 +189,11 @@
 @media (max-width:370px){.cq-days{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .cal-quick .cal-times{flex-wrap:nowrap;gap:6px}
 .cal-quick .cal-times .chip{flex:1 1 0;min-width:0;padding:0 6px;justify-content:center}
+
+/* 2.8.0 Post now sheet */
+.cal-post{display:flex;flex-direction:column;gap:var(--sp-3);align-items:stretch}
+.cal-post .cp-pic{display:flex;justify-content:center}
+.cal-post .cp-pic img{display:block;max-height:220px;max-width:100%;width:auto;border-radius:var(--r-m);background:var(--bg);box-shadow:var(--shadow-1)}
+.cal-post .cp-cap{margin:0;padding:10px 14px;max-height:7.5em;overflow:auto;border-radius:var(--r-m);background:var(--bg);font:400 var(--fs-m) var(--sans);white-space:pre-wrap;overflow-wrap:anywhere}
+.cal-post .link{align-self:center;min-height:44px}
+.cal-post .cp-note{margin:0;text-align:center}

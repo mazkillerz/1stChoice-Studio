@@ -2982,13 +2982,18 @@ async function home(){
     const root=$('calendarView'); if(!root) return; if(!calReady){ calPend=true; return; }
     const today=calToday; calToday=false;
     try{
-      const Cal=await lazy('calendar',{css:1});
-      if(!calApi) calApi=Cal.init({root,brand:B.id,tabs:PLAN_ON?planTabs('calendar'):'',esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),
-        cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
-        netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null,ask:   /* who.js may still be loading: read the stored name meanwhile, or a fast save lost its author */ async o2=>(await whoLib()).ask(o2)}});
-      if(window.StudioWho===undefined) whoLib().catch(()=>{});
+      await calLib();
       calApi.show({today});
     }catch(_){ root.innerHTML='<div class="sv-note" style="margin:16px"><div class="sn-txt"><b>The calendar did not open</b><p>Check your connection and try again.</p></div><button type="button" class="btn slim" id="calRetry">Try again</button></div>'; const r=root.querySelector('#calRetry'); if(r) r.onclick=showCalendar; }
+  }
+  /* the calendar module, started once (the calendar page and Home's Post button share it) */
+  async function calLib(){
+    const Cal=await lazy('calendar',{css:1}), root=$('calendarView');
+    if(!calApi) calApi=Cal.init({root,brand:B.id,tabs:PLAN_ON?planTabs('calendar'):'',esc,haptic,store,icons:ICON,dialog,toast:hubToast,onBack:()=>goHome(),onPosted:()=>{ calHome(); },
+        cloud:getCloud, member:async()=>{ if(!loaded||!member){ await loadSaved(); } return member; }, signIn:async()=>{ const ok=await ensureMember(); if(ok) loadSaved(true); return ok; },
+        netDown:e=>netDown(e), who:{author:()=>window.StudioWho?StudioWho.author():(whoRead().name||'').trim()||null,ask:   /* who.js may still be loading: read the stored name meanwhile, or a fast save lost its author */ async o2=>(await whoLib()).ask(o2)}});
+    if(window.StudioWho===undefined) whoLib().catch(()=>{});
+    return calApi;
   }
   const calOpen=today=>{ calToday=!!today; if(curView()==='calendar'){ showCalendar(); } else openView('calendar'); };
   /* 2.5.0 speed: the Calendar row and the Ideas / Goals chips are already in index.html as placeholders (no jump when they fill in),
@@ -2998,7 +3003,7 @@ async function home(){
   const dayKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   function calRowEl(){
     let row=$('calRow'); if(!row){ const at=$('homeView').querySelector('.hub-sec'); if(!at) return null; row=document.createElement('section'); row.id='calRow'; row.className='hub-sec cal-home'; row.setAttribute('aria-label','Calendar'); at.before(row); }   /* first thing on Home (2.2.0) */
-    if(!row.dataset.wired){ row.dataset.wired='1'; row.addEventListener('click',e=>{ if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
+    if(!row.dataset.wired){ row.dataset.wired='1'; row.addEventListener('click',e=>{ const pb=e.target.closest('.cal-home-post'); if(pb){ haptic('tick'); postNowHome(pb.dataset.id,pb.dataset.day); return; } if(e.target.closest('.cal-home-row')){ haptic('tick'); calOpen(true); } }); }
     return row; }
   /* swap one piece only when it changed, with a soft fade (never a jump: the box keeps its size) */
   /* compared by the HTML it was made from (data-h), never by outerHTML: the fade class made every refresh look "changed", so the row faded again and again (owner: "the calendar flickers") */
@@ -3007,7 +3012,15 @@ async function home(){
     if(old) old.replaceWith(el); else parent.insertAdjacentElement(where,el);
     if(fade&&old){ el.classList.add('hs-in'); el.addEventListener('animationend',()=>el.classList.remove('hs-in'),{once:true}); } };
   function paintCalRow(row,list){ const t=list&&list[0], more=list&&list.length>1?' +'+(list.length-1)+' more':'';
-    swapIn(row.querySelector('.cal-home-row'),`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`,'afterbegin',row); }
+    swapIn(row.querySelector('.cal-home-row'),`<button type="button" class="cal-home-row${t?' today':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span class="ch-txt"><b dir="auto">${t?'Posting today: '+esc(t.title||'Untitled')+esc(more):'Calendar'}</b><small>${t?(t.at?'<bdi>'+esc(nxTime(t.at))+'</bdi> · ':'')+'Open the calendar':'Plan and see your team’s posts'}</small></span></button>`,'afterbegin',row);
+    /* 2.8.0: Post now, when today's next item has a design: a quiet outlined pill at the row's end (the row itself still opens the calendar) */
+    const rb=row.querySelector('.cal-home-row'), pill=row.querySelector('.cal-home-post'), want=t&&t.id&&t.dz;
+    if(rb&&rb.parentElement===row){ const ln=document.createElement('div'); ln.className='cal-home-line'; rb.before(ln); ln.appendChild(rb); }   // the row button and its pill share one box, so the pill sits inside the button's edges
+    row.classList.toggle('has-post',!!want);
+    if(!want){ if(pill) pill.remove(); }
+    else{ const h=`<button type="button" class="cal-home-post" data-id="${esc(t.id)}" data-day="${esc(t.day||'')}" aria-label="Post now: ${esc(t.title||'Untitled')}">${ICON.share}<span>Post</span></button>`;
+      if(!pill||pill.dataset.h!==h){ const tp=document.createElement('div'); tp.innerHTML=h; const el=tp.firstElementChild; el.dataset.h=h; if(pill) pill.replaceWith(el); else if(rb) rb.after(el); } } }
+  async function postNowHome(id,day){ try{ await calLib(); await window.StudioCalendar.postNow({id,day}); }catch(_){ hubToast('Could not open Post now. Check your connection and try again.'); } }
   function paintMini(row,inbox,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
     /* 2.5.0 (owner: no sideways scroll): three equal tiles that always fit; the count sits on a small second line */
     const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span class="pc-t"><b>Idea</b></span></button>`;
@@ -3024,7 +3037,7 @@ async function home(){
       const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), safe=p=>p?p.catch(()=>null):Promise.resolve(null);
       const [cal,ids,km]=await Promise.all([safe(Cl.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})),PLAN_ON&&Cl.ideas?safe(Cl.ideas(B.id)):null,PLAN_ON&&Cl.kpiMonths?safe(Cl.kpiMonths(B.id,m,m)):null]);
       const c=store(PLANK)||{};
-      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({title:x.title,at:x.at})); paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); }
+      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at})); paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); }
       if(ids) c.inbox=ids.filter(x=>x.stage==='inbox').length;
       if(km&&cal){ const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted'), keyK=['post','story','reel'].find(q=>+t[q]>0);
         c.goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):''; c.month=m; }
