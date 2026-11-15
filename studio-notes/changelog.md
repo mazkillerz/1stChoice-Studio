@@ -13,6 +13,44 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.21.0 · 15 Nov 2026
+A calmer Home, and a new Home to try.
+
+### Your tools are always a list
+type: improve
+The big tools grid is gone (huge cards, only two on screen, the camera button over the picture), together with its list/grid switch: your tools are always the compact list. Home's Ideas and Goals are two equal tiles; the "+ Idea" tile is gone because the + button already adds an idea.
+
+### Try the new Home
+type: feature
+A new Home to try, off until you switch it on: a slim header with a small greeting, search first, then **Today**, a card with Calendar, Ideas and Goals as swipeable tabs (today's posts with a Post button, the newest ideas, this month's goals), then your tools as a compact list. Everything appears at once with soft placeholders. Tell us if it should become the Home for everyone.
+[flag:home2] Try the new Home
+![before](assets/whatsnew/2.21.0-home-before.jpg)
+![after](assets/whatsnew/2.21.0-home-after.jpg)
+
+## 2.20.1 · 15 Nov 2026
+Clearer voice notes.
+
+### Voice notes sound clearer
+type: fix
+Voice notes are now recorded at high quality for speech: one clear channel at 48 kHz, with noise reduction and automatic level on, and echo cancelling off (nothing plays while you record, so it only dulled the voice). Android records Opus at 96 kbit/s and iPhone AAC at 128 kbit/s, instead of the old heavily compressed 24 kbit/s. A minute is about 0.7–1 MB. While you record, a small level meter shows the phone is hearing you.
+
+## 2.20.0 · 15 Nov 2026
+Ideas: no inbox, a discussion on every idea, and nothing gets lost.
+
+### Talk an idea through
+type: feature
+Open an idea and the team can reply under it, by text or with a voice note, and each reply shows who said it and when. An idea can now hold as many voice notes as you like (the old "Replace voice note" is gone: a new one is simply a reply). Cards show how many replies an idea has.
+![before](assets/whatsnew/2.20.0-ideas-before.jpg)
+![after](assets/whatsnew/2.20.0-ideas-after.jpg)
+
+### No more inbox
+type: improve
+A new idea goes straight onto the board in the Idea stage, so capturing one still takes a few seconds and there is nothing to sort later. An idea nobody has opened yet carries a small dot; it goes once a teammate opens it. Ideas that were waiting in the inbox are on the board now.
+
+### Voice notes are safe
+type: fix
+Nothing in Ideas is deleted by accident any more. Removing a voice note, a reply or a whole idea asks first ("Move to archive" or "Keep it"), and it goes to **Archive** at the end of the board, where **Restore** brings it back. The recordings themselves are never removed.
+
 ## 2.19.1 · 15 Nov 2026
 What's new opens in one tap.
 
