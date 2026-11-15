@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.10.0';
+const VERSION='2.11.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -253,6 +253,7 @@ const ICON={
   users:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/>',20),
   bookmark:svg('<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',20),
   check:svg('<path d="M20 6 9 17l-5-5"/>',24),
+  bell:svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
   rotate:svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',20),
   size:svg('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',20),
   drop:svg('<path d="M12 2.7s6 6.4 6 11.3a6 6 0 0 1-12 0c0-4.9 6-11.3 6-11.3z"/>',20),
@@ -3028,6 +3029,15 @@ async function home(){
     /* 2.5.0 (owner: no sideways scroll): three equal tiles that always fit; the count sits on a small second line */
     const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button><button type="button" class="plan-chip plan-add" data-new-idea aria-label="New idea">${ICON.plus}<span class="pc-t"><b>Idea</b></span></button>`;
     if(mini.dataset.h===html) return; mini.dataset.h=html; mini.innerHTML=html; }
+  /* 2.11.0 reminders (assets/remind.js, lazy): only while Settings → "Remind me about planned posts" is on (per device, off by default) */
+  const remindOn=()=>{ try{ return localStorage.getItem('studio:remind')==='1'; }catch(_){ return false; } };
+  let remindToday=null;
+  async function remindSync(today){ if(today) remindToday=today; if(!remindOn()||!remindToday) return;
+    try{ (await lazy('remind')).sync({items:remindToday,brand:B.id,brandName:B.name||'Studio',esc,time:nxTime,url:location.href.split('#')[0].split('?')[0],post:postNowHome}); }catch(_){} }
+  const remindSub=()=>{ let blocked=false; try{ blocked='Notification' in window&&Notification.permission==='denied'; }catch(_){} return remindOn()&&blocked?'Notifications are blocked in the browser. You still get the badge and notes in Studio.':'A badge and a note before today’s planned posts'; };
+  async function remindSet(on){ try{ if(on) localStorage.setItem('studio:remind','1'); else localStorage.removeItem('studio:remind'); }catch(_){}
+    if(on){ try{ if(!navigator.webdriver&&'Notification' in window&&Notification.permission==='default') await Notification.requestPermission(); }catch(_){} remindSync(); }
+    else{ try{ if(window.StudioRemind) window.StudioRemind.off(); else if(navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{}); }catch(_){} } }
   async function calHome(){
     if(!$('homeView')) return; const row=calRowEl(); if(!row) return;
     const now=new Date(), k=dayKey(now), m=k.slice(0,7);
@@ -3040,7 +3050,7 @@ async function home(){
       const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), safe=p=>p?p.catch(()=>null):Promise.resolve(null);
       const [cal,ids,km]=await Promise.all([safe(Cl.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})),PLAN_ON&&Cl.ideas?safe(Cl.ideas(B.id)):null,PLAN_ON&&Cl.kpiMonths?safe(Cl.kpiMonths(B.id,m,m)):null]);
       const c=store(PLANK)||{};
-      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at})); paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); }
+      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at})); paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); remindSync(today); }
       if(ids) c.inbox=ids.filter(x=>x.stage==='inbox').length;
       if(km&&cal){ const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted'), keyK=['post','story','reel'].find(q=>+t[q]>0);
         c.goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):''; c.month=m; }
@@ -3231,6 +3241,7 @@ async function home(){
       <button type="button" class="act-row set-row" data-set="owner" role="switch" aria-checked="${!!who.owner}">${ICON.lab}<span class="set-txt"><b>I’m the owner</b><small>Shows the owner-only buttons on this ${devWord()}</small></span><span class="set-switch" aria-hidden="true"></span></button></div>
       <div class="act-list set-list">${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
       <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings before you save</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
+      <button type="button" class="act-row set-row" data-set="remind" role="switch" aria-checked="${remindOn()}">${ICON.bell}<span class="set-txt"><b>Remind me about planned posts</b><small>${esc(remindSub())}</small></span><span class="set-switch" aria-hidden="true"></span></button>
       ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}
       ${row('teamassets',ICON.photo,'Team assets','Logos and cut-outs everyone on the team can use')}   <!-- r3-assets -->
       ${row('welcome',ICON.play,'Welcome tour','The quick intro: tools, pins, search and saving')}
@@ -3246,6 +3257,7 @@ async function home(){
       if(a==='who'){ whoLib().then(W=>W.ask({user:true})).then(()=>{ const w=whoRead(), sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=w.name||'Not set yet · goes on saved designs'; }); return; }
       if(a==='owner'){ whoLib().then(W=>W.setOwner(b.getAttribute('aria-checked')!=='true')).then(()=>{ if(d.isConnected) b.setAttribute('aria-checked',String(!!whoRead().owner)); }); return; }
       if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
+      if(a==='remind'){ const on=b.getAttribute('aria-checked')!=='true'; b.setAttribute('aria-checked',String(on)); remindSet(on).then(()=>{ const sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=remindSub(); }); return; }   /* 2.11.0 */
       if(a==='previews'){ openPreviews(b); return; }
       d.close();
       if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen();
@@ -3288,6 +3300,7 @@ async function home(){
   function searchActions(){ const a=[];
     flags.list().forEach(f=>a.push({kind:'action',id:'act:flag-'+f.id,title:(f.on?'Turn off preview: ':'Try preview: ')+f.label,sub:f.sub,keys:'preview try beta new feature '+f.label+' '+f.sub,icon:ICON.sparkle,run:()=>{ flags.set(f.id,!f.on); location.reload(); }}));
     if(flags.on('team')) a.push({kind:'action',id:'act:phrasebook',title:'Phrasebook',sub:'Approved lines, suggest a new one',keys:'phrasebook phrases words lines suggest approve arabic wording',icon:ICON.text||ICON.sparkle,run:pbOpen});
+    a.push({kind:'action',id:'act:remind',title:remindOn()?'Turn off post reminders':'Turn on post reminders',sub:'A badge and a note before today’s planned posts',keys:'remind reminders reminder notification notify badge planned posts calendar alert',icon:ICON.bell,run:()=>{ remindSet(!remindOn()).then(()=>hubToast(remindOn()?'Post reminders are on':'Post reminders are off')); }});   /* 2.11.0 */
     a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
     a.push({kind:'action',id:'act:team-assets',title:'Team assets',sub:'Logos and cut-outs shared with the team',keys:'team assets logo asset library cut out cutout remove background partner shared add picture',icon:ICON.photo,run:taOpen});   /* r3-assets */
     a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
