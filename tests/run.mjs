@@ -60,6 +60,7 @@ const MAP=[
   [/assets\/templates\.|brands\//,['templates','postpresets','tplfav','reels-hub','feedlayouts']],
   [/tools\/create-templates|assets\/search\./,['postpresets','feedlayouts','create-fit']],
   [/assets\/welcome\./,['welcome']],
+  [/assets\/brandkit\./,['brandpage','brandkit']],   // brandpage
   [/tools\/restock/,['restock-styles','backgrounds']],[/tools\/photo-story/,['photostory-styles','backgrounds']],[/tools\/collage/,['collage-grids','backgrounds','simplify40']],[/tools\/cinematic|tools\/new-place|tools\/offer/,['backgrounds','full']],
   [/tools\/(restock|photo-story|offer|carousel|collage|highlight)\.js/,['draw-edges']],
   [/tools\/highlight|tools\/carousel/,['highlight','highlight-product','highlight-emoji','quickpages','batch','simplify40']],
@@ -87,7 +88,7 @@ if(names[0]==='--all'){ const sk=[...SKIP,...TWINS];
   names=fs.readdirSync(new URL('.',import.meta.url)).filter(f=>/\.mjs$/.test(f)&&!f.startsWith('_')).map(f=>f.slice(0,-4)).filter(n=>!sk.includes(n)).sort();
   names.forEach(n=>why[n]='all'); }
 const TOOL_SUITES=['nav','saveflow','teamassets','rules','captions','components','full','v5','polish','queue','queue-keep','copystyle','batch','home7-save','stickers','emoji-stickers','flip','simplify15','batch-saved','textstyles','brandkit','backgrounds','draft-pictures','simplify30','simplify40','font-ready','team-retry','toolfix43','drafts-queue','goldens','saved-versions','resave','tokens','lastlayout','pagedlayout'],
-      HUB_SUITES=['nav','simplify215','ideas','kpis','calpick','calendar','post-now','feed','review','captions','campaigns','phrasebook','packs','hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who','reminders'];
+      HUB_SUITES=['nav','simplify215','ideas','kpis','calpick','calendar','post-now','feed','review','captions','campaigns','phrasebook','packs','hub-offline','hub-fixes','drafts-queue','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','search','queue-keep','alltools-cam','simplify','quickpages','waiting-tag','simplify15','tplfav','batch-saved','brandkit','draft-pictures','saved-find','reels-hub','simplify30','continue-clear','tplteam','simplify35','create-render','select-swipe','flags','who','reminders','brandpage'];
 const sh=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const add=(set,list,r)=>expand(list).forEach(x=>{ if(!set.has(x)){ set.add(x); why[x]=r; } });
 /* the part of studio.js a set of changed lines falls in: tool(), home(), the VERSION line, or anything else */

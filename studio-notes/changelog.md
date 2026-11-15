@@ -13,6 +13,14 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are closed rows (version, date, one-line summary, chips such as "3 new · 2 fixed") inside closed blocks of five minor versions (0.1 to 0.5, 0.6 to 0.10 ...; a patch version such as 0.6.1 sits with 0.6); tap a block, then a version, to open it. Each change is one line; the thumbnail at the end of a line means it has a screenshot. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.17.0 · 15 Nov 2026
+The brand kit, in one place: logo, colours, fonts and approved words.
+
+### Brand kit page
+type: feature
+Settings › Brand and team › **Brand kit** (or search “brand kit”) shows everything the brand uses: the logo on light and dark, every colour with its name and hex (tap one to copy it), the fonts, the approved words with a search box (tap a line to copy it), the brand pictures and the looks. It is a page to look things up; changes to the brand kit are still made by the owner. A first step toward editing the kit inside Studio.
+![after](assets/whatsnew/2.17.0-brandpage-after.jpg)
+
 ## 2.16.0 · 15 Nov 2026
 Saved search finds the words inside your designs, not only their names.
 

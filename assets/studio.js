@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.16.0';
+const VERSION='2.17.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -3236,6 +3236,7 @@ async function home(){
   async function pbOpen(){ try{ (await lazy('phrasebook',{css:1})).open({brand:B,cloud:getCloud,dialog,esc,haptic,who:whoLib,onChange:rows=>{ try{ localStorage.setItem('studio:phrases:'+B.id,JSON.stringify(rows)); }catch(_){} phMerge(B,rows); }}); }catch(_){ const d=dialog('<div class="dlg-body"><h3>The phrasebook did not open</h3><p class="small">Check your connection and try again.</p><div class="dlg-actions"><button type="button" class="btn" data-x>OK</button></div></div>'); d.querySelector('[data-x]').onclick=()=>d.close(); } }
   /* r3-assets: the team's asset library from the hub (Settings and search), in manage mode */
   async function taOpen(){ try{ (await lazy('teamassets',{css:1,global:'StudioTeamAssets'})).open({brand:B.id,mode:'manage'}); }catch(_){ hubToast('Team assets did not open. Check your connection.'); } }
+  async function bkOpen(){ try{ (await lazy('brandkit',{css:1})).open({brand:B,dialog,esc,toast:hubToast,fontsReady,normText}); }catch(_){ hubToast('The brand kit did not open. Check your connection.'); } }   /* brandpage 2.17 */
   function openSettings(){
     const who=whoRead();
     const row=(act,ic,title,sub,end)=>`<button type="button" class="act-row set-row" data-set="${act}">${ic}<span class="set-txt"><b>${title}</b><small>${sub}</small></span>${end?`<span class="set-end">${end}</span>`:''}</button>`;
@@ -3247,6 +3248,7 @@ async function home(){
       <h4 class="set-gl">Brand and team</h4><div class="act-list set-list">
       <button type="button" class="act-row set-row" data-set="rules" role="switch" aria-checked="${rulesOn()}">${ICON.check}<span class="set-txt"><b>Brand check</b><small>Quiet warnings before you save</small></span><span class="set-switch" aria-hidden="true"></span></button>   <!-- rules (mega) -->
       ${row('teamassets',ICON.photo,'Team assets','Logos and cut-outs everyone on the team can use')}   <!-- r3-assets -->
+      ${row('brandkit',ICON.paint,'Brand kit','Logo, colours, fonts and approved words')}   <!-- brandpage -->
       ${flags.on('team')?row('phrases',ICON.text||ICON.sparkle,'Phrasebook','Approved lines, suggest a new one'):''}</div>
       <h4 class="set-gl">On this ${devWord()}</h4><div class="act-list set-list">
       ${row('view',toolsView==='list'?ICON.list:ICON.grid,'Your tools','How your pinned tools look on Home',toolsView==='list'?'List':'Grid')}
@@ -3268,7 +3270,7 @@ async function home(){
       if(a==='remind'){ const on=b.getAttribute('aria-checked')!=='true'; b.setAttribute('aria-checked',String(on)); remindSet(on).then(()=>{ const sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=remindSub(); }); return; }   /* 2.11.0 */
       if(a==='previews'){ openPreviews(b); return; }
       d.close();
-      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen();
+      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen(); else if(a==='brandkit') bkOpen();   /* brandpage */
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
   }
   /* Settings → Previews (mega): one switch per preview flag */
@@ -3310,6 +3312,7 @@ async function home(){
     if(flags.on('team')) a.push({kind:'action',id:'act:phrasebook',title:'Phrasebook',sub:'Approved lines, suggest a new one',keys:'phrasebook phrases words lines suggest approve arabic wording',icon:ICON.text||ICON.sparkle,run:pbOpen});
     a.push({kind:'action',id:'act:remind',title:remindOn()?'Turn off post reminders':'Turn on post reminders',sub:'A badge and a note before today’s planned posts',keys:'remind reminders reminder notification notify badge planned posts calendar alert',icon:ICON.bell,run:()=>{ remindSet(!remindOn()).then(()=>hubToast(remindOn()?'Post reminders are on':'Post reminders are off')); }});   /* 2.11.0 */
     a.push({kind:'action',id:'act:all-tools',title:'All tools',sub:'Pin or unpin tools on your home screen',keys:'pin unpin star favourite favorite library tools home',icon:ICON.grid,run:openLibrary});
+    a.push({kind:'action',id:'act:brand-kit',title:'Brand kit',sub:'Logo, colours, fonts and approved words',keys:'brand kit colours colors hex fonts logo words phrases approved assets looks palette',icon:ICON.paint,run:bkOpen});   /* brandpage */
     a.push({kind:'action',id:'act:team-assets',title:'Team assets',sub:'Logos and cut-outs shared with the team',keys:'team assets logo asset library cut out cutout remove background partner shared add picture',icon:ICON.photo,run:taOpen});   /* r3-assets */
     a.push({kind:'action',id:'act:saved',title:'Saved designs',sub:member?'Your team’s saved designs':'Sign in to see your team’s designs',keys:'saved team designs library',icon:ICON.bookmark,run:goSaved});
     a.push(me?{kind:'action',id:'act:account',title:'Account',sub:(C&&me.email===C.teamEmail?'Team login':me.email||'Signed in')+' · sign out',keys:'account sign out log out logout team members',icon:ICON.user,run:()=>$('acct').click()}
