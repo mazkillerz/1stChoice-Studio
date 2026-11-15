@@ -1196,6 +1196,7 @@ async function tool(cfg){
     syncSheetNav(parentName?2:1);
     openName=n; el.classList.add('open'); el.removeAttribute('inert'); document.body.classList.add('sheet-open');
     if(n==='layers'){ paintLayers(); if(hasStickers) emojiStickers(); }   // the emoji stickers start loading before the Sticker tap
+    el.querySelectorAll('.gsegs .grow').forEach(r=>{ const b=r.querySelector('[aria-pressed="true"]'); if(b) r.scrollLeft=Math.max(0,b.offsetLeft-r.offsetLeft-48); });   // 2.10.0: the chosen finish is in view
     document.querySelectorAll('#bar [data-open]').forEach(b=>{ const on=b.dataset.open===n; b.setAttribute('aria-expanded',String(on)); b.classList.toggle('on',on); });
     fit();
   }
@@ -1270,7 +1271,8 @@ async function tool(cfg){
       let inner;
       if(f.type==='chips') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-f="${f.id}">${f.options.map((o,i)=>`<button type="button" class="chip${i>=MANY?' extra':''}" data-v="${esc(o)}" aria-pressed="false" dir="${B.dir||'ltr'}">${esc(o)}</button>`).join('')}${f.options.length>MANY?'<button type="button" class="chip en" data-more="1" aria-expanded="false">More…</button>':''}<button type="button" class="chip en" data-own="1" aria-pressed="false">Write my own</button>${f.none?'<button type="button" class="chip en" data-none="1" aria-pressed="false">None</button>':''}</div><input type="text" dir="${B.dir||'ltr'}" data-ownfor="${f.id}" placeholder="${esc(B.phrases.write||'')}" aria-label="Your own ${esc(f.label)}" hidden>`;
       else if(f.type==='seg'&&f.options.some(o=>o.g)){ const sb=o=>`<button type="button" class="seg has-ic" data-v="${o.v}" aria-pressed="false"><span class="seg-ic" aria-hidden="true">${o.ic}</span>${esc(o.l)}</button>`, grp=[...new Set(f.options.filter(o=>o.g).map(o=>o.g))];   /* r3-backgrounds: choices in labelled sideways rows, the first (no group) alone */
-        inner=`<span class="lbl">${esc(f.label)}</span><div class="gsegs" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}"><div class="grow one">${f.options.filter(o=>!o.g).map(sb).join('')}</div>${grp.map(gn=>`<div class="gl">${esc(gn)}</div><div class="grow" role="group" aria-label="${esc(gn)}">${f.options.filter(o=>o.g===gn).map(sb).join('')}</div>`).join('')}</div>`; }
+        /* 2.10.0 (Simplify): one sideways row (Plain, then each group after its small label) instead of four rows: the Style sheet is ~230px shorter */
+        inner=`<span class="lbl">${esc(f.label)}</span><div class="gsegs" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}"><div class="grow">${f.options.filter(o=>!o.g).map(sb).join('')}${grp.map(gn=>`<span class="gl" aria-hidden="true">${esc(gn)}</span>${f.options.filter(o=>o.g===gn).map(sb).join('')}`).join('')}</div></div>`; }
       else if(f.type==='seg') inner=`<span class="lbl">${esc(f.label)}</span><div class="row seg-grid${segOdd(f.options,f.cols)}" style="--c:${f.cols||segCols(f.options)}" role="group" aria-label="${esc(f.label)}" data-seg="${f.id}">${f.options.map(o=>`<button type="button" class="seg${o.ic?' has-ic':''}" data-v="${o.v}" aria-pressed="false">${o.ic?`<span class="seg-ic" aria-hidden="true">${o.ic}</span>`:''}${esc(o.l)}</button>`).join('')}</div>`;
       else if(f.type==='toggle') inner=`<label class="check"><input type="checkbox" data-toggle="${f.id}"> ${esc(f.label)}</label>`;
       else if(f.type==='multi') inner=`<span class="lbl">${esc(f.label)}</span><div class="chips" role="group" aria-label="${esc(f.label)}" data-mf="${f.id}">${f.options.map(o=>`<button type="button" class="chip" data-v="${esc(o.v)}" aria-pressed="false" dir="auto">${esc(o.l)}</button>`).join('')}</div>`;
@@ -3352,7 +3354,7 @@ async function home(){
   }
   addEventListener('online',()=>{ if(cloudNote) loadSaved(true); });   // back online: load again without a tap
   function signedOut(){
-    const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="btn slim" data-signin>Sign in</button>');
+    const h=me?note(ICON.user,'Not on the team yet','Ask the owner to add this email to the team.'):note(ICON.bookmark,'Your team’s designs live here','Sign in to see and open the designs your team saved.','<button type="button" class="link" data-signin>Sign in</button>');
     showNote(h); cloudNote=''; keptClear();
   }
   document.addEventListener('click',async e=>{ if(e.target.closest('[data-signin]')){ if(await ensureMember()) loadSaved(true); } else if(e.target.closest('[data-reload]')) loadSaved(true); });
