@@ -22,6 +22,8 @@
       x.fillStyle='#000'; x.font='400 40px "DejaVu Sans",Arial,sans-serif'; x.textBaseline='middle'; x.fillText('tiny text 1 2 3 4 5',90,560); },
     cropped(x){ wordmark(x,'#111','BOOM',W/2,H/2,420); },
     glow(x){ x.save(); x.shadowColor='rgba(255,60,120,.85)'; x.shadowBlur=30; const gr=x.createLinearGradient(0,150,0,450); gr.addColorStop(0,'#ff8a00'); gr.addColorStop(1,'#e8007a'); wordmark(x,gr,'GLOW',W/2,H/2,250); x.restore(); },
+    framed(x){ x.strokeStyle='#2f8f8a'; x.lineWidth=70; x.strokeRect(35,35,W-70,H-70); wordmark(x,'#111','BOOM',W/2,H/2,230); },
+    plug(x){ x.fillStyle='#161616'; x.beginPath(); x.roundRect(150,110,700,420,40); x.fill(); x.globalCompositeOperation='destination-out'; for(const cx of [250,500,750]){ x.beginPath(); x.arc(cx,320,14,0,7); x.fill(); } x.globalCompositeOperation='source-over'; },
     multi(x){ wordmark(x,'#1f5fd1','LOGO',W/2,200,200); x.fillStyle='#e23a2e'; x.beginPath(); x.arc(250,450,110,0,7); x.fill(); x.fillStyle='#f2b01e'; x.fillRect(420,350,200,200); wordmark(x,'#111','o',780,450,260); }
   };
   const SPEC={
@@ -38,6 +40,10 @@
     twoTone:{base:'wordmark',ground:'split',note:'wordmark across a two-colour ground'},
     cropped:{ground:'#ffffff',note:'a big wordmark cropped by the picture edge'},
     glow:{ground:'#f6f3ee',note:'gradient-filled letters with a coloured glow'},
+    /* picked-ground cases (tests/cutout-pick.mjs): the automatic border estimate is wrong here; spec.pick = what a tap would give */
+    framed:{ground:'#efe8d8',note:'wordmark on cream inside a teal frame (the border is the frame, not the ground)',pick:{ground:[[239,232,216]],seeds:[[.5,.2]]}},
+    threeTone:{base:'wordmark',ground:'bands',note:'wordmark across a three-band ground (white, sand, blue)',pick:{ground:[[255,255,255],[241,194,122],[61,111,179]],seeds:[]}},
+    plug:{ground:'#ffffff',note:'a thick dark block with three small see-through holes (design-looking, kept automatically)',pick:{ground:[[255,255,255]],seeds:[[.25,.5],[.5,.5],[.75,.5]]}},
     phoneLogo:{brand:'logo.png',ground:'#efe8d8',paper:true,blur:1.2,noise:5,jpeg:.6,note:'brand logo printed on paper, soft focus, noise, uneven light, JPEG 0.6'},
     brandLogo:{brand:'logo.png',ground:'#ffffff',jpeg:.7,note:'the real brand logo on white, JPEG 0.7'},
     brandLogoCream:{brand:'logo.png',ground:'#f3ead7',jpeg:.8,note:'the real brand logo on cream, JPEG 0.8'},
@@ -51,6 +57,7 @@
     else draw[sp.base||name](tx);
     const img=mk(), x=img.getContext('2d');
     if(sp.ground==='grad'){ const gr=x.createLinearGradient(0,0,W,H); gr.addColorStop(0,'#bcd3f0'); gr.addColorStop(1,'#f8efe2'); x.fillStyle=gr; x.fillRect(0,0,W,H); }
+    else if(sp.ground==='bands'){ ['#ffffff','#f1c27a','#3d6fb3'].forEach((c,k)=>{ x.fillStyle=c; x.fillRect(0,Math.round(k*H/3),W,Math.ceil(H/3)); }); }
     else if(sp.ground==='split'){ x.fillStyle='#ffffff'; x.fillRect(0,0,W/2,H); x.fillStyle='#ece3c8'; x.fillRect(W/2,0,W/2,H); }
     else { x.fillStyle=sp.ground; x.fillRect(0,0,W,H); }
     x.drawImage(truth,0,0);

@@ -1,7 +1,9 @@
 /* Cutout Pro: a logo-grade background remover that runs on this device (free, offline after the first photo use).
    Logo mode = classic image maths in a worker (instant, no download). Photo mode = U2-Net mask refined at higher resolution.
    StudioCutoutPro.analyse(source)  -> {hasAlpha,flat,bg:[r,g,b]|null,suggest:'keep'|'logo'|'photo',w,h}
-   StudioCutoutPro.run(source,{mode:'auto'|'logo'|'photo',tolerance:0..100=50,holes:true,onProgress}) -> canvas (long side <= 2048, transparent ground, not trimmed)
+   StudioCutoutPro.run(source,{mode:'auto'|'logo'|'photo',tolerance:0..100=50,holes:true,ground,seeds,onProgress}) -> canvas (long side <= 2048, transparent ground, not trimmed)
+   Logo mode only: ground:[r,g,b] or up to 3 of them replaces the border estimate (distance to the nearest picked colour); seeds:[[fx,fy],..] (0..1)
+   marks the ground area at those points as ground even when enclosed (the inside of an O). Nothing given = automatic, unchanged.
    StudioCutoutPro.trim(canvas,pad=0) -> new canvas cropped to the visible box (or the same canvas when nothing to trim)
    StudioCutoutPro.supported(mode) -> '' or a short reason
    source = HTMLImageElement | HTMLCanvasElement | ImageBitmap | Blob/File. */
@@ -40,12 +42,14 @@
   async function run(source,opt){
     opt=opt||{}; const why=supported(opt.mode==='photo'?'photo':''); if(why) throw new Error(why);
     let mode=opt.mode||'auto', say=opt.onProgress||function(){};
+    if(mode==='auto'&&opt.ground) mode='logo';
     if(mode==='auto'){
       const a=await analyse(source);
       if(a.suggest==='keep') return copy(source);
       mode=a.suggest;
     }
     const o={tolerance:opt.tolerance==null?50:opt.tolerance,holes:opt.holes!==false,maxSide:MAX};
+    if(opt.ground) o.ground=opt.ground; if(opt.seeds) o.seeds=opt.seeds;
     if(mode==='photo'){ say(warmed()?'Starting…':'First time only: this downloads about '+MB+', then it works offline.'); }
     else say('Cutting it out…');
     const r=await call(mode==='photo'?'photo':'logo',await bitmap(source),o,say);

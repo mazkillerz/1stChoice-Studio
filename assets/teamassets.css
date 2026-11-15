@@ -96,3 +96,17 @@
 .ta-done b{font:600 var(--fs-l) var(--sans)}
 .ta-done p{margin:0}
 @media (min-width:700px){.ta-stage{height:min(52vh,480px)}.ta-add-body{max-width:640px;margin:0 auto;width:100%;box-sizing:border-box}}
+/* Background remover: pick the ground colour (2.12.0) */
+.ta-pickrow{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);min-height:48px}
+.ta-pick{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:48px;padding:0 var(--sp-2)}
+.ta-pick[aria-pressed="true"]{color:var(--accent);font-weight:600}
+.ta-pickhint{min-height:0;margin:0}
+.ta-pickhint:empty{display:none}
+.ta-swrow{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.ta-swrow:empty{display:none}
+.ta-swatch{display:inline-flex;align-items:center;gap:2px;min-height:48px;padding:0 0 0 var(--sp-2);border-radius:var(--r-pill);background:var(--chip);border:1px solid var(--line)}
+.ta-swatch i{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);display:block}
+.ta-swatch button{width:44px;height:44px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;padding:0}
+.ta-swatch button svg{width:16px;height:16px}
+.ta-stage[data-picking="1"]{cursor:crosshair;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.ta-stage[data-picking="1"] canvas{touch-action:manipulation}

@@ -164,6 +164,20 @@ function groundField(lab,w,h,fp,progress){
   return {gL,gA,gB,cand:core};
 }
 
+/* ---------- picked ground: up to 3 colours replace the border estimate (distance to the nearest pick, flat colour) ---------- */
+function pickedPicks(g){
+  if(!Array.isArray(g)||!g.length) return null;
+  const list=(typeof g[0]==='number'?[g]:g).filter(c=>Array.isArray(c)&&c.length>=3&&c.slice(0,3).every(v=>isFinite(v))).slice(0,3);
+  if(!list.length) return null;
+  return list.map(c=>{ const l=toLab(Uint8ClampedArray.of(c[0],c[1],c[2],255),1); return [l.L[0],l.A[0],l.B[0]]; });
+}
+function pickedField(lab,n,picks){
+  const {L,A,B}=lab,gL=new Float32Array(n),gA=new Float32Array(n),gB=new Float32Array(n),cand=new Uint8Array(n);
+  for(let i=0;i<n;i++){ let bk=0,bd=1e9; for(let k=0;k<picks.length;k++){ const p=picks[k],a=L[i]-p[0],b=A[i]-p[1],c=B[i]-p[2],e=a*a+b*b+c*c; if(e<bd){ bd=e; bk=k; } }
+    const p=picks[bk]; gL[i]=p[0]; gA[i]=p[1]; gB[i]=p[2]; if(bd<.03*.03) cand[i]=1; }
+  return {gL,gA,gB,cand};
+}
+
 /* ---------- analyse ---------- */
 function analyse(bmp){
   const ow=bmp.width,oh=bmp.height, {data,W,H}=decode(bmp,256,false), n=W*H;
@@ -188,7 +202,7 @@ function shade(data,j,l,a,b,bg){
 function logo(bmp,o,id){ const T0=performance.now(),tm=[],lap=n=>tm.push(n+':'+Math.round(performance.now()-T0));
   const t=Math.max(0,Math.min(100,o.tolerance==null?50:o.tolerance))/100, holes=o.holes!==false;
   const {data,W,H}=decode(bmp,o.maxSide||2048,true), n=W*H; post(id,{progress:'Finding the ground…'});
-  lap('decode'); const lab=toLab(data,n),{L,A,B}=lab; lap('lab'); const fp=fitPlanes(lab,W,H), gf=groundField(lab,W,H,fp), {gL,gA,gB}=gf; lap('ground');
+  lap('decode'); const lab=toLab(data,n),{L,A,B}=lab; lap('lab'); const picks=pickedPicks(o.ground), gf=picks?pickedField(lab,n,picks):groundField(lab,W,H,fitPlanes(lab,W,H)), {gL,gA,gB}=gf; lap('ground');
   /* distance to the local ground */
   const d=new Float32Array(n); for(let i=0;i<n;i++){ const a=L[i]-gL[i],b=A[i]-gA[i],c=B[i]-gB[i]; d[i]=Math.sqrt(a*a+b*b+c*c); }
   lap('d');
@@ -207,6 +221,10 @@ function logo(bmp,o,id){ const T0=performance.now(),tm=[],lap=n=>tm.push(n+':'+M
   for(let i=0;i<n;i++){ const k=ink.lab[i]; if(k&&speck[k]) X[i]=0; }
   lap('speck');const gr=label(X,0,W,H,false), touch=new Uint8Array(gr.n+1);
   for(let x=0;x<W;x++){ touch[gr.lab[x]]=1; touch[gr.lab[(H-1)*W+x]]=1; } for(let y=0;y<H;y++){ touch[gr.lab[y*W]]=1; touch[gr.lab[y*W+W-1]]=1; }
+  /* tapped points (fractions 0..1) mark their ground region as ground, even when enclosed (the inside of an O) */
+  if(picks&&Array.isArray(o.seeds)) for(const sd of o.seeds.slice(0,8)){ if(!Array.isArray(sd)) continue; const sx=Math.min(W-1,Math.max(0,Math.round(sd[0]*(W-1)))),sy=Math.min(H-1,Math.max(0,Math.round(sd[1]*(H-1)))); let hit=0;
+    for(let r=0;r<=3&&!hit;r++) for(let dy=-r;dy<=r&&!hit;dy++) for(let dx=-r;dx<=r;dx++){ const x=sx+dx,y=sy+dy; if(x<0||y<0||x>=W||y>=H) continue; const k=gr.lab[y*W+x]; if(k){ hit=k; break; } }
+    if(hit) touch[hit]=1; }
   const pin=Math.max(3,Math.min(9,Math.round(2e-6*n))); let pins=0;
   for(let i=0;i<n;i++){ const k=gr.lab[i]; if(k&&!touch[k]&&gr.area[k]<=pin){ X[i]=1; pins++; } }
   /* holes: an enclosed ground-coloured region is a counter (cleared) when the ink around it is not much
