@@ -444,10 +444,12 @@ async function shareFiles(files){
 async function draftThumbUrl(x){ return x.d.thumb||await idb.get(x.key+':thumb')||null; }
 
 /* ---------- cloud (team saved designs) ---------- */
+let CLOUD_P=null;
 async function cloud(){
-  if(!window.STUDIO_CONFIG) await loadScript(ROOT+'assets/config.js');
-  if(!window.StudioCloud) await loadScript(ROOT+'assets/cloud.js');
-  return window.StudioCloud;
+  if(window.StudioCloud) return window.StudioCloud;
+  /* 2.26.0 faststart: config.js and cloud.js load side by side (one wait, not two), and a second caller shares the first call's load */
+  if(!CLOUD_P) CLOUD_P=Promise.all([window.STUDIO_CONFIG?0:loadScript(ROOT+'assets/config.js'),window.StudioCloud?0:loadScript(ROOT+'assets/cloud.js')]).then(()=>window.StudioCloud,e=>{ CLOUD_P=null; throw e; });
+  return CLOUD_P;
 }
 /* One sign-in dialog for every page. Resolves true once the person is signed in AND on the team. */
 /* scroll lock: while a pop-up, sheet or menu is open, the page behind it stays still (it used to scroll along with the pop-up's list).
@@ -581,8 +583,9 @@ function packSeason(p,now){
 }
 async function loadPacks(B){
   if(B._packsDone) return; B._packsDone=true; B.packList=[]; B.aliases=B.aliases||{};
-  for(const id of (B.packs||[])){
-    try{ if(!PACKS[id]) await loadScript(ROOT+'brands/'+B.id+'/packs/'+id+'/pack.js'); }catch(_){ continue; }
+  /* 2.26.0 faststart: every pack file is fetched at once (they used to load one after the other), then merged in the brand's order */
+  const ids=(B.packs||[]), got=await Promise.all(ids.map(id=>PACKS[id]?1:loadScript(ROOT+'brands/'+B.id+'/packs/'+id+'/pack.js').then(()=>1,()=>0)));
+  for(let i=0;i<ids.length;i++){ const id=ids[i]; if(!got[i]) continue;
     const p=PACKS[id]; if(!p) continue; B.packList.push(p);
     B.assets=(B.assets||[]).concat(p.assets||[]);
     B.textFills=(B.textFills||[]).concat(p.textFills||[]);
@@ -627,12 +630,13 @@ function phrasesApproved(detail){
 async function useBrand(id,opt){
   id=id||brandId(); if(!BRANDS[id]) await loadScript(ROOT+'brands/'+id+'/brand.js');
   BRAND=BRANDS[id]; BRAND.base=ROOT+'brands/'+id+'/';
-  await loadPacks(BRAND);   // occasion packs (w2-packs): merged before any tool reads assets or templates
-  phMerge(BRAND,phCache(id)); setTimeout(()=>phRefresh(BRAND),600);   // phrasebook (mega): approved team lines from the cache; refreshed in the background
-  /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
+  /* 2.26.0 faststart: asked for before the packs load, so the font file travels while they do */
   if(BRAND.fonts&&(BRAND.fonts.css||BRAND.fonts.google)&&!document.querySelector('link[data-brand-fonts]')){
     fontLink(BRAND.fonts.css?BRAND.base+BRAND.fonts.css:'https://fonts.googleapis.com/css2?'+BRAND.fonts.google+'&display=swap','brandFonts','1');
   }
+  await loadPacks(BRAND);   // occasion packs (w2-packs): merged before any tool reads assets or templates
+  phMerge(BRAND,phCache(id)); setTimeout(()=>phRefresh(BRAND),600);   // phrasebook (mega): approved team lines from the cache; refreshed in the background
+  /* brand fonts (w1-fonts, mega): the kit's own local fonts.css when it has one, Google only as the fallback for a kit without it */
   document.documentElement.style.setProperty('--display','"'+BRAND.fonts.display+'",system-ui,sans-serif');
   Object.entries(BRAND.colors||{}).forEach(([k,v])=>document.documentElement.style.setProperty('--b-'+k,v));   // brand colours for style swatches
   document.documentElement.style.setProperty('--brand-sans','"'+BRAND.fonts.body+'",system-ui,sans-serif');   // the interface keeps its own font (--sans)
@@ -2758,6 +2762,7 @@ function dayTag(t){ const d=new Date(t); return d.getDate()+' '+d.toLocaleString
 function ago(t){ const s=(Date.now()-new Date(t).getTime())/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; if(s<86400*7) return Math.round(s/86400)+' d ago'; return dayTag(t); }
 async function home(){
   const firstRun=!store('studio:welcome')&&!usedBefore();   // a device that never used Studio (checked before anything is stored)
+  cloud().catch(()=>{});   /* 2.26.0 faststart: config.js + cloud.js travel while the brand kit loads (the Calendar row waits for them) */
   const B=await useBrand(null,{noFontWait:true}); const $=id=>document.getElementById(id);
   const NX=null;   /* 2.4.0: the New Studio look preview was archived (_archive/next-preview); kept as null so old hooks read as off */
   /* saved designs + account: declared first because the search can read them before the team list has loaded */
@@ -3197,7 +3202,8 @@ async function home(){
   }
   let tplApi=null;
   function showTemplates(){
-    if(!window.StudioTemplates||!$('templatesView')) return;
+    if(!$('templatesView')) return;
+    if(!window.StudioTemplates){ lazy('templates',{css:1}).then(()=>{ if(curView()==='templates') showTemplates(); },()=>{}); return; }   /* 2.26.0 faststart: code + styles load the first time the tab opens */
     /* favourites + recently used, per device and brand; Create's template picker reads and writes the same two lists ('t:'+template id) */
     if(!tplApi) tplApi=StudioTemplates.init({root:$('templatesView'),cats:TPL_CATS,entries:tplEntries,esc,haptic,store,icons:ICON,favKey:'studio:tplFav:'+B.id,recentKey:'studio:tplRecent:'+B.id,
       onBack:()=>goHome(),
@@ -3292,7 +3298,8 @@ async function home(){
   /* ---------- first-run welcome (assets/welcome.js): three short swipes (the main tools, pins and search, saving). Once per device,
      only on a device that never used Studio; Settings → Welcome tour (or ?welcome=1) shows it again. ---------- */
   const WKEY='studio:welcome';
-  function openWelcome(){ if(!window.StudioWelcome) return Promise.resolve(null);
+  function openWelcome(){ return lazy('welcome',{css:1}).then(openWelcome2,()=>null); }   /* 2.26.0 faststart: loaded when the tour is first shown */
+  function openWelcome2(){ if(!window.StudioWelcome) return Promise.resolve(null);
     const tools=quickTools().slice(0,3).map(([id,t])=>({id,title:t.title,blurb:t.quick,thumb:`${ROOT}assets/thumbs/${B.id}/${id}.jpg`}));
     const ph=B.phrases||{}, ar=(ph.restock||ph.headlines||[])[0];   // the mock search shows a tool name, then a phrase in the brand's language
     return StudioWelcome.open({tools,icons:ICON,lockScroll,haptic,queries:[tools[0]?tools[0].title:'Restock',ar||(tools[1]?tools[1].title:'Search')]}).then(r=>{ store(WKEY,'seen'); return r; }); }
@@ -3360,7 +3367,7 @@ async function home(){
   const goSaved=()=>openSaved();
   const tplSize={story:'Story',post:'Post',square:'Square'};
   /* a template opened from search counts as Recently used, the same list as the Templates page and Create's picker */
-  const tplUsed=id=>{ if(window.StudioTemplates&&StudioTemplates.mark) StudioTemplates.mark(store,'studio:tplRecent:'+B.id,id,8); };
+  const tplUsed=id=>{ lazy('templates').then(T=>{ if(T&&T.mark) T.mark(store,'studio:tplRecent:'+B.id,id,8); },()=>{}); };   /* 2.26.0 faststart: lazy */
   let tq=null;   // saved-design thumbnails are asked for in one batch
   const thumbFor=p=>{ if(!p||!C) return Promise.resolve(null); if(urls[p]) return Promise.resolve(urls[p]);
     if(!tq){ const q=tq={paths:new Set()}; q.p=new Promise(r=>setTimeout(async()=>{ tq=null; try{ Object.assign(urls,await C.fileUrls([...q.paths])); }catch(_){} r(); },30)); }
