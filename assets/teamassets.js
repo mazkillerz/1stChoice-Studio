@@ -160,7 +160,7 @@ async function open(o){
   function paintAddHead(){ const t=A.querySelector('.ta-add-count'); if(t) t.textContent=qTotal>1?(qi+1)+' of '+qTotal:''; }
   async function nextItem(){
     if(qi>=queue.length){ finishAll(); return; }
-    const f=queue[qi]; cur={file:f,name:cleanName(f.name),mode:'keep',tol:50,holes:true,result:null,token:0,analysis:null,busy:true,ground:'checker'};
+    const f=queue[qi]; cur={file:f,name:cleanName(f.name),mode:'keep',tol:50,holes:true,picks:[],picking:false,raw:null,result:null,token:0,analysis:null,busy:true,ground:'checker'};
     A.innerHTML=`<div class="ta-add-in"><div class="ta-bar"><button type="button" class="ta-x" data-addback aria-label="Close">${ic('close')}</button><h3 id="taAH">Add asset</h3><span class="small ta-add-count"></span></div><div class="ta-add-body"><div class="ta-stage"><p class="small">Opening picture…</p></div></div></div>`;
     paintAddHead();
     try{
@@ -182,21 +182,32 @@ async function open(o){
       <div class="ta-opts" id="taOpts"></div>
       <p class="small ta-prog" id="taProg" role="status" aria-live="polite">${esc(note)}</p></div>
       <div class="ta-add-foot"><button type="button" class="link" data-addback>Cancel</button><button type="button" class="btn slim" id="taNext" disabled>Next</button></div>`;
-    paintAddHead(); paintOpts(); recompute(true);
+    paintAddHead(); paintOpts(); syncPick(); recompute(true);
   }
+  const PIPETTE='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3z"/></svg>';
+  const pickHint=()=>!cur||!cur.picking?'':cur.picks.length>=3?'Up to 3 colours. Remove one to pick another.':'Tap the background on the picture.';
+  /* the pick is the colour under the tap, from the picture itself (a 5x5 average, so grain does not matter) */
+  function pickAt(c,fx,fy){ const b=c.base, w=b.width, h=b.height, x0=Math.min(w-1,Math.max(0,Math.round(fx*(w-1)))), y0=Math.min(h-1,Math.max(0,Math.round(fy*(h-1)))), a=Math.max(0,x0-2), t=Math.max(0,y0-2), bw=Math.min(w,x0+3)-a, bh=Math.min(h,y0+3)-t;
+    const d=b.getContext('2d').getImageData(a,t,bw,bh).data; let r=0,g=0,bl=0,n=0; for(let i=0;i<d.length;i+=4){ if(d[i+3]<128) continue; r+=d[i]; g+=d[i+1]; bl+=d[i+2]; n++; } if(!n) return null; return {rgb:[Math.round(r/n),Math.round(g/n),Math.round(bl/n)],at:[+fx.toFixed(4),+fy.toFixed(4)]}; }
   function paintOpts(){ const c=cur, host=A.querySelector('#taOpts'); if(!host) return;
     host.innerHTML=c.mode==='logo'?`<label class="ta-row"><span class="lbl">Strength</span><input type="range" id="taTol" min="0" max="100" step="1" value="${c.tol}" aria-label="Strength"></label>
-      <label class="ta-row ta-sw"><span>Clear inside areas<small class="small">Letters like O and A</small></span><input type="checkbox" class="switch" id="taHoles" role="switch" ${c.holes?'checked':''}></label>`
+      <label class="ta-row ta-sw"><span>Clear inside areas<small class="small">Letters like O and A</small></span><input type="checkbox" class="switch" id="taHoles" role="switch" ${c.holes?'checked':''}></label>
+      <div class="ta-pickrow"><button type="button" class="link ta-pick" id="taPick" aria-pressed="${c.picking}">${PIPETTE}<span>Pick the background</span></button>${c.picks.length?'<button type="button" class="link" id="taPickReset">Reset</button>':''}</div>
+      <p class="small ta-pickhint" id="taPickHint" aria-live="polite">${esc(pickHint())}</p>
+      <div class="ta-swrow" id="taSw">${c.picks.map((q,i)=>`<span class="ta-swatch"><i style="background:rgb(${q.rgb.join(',')})"></i><button type="button" data-unpick="${i}" aria-label="Remove this colour">${ic('close')}</button></span>`).join('')}</div>`
       :c.mode==='photo'?'<p class="small">Best for a product or a person on a busy background.</p>':'<p class="small">The picture is added exactly as it is.</p>'; }
+  function syncPick(){ const st=A.querySelector('.ta-stage'); if(st) st.dataset.picking=cur&&cur.picking?'1':'0'; }
+  function applyResult(){ const c=cur; if(!c.raw) return; c.result=c.picking?c.raw:c.P.trim(c.raw,8); }
   function drawPrev(){ const cv=A.querySelector('#taPrev'); if(!cv||!cur.result) return; const r=cur.result, k=Math.min(1,900/Math.max(r.width,r.height)); cv.width=Math.max(1,Math.round(r.width*k)); cv.height=Math.max(1,Math.round(r.height*k)); const x=cv.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); x.imageSmoothingQuality='high'; x.drawImage(r,0,0,cv.width,cv.height); }
   async function recompute(now){
     const c=cur; clearTimeout(recomputeT); const go=async()=>{ const tok=++c.token; c.busy=true; const nx=A.querySelector('#taNext'), pr=A.querySelector('#taProg'); if(nx) nx.disabled=true;
       try{ let res;
         if(c.mode==='keep'||!c.P){ res=c.base; if(pr&&!(c.analysis&&c.analysis.hasAlpha)&&!c.P) {} }
         else{ if(pr) pr.textContent=c.mode==='photo'?'Working on the edges…':'Cutting out…';
-          res=await c.P.run(c.base,{mode:c.mode,tolerance:c.tol,holes:c.holes,onProgress:t=>{ if(cur===c&&c.token===tok){ const p=A.querySelector('#taProg'); if(p) p.textContent=t; } }}); }
+          res=await c.P.run(c.base,{mode:c.mode,tolerance:c.tol,holes:c.holes,...(c.mode==='logo'&&c.picks.length?{ground:c.picks.map(q=>q.rgb),seeds:c.picks.map(q=>q.at)}:{}),onProgress:t=>{ if(cur===c&&c.token===tok){ const p=A.querySelector('#taProg'); if(p) p.textContent=t; } }}); }
         if(cur!==c||c.token!==tok) return;
         c.result=(c.mode==='keep'||!c.P)?res:c.P.trim(res,8); if(c.mode==='keep'&&c.P&&c.analysis&&c.analysis.hasAlpha) c.result=c.P.trim(res,8);
+        c.raw=c.mode==='keep'||!c.P?null:res; if(c.raw&&c.mode==='logo'&&c.picking) c.result=res;
         if(pr) pr.textContent=c.analysis&&c.analysis.hasAlpha&&c.mode==='keep'?'This picture already has a see-through background.':''; c.busy=false; drawPrev(); if(nx) nx.disabled=false;
       }catch(err){ if(cur!==c||c.token!==tok) return; c.mode='keep'; c.result=c.base; c.busy=false; paintOpts(); A.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode==='keep')));
         if(pr) pr.textContent='The background could not be removed here, so the picture stays as it is.'; drawPrev(); if(nx) nx.disabled=false; } };
@@ -246,9 +257,14 @@ async function open(o){
     if(t.closest('[data-addback]')){ if(adding&&qi>=queue.length&&added.length){ closeAdd(); return; } closeAdd(); return; }
     if(t.closest('[data-usenow]')){ const r=added[added.length-1]; closeAdd(); if(r) finishPick(r); return; }
     if(t.closest('[data-stepback]')){ bgStep(); return; }
-    if(b=t.closest('[data-mode]')){ if(b.disabled) return; cur.mode=b.dataset.mode; A.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paintOpts(); recompute(true); return; }
+    if(b=t.closest('[data-mode]')){ if(b.disabled) return; cur.mode=b.dataset.mode; cur.picks=[]; cur.picking=false; syncPick(); A.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paintOpts(); recompute(true); return; }
     if(b=t.closest('[data-g]')){ cur.ground=b.dataset.g; A.querySelector('.ta-stage').dataset.ground=cur.ground; A.querySelectorAll('[data-g]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); return; }
-    if(t.closest('#taNext')){ if(!cur.busy&&cur.result){ cur.name=cur.name||cleanName(cur.file.name); detailsStep(); } return; }
+    if(t.closest('#taPick')){ cur.picking=!cur.picking; paintOpts(); syncPick(); if(cur.mode==='logo'&&cur.raw){ applyResult(); drawPrev(); } return; }
+    if(t.closest('#taPickReset')){ cur.picks=[]; cur.picking=false; paintOpts(); syncPick(); recompute(true); return; }
+    if(b=t.closest('[data-unpick]')){ cur.picks.splice(+b.dataset.unpick,1); paintOpts(); recompute(true); return; }
+    if(t.id==='taPrev'&&cur&&cur.picking&&cur.mode==='logo'){ if(cur.picks.length>=3){ const h=A.querySelector('#taPickHint'); if(h) h.textContent=pickHint(); return; }
+      const r=t.getBoundingClientRect(), q=pickAt(cur,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height); if(q){ cur.picks.push(q); paintOpts(); const sw=A.querySelector('#taSw'); if(sw&&sw.scrollIntoView) sw.scrollIntoView({block:'nearest'}); recompute(true); } return; }
+    if(t.closest('#taNext')){ if(!cur.busy&&cur.result){ if(cur.picking){ cur.picking=false; applyResult(); } cur.name=cur.name||cleanName(cur.file.name); detailsStep(); } return; }
     if(t.closest('#taGo')){ upload(); return; } });
   d.addEventListener('input',e=>{ const t=e.target;
     if(t.id==='taQ'){ q=t.value; paint(); }

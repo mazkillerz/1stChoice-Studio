@@ -27,7 +27,7 @@ const MAP=[
   /* 2.11.0 reminders */
   [/assets\/remind\.js|assets\/studio\.js|sw\.js/,['reminders']],
   /* round 3 (2.3.0) */
-  [/assets\/teamassets\.|assets\/cutout-pro/,['teamassets','cutout-pro']],[/assets\/ideas\./,['ideas']],[/assets\/kpis\./,['kpis']],[/assets\/cloud\.js|tests\/fakecloud\.js/,['teamassets','saveflow']],
+  [/assets\/teamassets\.|assets\/cutout-pro/,['teamassets','cutout-pro','cutout-pick']],[/tests\/fixtures\/cutout\/|tests\/cutout-pick/,['cutout-pick','cutout-pro']],[/assets\/ideas\./,['ideas']],[/assets\/kpis\./,['kpis']],[/assets\/cloud\.js|tests\/fakecloud\.js/,['teamassets','saveflow']],
   [/tools\/create\.js|tools\/video\.js|tools\/video-ui\.js|lab\/board-ui\.js|assets\/search\.js|assets\/welcome\.js/,['nav','saveflow']],
   /* mega round, Wave 2-3 (1.55.0) */
   [/assets\/cutout|assets\/vendor\/cutout/,['cutout']],
