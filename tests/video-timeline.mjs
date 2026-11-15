@@ -9,6 +9,8 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 process.env.PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK='1';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
+/* PART=light|dark|misc (comma list) runs only those parts; video-timeline-light.mjs, -dark.mjs and -misc.mjs (360px phone + computer) set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const FX=new URL('fixtures/reels/',import.meta.url).pathname;
 const VID=FX+'vclip.mp4', PHOTO=FX+'photo.jpg', MUSIC=FX+'music.mp3';
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
@@ -50,7 +52,7 @@ const selectClip=async(pg,touch,id)=>{ const l=await pg.evaluate(id=>{ const L=V
 const geo=pg=>pg.evaluate(()=>{ const pv=document.getElementById('vdPv').getBoundingClientRect(), bar=document.getElementById('bar').getBoundingClientRect(), tl=document.getElementById('vdTl').getBoundingClientRect();
   return {pvh:pv.height/innerHeight,sw:document.documentElement.scrollWidth<=innerWidth,bw:document.body.scrollWidth<=innerWidth,barB:bar.bottom<=innerHeight+1,tlH:tl.height}; });
 
-for(const scheme of ['light','dark']){
+for(const scheme of ['light','dark'].filter(part)){
   const N=scheme+' phone: ';
   const {ctx,pg,errs}=await newPage({width:390,height:844},scheme,true);
   const cdp=await ctx.newCDPSession(pg);
@@ -368,7 +370,7 @@ for(const scheme of ['light','dark']){
 }
 
 /* small phone and computer */
-{
+if(part('misc')){
   const {ctx,pg,errs}=await newPage({width:360,height:740},'light',true);
   await pg.goto(BASE+'tools/video.html'); await ready(pg);
   await pg.tap('#bar [data-open="add"]'); await pg.setInputFiles('#vdShB input[data-f="media"]',[VID,PHOTO]); await waitClips(pg,3); await pg.waitForTimeout(300);
@@ -385,7 +387,7 @@ for(const scheme of ['light','dark']){
   ok('360px: no errors',errs.length===0,errs.slice(0,3));
   await ctx.close();
 }
-{
+if(part('misc')){
   const {ctx,pg,errs}=await newPage({width:1280,height:800},'light',false);
   await pg.goto(BASE+'tools/video.html'); await ready(pg);
   await pg.click('#bar [data-open="add"]'); await pg.setInputFiles('#vdShB input[data-f="media"]',[VID,PHOTO]); await waitClips(pg,3); await pg.waitForTimeout(300);

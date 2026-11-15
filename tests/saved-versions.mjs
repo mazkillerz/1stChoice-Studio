@@ -27,6 +27,8 @@ const STUB=`
 })();`;
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8')+STUB;
 const res=[]; const ok=(n,c,i)=>{ res.push((c?'PASS ':'FAIL ')+n+(i!==undefined&&!c?' '+(typeof i==='string'?i:JSON.stringify(i)):'')); };
+/* PART=light|dark|desktop (comma list) runs only those parts; saved-versions-light.mjs, -dark.mjs and -desktop.mjs set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const b=await chromium.launch(); const errs=[];
 process.on('uncaughtException',e=>{ console.log(res.join('\n')); console.log('CRASH after '+res.length+' checks: '+String(e&&e.message||e).split('\n').slice(0,4).join(' | ')); process.exit(1); });
 const CLOUD='fakecloud';
@@ -35,7 +37,7 @@ const calls=pg=>pg.evaluate(()=>JSON.parse(localStorage.getItem('__calls')||'[]'
 const flatOf=(pg,idOrPath)=>pg.evaluate(async p=>{ const d=JSON.parse(localStorage.getItem('fakecloud')); if(d.designs[p]) p=d.designs[p].thumb_path; const u=d.files[p]; if(!u) return 'missing'; const blob=await (await fetch(u)).blob(); return await Studio.lab.coverFlat(blob); },idOrPath);
 const waitCalls=(pg,n)=>pg.waitForFunction(n=>JSON.parse(localStorage.getItem('__calls')||'[]').length>=n,n,{timeout:30000,polling:100}).catch(()=>{});
 
-for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,'light'],['phone/dark',{width:390,height:844},true,'dark'],['desktop',{width:1280,height:800},false,'light']]){
+for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,'light'],['phone/dark',{width:390,height:844},true,'dark'],['desktop',{width:1280,height:800},false,'light']].filter(v=>part(v[0].replace('phone/','')))){
   const N=name+': ';
   const ctx=await b.newContext({viewport:vp,isMobile:touch,hasTouch:touch,serviceWorkers:'block',colorScheme:scheme,acceptDownloads:true});
   await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
@@ -187,7 +189,7 @@ for(const [name,vp,touch,scheme] of [['phone/light',{width:390,height:844},true,
 }
 
 /* the Versions row is hidden when the cloud has no versions */
-{ const ctx=await b.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
+if(part('desktop')){ const ctx=await b.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
   await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
   await ctx.addInitScript(()=>{ window.__noVer=true; try{ if(!localStorage.getItem('fakecloud')) localStorage.setItem('fakecloud',JSON.stringify({designs:{a:{id:'a',brand:'1stchoice',tool:'restock',name:'Old',kind:'design',recipe:{photoPaths:[]},thumb_path:null,cols:[],updated_at:new Date().toISOString()}},files:{},cols:{}})); }catch(e){} });
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('nover '+e));

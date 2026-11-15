@@ -7,6 +7,8 @@ import fs from 'fs';
 const BASE=process.env.BASE||'http://127.0.0.1:8080/';
 const SHOTS=process.env.SHOTS||'/tmp/studio-resize-shots/'; fs.mkdirSync(SHOTS,{recursive:true});
 const fake=fs.readFileSync(new URL('fakecloud.js',import.meta.url),'utf8');
+/* PART=a|b (comma list) runs only those parts; create-resize-a.mjs (the first three templates) and create-resize-b.mjs (the last three, dark phone, computer) set it. No PART = everything. */
+const PARTS=(process.env.PART||'').split(',').filter(Boolean), part=p=>!PARTS.length||PARTS.includes(p);
 const b=await chromium.launch(); const errs=[]; let fails=0;
 const ok=(n,c,i)=>{ if(!c) fails++; console.log((c?'PASS ':'FAIL ')+n+(i!==undefined&&!c?' '+JSON.stringify(i):'')); };
 const mk=async(opt)=>{ const ctx=await b.newContext(Object.assign({serviceWorkers:'block'},opt)); await ctx.route(/supabase\.co/,r=>r.abort()); await ctx.route(/assets\/cloud\.js/,r=>r.fulfill({contentType:'application/javascript',body:fake}));
@@ -44,8 +46,8 @@ const grid=async(pg,name)=>{ const url=await pg.evaluate(()=>{ const fs=BD.util.
 const openPageSheet=async(pg,phone)=>{ if(phone){ await pg.evaluate(()=>BD.select([])); await pg.waitForTimeout(150); await pg.tap('#crCtx [data-x="page"]'); } else await pg.evaluate(()=>CRUI.openPage()); await pg.waitForTimeout(350); };
 
 /* ---- the matrix: phone 390 touch, light ---- */
-{ const {ctx,pg}=await mk({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,colorScheme:'light'});
-  for(const tpl of TPL){
+if(part('a')||part('b')){ const {ctx,pg}=await mk({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,colorScheme:'light'});
+  for(const tpl of TPL.filter((t,i)=>part(i<3?'a':'b'))){
     await pg.goto(BASE+'tools/create.html?tpl='+tpl); await ready(pg);
     const src=await pg.evaluate(()=>{ const f=BD.util.frames()[0]; return {json:JSON.stringify(BD.toObj(f)).replace(/,"crop(X|Y|Width|Height)":[-\d.e]+/g,''),w:BD.util.fsize(f).w,h:BD.util.fsize(f).h,round:!!f.getAttr('round')}; });
     const cur=src.h>=1900?'story':src.h>=1300?'post':'square';
@@ -78,13 +80,13 @@ const openPageSheet=async(pg,phone)=>{ if(phone){ await pg.evaluate(()=>BD.selec
   }
   /* ---- phone dark: the row is there and readable ---- */
   await ctx.close(); }
-{ const {ctx,pg}=await mk({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,colorScheme:'dark'});
+if(part('b')){ const {ctx,pg}=await mk({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,colorScheme:'dark'});
   await pg.goto(BASE+'tools/create.html?tpl=ice-cold'); await ready(pg); await openPageSheet(pg,true);
   const r=await pg.evaluate(()=>{ const b=document.querySelector('#pRz [data-rz]'); const cs=getComputedStyle(b), r=b.getBoundingClientRect(); return {n:document.querySelectorAll('#pRz [data-rz]').length,h:Math.round(r.height),vis:r.width>0&&r.right<=innerWidth+1,col:cs.color,bg:cs.backgroundColor}; });
   ok('dark phone: three Resize buttons visible, >= 44px',r.n===3&&r.h>=44&&r.vis,r); await pg.screenshot({path:SHOTS+'_phone-dark-sheet.png'});
   await ctx.close(); }
 /* ---- desktop 1280 ---- */
-{ const {ctx,pg}=await mk({viewport:{width:1280,height:800}});
+if(part('b')){ const {ctx,pg}=await mk({viewport:{width:1280,height:800}});
   await pg.goto(BASE+'tools/create.html?tpl=did-you-know-post'); await ready(pg); await openPageSheet(pg,false);
   const idsD=await pg.evaluate(()=>BD.util.frames()[0].id()); await pg.click('#pRz [data-rz="story"]'); await pg.waitForTimeout(900);
   const a=await pg.evaluate(analyse,{id:'story',ids:[idsD]}); ok('desktop: post → story works and keeps words in the safe zone',a.W===1080&&a.H===1920&&a.bad.length===0,a);
