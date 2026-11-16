@@ -23,6 +23,8 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 const MAP=[
   /* Home start-up; r6: the New Home preview (home2) is archived */
   [/assets\/studio\.(js|css)|index\.html/,['faststart','r6-home']],
+  /* r6: linked drafts (Continue / resume) */
+  [/assets\/studio\.js|tools\/create\.(js|html)/,['r6-resume']],
   /* 2.5.3 same-name guard */
   [/assets\/cloud\.js|tests\/fakecloud\.js|assets\/studio\.js|assets\/search\.js/,['saved-words','search-plan']],
   [/assets\/cloud\.js|tests\/fakecloud\.js|tools\/create\.js|assets\/studio\.js/,['same-name']],
