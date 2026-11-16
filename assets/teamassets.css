@@ -111,3 +111,12 @@
 .ta-stage[data-picking="1"]{cursor:crosshair;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .ta-stage[data-picking="1"] canvas{touch-action:manipulation}
 .ta-opts>*{flex:none}
+
+/* r6-saved: the ⋯ sits beside the name under the picture, never over it; names take two lines */
+.ta-cap{display:flex;align-items:flex-start;gap:0;min-width:0}
+.ta-capt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ta-more{position:relative;top:auto;inset-inline-end:auto;flex:none;width:32px;height:32px;background:none;box-shadow:none;color:var(--muted);margin:0}
+.ta-more::after{inset:-6px}
+@media (hover:hover){.ta-more:hover{background:var(--chip);color:var(--fg)}}
+.ta-nm{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-overflow:clip}
+/* /r6-saved */

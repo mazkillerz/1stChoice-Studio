@@ -207,3 +207,7 @@
 .cal-ring::after{content:"";position:absolute;inset:0;border-radius:inherit;border:3px solid var(--accent);pointer-events:none;animation:calRing 1.2s var(--ease) forwards}
 @keyframes calRing{from{opacity:1}to{opacity:0}}
 @media (prefers-reduced-motion: reduce){.cal-ring::after{animation:none}}
+
+/* r6-saved: the picker's names take two lines */
+.cal-pcard span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-overflow:clip}
+/* /r6-saved */
