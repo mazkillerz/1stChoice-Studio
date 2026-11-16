@@ -837,7 +837,7 @@ async function openMotion(){ if(!motionOn()) return; const f=BD.activeFrame(); i
   if(startWith) await startWith();
   else if(tpl&&CR.templates().some(d=>d.id===tpl)) await openTemplates({focus:tpl});   // opened on a draft/design: show the picker on the asked-for template
   if(st.openSaveAfter) openSave();
-  window.CRUI={openMotion,openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
+  window.CRUI={teamSave,openMotion,openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
 })();
 /* remove background (cutout mega 3.5): behind the `cutout` preview flag. A new image layer above the photo holds the cut-out
    (same place, size and turn); the photo is hidden, not deleted, so Undo or the eye in Layers brings it back. */

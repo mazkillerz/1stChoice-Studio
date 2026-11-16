@@ -79,7 +79,66 @@ await pg.$eval('#lvDis',e=>e.click()); await pg.waitForTimeout(1200);
 ok('d2: Discard changes drops the draft',(await drafts(pg)).length===0,await drafts(pg));
 await pg.close();
 
-//CREATE
+/* ===== c: Create ===== */
+tag='create: ';
+const crOpen=async url=>{ const p=await np(); await p.goto(BASE+url); await p.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await p.waitForTimeout(1500); return p; };
+const crDrafts=p=>p.evaluate(()=>Object.keys(localStorage).filter(k=>/^studio:draft:[^:]+:create:[^:]+$/.test(k)).sort());
+const addText=(p,t)=>p.evaluate(t=>{ BD.place(BD.make.text(t,{x:100,y:100})); BD.changed(); },t);
+const texts=p=>p.evaluate(()=>BD.main.find('Text').map(n=>n.text()));
+const pageNo=p=>p.evaluate(()=>BD.main.getChildren(n=>n.getAttr&&n.getAttr('kind')==='frame').length);
+const settle=async(p,n=1)=>{ await p.waitForFunction(n=>Object.keys(localStorage).some(k=>/^studio:draft:[^:]+:create:/.test(k)),null,{timeout:8000}).catch(()=>{}); await p.waitForTimeout(n*1800); };
+const cid=async()=>{ const q=await np(); await q.goto(BASE+'index.html'); const d=await dbOf(q); await q.close(); return Object.keys(d.designs).find(k=>d.designs[k].name==='R6 Create'); };
+{ /* a saved Create design */
+  const p=await crOpen('tools/create.html?size=story'); await addText(p,'Hello R6'); await settle(p);
+  await p.evaluate(()=>CRUI.teamSave({name:'R6 Create',collections:['Tests']})); await p.waitForTimeout(600);
+  ok('the Create design is in the team',!!(await dbOf(p)).designs && Object.values((await dbOf(p)).designs).some(d=>d.name==='R6 Create'));
+  ok('saving it left no draft behind',(await crDrafts(p)).length===0,await crDrafts(p)); await p.close(); }
+const CID=await cid();
+{ const p=await crOpen('tools/create.html?design='+CID); ok('opened as the saved design',await p.evaluate(()=>CRUI.st.design&&CRUI.st.design.name==='R6 Create'));
+  ok('no draft before any edit',(await crDrafts(p)).length===0,await crDrafts(p));
+  await p.tap('#crPages [data-pg="+"]'); await p.waitForTimeout(500); await addText(p,'Edited R6'); await settle(p,1);
+  const ks=await crDrafts(p); ok('an edit makes a draft with the design id',ks.length===1&&ks[0].endsWith(':d-'+CID),ks);
+  const rec=await draftRec(p,ks[0]); ok('it records the link (id, name, updated_at)',rec.link&&rec.link.id===CID&&rec.link.name==='R6 Create'&&!!rec.link.at,rec.link);
+  ok('it keeps ?design= in the address',p.url().includes('design='+CID)&&!p.url().includes('draft='));
+  await p.goto(BASE+'index.html'); await p.waitForFunction(()=>window.Studio); await p.waitForTimeout(1300);
+  ok('Continue editing: title = design name, sub = Unsaved changes',(await p.$$eval('#continueList .ccard',l=>l.map(e=>e.textContent))).some(t=>/R6 Create/.test(t)&&/Unsaved changes/.test(t)));
+  await p.$eval('#continueList .ccard a',e=>e.click()); await p.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await p.waitForTimeout(1800);
+  ok('resumed: both pages and the edit are there',await pageNo(p)===2&&(await texts(p)).includes('Edited R6'),await texts(p));
+  ok('resumed on the same page (the second one)',await p.evaluate(()=>BD.main.getChildren(n=>n.getAttr&&n.getAttr('kind')==='frame').indexOf(BD.activeFrame())===1));
+  ok('still linked: Update, not a copy',await p.evaluate(c=>!!CRUI.st.design&&CRUI.st.design.id===c,CID));
+  ok('slim bar shown',await vis(p,'#resumeBar'));
+  await p.tap('#resumeSaved'); await p.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await p.waitForTimeout(1800);
+  ok('Saved version: one page, no edit, clean address',await pageNo(p)===1&&!(await texts(p)).includes('Edited R6')&&p.url().endsWith('?design='+CID),p.url());
+  ok('the draft stays in Continue editing',(await crDrafts(p)).length===1);
+  await p.goto(BASE+'tools/create.html?design='+CID); await p.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await p.waitForTimeout(1800);
+  ok('reopened: the edits are back',(await texts(p)).includes('Edited R6'));
+  const n0=Object.keys((await dbOf(p)).designs).length;
+  await p.evaluate(()=>CRUI.teamSave({name:'R6 Create',kind:'design',keepCols:true})); await p.waitForTimeout(800);
+  ok('a team update removes the draft and makes no copy',(await crDrafts(p)).length===0&&Object.keys((await dbOf(p)).designs).length===n0,await crDrafts(p));
+  await p.close(); }
+{ /* a brand template */
+  const p0=await crOpen('tools/create.html?size=story'); const TPL=await p0.evaluate(()=>CR.templates().find(d=>d.layout!=='highlight').id); await p0.close();
+  const p=await crOpen('tools/create.html?tpl='+encodeURIComponent(TPL)); await settle(p);
+  const ks=await crDrafts(p); ok('brand template: a draft exists',ks.length>=1,ks);
+  const before=await texts(p); await addText(p,'Mine R6'); await settle(p);
+  await p.goto(BASE+'index.html'); await p.waitForFunction(()=>Studio); await p.waitForTimeout(1300);
+  const h=await p.$$eval('#continueList .ccard a',l=>l.map(e=>e.getAttribute('href')));
+  ok('brand template: Continue editing opens it',h.some(x=>/create\.html\?draft=/.test(x)),h);
+  await p.$eval('#continueList .ccard a',e=>e.click()); await p.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await p.waitForTimeout(1800);
+  ok('brand template: the template and the edit are back',(await texts(p)).includes('Mine R6')&&before.every(t=>true));
+  await p.close(); }
+{ /* a team template */
+  const p0=await crOpen('tools/create.html?design='+CID); await p0.close();
+  const p=await np(); await p.goto(BASE+'index.html'); const d=await dbOf(p);
+  const tid='tpl-r6'; d.designs[tid]={...d.designs[CID],id:tid,name:'R6 Template',kind:'template'}; await p.evaluate(x=>localStorage.setItem('fakecloud',JSON.stringify(x)),d); await p.close();
+  const q=await crOpen('tools/create.html?design='+tid); ok('team template opens as a template',await q.evaluate(()=>CRUI.st.design&&CRUI.st.design.kind==='template'));
+  await addText(q,'Tpl edit R6'); await settle(q,1);
+  const ks=await crDrafts(q); ok('team template: an edit makes a linked draft',ks.some(k=>k.endsWith(':d-'+tid)),ks);
+  await q.goto(BASE+'tools/create.html?design='+tid); await q.waitForFunction(()=>window.CRUI&&CRUI.st&&CRUI.st.ready,null,{timeout:40000,polling:100}); await q.waitForTimeout(1800);
+  ok('team template: the edit is back after leaving',(await texts(q)).includes('Tpl edit R6')&&await vis(q,'#resumeBar'));
+  await q.close(); }
+/* e. render frames write no draft */
+{ const p=await np(); await p.goto(BASE+'index.html'); const before=(await drafts(p)).length; await p.goto(BASE+'tools/restock.html?design='+id+'&render=1'); await p.waitForTimeout(2500); const after=(await drafts(p)).length; ok('e: ?render=1 writes no draft',after===before,[before,after]); await p.close(); }
 await b.close();
 console.log(res.join('\n')); if(errs.length) console.log('PAGE ERRORS: '+errs.slice(0,6).join(' | '));
 const bad=res.filter(r=>r.startsWith('FAIL')).length||errs.length; console.log(bad?'FAIL':'ALL PASS'); process.exit(bad?1:0);
