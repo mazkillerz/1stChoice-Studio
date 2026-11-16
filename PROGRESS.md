@@ -21,7 +21,7 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 | 2 | 3 Back always returns to where you came from (button + phone gesture, scroll, tab, collection) | r6-nav | sonnet builder | **merged** |
 | 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | **merged** (+ lead: names full width) |
 | 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | **merged** (inspector still differs: tabs vs edit bar — left for later) |
-| 3 | 9 Alignment / consistency pass, every screen | r6-align | sonnet builder | in progress (hub screens; editor screens after r6-editor) |
+| 3 | 9 Alignment / consistency pass, every screen | r6-align | sonnet builder | **merged** |
 | 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | changelog 2.33–2.35 + VERSION + sw cache done; still: align card, --changed run, merge to main, skill, summary |
 
 ## Decisions made for the owner
@@ -34,3 +34,4 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 - 22:40 UTC: resume + ideas merged; saved, nav, editor builders running. calendar suite's date-dependent desktop check fixed.
 - 23:05 UTC: saved merged (Campaigns archived, sw.js shell updated, README). align builder started. nav + editor still running.
 - 23:55 UTC: nav + editor merged; changelog 2.33.0/2.34.0/2.35.0 written; waiting for align, then full --changed run and merge to main.
+- 00:20 UTC 17 Nov: align merged; skill + taste + lessons updated; full `--changed` run (146 suites) started; then merge to main.
