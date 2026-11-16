@@ -19,9 +19,9 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 | 1 | 7 What's New page (drop Jump to, one filter row, polish) | r6-whatsnew | sonnet builder | **merged** (lead: 2-line summaries) |
 | 1 | 8 Home: archive New Home preview (home2), Ideas pill info, polish | lead branch | lead | **done** (5a23de5); polish in Part 9 |
 | 2 | 3 Back always returns to where you came from (button + phone gesture, scroll, tab, collection) | r6-nav | sonnet builder | in progress (brief-nav.md in scratchpad) |
-| 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | in progress |
+| 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | **merged** (+ lead: names full width) |
 | 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | in progress |
-| 3 | 9 Alignment / consistency pass, every screen | lead / builder | | todo |
+| 3 | 9 Alignment / consistency pass, every screen | r6-align | sonnet builder | in progress (hub screens; editor screens after r6-editor) |
 | 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | todo |
 
 ## Decisions made for the owner
@@ -32,3 +32,4 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 - 21:15 UTC: state read (2.32.3), worktrees made, resume scheduled.
 - 21:50 UTC: Part 8 done, Part 7 merged, nav builder started. Briefs for saved/editor are in the scratchpad (brief-saved.md, brief-editor.md); copies in studio-notes/pending/r6-briefs/.
 - 22:40 UTC: resume + ideas merged; saved, nav, editor builders running. calendar suite's date-dependent desktop check fixed.
+- 23:05 UTC: saved merged (Campaigns archived, sw.js shell updated, README). align builder started. nav + editor still running.
