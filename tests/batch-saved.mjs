@@ -85,7 +85,8 @@ let batchHash={}, batchNames=[];
   await pg.setViewportSize(PHONE);
   /* 2. the save */
   await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200); await tap('[data-see-all]'); await pg.waitForTimeout(500); await tap('#selBtn');
-  await pick(pg,tap,[...GOOD,'sTpl']); await tap('#selSave');
+  ok('2.32.0: the team template is not in Saved (it lives in Templates)',await pg.$('#savedGrid .sv-card[data-id="sTpl"]')===null);
+  await pick(pg,tap,GOOD); await tap('#selSave');
   await pg.waitForSelector('dialog[open] .bs-dlg',{timeout:10000}).catch(()=>{});
   ok('a dialog opens with a hidden render frame',await pg.$('dialog[open] .bs-dlg')!==null);
   await waitH(pg,/Saved!|Ready!|Not saved|Nothing saved/);
@@ -97,7 +98,6 @@ let batchHash={}, batchNames=[];
   ok('all files are image/png',files.length>0&&files.every(f=>f.type==='image/png'),files.map(f=>f.type).join());
   ok('progress said "Saving n of 3"',prog.some(t=>/Saving \d of 3/.test(t)),prog);
   ok('heading says Saved!',h==='Saved!',h);
-  ok('note mentions the skipped template',/1 template skipped/.test(await pg.textContent('#bsNote')),(await pg.textContent('#bsNote')).trim());
   ok('no render iframe left',await pg.$$eval('iframe',l=>l.length)===0);
   ok('select mode ended',!(await pg.evaluate(()=>document.body.classList.contains('selecting'))));
   batchHash=await hashes(pg); batchNames=Object.keys(batchHash);
@@ -125,8 +125,8 @@ let batchHash={}, batchNames=[];
   ok('missing-photo design skipped: one file, note says so',f.length===1&&f[0].name==='Window-light.png'&&/has a photo missing/.test(note),{f:f.map(x=>x.name),note:note.trim()});
   await ctx.close(); }
 { const ctx=await mk(PHONE,{seed:db,init:SHARE()}); const pg=await newPage(ctx); const tap=s=>pg.tap(s);
-  await openSaved(pg,tap); await pick(pg,tap,['sTpl']); await tap('#selSave'); await pg.waitForTimeout(800);
-  ok('template only: a toast, no dialog',(await toastText(pg)).length>0&&await pg.$('dialog[open]')===null&&(await pg.evaluate(()=>window.__shareN))===0,await toastText(pg));
+  await openSaved(pg,tap); await pg.waitForTimeout(500);
+  ok('2.32.0: Saved never lists a team template, so it cannot be picked',await pg.$('#savedGrid .sv-card[data-id="sTpl"]')===null&&await pg.$('dialog[open]')===null);
   await ctx.close(); }
 /* 7. too many */
 { const ctx=await mk(PHONE,{seed:dbMany,init:SHARE()}); const pg=await newPage(ctx); const tap=s=>pg.tap(s);
