@@ -47,7 +47,7 @@ function make(o){
   const sy=()=>o.shell?root.scrollTop:scrollY, sTo=y=>{ if(o.shell) root.scrollTop=y; else scrollTo({top:y,behavior:'instant'}); };
   if(o.shell) root.classList.add('is-shell');
   let lastSig='', C=null, items=[], notes=[], openSheet=null, designs=[], cal={}, urls={}, state='loading', note='', run=0, slowT=0, built=false;
-  let stage='idea', typeF='', q='', searchOpen=false, wasWide=wide();
+  let stage='idea', q='', searchOpen=false, wasWide=wide();
   let staleAt=null, dataAt=null, lastExtra='', pendingOpen=null, thumbsOnce=false, lastUnread=-1, saveT=0;
   const CKEY='studio:plan:ideas:'+o.brand, SKEY='studio:ideas:seen:'+o.brand;
   /* ---------- per-device memory: the Plan cache (paints at once) and when I last opened each idea ---------- */
@@ -106,20 +106,44 @@ function make(o){
   let aud=null, playingPath=null, seekTo=null, scrub=null; const failed=new Set(), RATES=[1,1.5,2], CONT_MS=180000;
   const getRate=()=>{ try{ const r=parseFloat(localStorage.getItem('studio:voiceRate')); return RATES.includes(r)?r:1; }catch(_){ return 1; } };
   const rateTxt=r=>(r===1.5?'1.5':String(r))+'×';
-  const waveBars=path=>{ let h=2166136261; for(let i=0;i<path.length;i++){ h^=path.charCodeAt(i); h=Math.imul(h,16777619); } const rnd=()=>{ h=(h+0x6D2B79F5)|0; let t=Math.imul(h^(h>>>15),1|h); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
-    const N=32, r=Array.from({length:N+2},rnd); let s=''; for(let i=1;i<=N;i++){ const v=.5*r[i]+.25*(r[i-1]+r[i+1]), env=.55+.45*Math.sin(Math.PI*(i-.5)/N); s+=`<i style="height:${Math.round(18+64*Math.min(1,v*1.25*env+.12))}%"></i>`; } return s; };
-  const playerHtml=(path,secs,e)=>`<div class="id-voice" dir="ltr" data-path="${esc(path)}" data-secs="${+secs||0}" data-author="${esc((e&&e.author)||'')}" data-at="${esc((e&&e.created_at)||'')}"><button type="button" class="id-play" data-play aria-label="Play voice note">${IC.play}</button><span class="id-vbar" role="slider" tabindex="0" aria-label="Seek in the voice note" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">${waveBars(String(path))}</span><bdi class="id-vt">${mmss(secs)}</bdi><button type="button" class="id-rate" data-rate aria-label="Playback speed">${rateTxt(getRate())}</button><span class="id-verr" dir="auto" role="alert">Could not play this voice note</span><button type="button" class="id-retry" data-retry>Retry</button></div>`;
+  /* r6-ideas: one player everywhere. 48 bars from the real audio (decoded once per file, cached), a stable pseudo-wave until then or when decoding fails;
+     the wave stays on screen while playing and fills with the accent; time runs on requestAnimationFrame; skip -5 s / +5 s; tap or drag to seek */
+  const NB=48, peaks=new Map(), decDur=new Map(), decQ=[]; let decBusy=false, AC=null;
+  const pseudoPeaks=path=>{ let h=2166136261; for(let i=0;i<path.length;i++){ h^=path.charCodeAt(i); h=Math.imul(h,16777619); } const rnd=()=>{ h=(h+0x6D2B79F5)|0; let t=Math.imul(h^(h>>>15),1|h); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
+    const r=Array.from({length:NB+2},rnd); return Array.from({length:NB},(_,k)=>{ const i=k+1, v=.5*r[i]+.25*(r[i-1]+r[i+1]), env=.55+.45*Math.sin(Math.PI*(i-.5)/NB); return Math.min(1,v*1.25*env+.12); }); };
+  const barsHtml=pk=>pk.map(v=>`<i style="height:${Math.round(18+80*Math.max(0,Math.min(1,v)))}%"></i>`).join('');
+  const waveBars=path=>barsHtml(peaks.get(path)||pseudoPeaks(String(path)));
+  function applyPeaks(path){ const pk=peaks.get(path); if(!pk) return; document.querySelectorAll('.id-voice').forEach(el=>{ if(el.dataset.path!==path) return; const bar=el.querySelector('.id-vbar'); const k=bar.querySelectorAll('i'); if(k.length===pk.length) pk.forEach((v,i)=>{ k[i].style.height=Math.round(18+80*Math.max(0,Math.min(1,v)))+'%'; }); else bar.innerHTML=barsHtml(pk); el.dataset.wave='1'; paintAudio(); }); }
+  async function decodeOne(path){
+    let u=urls[path]; if(!u){ try{ const m=await o.thumbs([path]); u=m[path]; if(u) urls[path]=u; }catch(_){} } if(!u) return;
+    try{ const buf=await (await fetch(u)).arrayBuffer(); AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const ab=await new Promise((ok,no)=>{ const r=AC.decodeAudioData(buf,ok,no); if(r&&r.then) r.then(ok,no); });
+      const d=ab.getChannelData(0), n=d.length, step=Math.max(1,Math.floor(n/NB)), pk=[]; for(let i=0;i<NB;i++){ let m=0; const e=Math.min(n,(i+1)*step); for(let j=i*step;j<e;j+=Math.max(1,step>>6)){ const v=Math.abs(d[j]); if(v>m) m=v; } pk.push(m); }
+      const mx=Math.max.apply(null,pk); if(!(mx>=.002)) throw 0; peaks.set(path,pk.map(v=>Math.pow(v/mx,.7))); if(ab.duration>0) decDur.set(path,ab.duration); }
+    catch(_){ peaks.set(path,pseudoPeaks(String(path))); }
+    applyPeaks(path);
+  }
+  function wantPeaks(path){ if(peaks.has(path)||decQ.includes(path)) return; decQ.push(path); pump(); }
+  async function pump(){ if(decBusy) return; decBusy=true; try{ while(decQ.length){ const p=decQ.shift(); if(!peaks.has(p)) await decodeOne(p); } }finally{ decBusy=false; } }
+  const SKIP_B=SVG('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.6" text-anchor="middle" font-size="8.5" font-weight="600" fill="currentColor" stroke="none" font-family="sans-serif">5</text>',22);
+  const SKIP_F=SVG('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.6" text-anchor="middle" font-size="8.5" font-weight="600" fill="currentColor" stroke="none" font-family="sans-serif">5</text>',22);
+  const playerHtml=(path,secs,e)=>`<div class="id-voice" dir="ltr"${peaks.has(path)?' data-wave="1"':''} data-path="${esc(path)}" data-secs="${+secs||0}" data-author="${esc((e&&e.author)||'')}" data-at="${esc((e&&e.created_at)||'')}"><button type="button" class="id-play" data-play aria-label="Play voice note">${IC.play}</button><div class="id-vmain"><span class="id-vbar" role="slider" tabindex="0" aria-label="Seek in the voice note" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of ${mmss(secs)}">${waveBars(String(path))}</span><div class="id-vrow"><bdi class="id-vt">${mmss(secs)}</bdi><span class="id-vctl"><button type="button" class="id-skip" data-skip="-5" aria-label="Back 5 seconds">${SKIP_B}</button><button type="button" class="id-rate" data-rate aria-label="Playback speed">${rateTxt(getRate())}</button><button type="button" class="id-skip" data-skip="5" aria-label="Forward 5 seconds">${SKIP_F}</button></span></div></div><span class="id-verr" dir="auto" role="alert">Could not play this voice note</span><button type="button" class="id-retry" data-retry>Retry</button></div>`;
+  const durOf=(path,tot)=>aud&&playingPath===path&&isFinite(aud.duration)&&aud.duration>0?aud.duration:(decDur.get(path)||tot||0);
+  let raf=0;
   function paintAudio(){
     const rt=getRate();
-    document.querySelectorAll('.id-voice').forEach(el=>{ const path=el.dataset.path, on=!!aud&&path===playingPath, tot=+el.dataset.secs||(on&&aud.duration)||0, playing=on&&!aud.paused, bad=failed.has(path);
-      const dur=on&&isFinite(aud.duration)&&aud.duration>0?aud.duration:tot, p=on&&dur?Math.min(1,aud.currentTime/dur):0;
-      el.classList.toggle('err',bad); el.classList.toggle('on',on&&(playing||aud.currentTime>0));
+    document.querySelectorAll('.id-voice').forEach(el=>{ const path=el.dataset.path, on=!!aud&&path===playingPath, tot=+el.dataset.secs||0, playing=on&&!aud.paused, bad=failed.has(path);
+      if(!el.dataset.wave&&!bad) wantPeaks(path);
+      const dur=durOf(path,tot), cur=on?aud.currentTime:0, p=on&&dur?Math.min(1,cur/dur):0;
+      el.classList.toggle('err',bad); const act=on&&(playing||cur>0); el.classList.toggle('on',act); el.classList.toggle('playing',playing);
       const bars=el.querySelectorAll('.id-vbar i'), k=Math.round(p*bars.length); bars.forEach((b,i)=>{ const f=i<k; if(b.classList.contains('pl')!==f) b.classList.toggle('pl',f); });
-      el.querySelector('.id-vbar').setAttribute('aria-valuenow',String(Math.round(p*100)));
-      const b=el.querySelector('.id-play'); b.innerHTML=playing?IC.pause:IC.play; b.setAttribute('aria-label',playing?'Pause voice note':'Play voice note');
+      const sl=el.querySelector('.id-vbar'), txt=act?mmss(cur)+' / '+mmss(dur):mmss(dur||tot);
+      sl.setAttribute('aria-valuenow',String(Math.round(p*100))); sl.setAttribute('aria-valuetext',act?mmss(cur)+' of '+mmss(dur):'0:00 of '+mmss(dur||tot));
+      const b=el.querySelector('.id-play'), pl=playing?'1':'0'; if(b.dataset.s!==pl){ b.dataset.s=pl; b.innerHTML=playing?IC.pause:IC.play; b.setAttribute('aria-label',playing?'Pause voice note':'Play voice note'); }
       const rb=el.querySelector('.id-rate'); if(rb.textContent!==rateTxt(rt)){ rb.textContent=rateTxt(rt); }
-      el.querySelector('.id-vt').textContent=on&&aud.currentTime>0&&!aud.ended?mmss(aud.currentTime)+' / '+mmss(dur):mmss(tot); });
+      const vt=el.querySelector('.id-vt'); if(vt.textContent!==txt) vt.textContent=txt; });
+    if(aud&&!aud.paused&&!raf) raf=requestAnimationFrame(frame);
   }
+  function frame(){ raf=0; if(aud&&!aud.paused) paintAudio(); }
   function stopAudio(){ if(aud){ try{ aud.pause(); }catch(_){} aud=null; playingPath=null; seekTo=null; paintAudio(); } }
   const applySeek=a=>{ if(seekTo&&aud===a&&seekTo.path===playingPath&&isFinite(a.duration)&&a.duration>0){ try{ a.currentTime=seekTo.f*a.duration; }catch(_){} seekTo=null; } };
   const voiceEl=path=>{ const l=[...document.querySelectorAll('.id-voice')].filter(v=>v.dataset.path===path); return l.find(v=>v.closest('.id-thread'))||l[0]; };
@@ -131,7 +155,7 @@ function make(o){
     if(!u){ try{ const m=await o.thumbs([path]); u=m[path]; if(u) urls[path]=u; }catch(_){} }
     if(!u){ failed.add(path); paintAudio(); return; }
     const a=new Audio(); a.preload='metadata'; a.src=u; aud=a; playingPath=path; seekTo=f>0?{path,f}:null; a.playbackRate=getRate(); a.preservesPitch=true; a.webkitPreservesPitch=true;
-    ['timeupdate','play','pause','ended','loadedmetadata','ratechange'].forEach(ev=>a.addEventListener(ev,()=>{ if(aud!==a) return; if(ev==='loadedmetadata') applySeek(a);
+    ['timeupdate','play','pause','ended','loadedmetadata','durationchange','ratechange'].forEach(ev=>a.addEventListener(ev,()=>{ if(aud!==a) return; if(ev==='loadedmetadata'){ if(a.duration===Infinity){ const fx=()=>{ a.removeEventListener('timeupdate',fx); try{ a.currentTime=0; }catch(_){} applySeek(a); paintAudio(); }; a.addEventListener('timeupdate',fx); try{ a.currentTime=1e101; }catch(_){} } applySeek(a); }
       if(ev==='ended'){ a.currentTime=0; const nx=nextInThread(voiceEl(path)); paintAudio(); if(nx){ try{ nx.scrollIntoView({block:'nearest'}); }catch(_){} togglePlay(nx.dataset.path); } return; } paintAudio(); }));
     a.addEventListener('error',()=>{ if(aud===a){ failed.add(path); stopAudio(); } });
     a.play().catch(e=>{ if(aud===a&&e&&e.name==='NotSupportedError'){ failed.add(path); stopAudio(); } }); paintAudio();
@@ -139,9 +163,11 @@ function make(o){
   function seekFrac(el,f){ const path=el.dataset.path; f=Math.max(0,Math.min(1,f));
     if(aud&&playingPath===path){ if(isFinite(aud.duration)&&aud.duration>0){ try{ aud.currentTime=f*aud.duration; }catch(_){} paintAudio(); } else seekTo={path,f}; }
     else if(seekTo&&seekTo.path===path) seekTo.f=f; else togglePlay(path,f); }
+  function skipBy(el,sec){ const path=el.dataset.path, d=durOf(path,+el.dataset.secs); if(aud&&playingPath===path){ const t=Math.max(0,Math.min(d||1e9,aud.currentTime+sec)); try{ aud.currentTime=t; }catch(_){} paintAudio(); } else if(d>0) seekFrac(el,(sec>0?sec:0)/d); else togglePlay(path); }
   const myVoice=v=>v&&(root.contains(v)||v.closest('.id-dlg'));
-  document.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closest('[data-play],[data-rate],[data-retry]'); if(!t) return; const v=t.closest('.id-voice'); if(!myVoice(v)) return; e.preventDefault(); e.stopPropagation();
+  document.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closest('[data-play],[data-rate],[data-retry],[data-skip]'); if(!t) return; const v=t.closest('.id-voice'); if(!myVoice(v)) return; e.preventDefault(); e.stopPropagation();
     if(t.hasAttribute('data-play')) togglePlay(v.dataset.path);
+    else if(t.hasAttribute('data-skip')) skipBy(v,+t.dataset.skip);
     else if(t.hasAttribute('data-retry')){ failed.delete(v.dataset.path); paintAudio(); togglePlay(v.dataset.path); }
     else { const r=RATES[(RATES.indexOf(getRate())+1)%RATES.length]; try{ localStorage.setItem('studio:voiceRate',String(r)); }catch(_){} if(aud) aud.playbackRate=r; paintAudio(); } });
   const fracAt=(bar,x)=>{ const r=bar.getBoundingClientRect(); return r.width?(x-r.left)/r.width:0; };
@@ -150,7 +176,9 @@ function make(o){
   document.addEventListener('pointermove',e=>{ if(scrub&&e.pointerId===scrub.id) seekFrac(scrub.v,fracAt(scrub.bar,e.clientX)); });
   const endScrub=e=>{ if(scrub&&e.pointerId===scrub.id){ scrub.v.classList.remove('scrub'); scrub=null; } };
   document.addEventListener('pointerup',endScrub); document.addEventListener('pointercancel',endScrub);
-  document.addEventListener('keydown',e=>{ const bar=e.target.closest&&e.target.closest('.id-vbar'); if(!bar||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')) return; const v=bar.closest('.id-voice'); if(!myVoice(v)||!aud||playingPath!==v.dataset.path||!(aud.duration>0)) return; e.preventDefault(); seekFrac(v,(aud.currentTime+(e.key==='ArrowRight'?5:-5))/aud.duration); });
+  document.addEventListener('keydown',e=>{ const bar=e.target.closest&&e.target.closest('.id-vbar'); if(!bar||!/^Arrow(Left|Right|Up|Down)$|^(Home|End)$/.test(e.key)) return; const v=bar.closest('.id-voice'); if(!myVoice(v)) return; const path=v.dataset.path, d=durOf(path,+v.dataset.secs); if(!(d>0)) return; e.preventDefault();
+    if(e.key==='Home') return seekFrac(v,0); if(e.key==='End') return seekFrac(v,.999);
+    const dir=/Right|Up/.test(e.key)?1:-1; if(aud&&playingPath===path) seekFrac(v,(aud.currentTime+dir*5)/d); else skipBy(v,dir*5); });
 
   /* ---------- the voice recorder: one live panel (level meter, mm:ss countdown, Stop / Cancel), used by capture and the idea sheet ---------- */
   function recordInto(host,done,opt){
@@ -197,8 +225,9 @@ function make(o){
   /* ---------- drawing ---------- */
   const pending=(it)=>!!it._pending;
   const titleOf=it=>it.title||(it.audio_path?'Voice note':it.image_path?'Picture':it.link?domain(it.link):'Untitled');
-  const matches=it=>{ const n=nrm(q); return !n||nrm([it.title,it.note,it.link].join(' ')).includes(n); };
-  const boardItems=()=>items.filter(x=>!typeF||x.type===typeF);
+  /* r6-ideas: search also matches the type word (reel, post, story, giveaway) and the stage name */
+  const matches=it=>{ const n=nrm(q); return !n||nrm([it.title,it.note,it.link,TLABEL[it.type]||it.type||'',it.type||''].join(' ')).includes(n); };
+  const boardItems=()=>items;
   const pill=t=>`<span class="id-pill t-${esc(t||'other')}"><i aria-hidden="true"></i>${esc(TLABEL[t]||'Other')}</span>`;
   const calChip=it=>{ if(!it.calendar_id) return ''; const c=cal[it.calendar_id]; const txt=c?parse(c.day).toLocaleDateString('en',{weekday:'short',day:'numeric',month:'short'})+(c.at?' · '+TIMES_AMPM(c.at):''):'On the calendar';
     return `<span class="id-chip id-cal" title="On the calendar">${IC.cal}<bdi>${esc(txt)}</bdi></span>`; };
@@ -214,13 +243,13 @@ function make(o){
     return notes.filter(n=>n.idea_id===it.id&&!n._pending&&String(n.author||'')!==me&&String(n.created_at)>String(base)).length; };
   const emitUnread=()=>{ if(state!=='ok') return; const n=items.filter(x=>isNew(x)||unreadOf(x)>0).length; if(n!==lastUnread){ lastUnread=n; try{ o.onUnread&&o.onUnread(n); }catch(_){} } };
   const byLine=it=>{ const n=nReplies(it); return `<span class="id-by">${it.author?`<b class="id-av" aria-hidden="true">${esc(initial(it.author))}</b><span class="sr-only">${esc(it.author)}, </span>`:''}<bdi>${pending(it)?'Saving…':esc(ago(it.created_at))}</bdi>${n?`<span class="id-rc" title="Replies">${IC.chat}<bdi>${n}</bdi><span class="sr-only"> ${n===1?'reply':'replies'}</span></span>`:''}</span>`; };
-  function card(it){
+  function card(it,showStage){
     const t=titleOf(it), snip=it.note?firstLine(it.note).slice(0,140):'', idx=STAGES.findIndex(s=>s[0]===it.stage), nxt=STAGES[idx+1];
     const img=it.image_path?`<img class="id-thumb" alt="" decoding="async" data-path="${esc(it.image_path)}"${urls[it.image_path]?` src="${urls[it.image_path]}"`:''}>`:'';
     const meta=[it.audio_path?playerHtml(it.audio_path,it.audio_secs,it):'',linkChip(it),designMini(it),calChip(it)].filter(Boolean).join('');
     return `<article class="id-card${pending(it)?' pend':''}${isNew(it)?' is-new':''}" data-id="${esc(it.id)}"${!pending(it)?' draggable="true"':''}>
       <button type="button" class="id-main" data-open="${esc(it.id)}"${pending(it)?' disabled':''}>
-        <span class="id-top2">${isNew(it)?'<i class="id-new-dot" role="img" aria-label="New"></i>':''}${pill(it.type)}${byLine(it)}${unreadOf(it)?`<span class="id-unread"><bdi>${unreadOf(it)}</bdi> new<span class="sr-only"> ${unreadOf(it)===1?'reply':'replies'}</span></span>`:''}</span>
+        <span class="id-top2">${isNew(it)?'<i class="id-new-dot" role="img" aria-label="New"></i>':''}${pill(it.type)}${showStage?`<span class="id-stgtag">${esc(SLABEL[it.stage]||'')}</span>`:''}${byLine(it)}${unreadOf(it)?`<span class="id-unread"><bdi>${unreadOf(it)}</bdi> new<span class="sr-only"> ${unreadOf(it)===1?'reply':'replies'}</span></span>`:''}</span>
         <span class="id-body2">${img}<span class="id-txt"><b class="id-title" dir="auto">${esc(t)}</b>${snip?`<span class="id-snip" dir="auto">${esc(snip)}</span>`:''}</span></span></button>
       ${meta?`<div class="id-meta">${meta}</div>`:''}
       ${pending(it)?'':`<div class="id-foot">${nxt?`<button type="button" class="id-next" data-next="${esc(it.id)}">Move to ${esc(nxt[1])}<span aria-hidden="true">›</span></button>`:'<span></span>'}</div>`}
@@ -230,19 +259,25 @@ function make(o){
   const endLink='<div class="id-end"><button type="button" class="link" data-archive>Archive</button></div>';
   function boardHtml(){
     const all=boardItems().filter(matches), by=k=>all.filter(x=>x.stage===k);
-    const filt=`<div class="chips id-types" role="group" aria-label="Filter by type"><button type="button" class="chip" data-type="" aria-pressed="${!typeF}">All</button>${TYPES.map(([k,l])=>`<button type="button" class="chip" data-type="${k}" aria-pressed="${typeF===k}">${l}</button>`).join('')}</div>`;
-    if(!items.length) return filt+`<div class="id-empty"><span class="id-bulb" aria-hidden="true">${IC.bulb}</span><b>Your board is empty</b><p>${o.shell?'Tap <b>New</b> to capture one in a few seconds. It lands here, ready to plan.':'Capture an idea in a few seconds. It lands here, ready to plan.'}</p>${o.shell?'':newBtn}</div>`+endLink;
-    if(wide()) return filt+`<div class="id-cols">${STAGES.map(([k,l])=>`<section class="id-col" data-stage="${k}" aria-label="${l}"><header><b>${l}</b><em><bdi>${by(k).length}</bdi></em></header><div class="id-list">${by(k).map(x=>card(x)).join('')||'<p class="id-none">Nothing here</p>'}</div></section>`).join('')}</div>`+endLink;
-    const stagesRow=`<div class="id-stages" role="group" aria-label="Stage">${STAGES.map(([k,l])=>`<button type="button" class="chip" data-stage-tab="${k}" aria-pressed="${stage===k}">${l}<i><bdi>${by(k).length}</bdi></i></button>`).join('')}</div>`;
-    const list=by(stage);
-    return filt+stagesRow+(list.length?`<div class="id-list" data-stage="${stage}">${list.map(x=>card(x)).join('')}</div>`:`<div class="id-empty slim"><p>${q||typeF?'Nothing matches here.':'Nothing in “'+esc(SLABEL[stage])+'” yet.'}</p></div>`)+endLink;
+    if(!items.length) return `<div class="id-empty"><span class="id-bulb" aria-hidden="true">${IC.bulb}</span><b>Your board is empty</b><p>${o.shell?'Tap the <b>+</b> button to capture one in a few seconds. It lands here, ready to plan.':'Capture an idea in a few seconds. It lands here, ready to plan.'}</p>${o.shell?'':newBtn}</div>`+endLink;
+    if(wide()) return `<div class="id-cols">${STAGES.map(([k,l])=>`<section class="id-col" data-stage="${k}" aria-label="${l}"><header><b>${l}</b><em><bdi>${by(k).length}</bdi></em></header><div class="id-list">${by(k).map(x=>card(x)).join('')||'<p class="id-none">Nothing here</p>'}</div></section>`).join('')}</div>`+endLink;
+    const srch=!!q.trim(), list=srch?STAGES.flatMap(([k])=>by(k)):by(stage);   /* a search looks in every stage, each card says which */
+    return (list.length?`<div class="id-list" data-stage="${srch?'':stage}">${list.map(x=>card(x,srch)).join('')}</div>`:`<div class="id-empty slim"><p>${srch?'Nothing matches here.':'Nothing in “'+esc(SLABEL[stage])+'” yet.'}</p></div>`)+endLink;
   }
+  /* r6-ideas: ONE control row under the Plan tabs: the stage tabs and a search icon; the icon turns the row into a search field */
+  function paintRow(){
+    const row=root.querySelector('.id-row'); if(!row) return; const stg=row.querySelector('.id-stg'); const show=state==='ok'&&items.length>0; row.hidden=!show;
+    if(!stg) return; const all=items.filter(matches), by=k=>all.filter(x=>x.stage===k);
+    stg.hidden=wide(); stg.innerHTML=show&&!wide()?STAGES.map(([k,l])=>`<button type="button" class="chip" data-stage-tab="${k}" aria-pressed="${stage===k}">${l}${by(k).length?`<i><bdi>${by(k).length}</bdi></i>`:''}</button>`).join(''):'';
+    const on=stg.querySelector('[aria-pressed="true"]'); if(on&&stg.scrollWidth>stg.clientWidth+1){ try{ stg.scrollTo({left:Math.max(0,on.offsetLeft-12),behavior:'instant'}); }catch(_){} } }   /* a zero count is not drawn; on a very narrow phone the row scrolls to the open stage */
+  function closeSearch(fromNav){ if(!searchOpen) return; searchOpen=false; q=''; if(!fromNav){ try{ window.Studio&&Studio.nav&&Studio.nav.drop('ideas-search'); }catch(_){} } drawTop(); drawBody(); const b=root.querySelector('[data-search]'); if(b&&!fromNav) try{ b.focus({preventScroll:true}); }catch(_){} }
+  function openSearch(){ if(searchOpen) return; searchOpen=true; try{ window.Studio&&Studio.nav&&Studio.nav.push('ideas-search',()=>closeSearch(true)); }catch(_){} drawTop(); drawBody(); const i=root.querySelector('#idQ'); if(i) i.focus(); }
   function drawTop(){
     const el=root.querySelector('.id-top'); if(!el) return; const sh=!!o.shell;
-    el.innerHTML=`<div class="id-head">${sh?'':`<button type="button" class="sp-back" data-back aria-label="Back to home">${ic('back')}</button>`}<div class="sp-title"><h1 id="idH" tabindex="-1"${sh?' class="sr-only"':''}>Ideas</h1></div>
-        <button type="button" class="id-sbtn" data-search aria-label="Search ideas" aria-expanded="${searchOpen}">${searchOpen?IC.x:ic('search')}</button>
-        <button type="button" class="mini solid id-new" data-idea-new>${ic('plus')}<span>New</span></button></div>${sh?'':o.tabs||''}
-      ${searchOpen?`<label class="id-search"><span class="sr-only">Search ideas</span>${ic('search')}<input type="search" id="idQ" dir="auto" autocomplete="off" enterkeyhint="search" placeholder="Search ideas, notes and links" value="${esc(q)}"></label>`:''}`;
+    el.innerHTML=`${sh?'':`<div class="id-head"><button type="button" class="sp-back" data-back aria-label="Back to home">${ic('back')}</button><div class="sp-title"><h1 id="idH" tabindex="-1">Ideas</h1></div></div>${o.tabs||''}`}${sh?'<h1 id="idH" class="sr-only" tabindex="-1">Ideas</h1>':''}<div class="id-row">${searchOpen
+      ?`<label class="id-search"><span class="sr-only">Search ideas</span>${ic('search')}<input type="search" id="idQ" dir="auto" autocomplete="off" enterkeyhint="search" placeholder="Search ideas, notes and types" value="${esc(q)}"></label><button type="button" class="id-sbtn" data-search aria-label="Close search">${IC.x}</button>`
+      :`<div class="id-stg id-stages" role="group" aria-label="Stage"></div><button type="button" class="id-sbtn" data-search aria-label="Search ideas" aria-expanded="false">${ic('search')}</button>`}</div>`;
+    el.classList.toggle('searching',searchOpen); paintRow();
   }
   function drawBody(){
     const el=root.querySelector('.id-content'); if(!el) return; const keepY=sy();
@@ -253,7 +288,7 @@ function make(o){
       :state==='out'?noteBox(IC.bulb,'Ideas are for your team','Sign in to keep and share ideas with your team.','<button type="button" class="btn slim" data-signin>Sign in</button>')
       :noteBox(ic('rotate'),'Could not load the ideas',esc(note),againBtn);
     if(state==='ok'&&staleAt){ el.insertAdjacentHTML('afterbegin',`<p class="id-stale small" role="status">Updated <bdi>${esc(ago(staleAt))}</bdi></p>`); }
-    fillThumbs(el); paintAudio(); sTo(keepY); if(state==='ok'){ emitUnread(); persistSoon(); }
+    paintRow(); fillThumbs(el); paintAudio(); sTo(keepY); if(state==='ok'){ emitUnread(); persistSoon(); }
   }
   function build(){ root.innerHTML='<div class="id-top"></div><div class="id-content"></div>'; drawTop(); }
 
@@ -512,13 +547,13 @@ function make(o){
     if(t.closest('[data-signin]')){ o.signIn().then(ok=>{ if(ok) load(); }); return; }
     if(t.closest('[data-idea-new]')){ hap('tick'); capture({mode:'text'}); return; }
     if(t.closest('[data-archive]')){ archiveSheet(); return; }
-    if(t.closest('[data-search]')){ searchOpen=!searchOpen; if(!searchOpen) q=''; drawTop(); drawBody(); if(searchOpen){ const i=root.querySelector('#idQ'); if(i) i.focus(); } return; }
-    if((b=t.closest('[data-type]'))){ typeF=b.dataset.type; hap('tick'); drawBody(); return; }
+    if(t.closest('[data-search]')){ if(searchOpen) closeSearch(); else openSearch(); return; }
     if((b=t.closest('[data-stage-tab]'))){ stage=b.dataset.stageTab; hap('tick'); drawBody(); return; }
     if((b=t.closest('[data-next]'))){ const it=items.find(x=>x.id===b.dataset.next); const i=it?STAGES.findIndex(s=>s[0]===it.stage):-1; if(i>=0&&STAGES[i+1]){ if(!wide()) stage=STAGES[i+1][0]; moveTo(it.id,STAGES[i+1][0]); } return; }
     if((b=t.closest('[data-more]'))){ menu(items.find(x=>x.id===b.dataset.more)); return; }
     if((b=t.closest('[data-open]'))){ sheet(items.find(x=>x.id===b.dataset.open)); } });
   root.addEventListener('input',e=>{ if(e.target.id==='idQ'){ q=e.target.value; drawBody(); } });
+  root.addEventListener('keydown',e=>{ if(e.key==='Escape'&&searchOpen&&e.target.id==='idQ'){ e.preventDefault(); e.stopPropagation(); closeSearch(); } });
   root.addEventListener('dragstart',e=>{ const el=e.target.closest&&e.target.closest('.id-card[draggable="true"]'); if(!el) return; dragId=el.dataset.id; el.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain',dragId); e.dataTransfer.effectAllowed='move'; }catch(_){} });
   root.addEventListener('dragend',()=>{ dragId=null; root.querySelectorAll('.dragging,.drop').forEach(x=>x.classList.remove('dragging','drop')); });
   root.addEventListener('dragover',e=>{ const c=e.target.closest&&e.target.closest('.id-col'); if(!c||!dragId) return; e.preventDefault(); root.querySelectorAll('.drop').forEach(x=>x!==c&&x.classList.remove('drop')); c.classList.add('drop'); });

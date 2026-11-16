@@ -54,9 +54,9 @@ async function flow(dark){
   await open(pg);
   ok(T+'#ideas opens; empty: lands on the Board with a friendly empty state',/Your board is empty/.test(await txt(pg,'.id-content'))&&await pg.evaluate(()=>!document.getElementById('ideasView').hidden),await txt(pg,'.id-content'));
   ok(T+'no Inbox tab and no "sort later" step anywhere',!(await pg.$('#ideasView [data-tab]'))&&!/Inbox/.test(await txt(pg,'#ideasView')));
-  ok(T+'empty board: one New button (the toolbar\'s), the note points to it',/Tap New/.test(await txt(pg,'.id-content'))&&!(await pg.$('.id-content [data-idea-new]'))&&await pg.$$eval('#ideasView [data-idea-new]',l=>l.length===1));
+  ok(T+'empty board: no New button anywhere, the note points to the + button',/Tap the \+ button/.test(await txt(pg,'.id-content'))&&!(await pg.$('#ideasView [data-idea-new]')));
   /* capture by typing + link + type, Ctrl+Enter */
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg textarea');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg textarea');
   ok(T+'New opens a sheet with the idea box focused',await pg.waitForFunction(()=>document.activeElement&&document.activeElement.id==='idCT',null,{timeout:3000}).then(()=>true).catch(()=>false));
   await pg.fill('#idCT','Reel idea: pour in slow motion https://example.org/ref/1\nSecond line of notes');
   ok(T+'a URL in the text becomes a link chip',/example\.org/.test(await txt(pg,'#idAtt')),await txt(pg,'#idAtt'));
@@ -66,7 +66,7 @@ async function flow(dark){
   let s=await stored(pg), r=(s.ideas||[])[0]||{};
   ok(T+'stored in the cloud: title, note, link, type, stage idea, author',r.title&&/Reel idea/.test(r.title)&&r.note==='Second line of notes'&&r.link==='https://example.org/ref/1'&&r.type==='reel'&&r.stage==='idea'&&r.author==='Sara',r);
   /* picture: 3000x2000 -> <= 1600 jpeg */
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg');
   const big=await pg.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=3000; c.height=2000; const g=c.getContext('2d'); g.fillStyle='#c33'; g.fillRect(0,0,3000,2000); g.fillStyle='#fff'; g.fillRect(500,500,1500,800); return (await new Promise(r=>c.toBlob(r,'image/png'))).arrayBuffer().then(a=>Array.from(new Uint8Array(a)).length&&btoa(String.fromCharCode(...new Uint8Array(a).slice(0,0)))||'x'); }).catch(()=>'x');
   const png=await pg.evaluate(async()=>{ const c=document.createElement('canvas'); c.width=3000; c.height=2000; const g=c.getContext('2d'); g.fillStyle='#c33'; g.fillRect(0,0,3000,2000); const u=c.toDataURL('image/png'); return u.split(',')[1]; });
   await pg.setInputFiles('#idFile',{name:'shot.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
@@ -77,7 +77,7 @@ async function flow(dark){
   const dim=pic?await pg.evaluate(async u=>{ const i=new Image(); i.src=u; await i.decode(); return [i.naturalWidth,i.naturalHeight,u.slice(0,22)]; },s.files[pic.image_path]):null;
   ok(T+'picture is downscaled to <= 1600 px and stored as JPEG',!!dim&&Math.max(dim[0],dim[1])<=1600&&dim[2].includes('jpeg'),dim);
   /* voice, end to end */
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg'); await pg.tap('[data-tool="voice"]');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg'); await pg.tap('[data-tool="voice"]');
   await pg.waitForSelector('.id-rec',{timeout:5000}); await pg.waitForTimeout(2300);
   const live=await pg.evaluate(()=>({t:document.querySelector('.id-rtime').textContent,w:document.querySelector('.id-meter i').style.width}));
   ok(T+'recording shows a running mm:ss counter and a level meter',/^0:0[1-9]$/.test(live.t)&&!!live.w,live);
@@ -115,10 +115,9 @@ async function populated(dark){
   const pc=await txt(pg,'.id-card');
   ok(T+'planned card shows the calendar slot and the linked design',/7:00 pm/.test(pc)&&!!(await pg.$('.id-card .id-des')),pc);
   if(!dark) await pg.screenshot({path:SHOTS+'ideas-board-light.png'}); else await pg.screenshot({path:SHOTS+'ideas-board-dark.png'});
-  await pg.tap('[data-stage-tab="idea"]'); await pg.tap('[data-type="reel"]');
-  ok(T+'type filter: Reel shows one idea',(await pg.$$eval('.id-card',e=>e.length))===1&&/pour shot/.test(await txt(pg,'.id-card')));
-  await pg.tap('[data-type=""]');
-  await pg.tap('[data-search]'); await pg.fill('#idQ','win a case'); await pg.waitForTimeout(150);
+  await pg.tap('[data-stage-tab="idea"]'); await pg.tap('[data-search]'); await pg.fill('#idQ','reel'); await pg.waitForTimeout(150);
+  ok(T+'search by type word: "reel" shows the reel idea',(await pg.$$eval('.id-card',e=>e.length))===1&&/pour shot/.test(await txt(pg,'.id-card')));
+  await pg.fill('#idQ','win a case'); await pg.waitForTimeout(150);
   ok(T+'search matches the note text',(await pg.$$eval('.id-card',e=>e.length))===1&&/giveaway/.test(await txt(pg,'.id-card')));
   await pg.fill('#idQ','القهوة'); await pg.waitForTimeout(150);
   ok(T+'Arabic search finds the Arabic idea',(await pg.$$eval('.id-card',e=>e.length))===1,await txt(pg,'.id-content'));
@@ -167,11 +166,11 @@ await populated(false); await populated(true);
 { const ctx=await mk({...PH,viewport:{width:360,height:740}},seeded()); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('mic: '+e.message));
   await open(pg);
   await pg.evaluate(()=>{ navigator.mediaDevices.getUserMedia=()=>Promise.reject(Object.assign(new Error('Permission denied'),{name:'NotAllowedError'})); });
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg'); await pg.tap('[data-tool="voice"]'); await pg.waitForTimeout(400);
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg'); await pg.tap('[data-tool="voice"]'); await pg.waitForTimeout(400);
   ok('mic denied: a clear one-line message, nothing breaks',/microphone is blocked/i.test(await txt(pg,'#idSt'))&&!(await pg.$('.id-rec')),await txt(pg,'#idSt'));
   await pg.evaluate(()=>document.querySelector('dialog').close());
   ok('360 px: no sideways scroll on the board',await pg.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),await pg.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]));
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg');
   ok('360 px: no sideways scroll in the capture sheet',await pg.evaluate(()=>{ const d=document.querySelector('dialog'); return d.scrollWidth<=d.clientWidth; }));
   await ctx.close(); }
 
