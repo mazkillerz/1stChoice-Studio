@@ -119,7 +119,7 @@ for(const scheme of ['light','dark']){
 
 /* ---- calendar: Plan a post -> Pick a design -> Back -> Back ---- */
 { const ctx=await mk('light'), pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(e.message));
-  await pg.goto(BASE+'index.html#calendar'); await pg.waitForSelector('[data-add]',{timeout:8000}); await wait(pg,600); const u0=pg.url();
+  await pg.goto(BASE+'index.html#calendar'); await pg.waitForSelector('.cd-add',{timeout:8000}); await wait(pg,600); const u0=pg.url();
   await pg.tap(`[data-add="${OTHER}"]`); await pg.waitForSelector('dialog.cal-dlg[open] #calCap'); await wait(pg,300);
   await pg.tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard'); await wait(pg,300);
   ok('calendar: plan sheet + picker both open',await dlgs(pg)===2,await dlgs(pg));
