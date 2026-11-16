@@ -249,7 +249,7 @@ function make(o){
       segH=`<div class="cal-seg" role="group" aria-label="View"><span class="cs-pill" aria-hidden="true"></span><button type="button" class="chip" data-mode="week">Week</button><button type="button" class="chip" data-mode="month">Month</button><button type="button" class="chip" data-mode="feed">Feed</button></div>`,
       navH=`<div class="cal-nav"><button type="button" class="cal-arrow" data-nav="-1">${ic('back')}</button><button type="button" class="cal-today" data-nav="0">Today</button><strong class="cal-title" aria-live="polite"></strong><button type="button" class="cal-arrow" data-nav="1">${ic('next')}</button></div>`;
     root.innerHTML=(sh
-      ?`<div class="cal-top cal-top-shell"><h1 id="calH" class="sr-only" tabindex="-1">Calendar</h1><div class="cal-bar">${segH}${newBtn}</div><div class="cal-bar">${navH}</div><p class="cal-stale" role="status" hidden></p></div>`
+      ?`<div class="cal-top cal-top-shell"><h1 id="calH" class="sr-only" tabindex="-1">Calendar</h1><div class="cal-bar">${segH}</div><div class="cal-bar">${navH}</div><span hidden>${newBtn}</span><p class="cal-stale" role="status" hidden></p></div>`
       :`<div class="cal-top"><div class="cal-head"><button type="button" class="sp-back" data-cal-back aria-label="Back to home">${ic('back')}</button>
         <div class="sp-title"><h1 id="calH" tabindex="-1">Calendar</h1></div>${newBtn}</div>${o.tabs||''}
       <div class="cal-bar">${segH}${navH}</div><p class="cal-stale" role="status" hidden></p></div>`)+`<div class="cal-stage"><div class="cal-body"></div></div>`;
@@ -483,6 +483,8 @@ function make(o){
 
   return {
     get mode(){ return mode; },
+    /* r6 (owner): the Plan page's + adds a post here (for the day in view), like it adds an idea on the Ideas tab */
+    newPost(){ const nw=root.querySelector('.cal-new'); if(!nw||nw.disabled) return false; nw.click(); return true; },
     show(opt){ opt=opt||{};
       if(mode==='feed'&&!window.StudioFeed) loadFeed().then(()=>{ if(state==='ok'&&mode==='feed'){ lastSig=''; items=slice(); draw(); thumbsFor(); } },()=>{});
       if(opt.day&&/^\d{4}-\d{2}-\d{2}$/.test(opt.day)){ anchor=parse(opt.day); if(mode==='feed') mode='week'; ringDay=opt.day; built=true; const [a,b]=range();

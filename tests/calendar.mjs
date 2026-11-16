@@ -78,8 +78,8 @@ async function phone(dark){
   ok(T+'item card: format icon, time in bdi, status chip, caption (dir=auto), Copy caption, visible ⋯',c1.time==='9:30'&&c1.bdi==='BDI'&&c1.chip==='Draft'&&c1.fmt==='Story'&&/New batch today/.test(c1.cap)&&c1.dir==='auto'&&c1.copy&&c1.more>=44,c1);
   await pg.waitForFunction(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return i&&i.getAttribute('src'); },null,{timeout:6000}).catch(()=>{});
   ok(T+'linked design thumb shows',await pg.evaluate(()=>{ const i=document.querySelector('.cal-item[data-id="c1"] .ci-thumbs img'); return !!i&&!!i.getAttribute('src')&&i.complete&&i.naturalWidth>0; }));
-  const hd=await pg.evaluate(()=>{ const top=document.querySelector('.cal-top').getBoundingClientRect(), seg=document.querySelector('.cal-seg').getBoundingClientRect(), nw=document.querySelector('.cal-new').getBoundingClientRect(); const ph=document.querySelector('#planView .pv-head').getBoundingClientRect(); return {top:Math.abs(top.top-ph.bottom)<=1?0:top.top,noBack:!document.querySelector('#calendarView [data-cal-back]'),h:top.height,segIn:seg.top>=top.top&&seg.bottom<=top.bottom,newIn:nw.bottom<=top.bottom,segTapH:document.querySelector('[data-mode]').offsetHeight}; });
-  ok(T+'one compact header block (shell: right under the Plan tab bar) holds New, Week/Month/Feed and the arrows (switch fully visible)',hd.top===0&&hd.noBack&&hd.segIn&&hd.newIn&&hd.h<=190,hd);
+  const hd=await pg.evaluate(()=>{ const top=document.querySelector('.cal-top').getBoundingClientRect(), seg=document.querySelector('.cal-seg').getBoundingClientRect(), nw=document.querySelector('.cal-new').getBoundingClientRect(); const ph=document.querySelector('#planView .pv-head').getBoundingClientRect(); return {top:Math.abs(top.top-ph.bottom)<=1?0:top.top,noBack:!document.querySelector('#calendarView [data-cal-back]'),h:top.height,segIn:seg.top>=top.top&&seg.bottom<=top.bottom,newIn:!nw.width&&!nw.height,segTapH:document.querySelector('[data-mode]').offsetHeight}; });
+  ok(T+'one compact header block (shell: right under the Plan tab bar) holds Week/Month/Feed and the arrows, no separate New (the + adds a post, r6)',hd.top===0&&hd.noBack&&hd.segIn&&hd.newIn&&hd.h<=130,hd);
   const lg=await pg.$eval('.cal-item.ro',e=>e.innerText).catch(()=>'');
   ok(T+'old posted log entry shows as a read-only posted item',/Old posted story/.test(lg)&&/Posted/.test(lg),lg.replace(/\s+/g,' '));
   const t0=await txt(pg,'.cal-title'); await pg.tap('[data-nav="1"]'); await pg.waitForTimeout(350);
@@ -154,7 +154,7 @@ async function phone(dark){
   ok(T+'an item in review shows "In review" read-only with Draft/Ready/Posted still tappable',rv.t==='In review'&&rv.pressed===0&&rv.n===3,rv);
   await pg.tap('#calCancel'); await pg.waitForSelector('dialog.cal-dlg',{state:'detached'});
   /* Arabic caption: right-to-left, live count, warning above 2,200 */
-  await pg.tap('.cal-new'); await pg.waitForSelector('dialog.cal-dlg[open] #calCap');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.cal-dlg[open] #calCap');
   await pg.fill('#calCap','علبتك واجد حلوة\nباشن فروت');
   const cd=await pg.$eval('#calCap',e=>getComputedStyle(e).direction), cnt=await txt(pg,'#calCount');
   ok(T+'Arabic caption is right-to-left and the count updates',cd==='rtl'&&/^25 \/ 2,200$/.test(cnt),[cd,cnt]);
@@ -206,7 +206,7 @@ await phone(false); await phone(true);
   const w=()=>pg.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth}));
   let m=await w(); ok('360: no sideways scroll (week)',m.sw<=m.iw,m);
   await pg.tap('[data-mode="month"]'); await pg.waitForSelector('.cm-grid'); m=await w(); ok('360: no sideways scroll (month)',m.sw<=m.iw,m);
-  await pg.tap('.cal-new'); await pg.waitForSelector('dialog.cal-dlg[open] #calCap'); m=await w(); ok('360: no sideways scroll with the sheet open',m.sw<=m.iw,m);
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.cal-dlg[open] #calCap'); m=await w(); ok('360: no sideways scroll with the sheet open',m.sw<=m.iw,m);
   const fit=await pg.evaluate(()=>{ const d=document.querySelector('dialog.cal-dlg'), r=d.getBoundingClientRect(); return r.left>=0&&r.right<=innerWidth; }); ok('360: the sheet fits the screen',fit);
   await pg.tap('#calPick'); await pg.waitForSelector('dialog.cal-full .cal-pcard'); m=await w(); ok('360: no sideways scroll with the picker open',m.sw<=m.iw,m);
   const pw=await pg.evaluate(()=>{ const d=document.querySelector('dialog.cal-full'); return d.scrollWidth<=d.clientWidth&&[...d.querySelectorAll('.cal-pcard')].every(e=>e.getBoundingClientRect().right<=innerWidth); }); ok('360: picker cards stay inside the screen',pw);
@@ -216,7 +216,7 @@ await phone(false); await phone(true);
 { const ctx=await mk({viewport:{width:1280,height:800}},true); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('desktop: '+e.message));
   await pg.goto(BASE+'index.html'); await pg.waitForSelector('#calRow .cal-home-row',{timeout:8000});
   await pg.click('#calRow .cal-home-row'); await pg.waitForSelector('.cm-grid',{timeout:8000});
-  ok('desktop: opens as a month grid with the items inside the days',(await pg.$$(`.cal-cell[data-day="${TODAY}"] .cal-pill`)).length===2);
+  ok('desktop: opens as a month grid with the items inside the days',(await pg.$$(`.cal-cell[data-day="${TODAY}"] .cal-pill:not(.ro)`)).length===2);   /* r6: a read-only old posted log can land on today too */
   const target=`.cal-cell[data-day="${OTHER===TODAY?LEGACY:OTHER}"]`, dst=OTHER===TODAY?LEGACY:OTHER;
   await pg.dragAndDrop('.cal-pill[data-id="c1"]',target+' .cc-num');
   await pg.waitForFunction(d=>JSON.parse(localStorage.getItem('fakecloud')).calendar.find(x=>x.id==='c1').day===d,dst,{timeout:5000}).catch(()=>{});

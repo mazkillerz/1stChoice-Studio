@@ -44,7 +44,7 @@ for(const dark of [false,true]){ const N=dark?'dark: ':'light: ';
   if(await pg.$('.cal-seg [data-mode="month"][aria-pressed="true"]')) await pg.tap('.cal-seg [data-mode="week"]');
   await pg.waitForTimeout(500);
   ok(N+'calendar item shows the Post icon',await pg.evaluate(()=>[...document.querySelectorAll('.ci-fmt')].some(x=>x.getAttribute('aria-label')==='Post')));
-  await pg.tap('.cal-new'); await pg.waitForSelector('#calPick'); await pg.tap('#calPick'); await pg.waitForSelector('.cal-pick .cal-pcard');
+  await pg.tap('#fab'); await pg.waitForSelector('#calPick'); await pg.tap('#calPick'); await pg.waitForSelector('.cal-pick .cal-pcard');
   const pk=await pg.evaluate(()=>({shapeRow:!!document.querySelector('.cp-shape'),post:document.querySelector('.cal-pcard[data-pick="seed1"]').dataset.shape,carousel:document.querySelector('.cal-pcard[data-pick="seed4"]').dataset.shape,story:document.querySelector('.cal-pcard[data-pick="seed0"]').dataset.shape}));
   ok(N+'picker: no Stories/Posts row; Create post and carousel are posts, restock a story',!pk.shapeRow&&pk.post==='post'&&pk.carousel==='post'&&pk.story==='story',pk);
   await ctx.close();
