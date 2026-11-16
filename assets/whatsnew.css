@@ -174,3 +174,7 @@ html{scroll-padding-top:calc(var(--wnf,64px) + 8px)}
 .wn-empty[hidden]{display:none}
 @media (hover:hover){.wn-ver:hover{border-color:color-mix(in srgb,var(--fg) 18%,var(--line))}}
 /* /r6-whatsnew */
+/* r6-align */
+.wn-sech{padding-inline:0}
+@media (max-width:420px){.wn-f{font-size:var(--fs-s)}}
+/* /r6-align */

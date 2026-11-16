@@ -36,6 +36,12 @@ Nobody used Campaigns (shared words for a group of designs), so the button, Sele
 type: improve
 The Jump to row is gone. One row of filters (All, New, Improved, Fixed) stays at the top, version summaries show in full on two lines, and Back returns to the page you came from.
 
+### Everything lines up
+type: improve
+A pass over every screen on a phone: Saved's sort button moved into the collection row (one row less), Templates' Back arrow starts at the same edge as the title and cards, Home's Ideas and Goals tiles match the Calendar row, the month arrows on the Plan page sit at the edges, and corners and text sizes follow one scale everywhere.
+![before](assets/whatsnew/r6-align-saved-before.jpg)
+![after](assets/whatsnew/r6-align-saved-after.jpg)
+
 ### Home keeps its current look
 type: improve
 The New Home preview is archived and its switch is gone from Settings → Previews; the Home you use stays the main one. The Ideas tile now says something, like Goals does: "2 new" when teammates added ideas you have not opened, otherwise "4 ideas".

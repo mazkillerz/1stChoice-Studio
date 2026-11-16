@@ -1665,3 +1665,37 @@ body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
   .sheet-head{flex:none}   /* a long list no longer squeezes the header (it shrank to 52px under the Done button) */
 }
 /* /r6-editor */
+/* r6-align: one alignment pass (radii from the --r-* tokens, one icon size per group, one gutter, one row less on Saved) */
+/* Saved: Search / Select sit in the header; the sort button joins the chip row (icon only while collections are shown), so there is one row less */
+.sp-bar{flex-wrap:nowrap;row-gap:0}
+.sp-bar .sort-btn,.sp-bar .sp-chips:not([hidden])+.sort-btn{order:0;margin-inline-start:auto}
+.sp-bar .sp-chips{order:0;flex:1 1 0;min-width:0;margin-block:-4px -14px;margin-inline:calc(-1 * var(--gutter)) 0;padding:4px 28px 14px var(--gutter);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+.sp-bar .sp-chips:dir(rtl){padding:4px var(--gutter) 14px 28px;margin-inline:0 calc(-1 * var(--gutter))}
+.sp-bar .sp-chips:not([hidden])+.sort-btn{margin-inline-start:0;width:var(--tap);min-width:var(--tap);padding:0;justify-content:center}
+.sp-bar .sp-chips:not([hidden])+.sort-btn #sortLbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Templates: the back button looks like Saved's (bare arrow, same size) and the arrow starts at the page edge */
+:root .tp-back{width:var(--tap);height:var(--tap);margin-inline-start:calc(-1 * (var(--tap) - 22px) / 2);border:0;background:none;box-shadow:none}
+:root .tp-back svg{width:22px;height:22px}
+:root .tp-back:active{background:var(--chip)}
+/* Home: Ideas and Goals match the Calendar row (same corner, inset, icon size and title size) */
+.plan-chip{border-radius:var(--r-xl);min-height:56px;padding:6px 18px;gap:14px}
+.plan-chip svg,.cal-home-row svg{width:20px;height:20px}
+.plan-chip .pc-t b{font-size:var(--fs-m)}
+@media (max-width:820px){ .hub-sec h2{font-size:var(--fs-l)} }
+/* Plan: Feed keeps the same row height as Week / Month under the switch; a text button at the end of a heading ends where the cards end */
+.cal-top-shell .cal-nav{min-height:44px}
+.kp-sh .link{margin-inline-end:calc(-1 * var(--sp-3))}
+/* corners: cards 14, thumbnails 10, floating bars 26 with 20 inside, count badges are pills */
+.sv-open,.sv-all,.tp-frame,.ds-big,.fab-more{border-radius:var(--r-m)}
+.sv-thumb,.tp-mini .tp-frame,.us-th,.wl-th,.ct-ph,.ct-thumbs img,.cq-design img,.cq-ph,.id-tile img,.id-ph,.install-ic img{border-radius:var(--r-s)}
+:root .hubbar,.sel-bar,.fab-menu{border-radius:var(--r-xl)}
+:root .hubbar .pill,:root .hubbar a,.sel-act,.pop-menu{border-radius:var(--r-l)}
+.pm-item,.fi-ic{border-radius:var(--r-m)}
+.see-n,.st-badge,.switch,.set-row .set-switch{border-radius:var(--r-pill)}
+.chip i{font-size:var(--fs-xs)}
+.feed-badge{font-size:var(--fs-xs)}
+.kp-big{font-size:var(--fs-3xl)}
+/* Plan: the month arrows end where the page edges are (icon at the gutter, the tap area reaches past it) */
+.cal-nav .cal-arrow:first-child{margin-inline-start:calc(-1 * (var(--tap) - 22px) / 2)}
+.cal-nav .cal-arrow:last-child{margin-inline-end:calc(-1 * (var(--tap) - 22px) / 2)}
+/* /r6-align */
