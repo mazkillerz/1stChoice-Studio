@@ -1344,7 +1344,6 @@ input[type=range]{min-height:44px}
 .sp-bar .sp-chips{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
 /* Saved bar (2.1.2): line 1 = Sort (right); line 2 = every collection in one full-width row that scrolls sideways */
 .sp-bar{flex-wrap:wrap;row-gap:var(--sp-2)}
-.sp-bar .camp-row{order:0;padding:0}
 .sp-bar .sort-btn,.sp-bar .sp-chips:not([hidden])+.sort-btn{order:1;margin-inline-start:auto}
 .sp-bar .sp-chips{order:2;flex:0 0 calc(100% + var(--gutter) + var(--gutter-r));flex-wrap:nowrap;overflow-x:auto;margin:-4px calc(-1 * var(--gutter-r)) -14px calc(-1 * var(--gutter));padding:4px var(--gutter-r) 14px var(--gutter);-webkit-mask-image:none;mask-image:none}
 .sp-bar .sp-chips .chip{min-height:44px}

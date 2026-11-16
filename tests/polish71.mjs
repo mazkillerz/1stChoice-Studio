@@ -65,7 +65,7 @@ for(const scheme of ['light','dark']) for(const vp of [PHONE,DESK]){
     ok(N+'an Arabic design name makes its caption right-to-left (:dir(rtl)) and the name starts at the right',cap.ar.rtl&&cap.ar.nameDir==='rtl'&&cap.ar.nameAtStart&&cap.ar.name===AR,cap.ar);
     ok(N+'the time reads like ago() ("1 h ago"), digit first in logical order, left-to-right inside its own bdi',cap.ar.time===agoH(1)&&cap.ar.digitFirst&&cap.ar.visualLtr===true,JSON.stringify({time:cap.ar.time,want:agoH(1),visualLtr:cap.ar.visualLtr}));
     ok(N+'an English name keeps a left-to-right caption (name at the left, time "'+agoH(20)+'")',cap.en.ltr&&cap.en.nameDir==='ltr'&&cap.en.nameAtStart&&cap.en.time===agoH(20)&&/^Offer/.test(cap.en.name),cap.en);
-    ok(N+'a long title stays on one line with an ellipsis (not wrapped)',cap.long.lines>=0.8&&cap.long.lines<=1.3&&cap.long.ellipsis==='ellipsis'&&cap.long.nowrap==='nowrap'&&cap.long.nameAtStart,cap.long);
+    ok(N+'a long title takes two lines, cut with an ellipsis after that (r6-saved)',cap.long.lines>=1.8&&cap.long.lines<=2.3&&String(cap.long.clamp)==='2'&&cap.long.nameAtStart,cap.long);
     ok(N+'cards are framed (a hairline border and rounded corners)',/^1px/.test(cap.frame)&&/1[0-9]px|2[0-9]px/.test(cap.frame),cap.frame);
     await tap(pg,'#colChips .chip[data-f="c:Restocks"]'); await pg.waitForTimeout(600);
     /* readable chosen chip: .col-sel paints the accent, the chip inside takes --on-accent */
