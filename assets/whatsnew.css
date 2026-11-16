@@ -1,4 +1,4 @@
-/* What's new page. Tokens only (defined in studio.css). Order: page, jump bar, filters, hero, version rows, changes, states, motion, dialogs. ONE level: no nested expanders. */
+/* What's new page. Tokens only (defined in studio.css). Order: page, filters, hero, version rows, changes, states, motion, dialogs. ONE level: no nested expanders. */
 :root{interpolate-size:allow-keywords}
 html:has(dialog[open]){overflow:hidden}
 body.wn .top{max-width:720px}
@@ -17,7 +17,7 @@ body.wn .top{max-width:720px}
 .wn-f:active{transform:scale(.96)}
 .wn-f[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:var(--glow,none)}
 .wn-f[aria-pressed="true"] b{background:color-mix(in srgb,var(--on-accent) 24%,transparent);color:var(--on-accent)}
-.wn-f:focus-visible,.wn-vbtn:focus-visible,.wn-jc:focus-visible,.wn-sc:focus-visible,.wn-shot:focus-visible,.wn-close:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wn-f:focus-visible,.wn-vbtn:focus-visible,.wn-shot:focus-visible,.wn-close:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 
 /* ---------- the latest version: the hero card ---------- */
 .wn-latest{margin:0 0 var(--sp-6);padding:var(--sp-5) var(--sp-4) var(--sp-3);border-radius:var(--r-xl);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-1,0 1px 2px rgba(0,0,0,.06))}
@@ -86,8 +86,7 @@ body.wn .top{max-width:720px}
 }
 @media (prefers-reduced-motion:reduce){
   .wn-head,.wn-a,.wn-skel{animation:none}
-  .wn-chev,.wn-f,.wn-f b,.wn-x,.wn-ver,.wn-jc,.wn-sc{transition:none}
-  .wn-sheet[open]{animation:none}
+  .wn-chev,.wn-f,.wn-f b,.wn-x,.wn-ver{transition:none}
 }
 /* phones: all four filter chips fit on one line at 390px */
 @media (max-width:420px){.wn-fscroll{gap:4px;padding-inline:var(--gutter) var(--gutter-r)}.wn-f{flex:1 1 auto;justify-content:center;padding:0 5px 0 10px;gap:5px;font-size:14px}.wn-f b{min-width:20px;padding:0 5px;font-size:12px}}
@@ -127,14 +126,6 @@ body.wn .top{max-width:720px}
 /* ---------- 3.0 one level: the jump bar, version rows that open in one tap, changes shown in full ---------- */
 html{scroll-padding-top:calc(var(--wnf,64px) + 8px)}
 .wn-latest,.wn-ver{scroll-margin-top:calc(var(--wnf,64px) + 8px)}
-.wn-jump{margin:0 0 var(--sp-2)}
-.wn-jlab{display:block;margin:0 var(--sp-1) var(--sp-2);color:var(--muted);font:600 var(--fs-xs) var(--sans);letter-spacing:.08em;text-transform:uppercase}
-.wn-jrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.5fr);gap:var(--sp-2)}
-.wn-jc{min-height:var(--tap);padding:0 var(--sp-2);border-radius:var(--r-pill);border:1px solid var(--line);background:transparent;color:var(--fg);font:600 var(--fs-m) var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;transition:background-color .2s,border-color .2s,transform .2s var(--ease)}
-.wn-jc:active{transform:scale(.96)}
-.wn-jall{background:var(--chip);border-color:transparent}
-@media (hover:hover){.wn-jc:hover{background:var(--chip)}}
-@media (max-width:420px){.wn-jc{font-size:14px;padding:0 6px}}
 
 /* the changes of a version, all in view */
 .wn-ul{display:grid;gap:0}
@@ -165,27 +156,21 @@ html{scroll-padding-top:calc(var(--wnf,64px) + 8px)}
 .wn-x.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition-delay:0s}
 .wn-xi{min-height:0;overflow:hidden}
 
-/* the All versions sheet: bottom sheet on a phone, centred card on a desktop */
-.wn-sheet{border:0;padding:0;margin:auto 0 0;width:100%;max-width:100vw;max-height:82dvh;border-radius:var(--r-xl) var(--r-xl) 0 0;background:var(--bg);color:var(--fg);box-shadow:var(--shadow);overflow:hidden;flex-direction:column}
-.wn-sheet[open]{display:flex;animation:wnsheet .2s var(--ease)}
-.wn-sheet::backdrop{background:var(--scrim)}
-@keyframes wnsheet{from{opacity:0;transform:translateY(16px)}}
-.wn-sh{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-3) var(--gutter-r) var(--sp-2) var(--gutter)}
-.wn-sh h2{margin:0;font:600 var(--fs-xl,20px)/1.2 var(--title)}
-.wn-shclose{margin:0;box-shadow:none}
-.wn-sb{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 var(--gutter-r) calc(var(--sp-4) + var(--safe-b)) var(--gutter)}
-.wn-sg+.wn-sg{margin-top:var(--sp-4)}
-.wn-sg h3{display:flex;align-items:baseline;gap:var(--sp-2);margin:0 0 var(--sp-2);font:600 var(--fs-l)/1.3 var(--sans)}
-.wn-sg h3 span{color:var(--muted);font:500 var(--fs-s) var(--sans)}
-.wn-sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:var(--sp-2)}
-.wn-sc{min-height:44px;padding:0 var(--sp-1);border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 var(--fs-m) var(--sans);font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .2s,border-color .2s}
-.wn-sc.ms{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent-ink,var(--accent));font-weight:600}
-.wn-sc.now{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
-@media (hover:hover){.wn-sc:hover{background:var(--chip)}.wn-sc.now:hover{background:var(--accent)}}
-@media (min-width:640px){
-  .wn-sheet{margin:auto;width:min(560px,92vw);max-height:80dvh;border-radius:var(--r-xl)}
-  .wn-jrow{grid-template-columns:repeat(3,auto) 1fr;justify-content:start}
-  .wn-jc{padding:0 var(--sp-5)}
-  .wn-jall{padding:0 var(--sp-5)}
-}
 @media (max-width:380px){.wn-f{padding:0 7px;gap:4px;font-size:13px}.wn-f b,.wn-f[aria-pressed="true"] b{min-width:0;padding:0;background:none;opacity:.75}}
+
+/* r6-whatsnew */
+.wn-head{padding:var(--sp-5) 0 var(--sp-3)}
+.wn-head p{font-size:var(--fs-m)}
+.wn-filters{margin-bottom:var(--sp-4)}
+/* counts are quiet: plain muted numbers, not pills */
+.wn-f b{background:none;min-width:0;padding:0;font-weight:500}
+.wn-f{padding:0 var(--sp-4)}
+.wn-f[aria-pressed="true"] b{background:none;color:var(--on-accent)}
+.wn-f{border-color:transparent;background:var(--chip)}
+.wn-f[aria-pressed="true"]{border-color:var(--accent);background:var(--accent)}
+@media (max-width:420px){.wn-f{padding:0 8px}.wn-f b{padding:0;min-width:0;font-size:12px}}
+.wn-sech{padding-top:var(--sp-2)}
+.wn-empty{margin:var(--sp-6) 0;padding:var(--sp-5);text-align:center;color:var(--muted);font-size:var(--fs-m);border:1px dashed var(--line);border-radius:var(--r-xl)}
+.wn-empty[hidden]{display:none}
+@media (hover:hover){.wn-ver:hover{border-color:color-mix(in srgb,var(--fg) 18%,var(--line))}}
+/* /r6-whatsnew */
