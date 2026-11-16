@@ -47,9 +47,8 @@ async function main(dark){
   /* targets */
   const sz=await pg.$$eval('dialog .id-voice',vs=>vs.slice(0,2).map(v=>['.id-play','.id-vbar','.id-rate'].map(s=>{ const r=v.querySelector(s).getBoundingClientRect(); return [Math.round(r.width),Math.round(r.height)]; })));
   ok(T+'play, wave bar and speed button are all at least 44px tall; speed at least 44 wide',sz.every(r=>r.every(([w,h])=>h>=44)&&r[2][0]>=44&&r[0][0]>=44),sz);
-  ok(T+'the wave has 28-36 bars and touch-action none on the bar only',await pg.$eval(V(0),v=>{ const n=v.querySelectorAll('.id-vbar i').length; return n>=28&&n<=36&&getComputedStyle(v.querySelector('.id-vbar')).touchAction==='none'&&getComputedStyle(v).touchAction!=='none'; }));
-  const w1=await pg.$eval(V(1),v=>v.querySelector('.id-vbar').innerHTML), w1b=await pg.$eval(V(1),v=>v.querySelector('.id-vbar').innerHTML), w2=await pg.$eval(V(2),v=>v.querySelector('.id-vbar').innerHTML);
-  ok(T+'the wave is deterministic per note and differs between notes',w1===w1b&&w1!==w2);
+  ok(T+'the wave has 48 bars and touch-action pan-y on the bar only (it scrolls up/down, drags sideways to seek)',await pg.$eval(V(0),v=>{ const n=v.querySelectorAll('.id-vbar i').length; return n===48&&getComputedStyle(v.querySelector('.id-vbar')).touchAction==='pan-y'&&getComputedStyle(v).touchAction!=='none'; }));
+  ok(T+'the wave is drawn from the audio (bars have a range of heights)',await pg.$eval(V(1),v=>new Set([...v.querySelectorAll('.id-vbar i')].map(i=>i.style.height)).size>1));
   await shot(pg,'vp-'+(dark?'dark':'light')+'-idle');
   /* tap to seek: the note was idle, so it starts there */
   let p=await barPt(pg,0,.5); await pg.touchscreen.tap(p.x,p.y);
@@ -109,8 +108,8 @@ await main(false); await main(true);
 /* Arabic thread: the player stays left-to-right (play, wave, time, speed read left to right) */
 { const ctx=await mk(PH,seeded(true)); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('ar: '+e.message));
   await open(pg); await pg.evaluate(()=>{ document.documentElement.dir='rtl'; }); await pg.waitForSelector(V(2));
-  const o=await pg.$$eval('dialog .id-thread .id-voice',vs=>vs.slice(0,3).map(v=>{ const x=s=>v.querySelector(s).getBoundingClientRect().left; return {dir:getComputedStyle(v).direction,ord:x('.id-play')<x('.id-vbar')&&x('.id-vbar')<x('.id-vt')&&x('.id-vt')<x('.id-rate'),fits:v.getBoundingClientRect().right<=document.documentElement.clientWidth+1}; }));
-  ok('RTL thread: every player is LTR (play, bar, time, speed in that order) and fits the screen',o.length===3&&o.every(x=>x.dir==='ltr'&&x.ord&&x.fits),o);
+  const o=await pg.$$eval('dialog .id-thread .id-voice',vs=>vs.slice(0,3).map(v=>{ const x=s=>v.querySelector(s).getBoundingClientRect().left; return {dir:getComputedStyle(v).direction,ord:x('.id-play')<x('.id-vbar')&&x('.id-vt')<x('.id-skip')&&x('.id-skip')<x('.id-rate'),fits:v.getBoundingClientRect().right<=document.documentElement.clientWidth+1}; }));
+  ok('RTL thread: every player is LTR (play, wave, time, skip, speed in that order) and fits the screen',o.length===3&&o.every(x=>x.dir==='ltr'&&x.ord&&x.fits),o);
   const hs=await pg.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1);
   ok('RTL thread: no horizontal page scroll',hs);
   if(SHOTS) await pg.screenshot({path:SHOTS+'/vp-rtl.png'});

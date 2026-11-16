@@ -269,5 +269,9 @@ a.id-lnk{min-height:44px;margin-block:-6px}
 .id-stgtag{font:500 var(--fs-xs) var(--sans);color:var(--muted)}
 .id-head{margin-bottom:2px}
 .id-content>.id-list,.id-content>.id-cols,.id-content>.id-empty{margin-top:var(--sp-1)}
-.id-row .id-stg .chip[aria-pressed="true"]::after{bottom:0}
+.id-row .id-stg .chip[aria-pressed="true"]::after{bottom:0;left:8px;right:8px}
+.id-row .id-stg .chip{padding:0 8px;gap:2px;font-size:var(--fs-s)}
+.id-row .id-stg .chip i{margin-inline-start:2px}
+.ideas-view .id-search input,.ideas-view .id-search input:focus{outline:0;box-shadow:none;border:0;background:none;border-radius:0}
+.id-search input::-webkit-search-cancel-button,.id-search input::-webkit-search-decoration{display:none;-webkit-appearance:none}
 /* /r6-ideas */

@@ -118,7 +118,7 @@ function make(o){
     let u=urls[path]; if(!u){ try{ const m=await o.thumbs([path]); u=m[path]; if(u) urls[path]=u; }catch(_){} } if(!u) return;
     try{ const buf=await (await fetch(u)).arrayBuffer(); AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const ab=await new Promise((ok,no)=>{ const r=AC.decodeAudioData(buf,ok,no); if(r&&r.then) r.then(ok,no); });
       const d=ab.getChannelData(0), n=d.length, step=Math.max(1,Math.floor(n/NB)), pk=[]; for(let i=0;i<NB;i++){ let m=0; const e=Math.min(n,(i+1)*step); for(let j=i*step;j<e;j+=Math.max(1,step>>6)){ const v=Math.abs(d[j]); if(v>m) m=v; } pk.push(m); }
-      const mx=Math.max.apply(null,pk)||1; if(mx<.002) throw 0; peaks.set(path,pk.map(v=>Math.pow(v/mx,.7))); if(ab.duration>0) decDur.set(path,ab.duration); }
+      const mx=Math.max.apply(null,pk); if(!(mx>=.002)) throw 0; peaks.set(path,pk.map(v=>Math.pow(v/mx,.7))); if(ab.duration>0) decDur.set(path,ab.duration); }
     catch(_){ peaks.set(path,pseudoPeaks(String(path))); }
     applyPeaks(path);
   }
@@ -126,7 +126,7 @@ function make(o){
   async function pump(){ if(decBusy) return; decBusy=true; try{ while(decQ.length){ const p=decQ.shift(); if(!peaks.has(p)) await decodeOne(p); } }finally{ decBusy=false; } }
   const SKIP_B=SVG('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.6" text-anchor="middle" font-size="8.5" font-weight="600" fill="currentColor" stroke="none" font-family="sans-serif">5</text>',22);
   const SKIP_F=SVG('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.6" text-anchor="middle" font-size="8.5" font-weight="600" fill="currentColor" stroke="none" font-family="sans-serif">5</text>',22);
-  const playerHtml=(path,secs,e)=>`<div class="id-voice" dir="ltr" data-path="${esc(path)}" data-secs="${+secs||0}" data-author="${esc((e&&e.author)||'')}" data-at="${esc((e&&e.created_at)||'')}"><button type="button" class="id-play" data-play aria-label="Play voice note">${IC.play}</button><div class="id-vmain"><span class="id-vbar" role="slider" tabindex="0" aria-label="Seek in the voice note" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of ${mmss(secs)}">${waveBars(String(path))}</span><div class="id-vrow"><bdi class="id-vt">${mmss(secs)}</bdi><span class="id-vctl"><button type="button" class="id-skip" data-skip="-5" aria-label="Back 5 seconds">${SKIP_B}</button><button type="button" class="id-rate" data-rate aria-label="Playback speed">${rateTxt(getRate())}</button><button type="button" class="id-skip" data-skip="5" aria-label="Forward 5 seconds">${SKIP_F}</button></span></div></div><span class="id-verr" dir="auto" role="alert">Could not play this voice note</span><button type="button" class="id-retry" data-retry>Retry</button></div>`;
+  const playerHtml=(path,secs,e)=>`<div class="id-voice" dir="ltr"${peaks.has(path)?' data-wave="1"':''} data-path="${esc(path)}" data-secs="${+secs||0}" data-author="${esc((e&&e.author)||'')}" data-at="${esc((e&&e.created_at)||'')}"><button type="button" class="id-play" data-play aria-label="Play voice note">${IC.play}</button><div class="id-vmain"><span class="id-vbar" role="slider" tabindex="0" aria-label="Seek in the voice note" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of ${mmss(secs)}">${waveBars(String(path))}</span><div class="id-vrow"><bdi class="id-vt">${mmss(secs)}</bdi><span class="id-vctl"><button type="button" class="id-skip" data-skip="-5" aria-label="Back 5 seconds">${SKIP_B}</button><button type="button" class="id-rate" data-rate aria-label="Playback speed">${rateTxt(getRate())}</button><button type="button" class="id-skip" data-skip="5" aria-label="Forward 5 seconds">${SKIP_F}</button></span></div></div><span class="id-verr" dir="auto" role="alert">Could not play this voice note</span><button type="button" class="id-retry" data-retry>Retry</button></div>`;
   const durOf=(path,tot)=>aud&&playingPath===path&&isFinite(aud.duration)&&aud.duration>0?aud.duration:(decDur.get(path)||tot||0);
   let raf=0;
   function paintAudio(){
@@ -134,10 +134,10 @@ function make(o){
     document.querySelectorAll('.id-voice').forEach(el=>{ const path=el.dataset.path, on=!!aud&&path===playingPath, tot=+el.dataset.secs||0, playing=on&&!aud.paused, bad=failed.has(path);
       if(!el.dataset.wave&&!bad) wantPeaks(path);
       const dur=durOf(path,tot), cur=on?aud.currentTime:0, p=on&&dur?Math.min(1,cur/dur):0;
-      el.classList.toggle('err',bad); el.classList.toggle('on',on); el.classList.toggle('playing',playing);
+      el.classList.toggle('err',bad); const act=on&&(playing||cur>0); el.classList.toggle('on',act); el.classList.toggle('playing',playing);
       const bars=el.querySelectorAll('.id-vbar i'), k=Math.round(p*bars.length); bars.forEach((b,i)=>{ const f=i<k; if(b.classList.contains('pl')!==f) b.classList.toggle('pl',f); });
-      const sl=el.querySelector('.id-vbar'), txt=on?mmss(cur)+' / '+mmss(dur):mmss(dur||tot);
-      sl.setAttribute('aria-valuenow',String(Math.round(p*100))); sl.setAttribute('aria-valuetext',on?mmss(cur)+' of '+mmss(dur):'0:00 of '+mmss(dur||tot));
+      const sl=el.querySelector('.id-vbar'), txt=act?mmss(cur)+' / '+mmss(dur):mmss(dur||tot);
+      sl.setAttribute('aria-valuenow',String(Math.round(p*100))); sl.setAttribute('aria-valuetext',act?mmss(cur)+' of '+mmss(dur):'0:00 of '+mmss(dur||tot));
       const b=el.querySelector('.id-play'), pl=playing?'1':'0'; if(b.dataset.s!==pl){ b.dataset.s=pl; b.innerHTML=playing?IC.pause:IC.play; b.setAttribute('aria-label',playing?'Pause voice note':'Play voice note'); }
       const rb=el.querySelector('.id-rate'); if(rb.textContent!==rateTxt(rt)){ rb.textContent=rateTxt(rt); }
       const vt=el.querySelector('.id-vt'); if(vt.textContent!==txt) vt.textContent=txt; });
@@ -268,7 +268,8 @@ function make(o){
   function paintRow(){
     const row=root.querySelector('.id-row'); if(!row) return; const stg=row.querySelector('.id-stg'); const show=state==='ok'&&items.length>0; row.hidden=!show;
     if(!stg) return; const all=items.filter(matches), by=k=>all.filter(x=>x.stage===k);
-    stg.hidden=wide(); stg.innerHTML=show&&!wide()?STAGES.map(([k,l])=>`<button type="button" class="chip" data-stage-tab="${k}" aria-pressed="${stage===k}">${l}<i><bdi>${by(k).length}</bdi></i></button>`).join(''):''; }
+    stg.hidden=wide(); stg.innerHTML=show&&!wide()?STAGES.map(([k,l])=>`<button type="button" class="chip" data-stage-tab="${k}" aria-pressed="${stage===k}">${l}${by(k).length?`<i><bdi>${by(k).length}</bdi></i>`:''}</button>`).join(''):'';
+    const on=stg.querySelector('[aria-pressed="true"]'); if(on&&stg.scrollWidth>stg.clientWidth+1){ try{ stg.scrollTo({left:Math.max(0,on.offsetLeft-12),behavior:'instant'}); }catch(_){} } }   /* a zero count is not drawn; on a very narrow phone the row scrolls to the open stage */
   function closeSearch(fromNav){ if(!searchOpen) return; searchOpen=false; q=''; if(!fromNav){ try{ window.Studio&&Studio.nav&&Studio.nav.drop('ideas-search'); }catch(_){} } drawTop(); drawBody(); const b=root.querySelector('[data-search]'); if(b&&!fromNav) try{ b.focus({preventScroll:true}); }catch(_){} }
   function openSearch(){ if(searchOpen) return; searchOpen=true; try{ window.Studio&&Studio.nav&&Studio.nav.push('ideas-search',()=>closeSearch(true)); }catch(_){} drawTop(); drawBody(); const i=root.querySelector('#idQ'); if(i) i.focus(); }
   function drawTop(){
