@@ -1637,8 +1637,11 @@ body.on-plan{padding-bottom:0;overflow:hidden;overscroll-behavior:none}
 .plan-shell .kp-shbar{gap:var(--sp-2)}
 
 /* slim header: a smaller logo row, the greeting as one small muted line */
-/* one strong heading level, 24px between sections */
-/* Today: the hero card */
-/* your tools: a compact list (shorter rows, smaller thumbs; the camera stays inside its row and clear of the artwork) */
 /* 2.23.0: a small count on a tab (Ideas: ideas with something new for me) */
 .st-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-inline-start:6px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--on-accent,#fff);font:600 11px/1 var(--sans);font-style:normal;vertical-align:2px}
+
+/* r6-resume */
+.resume-bar .mini{min-height:44px}
+.cr-main>.resume-bar{position:absolute;z-index:6;top:8px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:var(--sp-2);padding:4px 4px 4px 14px;border-radius:var(--r-pill);width:fit-content;max-width:calc(100% - 24px);box-shadow:var(--shadow)}
+.cr-main>.resume-bar[hidden]{display:none}
+/* /r6-resume */

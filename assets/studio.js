@@ -1084,7 +1084,7 @@ async function tool(cfg){
     nav.insertAdjacentHTML('beforeend',`<span class="ttl" aria-hidden="true">${esc(cfg.title)}</span><div class="top-actions"><button type="button" class="icon-btn snap-btn" id="snapBtn" aria-pressed="false" aria-label="Snap to guides" title="Snap to guides">${ICON.magnet}<span aria-hidden="true">Snap</span></button><button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo" disabled>${ICON.undo}</button><button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo" disabled>${ICON.redo}</button></div>`); }
   let html=`<h1 class="page-title">${esc(cfg.title)}</h1>
   <div class="stage" id="stage">
-    <div class="banner slim-bar queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span class="slim-txt" id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini solid" id="queueGo">Continue</button><button type="button" class="icon-btn" id="queueClear" aria-label="Clear the waiting photos" title="Clear the waiting photos">${ICON.close}</button></span></div><div class="banner slim-bar" id="draftBar" role="region" aria-label="Unfinished story" hidden><span class="slim-txt" id="draftTxt">Unfinished story here</span><span class="banner-btns"><button type="button" class="mini solid" id="draftGo">Continue</button><button type="button" class="icon-btn" id="draftFresh" aria-label="Start fresh" title="Start fresh">${ICON.close}</button></span></div><div class="banner slim-bar last-bar" id="lastBar" role="region" aria-label="Your last layout" hidden><span class="slim-txt" id="lastTxt">Same layout as last time?</span><span class="banner-btns"><button type="button" class="mini solid" id="lastGo">Use it</button><button type="button" class="icon-btn" id="lastNo" aria-label="Not now" title="Not now">${ICON.close}</button></span></div>
+    <div class="banner slim-bar queue-bar" id="queueBar" role="region" aria-label="Photos still waiting" hidden><span class="slim-txt" id="queueTxt">Photos still waiting</span><span class="banner-btns"><button type="button" class="mini solid" id="queueGo">Continue</button><button type="button" class="icon-btn" id="queueClear" aria-label="Clear the waiting photos" title="Clear the waiting photos">${ICON.close}</button></span></div><div class="banner slim-bar resume-bar" id="resumeBar" role="region" aria-label="Unsaved changes" hidden><span class="slim-txt" id="resumeTxt" dir="auto">Your unsaved changes are back</span><span class="banner-btns"><button type="button" class="mini" id="resumeSaved">Saved version</button><button type="button" class="icon-btn" id="resumeX" aria-label="Close" title="Close">${ICON.close}</button></span></div><div class="banner slim-bar" id="draftBar" role="region" aria-label="Unfinished story" hidden><span class="slim-txt" id="draftTxt">Unfinished story here</span><span class="banner-btns"><button type="button" class="mini solid" id="draftGo">Continue</button><button type="button" class="icon-btn" id="draftFresh" aria-label="Start fresh" title="Start fresh">${ICON.close}</button></span></div><div class="banner slim-bar last-bar" id="lastBar" role="region" aria-label="Your last layout" hidden><span class="slim-txt" id="lastTxt">Same layout as last time?</span><span class="banner-btns"><button type="button" class="mini solid" id="lastGo">Use it</button><button type="button" class="icon-btn" id="lastNo" aria-label="Not now" title="Not now">${ICON.close}</button></span></div>
     <div class="phone" id="phone" style="--ar:${W}/${H};--arn:${(W/H).toFixed(4)}"><canvas class="view" id="view" width="${W}" height="${H}" tabindex="0" aria-label="Preview. Drag text or photos to move them; tap text to edit it."></canvas><div class="drop" id="drop" hidden>Drop the photo here</div><div class="ready-pop" id="readyBar" role="status" hidden><span class="rp-ic" aria-hidden="true">${ICON.check}</span><span class="rp-txt"><b id="readyTxt">Your photo is in</b><span id="readySub">Tap Save when it looks good</span></span><button type="button" class="rp-skip" id="readySkip" hidden>Skip</button></div></div>
     <button type="button" class="cta-photo" id="ctaPhoto" hidden>${ICON.plus}<span>Add your photo</span></button>
     <div class="pager" id="pager" hidden></div>
@@ -1615,14 +1615,17 @@ async function tool(cfg){
 
   /* ---- drafts: every unfinished story is kept on this phone (photos included), as a list per tool ----
      This page writes to one draft (draftId). It gets an id on the first change, so "Start fresh" never touches older drafts. */
-  const DBASE=draftBase(B.id,cfg.id); let draftDropped=false, draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
+  const DBASE=draftBase(B.id,cfg.id); let linkMeta=null, designAt=null, draftDropped=false, draftId=null, draftPfx=null, draftTimer=0, draftNext=null, draftSeq=0, dirty=false, capWarned=false;   // draftNext: the snapshot waiting to be written
   const DKEY=()=>DBASE+':'+draftId;
   const RENDER=new URLSearchParams(location.search).get('render')==='1';   // a hidden frame taking pictures (assets/render.js): it never writes a draft
   function saveDraft(s){
-    if(!hist.ready||RENDER||draftDropped) return; if(design) return;   // a saved design never goes to Continue editing (draftDropped: Discard it, while leaving)
-    if(hist.i>0) dirty=true; if(!dirty) return;
-    if(!draftId){ const n=listDrafts(B.id,cfg.id).length; draftId=Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
-      $('draftBar').hidden=true; history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft
+    if(!hist.ready||RENDER||draftDropped) return;   // draftDropped: Discard it, while leaving
+    /* r6-resume: an opened saved design / template keeps a draft too (id 'd-<design id>', so it is always the same one and stays linked to the design).
+       Edited back to exactly the saved version: nothing to keep, the draft goes. */
+    if(design&&baseJson!==null&&curJson()===baseJson){ if(draftId) clearDraft(); return; }
+    if(hist.i>0){ dirty=true; $('resumeBar').hidden=true; } if(!dirty) return;
+    if(!draftId){ const n=design?0:listDrafts(B.id,cfg.id).length; draftId=design?'d-'+design.id:Date.now().toString(36)+Math.random().toString(36).slice(2,5); draftPfx=DKEY();
+      $('draftBar').hidden=true; if(!design) history.replaceState(null,'',location.pathname+'?draft='+draftId);   // a reload continues this same draft (a design's own link already does)
       if(n>=DRAFT_CAP&&!capWarned){ capWarned=true; toast('You have '+(n+1)+' unfinished '+cfg.title+' stories on this '+devWord()+'. Remove old ones in Continue editing.',6000); } }
     draftNext=s; clearTimeout(draftTimer); draftTimer=setTimeout(()=>writeDraft(false),800);
   }
@@ -1630,14 +1633,15 @@ async function tool(cfg){
      record goes first, at once, so a story left within the 800 ms is still in Continue editing; its photos follow. */
   async function writeDraft(now){
     const s=draftNext, seq=++draftSeq; draftNext=null; clearTimeout(draftTimer); draftTimer=0;
-    if(!s||design||!draftId) return;   // saved to the team meanwhile
-    const key=DKEY(), pfx=draftPfx||key, ph=S.photos.slice(), keys=ph.map(p=>p.img&&!p.sample&&p.key?p.key:null);
+    if(!s||!draftId) return;   // saved to the team meanwhile (clearDraft)
+    const key=DKEY(), pfx=draftPfx||key, ph=S.photos.slice(), keys=ph.map(p=>p.img&&!p.sample&&p.key?p.key:null), paths=ph.map(p=>p.path||null);
+    const link=design?{id:design.id,name:design.name,kind:design.kind,collections:design.collections||[],at:designAt}:linkMeta;   // r6-resume
     const record=()=>{ const old=store(key), thumb=draftThumb(); if(thumb) idb.put(key+':thumb',thumb);
-      if(store(key,{json:s.json,keys,at:Date.now(),pfx})===null){ toast('This '+devWord()+' is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+      if(store(key,{json:s.json,keys,at:Date.now(),pfx,...(link?{link,paths}:{})})===null){ toast('This '+devWord()+' is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
       if(old&&old.keys) old.keys.forEach(k=>{ if(k&&!keys.includes(k)) idb.del(pfx+':'+k); }); };
     if(now) record();
     for(const p of ph){ if(p.img&&!p.sample&&p.key&&p.draftSaved!==pfx){ const blob=await photoBlob(p); if(blob){ await idb.put(pfx+':'+p.key,blob); p.draftSaved=pfx; } } }
-    if(!now&&seq===draftSeq&&!design&&draftId&&key===DKEY()) record();   // a newer write started meanwhile: it has the newer story
+    if(!now&&seq===draftSeq&&draftId&&key===DKEY()) record();   // a newer write started meanwhile: it has the newer story
   }
   /* leaving the page (or the phone hiding it) with an edit not written yet: write it now, not lost to the 800 ms wait */
   function draftNow(){ flush(); if(draftNext) writeDraft(true); }
@@ -1647,10 +1651,10 @@ async function tool(cfg){
   function clearDraft(){ clearTimeout(draftTimer); draftNext=null; if(draftId) removeDraft(DKEY()); draftId=null; draftPfx=null; dirty=false; }
   async function loadDraft(x){
     const d=x.d, pfx=d.pfx||x.key, slots=[];
-    for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(pfx+':'+k); if(blob){ slots[i]=await photoFromBlob(blob,k,true); slots[i].draftSaved=pfx; } }
+    for(let i=0;i<(d.keys||[]).length;i++){ const k=d.keys[i]; if(!k) continue; const blob=await idb.get(pfx+':'+k); if(blob){ slots[i]=await photoFromBlob(blob,k,true); slots[i].draftSaved=pfx; if(design&&d.paths&&d.paths[i]){ slots[i].path=d.paths[i]; slots[i].changed=false; } } }   // r6-resume: a photo that is already in the team keeps its file
     const r=JSON.parse(d.json); await fontsOf(r); applyRecipe(r,slots);
-    draftId=x.id; draftPfx=pfx; dirty=true;
-    if(new URLSearchParams(location.search).get('draft')!==x.id) history.replaceState(null,'',location.pathname+'?draft='+x.id);
+    draftId=x.id; draftPfx=pfx; dirty=true; if(!design) linkMeta=d.link||null;
+    if(!design&&!d.link&&new URLSearchParams(location.search).get('draft')!==x.id) history.replaceState(null,'',location.pathname+'?draft='+x.id);
   }
   async function photoFromBlob(blob,key,draftSaved){
     const img=await loadFile(blob); const tc=document.createElement('canvas'), tk=240/Math.max(img.width,img.height); tc.width=Math.round(img.width*tk); tc.height=Math.round(img.height*tk); tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
@@ -1720,7 +1724,7 @@ async function tool(cfg){
     let colMiss=lacks();
     if(colMiss.length){ try{ await C.setDesignCollections(B.id,id,cols); fresh=await C.getDesign(id); colMiss=lacks(); }catch(_){} }
     design={id,name,kind:kindOut,collections:colMiss.length?(fresh.collectionNames||[]):cols}; altMode=null; designLost=false; store(LAST_COLS,cols); teamCols=null;   // r3-save: the list is asked again (a new collection is now real)
-    showDesignBar(); clearDraft(); markSaved();
+    designAt=fresh.updated_at||null; showDesignBar(); clearDraft(); markSaved();
     await capSave(C,id,asNew);   // captions (mega)
     history.replaceState(null,'',location.pathname+'?design='+id);
     if(colMiss.length){ const e=new Error('Saved to the team, but not added to '+colMiss.map(n=>'“'+n+'”').join(', ')+'. Check the connection and tap Save again.'); e.partial=true; throw e; }
@@ -1904,11 +1908,12 @@ async function tool(cfg){
   const designDirty=()=>!!design&&baseJson!==null&&curJson()!==baseJson;
   function leavePrompt(href){
     if(!design) return leaveDraftPrompt(href);
-    const d=dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
+    const d=dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was. Your changes can stay on this ${devWord()} too.</p>
       <div class="status" id="lvSt" role="status"></div>
-      <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
+      <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvLeave">Leave, keep my changes here</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
     d.querySelector('#lvKeep').onclick=()=>d.close();
-    d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
+    d.querySelector('#lvLeave').onclick=()=>{ draftNow(); leaving=true; location.href=href; };   /* r6-resume: the edits stay in Continue editing and come back when this design is opened */
+    d.querySelector('#lvDis').onclick=()=>{ draftDropped=true; clearDraft(); baseJson=curJson(); leaving=true; location.href=href; };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
       try{ await teamSave({name:design.name,keepCols:true}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
     return d;
@@ -1932,6 +1937,12 @@ async function tool(cfg){
     teamQ.then(()=>{ waitingLeave=false; if(designDirty()){ leavePrompt(href); return; } leaving=true; location.href=href; }); },true);
   document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(a.href); } }));
   addEventListener('beforeunload',e=>{ if(teamBusy||(!leaving&&designDirty())){ e.preventDefault(); e.returnValue=''; } });
+  /* r6-resume: this saved design (or template) has a draft on this device: its edits are put back at once, with one slim offer to go back to the saved version */
+  async function resumeDesign(d){
+    const x=listDrafts(B.id,cfg.id).find(y=>y.d.link&&y.d.link.id===d.id); if(!x) return;
+    try{ await loadDraft(x); }catch(_){ return; }
+    const newer=!!(d.updated_at&&x.d.link.at&&String(d.updated_at)!==String(x.d.link.at));
+    $('resumeTxt').textContent=newer?'Your unsaved changes are back (the saved version was updated since)':'Your unsaved changes are back'; $('resumeBar').hidden=false; designChanged(); }
   async function openDesign(id,ready){
     status('Opening the saved design…');
     if(!(await ensureMember('This design is saved with the team. Sign in to open it.'))){ status(''); return false; }
@@ -1940,7 +1951,8 @@ async function tool(cfg){
     const slots=[];
     if(d.kind!=='template') await Promise.all((r.photoPaths||[]).map(async(p,i)=>{ if(!p) return; try{ const ph=await photoFromBlob(await C.download(p)); ph.path=p; ph.changed=false; slots[i]=ph; }catch(_){ } }));
     await fontsOf(r); applyRecipe(r,slots);
-    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; if(!isTpl()) $('teamOn').checked=true; pickDefaultCols(); showDesignBar();   /* r3-save: an opened design starts on Phone + Team */ status(''); markSaved(); capLoad(d);   // captions (mega)
+    design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames}; designAt=d.updated_at||null; if(!isTpl()) $('teamOn').checked=true; pickDefaultCols(); showDesignBar();   /* r3-save: an opened design starts on Phone + Team */ status(''); markSaved(); capLoad(d);   // captions (mega)
+    if(!ready&&!RENDER_FRAME&&new URLSearchParams(location.search).get('saved')!=='1') await resumeDesign(d);   // r6-resume: unsaved edits from this device come back
     if(d.kind!=='template'&&!RENDER_FRAME) healCover(C,d,thumbBlob);   // a blank cover is redrawn quietly (saved-versions, mega)
     if(ready&&d.kind!=='template'){
       const dl=dialog(`<div class="dlg-body"><h3>${esc(d.name)}</h3><p class="small">Ready to save, exactly as it was.</p>
@@ -2065,6 +2077,8 @@ async function tool(cfg){
     applyRecipe(r); await fontsOf(r); syncUI(); syncInspector(); paintPager(); remember(); render(); status('Your last layout is in. Undo to go back.',3500); }
   $('lastGo').addEventListener('click',()=>{ useLast(); });
   $('lastNo').addEventListener('click',()=>{ $('lastBar').hidden=true; });
+  $('resumeX').addEventListener('click',()=>{ $('resumeBar').hidden=true; });
+  $('resumeSaved').addEventListener('click',()=>{ if(!design) return; draftNow(); leaving=true; location.replace(location.pathname+'?design='+encodeURIComponent(design.id)+'&saved=1'); });   // r6-resume: the draft stays in Continue editing until the person removes it
   $('draftFresh').addEventListener('click',()=>{ $('draftBar').hidden=true; status('Your other story is kept on Home.',3000); });
   /* Continue opens the story the banner counted, not a newer blank one (1.48.0) */
   $('draftGo').addEventListener('click',async()=>{ $('draftBar').hidden=true; $('lastBar').hidden=true; const x=listDrafts(B.id,cfg.id).find(realDraft); if(x){ await loadDraft(x); syncUI(); syncInspector(); paintPager(); draw(vctx,true); startHistory(); } });
@@ -2702,7 +2716,12 @@ async function tool(cfg){
   /* a draft with something in it: a photo, or words/look that differ from the tool as it opens (an edit undone and left is not one) */
   function realDraft(x){ return (x.d.keys||[]).some(Boolean)||x.d.json!==JSON.stringify(recipe()); }
   try{
-    if(q.get('design')){ const op=openDesign(q.get('design'),q.get('go')==='1'); designOpen=op.then(ok=>{ if(!ok&&!design) designLost=true; },()=>{ designLost=true; }); await op; }
+    /* r6-resume: a draft that belongs to a saved design opens through the design (so it stays linked and Save says Update) */
+    const wantX=want&&!RENDER?(want==='1'?drafts[0]:drafts.find(d=>d.id===want)):null, dsgId=q.get('design')||(wantX&&wantX.d.link&&wantX.d.link.id)||null;
+    if(dsgId){ const op=openDesign(dsgId,q.get('go')==='1'&&!!q.get('design')); designOpen=op.then(ok=>{ if(!ok&&!design) designLost=true; },()=>{ designLost=true; }); const ok=await op;
+      if(q.get('saved')==='1') history.replaceState(null,'',location.pathname+'?design='+encodeURIComponent(dsgId));
+      const fb=!ok&&!design&&!RENDER&&listDrafts(B.id,cfg.id).find(y=>y.d.link&&y.d.link.id===dsgId);
+      if(fb){ await loadDraft(fb); status('Your unsaved changes are back. The saved design could not be opened: reload to try again before saving.',6000); } }   // offline or deleted: the edits are still here
     else if(q.get('preset')){ if(!applyPreset(q.get('preset'))) status('That template is not in this brand kit any more.'); history.replaceState(null,'',location.pathname+(q.get('quick')==='1'?'?quick=1':'')); }
     else if(want){ const x=want==='1'?drafts[0]:drafts.find(d=>d.id===want); if(x) await loadDraft(x); else { history.replaceState(null,'',location.pathname); if(want!=='1') status('That unfinished story is no longer on this '+devWord()+'.'); } }
     else if(q.get('quick')!=='1'){ const real=drafts.filter(realDraft);
@@ -3225,7 +3244,10 @@ async function home(){
   function paintJump(){}   /* 2.4.0: the preview's Jump back in row was not kept */
   const thumbs={}, tk=x=>x.key+'@'+(x.d.at||0);   // a preview per edit: a story edited since shows its new picture
   /* a Video editor draft has its own name (default "Video"); the other tools show the tool's name */
-  const draftTitle=x=>x.tool==='video'&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
+  /* r6-resume: a draft of a saved design / template is titled with its name and opens through the design; a Create draft shows the name it was given */
+  const draftTitle=x=>x.d.link&&x.d.link.name?String(x.d.link.name):(x.tool==='video'||x.tool==='create')&&x.d.name?String(x.d.name):TOOLS[x.tool].title;
+  const draftHref=x=>x.d.link&&x.d.link.id?toolPage(x.tool)+'?design='+encodeURIComponent(x.d.link.id):toolPage(x.tool)+'?draft='+encodeURIComponent(x.id);
+  const draftSub=x=>(x.d.link?'Unsaved changes · ':'')+'<bdi>'+ago(x.d.at)+'</bdi>';
   function paintCont(){
     const list=cont.filter(x=>!x.gone);
     $('continueSec').hidden=!list.length;
@@ -3233,7 +3255,7 @@ async function home(){
     const many=Object.entries(per).filter(([,n])=>n>=DRAFT_CAP).map(([t,n])=>n+' '+TOOLS[t].title);
     const note=$('contNote')||(()=>{ const p=document.createElement('p'); p.id='contNote'; p.className='small cont-note'; $('continueList').before(p); return p; })();
     note.hidden=!many.length; note.textContent=many.length?'Lots of unfinished stories ('+many.join(', ')+'). The oldest are at the end: remove the ones you don’t need with ✕.':'';
-    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${toolPage(x.tool)}?draft=${encodeURIComponent(x.id)}" class="rlink"><span class="cthumb">${thumbs[tk(x)]?`<img alt="" src="${thumbs[tk(x)]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${ago(x.d.at)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
+    $('continueList').innerHTML=list.map(x=>`<div class="ccard" data-draft="${esc(x.key)}"><a href="${draftHref(x)}" class="rlink"><span class="cthumb">${thumbs[tk(x)]?`<img alt="" src="${thumbs[tk(x)]}">`:''}</span><span class="rtxt"><b dir="auto">${esc(draftTitle(x))}</b><span dir="auto">${draftSub(x)}</span></span></a><button type="button" class="rx" data-rm="${esc(x.key)}" aria-label="Remove this ${esc(TOOLS[x.tool].title)} story from Continue editing">✕</button></div>`).join('');
     list.forEach(x=>{ const t=tk(x); if(thumbs[t]!==undefined) return; thumbs[t]=null; draftThumbUrl(x).then(u=>{ if(!u) return; thumbs[t]=u; const c=document.querySelector(`.ccard[data-draft="${CSS.escape(x.key)}"] .cthumb`); if(c&&!c.firstChild) c.innerHTML=`<img alt="" src="${u}">`; paintJump(); }); });
     paintJump();
   }
@@ -3357,7 +3379,7 @@ async function home(){
   function searchEntries(){
     const pins=getPins(), out=[];
     Object.entries(TOOLS).forEach(([id,t])=>out.push({kind:'tool',id:'tool:'+id,title:t.title,sub:t.blurb,keys:[TOOL_GROUPS[t.group],t.quick,t.keys].filter(Boolean).join(' '),thumb:toolThumb(id),href:toolPage(id),pinned:pins.includes(id),togglePin:()=>togglePin(id,true)}));
-    cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:draftTitle(x),sub:'Unfinished · '+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:toolPage(x.tool)+'?draft='+encodeURIComponent(x.id)}));
+    cont.filter(x=>!x.gone).forEach(x=>out.push({kind:'draft',id:'draft:'+x.key,title:draftTitle(x),sub:(x.d.link?'Unsaved changes · ':'Unfinished · ')+ago(x.d.at),keys:'continue unfinished draft editing',thumb:thumbs[x.key]||null,icon:ICON.text,href:draftHref(x)}));
     if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>out.push({kind:'template',id:'tpl:'+d.id,title:d.label,sub:'Template · '+(tplSize[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':''),keys:['template create',d.size||'story',d.cat,d.keys].concat(Object.values(d.words||{})).filter(Boolean).join(' '),thumb:tplThumb(d.id),shape:d.layout==='highlight'?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',icon:ICON.template,href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),opened:()=>tplUsed('t:'+d.id)}));
     if(TOOLS.video) reelIds().forEach(id=>{ const m=reelMeta[id]; if(m===null) return; const d=reelDur(m);   // (m is undefined until Templates has been opened: the name then comes from the folder name)
       out.push({kind:'template',id:'reel:'+id,title:m?m.title:reelHuman(id),sub:'Template · Video'+(d?' · '+d+' s':''),keys:'reel reels video template '+id.replace(/[-_]+/g,' '),thumb:tplThumb('reel-'+id),shape:'story',icon:ICON.template,href:toolPage('video')+'?reel='+encodeURIComponent(id),opened:()=>tplUsed('r:'+id)}); });
@@ -3398,7 +3420,7 @@ async function home(){
     return a; }
   function searchShortcuts(){ const pins=getPins(), q=quickTools(), first=q.find(([id])=>pins.includes(id))||q[0], s=[];
     if(first) s.push({kind:'tool',id:'sc:quick',title:first[1].title+' from a photo',sub:first[1].quick,icon:ICON.camera,quick:{tool:first[0],multi:!!(first[1].multi||first[1].queue)}});
-    const last=cont.filter(x=>!x.gone)[0]; if(last) s.push({kind:'draft',id:'sc:cont',title:'Continue '+TOOLS[last.tool].title,sub:ago(last.d.at),icon:ICON.text,href:toolPage(last.tool)+'?draft='+encodeURIComponent(last.id)});
+    const last=cont.filter(x=>!x.gone)[0]; if(last) s.push({kind:'draft',id:'sc:cont',title:'Continue '+(last.d.link&&last.d.link.name?last.d.link.name:TOOLS[last.tool].title),sub:ago(last.d.at),icon:ICON.text,href:draftHref(last)});
     s.push({kind:'action',id:'sc:all',title:'All tools',icon:ICON.grid,run:openLibrary});
     s.push({kind:'action',id:'sc:tpl',title:'Templates',icon:ICON.template,run:()=>openView('templates')});
     s.push({kind:'action',id:'sc:saved',title:'Saved designs',icon:ICON.bookmark,run:goSaved});

@@ -7,7 +7,7 @@ const BD=window.BD, L=Studio.lab, U=BD.util, S=BD.S, CR=window.CR, esc=L.esc, $=
 const {kind,isFrame,frames,items,fsize}=U;
 const TOOL='create', TITLE='Create';
 let B=null;
-const st={ready:false,dirty:false,design:null,base:null,draftKey:null,blobs:new Map(),paths:new Map(),thumbT:0,capWarned:false,pickTarget:null,replaceTarget:null,leaving:false,saving:false};
+const st={ready:false,dirty:false,design:null,designAt:null,base:null,draftKey:null,blobs:new Map(),paths:new Map(),thumbT:0,capWarned:false,pickTarget:null,replaceTarget:null,leaving:false,saving:false};
 const isPhone=()=>innerWidth<900;
 /* a hidden frame taking pictures for Continue editing / Saved (assets/render.js, ?render=1): it opens the draft or design and
    never writes anything back, so the unfinished design stays exactly as it was */
@@ -511,18 +511,22 @@ function addBlank(size){ afterBuild(makePages(size)); }
 
 /* ---------- drafts: kept on this phone, listed in Continue editing ---------- */
 const DKEY=()=>L.draftBase(B.id,TOOL)+':'+S.id;
-function touch(){ if(!st.ready||st.design||RENDER) return; st.dirty=true; st.imgSaved=false; setTimeout(guardSync,0);
-  if(!S.id){ const n=L.listDrafts(B.id,TOOL).length; S.id=U.uid(); history.replaceState(null,'',location.pathname+'?draft='+S.id);
+function touch(){ if(!st.ready||RENDER) return; st.dirty=true; st.imgSaved=false; setTimeout(guardSync,0);
+  /* r6-resume: an opened saved design / template keeps a draft too: id 'd-<design id>' (always the same one, linked to the design); its own ?design= link stays */
+  if(!S.id){ const n=st.design?0:L.listDrafts(B.id,TOOL).length; S.id=st.design?'d-'+st.design.id:U.uid(); if(!st.design) history.replaceState(null,'',location.pathname+'?draft='+S.id);
     if(n>=L.DRAFT_CAP&&!st.capWarned){ st.capWarned=true; toast('You have '+(n+1)+' unfinished designs on this '+L.devWord()+'. Remove old ones in Continue editing.',6000); } }
   BD.scheduleSave(); }
-BD.onSaved=d=>{ if(st.design||!S.id||!st.dirty) return; const key=DKEY(); st.draftKey=key;
-  if(L.store(key,{board:S.id,at:Date.now(),imgs:d.imgs||[],name:S.name,pages:frames().length})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
+BD.onSaved=d=>{ if(!S.id||!st.dirty) return; const key=DKEY(); st.draftKey=key;
+  if(st.design&&!designDirty()){ L.removeDraft(key); st.draftKey=null; S.id=null; st.dirty=false; return; }   // r6-resume: edited back to the saved version: nothing to keep
+  const link=st.design?{id:st.design.id,name:st.design.name,kind:st.design.kind,collections:st.design.collections||[],at:st.designAt}:st.linkMeta;
+  if(L.store(key,{board:S.id,at:Date.now(),imgs:d.imgs||[],name:S.name,pages:frames().length,...(link?{link}:{})})===null){ toast('This phone is out of room for drafts. Remove old ones in Continue editing.',6000); return; }
   clearTimeout(st.thumbT); st.thumbT=setTimeout(draftThumb,1200); };
-function draftThumb(){ const f=frames()[0]; if(!f||!st.draftKey||st.design) return; try{ const s=fsize(f), c=BD.renderFrame(f,Math.min(1,400/s.h)); L.idb.put(st.draftKey+':thumb',c.toDataURL('image/jpeg',.72)); c.width=c.height=0; }catch(_){} }
+function draftThumb(){ const f=frames()[0]; if(!f||!st.draftKey) return; try{ const s=fsize(f), c=BD.renderFrame(f,Math.min(1,400/s.h)); L.idb.put(st.draftKey+':thumb',c.toDataURL('image/jpeg',.72)); c.width=c.height=0; }catch(_){} }
 function syncUndo(){ $('crUndo').disabled=!BD.canUndo(); $('crRedo').disabled=!BD.canRedo(); }
 $('crUndo').onclick=()=>BD.undo(); $('crRedo').onclick=()=>BD.redo();
 BD.on('history',syncUndo);
-BD.on('changed',()=>{ syncUndo(); if(!st.ready) return; const n=S.sel[0]; if(n&&CR.relayoutAround(n)) after(); if(st.design){ syncSaved(); return; } touch(); });
+BD.on('changed',()=>{ syncUndo(); if(!st.ready) return; const n=S.sel[0]; if(n&&CR.relayoutAround(n)) after(); $('resumeBar').hidden=true; if(st.design) syncSaved(); touch(); });
+BD.on('page',()=>{ if(st.ready&&S.id&&st.dirty) BD.scheduleSave(); });   // r6-resume: the page you are on is kept too
 
 /* ---------- photos as files (for the team) ---------- */
 async function blobOf(id){ let b=st.blobs.get(id); if(!b){ try{ b=await L.idb.get('bimg:'+id); }catch(_){} }
@@ -570,7 +574,7 @@ async function teamSave1(o){ o=o||{};
   const fresh=await C.getDesign(id); (fresh.recipe.photoPaths||[]).forEach((p,i)=>{ if(p&&imgs[i]) st.paths.set(imgs[i],p); });
   for(const im of imgs){ if(!st.blobs.has(im)){ const b=await blobOf(im); if(b) st.blobs.set(im,b); } }
   { const dk=st.draftKey||(S.id?DKEY():null); if(dk) L.removeDraft(dk); st.draftKey=null; } S.id=null; st.dirty=false;   // the draft is gone even if it was never written yet (no copy left in Continue editing)
-  st.design={id,name,kind:kindOut,collections:cols}; altMode=null; markSaved(); history.replaceState(null,'',location.pathname+'?design='+id); syncSaved();
+  st.design={id,name,kind:kindOut,collections:cols}; st.designAt=fresh.updated_at||null; altMode=null; markSaved(); history.replaceState(null,'',location.pathname+'?design='+id); syncSaved();
   return {id,name,kind:kindOut}; }
 const curJson=()=>{ const d=JSON.parse(BD.docJson()); delete d.name; return JSON.stringify(d); };
 function markSaved(){ st.base=curJson(); }
@@ -594,14 +598,25 @@ function leaveDraftPrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3>Lea
 function syncSaved(){ guardSync(); $('crSaved').textContent=st.design?(designDirty()?'Not saved to the team':(st.design.kind==='template'?'Team template':'Saved to the team')):''; }
 function leavePrompt(href){ if(!st.design) return leaveDraftPrompt(href); const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(st.design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
     <div class="status" id="lvSt" role="status"></div>
-    <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(st.design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
+    <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(st.design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvLeave">Leave, keep my changes here</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.querySelector('#lvKeep').onclick=()=>d.close();
-  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
+  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} location.href=href; };   // r6-resume
+  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); location.href=href; };   // r6-resume: Discard drops the draft too
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
     try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };  return d; }
 document.querySelector('.cr-back').addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
-addEventListener('pagehide',()=>{ if(S.id&&!st.design) BD.saveNow(); });
+addEventListener('pagehide',()=>{ if(S.id) BD.saveNow(); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&S.id&&st.dirty) BD.saveNow(); });   // r6-resume: iOS often skips pagehide
+/* r6-resume: this saved design (or template) has a draft on this device: its edits are put back at once, with one slim offer to go back to the saved version */
+function draftOf(id){ return L.listDrafts(B.id,TOOL).find(x=>x.d.link&&x.d.link.id===id&&x.d.board); }
+async function resumeDesign(id){ const x=draftOf(id); if(!x||!(await BD.openStored(x.d.board))) return;
+  st.dirty=true; st.draftKey=x.key; const newer=!!(st.designAt&&x.d.link.at&&String(st.designAt)!==String(x.d.link.at));
+  $('resumeTxt').textContent=newer?'Your unsaved changes are back (the saved version was updated since)':'Your unsaved changes are back'; $('resumeBar').hidden=false; }
+async function resumeUnlinked(id){ const x=draftOf(id); if(!x||!(await BD.openStored(x.d.board))) return;   // the saved design did not open (offline, deleted): the edits are still here
+  st.dirty=true; st.draftKey=x.key; st.linkMeta=x.d.link; toast('Your unsaved changes are back. The saved design could not be opened.',5000); }
+$('resumeX').onclick=()=>{ $('resumeBar').hidden=true; };
+$('resumeSaved').onclick=async()=>{ if(!st.design) return; st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} location.replace(location.pathname+'?design='+encodeURIComponent(st.design.id)+'&saved=1'); };   // the draft stays in Continue editing until the person removes it
 async function openDesign(id,ready){
   if(!(await L.ensureMember('This design is saved with the team. Sign in to open it.'))) return false;
   BD.busy('Opening the saved design…');
@@ -610,7 +625,7 @@ async function openDesign(id,ready){
     if(d.kind!=='template') await Promise.all(imgs.map(async(img,i)=>{ const p=paths[i]; if(!p) return; try{ const blob=await C.download(p); const el=await L.loadFile(blob); BD.IMGS.set(img,{el,w:el.width,h:el.height}); st.blobs.set(img,blob); st.paths.set(img,p); }catch(_){} }));
     clearAll(); await addDocNodes(r.doc||{nodes:[]}); S.id=null; S.name=d.name; S.imgs=new Set(imgs);
     BD.showPage(frames()[0]); BD.resetHistory();
-    st.design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames||[]}; markSaved();
+    st.design={id:d.id,name:d.name,kind:d.kind,collections:d.collectionNames||[]}; st.designAt=d.updated_at||null; markSaved();
     if(d.kind!=='template'&&!RENDER) setTimeout(()=>L.healCover&&L.healCover(C,d,thumbBlob),600);   // a blank cover is redrawn quietly (saved-versions, mega)
     if(ready&&d.kind!=='template'){ C.touchUsed&&C.touchUsed(id); st.openSaveAfter=true; }
     return true; }
@@ -804,8 +819,13 @@ async function openMotion(){ if(!motionOn()) return; const f=BD.activeFrame(); i
   const q=new URLSearchParams(location.search), draft=q.get('draft'), design=q.get('design'), tpl=q.get('tpl'), team=q.get('team'), size=q.get('size');
   let startWith=null;
   if(RENDER){ await startRender(draft,design); return; }
-  if(draft){ const x=L.listDrafts(B.id,TOOL).find(d=>d.id===draft); if(x&&x.d.board&&await BD.openStored(x.d.board)){ st.dirty=true; st.draftKey=x.key; } else toast('That unfinished design is no longer on this '+L.devWord()+'.'); }
-  if(!S.id&&design){ const r=await openDesign(design,q.get('go')==='1'); if(r==='away') return; }
+  /* r6-resume: a draft that belongs to a saved design opens through the design, so it stays linked and Save says Update */
+  const dx=draft&&L.listDrafts(B.id,TOOL).find(d=>d.id===draft), dsg=design||(dx&&dx.d.link&&dx.d.link.id)||null;
+  if(draft&&!(dsg&&!design)){ if(dx&&dx.d.board&&await BD.openStored(dx.d.board)){ st.dirty=true; st.draftKey=dx.key; } else toast('That unfinished design is no longer on this '+L.devWord()+'.'); }
+  if(!S.id&&dsg){ const r=await openDesign(dsg,q.get('go')==='1'&&!!design); if(r==='away') return;
+    if(q.get('saved')==='1') history.replaceState(null,'',location.pathname+'?design='+encodeURIComponent(dsg));
+    else if(r===true&&!(q.get('go')==='1')) await resumeDesign(dsg);
+    else if(!r) await resumeUnlinked(dsg); }
   if(!S.id&&!st.design){ history.replaceState(null,'',location.pathname); const f=BD.makeFrame(0,0,1080,1920,{label:'Story',fill:'#FFFFFF'}); BD.showPage(f); BD.resetHistory();
     if(tpl&&CR.templates().some(d=>d.id===tpl)) startWith=()=>applyTemplate(tpl,'replace');
     else if(team) startWith=()=>applyTeam(team,'replace');
@@ -817,7 +837,7 @@ async function openMotion(){ if(!motionOn()) return; const f=BD.activeFrame(); i
   if(startWith) await startWith();
   else if(tpl&&CR.templates().some(d=>d.id===tpl)) await openTemplates({focus:tpl});   // opened on a draft/design: show the picker on the asked-for template
   if(st.openSaveAfter) openSave();
-  window.CRUI={openMotion,openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
+  window.CRUI={teamSave,openMotion,openSheet,closeSheet,openWords,openColor,openFont,openSize,openArrange,openLayers,openAdd,openPage,openSave,openTemplates,paintCtx,st};
 })();
 /* remove background (cutout mega 3.5): behind the `cutout` preview flag. A new image layer above the photo holds the cut-out
    (same place, size and turn); the photo is hidden, not deleted, so Undo or the eye in Layers brings it back. */
