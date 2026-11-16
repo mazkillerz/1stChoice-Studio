@@ -3,15 +3,14 @@
   /* What's new page. Reads studio-notes/changelog.md (format: see the intro of that file).
      ONE level: the newest version is a hero card, fully open (every change with its note and screenshots). Every older version is one row
      (version, date, one-line summary, count chips); one tap opens everything inside (built on first open, then kept). No nested expanders.
-     A jump bar (latest versions + "All versions" sheet grouped by major) goes straight to any version; #v-<version> links do the same.
+     #v-<version> links open and scroll to any version.
      Filter chips (All / New / Improved / Fixed) hide the changes that do not match. Nothing is stored except the "seen" mark. */
   var list=document.getElementById('wnList'),foot=document.getElementById('wnFoot'),
       dlg=document.getElementById('wnDlg'),big=document.getElementById('wnBig'),
       closeBtn=document.getElementById('wnClose'),
       filtersBox=document.getElementById('wnFilters'),chips=document.getElementById('wnChips'),
       status=document.getElementById('wnStatus');
-  var jumpBox=document.getElementById('wnJump');
-  var RECENT=3;                        /* version chips in the jump bar, next to "All versions" */
+  var emptyBox=document.getElementById('wnEmpty');
   var svg=function(d){return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';};
   /* New: sparkle. Improved: trending arrow. Fixed: wrench. (Lucide-style strokes) */
   var TYPES=[
@@ -242,7 +241,6 @@
       list.appendChild(wrap);
     }
     buildChips();
-    buildJump(vers);
     apply();
     sizeBar();
     foot.textContent='Studio '+latest.version;foot.hidden=false;
@@ -250,8 +248,9 @@
     openHash();
   }
 
-  /* ---------- jump to a version ---------- */
-  /* the sticky filter bar's height, so a jump lands just under it */
+  /* ---------- deep links ---------- */
+  /* r6-whatsnew: the Jump to bar and the All versions sheet are gone; the rows are the list, and #v-<version> links still work */
+  /* the sticky filter bar's height, so a link lands just under it */
   function sizeBar(){document.documentElement.style.setProperty('--wnf',filtersBox.offsetHeight+'px');}
   addEventListener('resize',sizeBar);
   function goTo(id){
@@ -266,52 +265,6 @@
     goTo(id);
   }
   addEventListener('hashchange',openHash);
-
-  var sheet=null;
-  function buildJump(vers){
-    jumpBox.textContent='';
-    jumpBox.appendChild(el('span','wn-jlab','Jump to'));
-    var row=el('div','wn-jrow');
-    vers.slice(0,RECENT).forEach(function(v,i){
-      var b=el('button','wn-jc',v.version);b.type='button';b.setAttribute('data-jump','v-'+v.version);
-      b.addEventListener('click',function(){goTo('v-'+v.version);});row.appendChild(b);
-    });
-    var all=el('button','wn-jc wn-jall','All versions');all.type='button';all.setAttribute('aria-haspopup','dialog');
-    all.addEventListener('click',function(){openSheet(vers);});
-    row.appendChild(all);jumpBox.appendChild(row);jumpBox.hidden=false;
-  }
-  /* every version as a dense wrapped grid, grouped by major (2.x, 1.x, 0.x); tap one: the sheet closes and that version opens */
-  function openSheet(vers){
-    if(!sheet){
-      sheet=el('dialog','wn-sheet');sheet.setAttribute('aria-label','All versions');
-      var hd=el('div','wn-sh');hd.appendChild(el('h2',null,'All versions'));
-      var cl=el('button','wn-close wn-shclose','Close');cl.type='button';cl.addEventListener('click',function(){sheet.close();});hd.appendChild(cl);
-      sheet.appendChild(hd);
-      var body=el('div','wn-sb'),groups=[],map={};
-      vers.forEach(function(v){
-        var m=/^(\d+)\./.exec(v.version),key=m?m[1]+'.x':'Other';
-        if(!map[key]){map[key]={key:key,vs:[]};groups.push(map[key]);}
-        map[key].vs.push(v);
-      });
-      groups.forEach(function(g){
-        var sec=el('section','wn-sg');
-        var h=el('h3',null,g.key);h.appendChild(el('span',null,g.vs.length+(g.vs.length===1?' version':' versions')));sec.appendChild(h);
-        var grid=el('div','wn-sgrid');
-        g.vs.forEach(function(v,i){
-          var b=el('button','wn-sc'+(v.milestone?' ms':''),v.version);b.type='button';
-          if(v===vers[0])b.classList.add('now');
-          b.addEventListener('click',function(){var id='v-'+v.version;sheet.close();goTo(id);});
-          grid.appendChild(b);
-        });
-        sec.appendChild(grid);body.appendChild(sec);
-      });
-      sheet.appendChild(body);document.body.appendChild(sheet);
-      sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.close();});
-      sheet.addEventListener('close',function(){Nv.drop('wnJump');});
-    }
-    sheet.showModal();
-    Nv.push('wnJump',function(){sheet.close();});
-  }
 
   /* ---------- filters ---------- */
   function buildChips(){
@@ -337,6 +290,7 @@
       applyRow(r);
     });
     if(model.sech)model.sech.hidden=!anyOlder;
+    emptyBox.hidden=n>0;
     status.textContent=filter==='all'?'Showing all '+plural(n):'Showing '+plural(n)+': '+typeOf(filter).label;
   }
   function setFilter(id){
@@ -353,12 +307,12 @@
 
   /* ---------- states ---------- */
   function skeleton(){
-    foot.hidden=true;filtersBox.hidden=true;jumpBox.hidden=true;status.textContent='';list.textContent='';
+    foot.hidden=true;filtersBox.hidden=true;status.textContent='';list.textContent='';
     list.appendChild(el('div','wn-skel big'));
     for(var i=0;i<2;i++)list.appendChild(el('div','wn-skel row'));
   }
   function error(){
-    filtersBox.hidden=true;jumpBox.hidden=true;foot.hidden=true;list.textContent='';
+    filtersBox.hidden=true;foot.hidden=true;list.textContent='';
     var box=el('div','wn-err');
     box.appendChild(el('p',null,"Couldn't load what's new. Check your connection and try again."));
     var b=el('button','mini solid','Retry');b.type='button';b.addEventListener('click',load);
@@ -373,5 +327,12 @@
       var v=parse(t);if(!v.length)throw new Error('empty');render(v);
     }).catch(error);
   }
+  /* r6-whatsnew: Back returns to the page the person came from (a Studio page); otherwise the link goes to the hub */
+  var back=document.querySelector('.back');
+  if(back)back.addEventListener('click',function(e){
+    var ref=document.referrer,same=false;
+    try{var u=new URL(ref);same=u.origin===location.origin&&!/whats-new\.html$/.test(u.pathname);}catch(_){}
+    if(same&&history.length>1){e.preventDefault();history.back();}
+  });
   load();
 })();

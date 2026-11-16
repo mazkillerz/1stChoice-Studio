@@ -1,5 +1,5 @@
 /* Studio 0.1.0 checks (What's New part rewritten for the grouped page): Quick start on the hub (photo first, via the camera button on a tool row; the tool opens with it in, as a new draft),
-   the What's New page (one level: open hero card, one-tap version rows, jump bar + All versions sheet, filters, screenshots from studio-notes/changelog.md; error state) and its badge on the hub.
+   the What's New page (one level: open hero card, one-tap version rows, filters, screenshots from studio-notes/changelog.md; error state) and its badge on the hub.
    Run like tests/full.mjs (server on :8080, or BASE=...). */
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -25,7 +25,7 @@ async function wnChecks(pg,tag){
   const sum=(await pg.textContent('.wn-latest .wn-lintro').catch(()=>''))||'';
   const expect=N.lead||N.cards.map(c=>c.title).join(' · ');
   ok(tag+': hero shows the summary (lead line, else the titles joined)',!expect||sum.replace(/\s+/g,' ').trim()===expect.replace(/\s+/g,' ').trim(),sum.slice(0,60));
-  ok(tag+': hero is under the jump bar and the chips, full width',await pg.evaluate(()=>{ const h=document.querySelector('.wn-latest').getBoundingClientRect(),c=document.querySelector('.wn-filters').getBoundingClientRect(); return h.top>=c.bottom-1&&h.width>Math.min(innerWidth,720)*.85; }));
+  ok(tag+': hero is under the chips, full width',await pg.evaluate(()=>{ const h=document.querySelector('.wn-latest').getBoundingClientRect(),c=document.querySelector('.wn-filters').getBoundingClientRect(); return h.top>=c.bottom-1&&h.width>Math.min(innerWidth,720)*.85; }));
   ok(tag+': hero lists every change of the newest version',await q('.wn-latest .wn-line').count()===N.cards.length,N.cards.length+' lines');
   for(const [t,label] of [['feature','New'],['improve','Improved'],['fix','Fixed']]){
     const want=cnt(t,N.cards), has=await q('.wn-latest .wn-grp[data-type="'+t+'"]').count();
@@ -72,25 +72,7 @@ async function wnChecks(pg,tag){
   await vb.click(); await pg.waitForTimeout(300);
   ok(tag+': reopening keeps the body (built once)',await v0.locator('.wn-line').count()===first.cards.length);
   ok(tag+': no sideways scroll with versions open',await noOverflow(pg));
-  /* the jump bar */
-  await pg.evaluate(()=>scrollTo(0,0)); await pg.waitForTimeout(200);
-  const innerW=(await pg.evaluate(()=>innerWidth))+1;
-  const jc=await pg.$$eval('.wn-jc',l=>l.map(b=>({t:b.textContent.trim(),h:b.getBoundingClientRect().height,r:b.getBoundingClientRect().right})));
-  ok(tag+': jump bar: latest versions as chips plus "All versions", finger-sized, on screen',jc.length>=3&&jc[0].t===vers[0].version&&jc[jc.length-1].t==='All versions'&&jc.every(c=>c.h>=44&&c.r<=innerW),jc.map(c=>c.t).join(' | '));
-  ok(tag+': jump bar never scrolls sideways',await pg.evaluate(()=>{const j=document.getElementById('wnJump');return j.scrollWidth<=j.clientWidth+1&&getComputedStyle(j.querySelector('.wn-jrow')).overflowX==='visible';}));
-  const target=vers[4]; /* a recent chip is not it: use the sheet for something far away */
-  await pg.click('.wn-jall'); await pg.waitForTimeout(350);
-  ok(tag+': "All versions" opens a sheet with every version, grouped by major',await pg.evaluate(()=>document.querySelector('.wn-sheet').open)&&await pg.$$eval('.wn-sc',l=>l.length)===vers.length&&(await pg.$$eval('.wn-sg h3',l=>l.map(h=>h.firstChild.textContent))).join(',')===[...new Set(vers.map(v=>/^(\d+)\./.exec(v.version)[1]+'.x'))].join(','));
-  ok(tag+': sheet cells are finger-sized and the sheet fits the screen',await pg.$$eval('.wn-sc',l=>l.every(c=>c.getBoundingClientRect().height>=44))&&await pg.evaluate(()=>{const s=document.querySelector('.wn-sheet').getBoundingClientRect();return s.right<=innerWidth+1&&s.height<=innerHeight;})&&await pg.evaluate(()=>{const b=document.querySelector('.wn-sb');return b.scrollWidth<=b.clientWidth+1;}));
-  await pg.click('.wn-sc:text-is("'+target.version+'")'); await pg.waitForTimeout(900);
-  const tr=q('#v-'+CSS_ESC(target.version));
-  ok(tag+': picking a version closes the sheet, opens that row and scrolls it into view under the bar',!(await pg.evaluate(()=>document.querySelector('.wn-sheet').open))&&await tr.locator('.wn-vbtn').getAttribute('aria-expanded')==='true'&&await pg.evaluate(v=>{const r=document.getElementById('v-'+v).getBoundingClientRect(),f=document.querySelector('.wn-filters').getBoundingClientRect();return r.top>=f.bottom-2&&r.top<innerHeight*.5;},target.version));
-  await pg.evaluate(()=>scrollTo(0,0)); await pg.waitForTimeout(200);
-  await pg.click('.wn-jall'); await pg.waitForTimeout(300); await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
-  ok(tag+': Escape closes the sheet',!(await pg.evaluate(()=>document.querySelector('.wn-sheet').open)));
-  await pg.evaluate(()=>scrollTo(0,0)); await pg.waitForTimeout(200);
-  await pg.click('.wn-jc[data-jump="v-'+vers[1].version+'"]'); await pg.waitForTimeout(700);
-  ok(tag+': a recent-version chip jumps to that row',await pg.evaluate(v=>document.getElementById('v-'+v).querySelector('.wn-vbtn').getAttribute('aria-expanded')==='true',vers[1].version));
+  ok(tag+': no Jump to bar and no All versions sheet',await pg.evaluate(()=>!document.querySelector('.wn-jump,.wn-jc,.wn-sheet')));
   /* filter chips */
   const chipTxt=await pg.$$eval('.wn-f',l=>l.map(b=>b.textContent.replace(/\s+/g,' ').trim()));
   ok(tag+': chips are New / Improved / Fixed with counts (none for an empty kind)',chipTxt[0]==='All'+allCards.length&&[['feature','New'],['improve','Improved'],['fix','Fixed']].every(([t,l])=>cnt(t)?chipTxt.includes(l+cnt(t)):!chipTxt.some(x=>x.startsWith(l))),chipTxt.join(' | '));
@@ -158,9 +140,7 @@ for(const vp of [{name:'phone',width:390,height:844,touch:true},{name:'desktop',
 { const ctx=await b.newContext({viewport:{width:360,height:740},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block'}); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push('360: '+e));
   for(const theme of ['light','dark']){ await pg.emulateMedia({colorScheme:theme}); await pg.goto(BASE+'whats-new.html'); await pg.waitForSelector('.wn-latest .wn-line'); await pg.waitForTimeout(500);
     await pg.evaluate(()=>{ document.querySelectorAll('.wn-vbtn').forEach(b=>b.click()); }); await pg.waitForTimeout(500);
-    ok('360 '+theme+': filter chips and jump bar fit',await pg.evaluate(()=>[...document.querySelectorAll('.wn-f,.wn-jc')].every(b=>b.getBoundingClientRect().right<=innerWidth+1&&b.getBoundingClientRect().left>=0)));
-    await pg.click('.wn-jall'); await pg.waitForTimeout(350);
-    ok('360 '+theme+': the All versions sheet has no sideways scroll',await noOverflow(pg)&&await pg.evaluate(()=>{const s=document.querySelector('.wn-sheet'),b=document.querySelector('.wn-sb');return s.getBoundingClientRect().right<=innerWidth+1&&b.scrollWidth<=b.clientWidth+1;})); await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    ok('360 '+theme+': filter chips fit',await pg.evaluate(()=>[...document.querySelectorAll('.wn-f')].every(b=>b.getBoundingClientRect().right<=innerWidth+1&&b.getBoundingClientRect().left>=0)));
     ok('360 '+theme+': no sideways scroll, even with every version open',await noOverflow(pg)); }
   await ctx.close(); }
 await b.close();
