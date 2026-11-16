@@ -51,7 +51,7 @@ function openMenu(anchor,entries){ const m=$('crMenuBox'); m.innerHTML=entries.m
 /* ---------- sheets: tool sheets (the page stays usable) and big ones (Templates, Save, Add) ---------- */
 let sheet=null;   // {name,tool,onClose,sel}
 function openSheet(name,title,html,opt){ opt=opt||{}; closeSheet(true); sheet={name,tool:!!opt.tool,onClose:opt.onClose||null,sel:!!opt.sel};
-  const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.dataset.name=name; $('crSheetT').textContent=title;
+  const el=$('crSheet'); el.classList.toggle('tool',!!opt.tool); el.classList.toggle('dock',!!opt.dock); el.dataset.name=name; $('crSheetT').textContent=title;
   /* a fresh body each time, so a sheet's click handlers never stay behind for the next sheet (1.31.0: they piled up, one Add tap added several) */
   const ob=$('crSheetB'), nb=ob.cloneNode(false); ob.replaceWith(nb); nb.innerHTML=html; el.hidden=false; $('crScrim').hidden=!!opt.tool; $('crSheetB').scrollTop=0;
   Studio.nav.push('crSheet',()=>{ if(st.saving&&sheet&&sheet.name==='save') return false; closeSheet(); });   /* r3-nav: Back closes the sheet (not while saving) */
@@ -59,9 +59,15 @@ function openSheet(name,title,html,opt){ opt=opt||{}; closeSheet(true); sheet={n
 function closeSheet(quiet){ if(!sheet) return; const s=sheet; sheet=null; Studio.nav.drop('crSheet'); $('crSheet').hidden=true; $('crScrim').hidden=true; $('crSheetB').innerHTML=''; syncBar(); padForSheet(); if(s.onClose&&!quiet) s.onClose(); }
 /* the page moves up (phone) or left (computer) so a tool sheet never covers it */
 function padForSheet(){ const el=$('crSheet'); if(!sheet||!sheet.tool||el.hidden){ BD.setPad({bottom:16,right:16}); return; }
-  if(isPhone()){ const r=el.getBoundingClientRect(), m=$('crMain').getBoundingClientRect(); BD.setPad({bottom:Math.max(16,m.bottom-r.top+12),right:16}); } else BD.setPad({bottom:16,right:420}); }
+  if(isPhone()){ const top=innerHeight-(parseFloat(getComputedStyle(el).bottom)||0)-el.offsetHeight, m=$('crMain').getBoundingClientRect(); BD.setPad({bottom:Math.max(16,m.bottom-top+12),right:16}); }   /* r6-editor: from the sheet's own box, not its sliding one */ else BD.setPad({bottom:16,right:420}); }
 addEventListener('resize',()=>requestAnimationFrame(padForSheet));
-$('crSheetX').onclick=()=>closeSheet(); $('crScrim').onclick=()=>{ if(!st.saving) closeSheet(); };
+$('crSheetX').onclick=()=>closeSheet();
+/* r6-editor: swipe a sheet down by its header to close it, as on the tool pages */
+{ const hd=document.querySelector('.cr-sh-head'); let y0=null, dy=0; const el=$('crSheet');
+  hd.addEventListener('pointerdown',e=>{ if(innerWidth>=900||e.target.closest('button')) return; y0=e.clientY; dy=0; el.style.animation='none'; hd.setPointerCapture(e.pointerId); });
+  hd.addEventListener('pointermove',e=>{ if(y0==null) return; dy=Math.max(0,e.clientY-y0); el.style.transform=`translateY(${dy}px)`; });
+  const end=()=>{ if(y0==null) return; el.style.transform=''; el.style.animation=''; y0=null; if(dy>70&&!st.saving) closeSheet(); };
+  hd.addEventListener('pointerup',end); hd.addEventListener('pointercancel',end); } $('crScrim').onclick=()=>{ if(!st.saving) closeSheet(); };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sheet&&!st.saving&&!BD.cropping()){ e.stopPropagation(); closeSheet(); } },true);
 if(window.visualViewport){ const vv=visualViewport; const on=()=>{ const kb=Math.max(0,Math.round(innerHeight-vv.height-vv.offsetTop)); document.body.classList.toggle('kb-open',kb>80); document.documentElement.style.setProperty('--kb',(kb>80?kb:0)+'px'); }; vv.addEventListener('resize',on); vv.addEventListener('scroll',on); }
 
@@ -353,17 +359,22 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
   const els=CR.ELEMENTS.filter(e=>!e.when||e.when()).concat(CR.phraseEls());
   const shapeSvg=(d,stroke)=>`<svg viewBox="${stroke?'-6 -6 112 112':'0 0 100 100'}" aria-hidden="true"><path d="${d}" ${stroke?'fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"':'fill="currentColor"'}/></svg>`;
   const native={rect:'M8 8H92V92H8Z',rounded:'M30 8H70A22 22 0 0 1 92 30V70A22 22 0 0 1 70 92H30A22 22 0 0 1 8 70V30A22 22 0 0 1 30 8Z',ellipse:'M92 50A42 42 0 1 1 8 50A42 42 0 1 1 92 50Z',triangle:'M50 8L94 88H6Z',pentagon:'M50 6L94 38L77 90H23L6 38Z',hexagon:'M28 10H72L94 50L72 90H28L6 50Z',star:'M50 4L61 37H96L68 58L79 92L50 71L21 92L32 58L4 37H39Z',star8:'M50 2L60 26L84 16L74 40L98 50L74 60L84 84L60 74L50 98L40 74L16 84L26 60L2 50L26 40L16 16L40 26Z',ring:'M50 6A44 44 0 1 1 49.9 6ZM50 26A24 24 0 1 0 50.1 26Z',line:'M8 50H92',arrow:'M8 50H86M66 30L88 50L66 70'};
-  const body=openSheet('add','Add',`${impRow()}<div class="cr-jump">${[['els','Elements'],['brand','Brand'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
-    <span class="lbl" id="j-els">Elements</span><div class="cr-els">${els.map(e=>`<button type="button" class="cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span><span dir="auto">${esc(e.label)}</span></button>`).join('')}</div>
+  /* r6-editor: the same panels as the tool pages, one scroll: Elements, then Assets (Team, the brand's groups, Shapes), then Lines and Icons, then Stickers (Drawn) and Emoji;
+     the same tile classes (comp-tile, asset-tile, sticker-tile) and the same sheet geometry (it sits on the bar, the design stays above it) */
+  const groups={}; as.forEach(a=>{ (groups[a.group||'Brand']=groups[a.group||'Brand']||[]).push(a); });
+  const tile=(attr,img,label)=>`<button type="button" class="asset-tile" ${attr} title="${esc(label)}">${img}<span dir="auto">${esc(label)}</span></button>`;
+  const body=openSheet('add','Add',`${impRow()}<div class="cr-jump">${[['els','Elements'],['assets','Assets'],['shapes','Shapes'],['lines','Lines'],['icons','Icons'],['stickers','Stickers'],['emoji','Emoji']].map(([i,l])=>`<button type="button" data-j="${i}">${l}</button>`).join('')}</div>
+    <span class="lbl" id="j-els">Elements</span><div class="comp-grid cr-els">${els.map(e=>`<button type="button" class="comp-tile cr-el" data-el="${e.id}"><span class="im" data-prev="${e.id}"></span><span dir="auto">${esc(e.label)}</span></button>`).join('')}</div>
     <p class="small">Each element is ordinary layers: move, size, recolour, change the words (double-tap), or ungroup it.</p>
-    <span class="lbl" id="j-brand">Brand</span><div class="cr-els">${as.map(a=>`<button type="button" class="cr-el" data-asset="${a.id}"><span class="im"><img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"></span>${esc(a.label)}</button>`).join('')}<button type="button" class="cr-el" data-photo="1"><span class="im">${I.photo}</span>Your photos</button><button type="button" class="cr-el" data-team="1"><span class="im">${I.photo}</span>Team assets</button></div>
-    <span class="lbl" id="j-shapes">Shapes</span><div class="cr-icons">${BD.SHAPES.map(s=>`<button type="button" data-shape="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id]||native.rect)}</button>`).join('')}</div>
-    <span class="lbl" id="j-lines">Lines</span><div class="cr-icons">${BD.STROKES.map(s=>`<button type="button" data-stroke="${s.id}" aria-label="${esc(s.label)}" title="${esc(s.label)}">${shapeSvg(s.path||native[s.id],true)}</button>`).join('')}</div>
+    <span class="lbl" id="j-assets">Team</span><div class="asset-grid"><button type="button" class="asset-tile" data-team="1">${I.plus}<span>Add or browse</span></button></div>
+    ${Object.entries(groups).map(([g,list])=>`<span class="lbl">${esc(g)}</span><div class="asset-grid">${list.map(a=>tile(`data-asset="${a.id}"`,`<img alt="" loading="lazy" src="${L.assetPrevUrl(a)}"${a.tint?' data-logo':''}>`,a.label)).join('')}</div>`).join('')}
+    <span class="lbl" id="j-shapes">Shapes</span><div class="asset-grid">${BD.SHAPES.map(s=>tile(`data-shape="${s.id}"`,shapeSvg(s.path||native[s.id]||native.rect),s.label)).join('')}</div>
+    <span class="lbl" id="j-lines">Lines</span><div class="asset-grid">${BD.STROKES.map(s=>tile(`data-stroke="${s.id}"`,shapeSvg(s.path||native[s.id],true),s.label)).join('')}</div>
     <span class="lbl" id="j-icons">Icons</span><div class="cr-icons">${CR.allIcons().map(i=>`<button type="button" data-icon="${i.id}" aria-label="${esc(i.id.replace(/-/g,' '))}" title="${esc(i.id.replace(/-/g,' '))}">${svg(`<path d="${i.d}"/>`,24)}</button>`).join('')}</div>
-    <span class="lbl" id="j-stickers">Stickers</span><div class="cr-icons cr-stk" id="crStk">${CR.stickerTiles()}</div>
-    <span class="lbl" id="j-emoji">Emoji</span><div class="cr-icons cr-emo" id="crEmo">${CR.emojiTiles()}</div>
+    <span class="lbl" id="j-stickers">Drawn</span><div class="sticker-grid cr-stk" id="crStk">${CR.stickerTiles()}</div>
+    <span class="lbl" id="j-emoji">Emoji</span><div class="sticker-grid cr-emo" id="crEmo">${CR.emojiTiles()}</div>
     <span class="lbl">Phone emoji</span><div class="cr-icons cr-kbd">${(Array.isArray(BD.EMOJI)?BD.EMOJI:String(BD.EMOJI||'').split(/\s+/)).filter(Boolean).map(e=>`<button type="button" data-emoji="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
-    <p class="small">Phone emoji look like your phone's own; the emoji above look the same everywhere.</p>`);
+    <p class="small">Phone emoji look like your phone's own; the emoji above look the same everywhere.</p>`,{tool:true,dock:true});
   CR.stickersReady().then(()=>{ const a=body.querySelector('#crStk'), b=body.querySelector('#crEmo'); if(a&&!a.children.length) a.innerHTML=CR.stickerTiles(); if(b&&!b.children.length) b.innerHTML=CR.emojiTiles(); });
   body.querySelectorAll('[data-prev]').forEach(sp=>{ const e=CR.element(sp.dataset.prev); if(e&&e.asset){ const a=as.find(x=>x.id===e.asset); if(a) sp.innerHTML=`<img alt="" src="${L.assetPrevUrl(a)}">`; return; } const u=CR.preview(sp.dataset.prev); if(u) sp.innerHTML=`<img alt="" src="${u}">`; });
   body.addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; const d=b.dataset, f=BD.activeFrame(), w=f?fsize(f).w:1080, c=CR.colors();
@@ -384,7 +395,7 @@ function openAdd(){ reopen=null; const as=L.listedAssets();
 
 /* Swap: another sticker or emoji in the same place, size and turn (stays open to try a few; Done closes it) */
 function openSwap(){ const n=sel()[0]; if(!CR.canSwap(n)) return; const cur=n.getAttr('stickerId')||'';
-  const body=selSheet('swap','Swap',`<span class="lbl">Emoji</span><div class="cr-icons cr-emo" id="crSwE">${CR.emojiTiles()}</div><span class="lbl">Stickers</span><div class="cr-icons cr-stk" id="crSwS">${CR.stickerTiles()}</div>`,openSwap);
+  const body=selSheet('swap','Swap',`<span class="lbl">Emoji</span><div class="sticker-grid cr-emo" id="crSwE">${CR.emojiTiles()}</div><span class="lbl">Stickers</span><div class="sticker-grid cr-stk" id="crSwS">${CR.stickerTiles()}</div>`,openSwap);
   const mark=()=>body.querySelectorAll('[data-sticker]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sticker===cur)));
   CR.stickersReady().then(()=>{ const a=body.querySelector('#crSwE'), b=body.querySelector('#crSwS'); if(a&&!a.children.length) a.innerHTML=CR.emojiTiles(); if(b&&!b.children.length) b.innerHTML=CR.stickerTiles(); mark(); });
   mark();
@@ -392,7 +403,7 @@ function openSwap(){ const n=sel()[0]; if(!CR.canSwap(n)) return; const cur=n.ge
 
 /* Layers: what's on this page, top first */
 const kindIcon=n=>{ const k=kind(n); return k==='text'?I.text:k==='image'||k==='asset'?I.img:k==='group'?I.grp:k==='line'||k==='icon'?I.line:I.shape; };
-function openLayers(){ reopen=null; openSheet('layers','Layers',`<div class="cr-layers" id="crLy"></div><p class="small">Tap to select. The eye hides a thing; the lock stops it moving or being picked by a tap.</p>`,{tool:true}); paintLayerList(); }
+function openLayers(){ reopen=null; openSheet('layers','Layers',`<div class="cr-layers" id="crLy"></div><p class="small">Tap to select. The eye hides a thing; the lock stops it moving or being picked by a tap.</p>`,{tool:true,dock:true}); paintLayerList(); }
 function paintLayerList(){ const el=$('crLy'); if(!el) return; const f=BD.activeFrame(); if(!f) return; const list=items(f).filter(n=>!n.hasName('frame-bg')).reverse();
   el.innerHTML=list.length?list.map(n=>{ const on=S.sel.includes(n), lk=U.isLocked(n), vis=n.visible(); return `<div class="cr-ly${vis?'':' hid'}" role="option" aria-selected="${on}" data-id="${n.id()}"><span class="kd">${kindIcon(n)}</span><span class="nm" dir="auto">${esc(U.nameOf(n))}</span><button type="button" class="ib" data-eye="${n.id()}" aria-pressed="${!vis}" aria-label="${vis?'Hide':'Show'}">${vis?I.eye:I.eyeOff}</button><button type="button" class="ib" data-lk="${n.id()}" aria-pressed="${lk}" aria-label="${lk?'Unlock':'Lock'}">${lk?I.lock:I.unlock}</button></div>`; }).join(''):'<div class="cr-empty">Nothing on this page yet. Add something with Add, Text or Photo.</div>'; }
 $('crSheet').addEventListener('click',e=>{ const ly=$('crLy'); if(!ly||!ly.contains(e.target)) return; const nOf=id=>BD.main.findOne('#'+id);
