@@ -507,7 +507,14 @@ const NAV=(()=>{
      step back over its layers' entries on purpose, so none of them may react (returns how many there are) */
   function adopt(key,onBack){ if(!stack.some(e=>e.key===key)) stack.push({key,onBack}); }
   function exit(){ const n=stack.length+want; stack.length=0; want=0; leaving=true; return n; }
-  return {push,drop,idle,adopt,exit,has:k=>stack.some(e=>e.key===k),quiet,hold:()=>{ hold=true; manual(true); },back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
+  /* r6-nav: step back over the layers above the first one in `keep` (all of them when omitted), closing each as Back would, then resolve.
+     Used before the hub follows a link while a menu or sheet is open, so Back from that page lands on the hub and not on the sheet's entry. */
+  function unwind(keep){ const out=[]; while(stack.length&&!(keep||[]).includes(stack[stack.length-1].key)) out.push(stack.pop());
+    if(!out.length) return Promise.resolve();
+    out.forEach(l=>{ try{ l.onBack(); }catch(_){} });
+    return new Promise(res=>{ waiters.push(res); keepXY=[scrollX,scrollY]; manual(true); flight=setTimeout(landed,400); try{ history.go(-out.length); }catch(_){ landed(); } }); }
+  const go=(href,keep)=>idle(()=>{ unwind(keep).then(()=>{ location.href=href; }); });
+  return {push,drop,idle,adopt,exit,unwind,go,has:k=>stack.some(e=>e.key===k),quiet,hold:()=>{ hold=true; manual(true); },back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
 })();
 function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); NAV.drop(d); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
   /* r3-nav: Back closes it like Cancel (a busy dialog, or one whose cancel is refused, stays) */
@@ -2983,6 +2990,43 @@ async function home(){
     pillT=setTimeout(()=>set(x,w,'transform .26s cubic-bezier(.2,.8,.2,1),width .26s cubic-bezier(.2,.8,.2,1)'),170);
     pillAt={x,w}; }
   addEventListener('resize',()=>{ pillAt=null; const on=tabs.find(a=>a.getAttribute('aria-current')==='true'); if(on&&pill) placePill(on); });
+  /* ---------- r6-nav: the hub remembers where you are (view, Templates category, Saved collection, scroll) so Back from a design, a tool or a page
+     lands on exactly that. Opening a collection in Templates or Saved is its own Back step (full list first, then Home). ---------- */
+  const HUBKEEP=['sv-col','tpl-cat'];
+  let svAllY=0, restoring=false, snapT=0;
+  const hubSnap=()=>{ const v=curView(), s={v,y:Math.round(scrollY)}; if(v!=='home') s.hy=Math.round(homeY);
+    if(filter!=='all') s.f=filter; if(svAllY) s.fy=Math.round(svAllY);
+    if(typeof tplApi!=='undefined'&&tplApi){ s.tp=tplApi.cat; s.ty=Math.round(tplApi.allY||0); }
+    if(PLAN_VIEWS.includes(v)){ const p=$(v+'View'); s.py=p?Math.round(p.scrollTop):0; } return s; };
+  const snapKey=()=>'studio:hub:'+(location.hash||'#');
+  function saveSnap(){ if(restoring) return; const s=hubSnap();
+    try{ sessionStorage.setItem(snapKey(),JSON.stringify(s)); sessionStorage.setItem('studio:view',location.hash||''); }catch(_){}
+    if(NAV.quiet()){ try{ history.replaceState(Object.assign({},history.state,{hub:s}),''); }catch(_){} } }
+  const snapSoon=()=>{ if(!snapT) snapT=setTimeout(()=>{ snapT=0; saveSnap(); },200); };
+  addEventListener('scroll',snapSoon,{passive:true,capture:true}); addEventListener('pagehide',saveSnap);
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveSnap(); });
+  /* put the scroll place back once the content has drawn: keep trying for up to 1.5 s, and give up the moment the person touches the page */
+  function restoreScroll(s){ const tgt=PLAN_VIEWS.includes(s.v)?$(s.v+'View'):null, want=(tgt?s.py:s.y)||0; if(!(want>0)) return;
+    restoring=true; let stable=0, touched=false; const t0=performance.now(), evs=['touchstart','wheel','keydown','pointerdown'], stop=()=>{ touched=true; };
+    evs.forEach(ev=>addEventListener(ev,stop,{once:true,passive:true,capture:true}));
+    const at=()=>tgt?tgt.scrollTop:scrollY, max=()=>tgt?tgt.scrollHeight-tgt.clientHeight:document.documentElement.scrollHeight-innerHeight;
+    const done=()=>{ restoring=false; evs.forEach(ev=>removeEventListener(ev,stop,true)); saveSnap(); };
+    const step=()=>{ if(touched) return done();
+      if(max()>=want-1){ if(tgt) tgt.scrollTop=want; else scrollTo(0,want); stable=Math.abs(at()-want)<2?stable+1:0; if(stable>=20) return done(); }
+      if(performance.now()-t0>1500){ const m=Math.min(want,Math.max(0,max())); if(tgt) tgt.scrollTop=m; else scrollTo(0,m); return done(); }
+      requestAnimationFrame(step); };
+    requestAnimationFrame(step); }
+  /* a collection chosen on Saved: its own history entry. Back (phone or the top-left button) shows the full list again at the same place. */
+  function svColBack(){ filter='all'; paintPage(); const y=svAllY; svAllY=0; scrollTo(0,y); requestAnimationFrame(()=>scrollTo(0,y)); }
+  function setFilter(f){ if(f===filter) return; const was=filter; filter=f;
+    if(was==='all'){ svAllY=scrollY; NAV.push('sv-col',svColBack); } else if(f==='all'){ svAllY=0; NAV.drop('sv-col'); }
+    paintPage(); }
+  /* leaving the page for another tab: the entries of an open collection go quietly, so the tab's own Back entry is the one on top */
+  function dropViewLayers(){ if(NAV.has('sv-col')){ filter='all'; svAllY=0; NAV.drop('sv-col'); } if(NAV.has('tpl-cat')) NAV.drop('tpl-cat'); }
+  /* a link tapped while a menu or sheet is open: close them first (in step), then go; so Back from the page lands on the hub itself */
+  document.addEventListener('click',e=>{ if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey) return;
+    const a=e.target.closest&&e.target.closest('a[href]'); if(!a||a.target||a.hasAttribute('download')||a.origin!==location.origin||(a.pathname===location.pathname&&a.hash)) return;
+    if(!NAV.depth()||HUBKEEP.includes(NAV.top())) return; e.preventDefault(); NAV.go(a.href,HUBKEEP); },true);
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
@@ -2993,6 +3037,7 @@ async function home(){
     window.scrollTo({top:v==='home'?homeY:0,behavior:'instant'});
     if(v==='saved'){ paintPage(); const h=$('savedH'); h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
     if(v==='templates') showTemplates();
+    snapSoon();
     if(plan){ planWarm(v); return planShow(v); } }
   const planShow=v=>v==='calendar'?showCalendar():v==='ideas'?showIdeas():showGoals();
   /* a swipe settled on another pane: the address follows (Back still lands on Home) and that pane refreshes (no redraw if nothing changed) */
@@ -3003,15 +3048,16 @@ async function home(){
     const next=()=>{ const k=rest.shift(); if(!k) return; idle(()=>{ Promise.resolve(planShow(k)).catch(()=>{}).then(next); },{timeout:1200}); };
     setTimeout(next,350); }
   /* from Home a page gets its own Back entry; going from one page to the other replaces it, so Back always lands on Home */
-  function openView(v){ if(curView()===v) return; NAV.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
+  function openView(v){ if(curView()===v) return; dropViewLayers(); NAV.idle(()=>{ try{ if(curView()!=='home'&&history.state&&history.state.sp) history.replaceState({sp:1},'','#'+v); else history.pushState({sp:1},'','#'+v); }catch(_){} showView(v); }); }   /* r3-nav: after any layer's step has gone */
   function openSaved(){ openView('saved'); }
   function goHome(){ if(curView()==='home'){ window.scrollTo({top:0,behavior:reduce()?'auto':'smooth'}); return; }
     if(sel) endSelect(true);   // r3-nav
+    dropViewLayers();   /* r6-nav */
     NAV.idle(()=>{ if(history.state&&history.state.sp) history.back(); else { try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} showView('home'); } }); }
   addEventListener('popstate',()=>{ const want=hashView(); if(want!==curView()) showView(want); });
   tabs.forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); haptic('tick'); if(a.dataset.tab==='home') goHome(); else openView(a.dataset.tab); }));
   document.addEventListener('click',e=>{ const a=e.target.closest('[data-see-all]'); if(a){ e.preventDefault(); openSaved(); } });
-  $('savedBack').onclick=()=>{ if(sel) return endSelect(); goHome(); };
+  $('savedBack').onclick=()=>{ if(sel) return endSelect(); if(NAV.has('sv-col')) return NAV.back(); goHome(); };   /* r6-nav: from a collection, Back is the full list first */
   /* ---------- Templates (assets/templates.js): every ready-made start in one place, by kind, with real previews.
      Tool presets (brand kit `presets`: a tool with a style and words), Create templates (brand kit `create.templates`) and the
      team's own templates (Saved designs of kind "template"). A tap starts it at once. Previews: assets/thumbs/<brand>/tpl/<id>.jpg ---------- */
@@ -3194,10 +3240,10 @@ async function home(){
     if(!window.StudioTemplates){ lazy('templates',{css:1}).then(()=>{ if(curView()==='templates') showTemplates(); },()=>{}); return; }   /* 2.26.0 faststart: code + styles load the first time the tab opens */
     /* favourites + recently used, per device and brand; Create's template picker reads and writes the same two lists ('t:'+template id) */
     if(!tplApi) tplApi=StudioTemplates.init({root:$('templatesView'),cats:TPL_CATS,entries:tplEntries,esc,haptic,store,icons:ICON,favKey:'studio:tplFav:'+B.id,recentKey:'studio:tplRecent:'+B.id,
-      onBack:()=>goHome(),
+      onBack:()=>{ if(NAV.has('tpl-cat')) NAV.back(); else goHome(); },nav:NAV,   /* r6-nav: from a category, Back is the full list first */
       teamNote:()=>member?{text:'No team templates yet. Save a design with “Keep the photos” off, and it shows here for everyone.'}
                         :{text:'Templates your team saves show here.',action:{label:'Sign in',run:()=>$('acct').click()}}});
-    const want=tplWant; tplWant=null; if(want) tplApi.show(want); else tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
+    const want=tplWant; tplWant=null; if(want&&typeof want==='object'){ tplApi.restore(want.cat,want.y,want.layer); tplApi.show(); } else if(want) tplApi.show(want); else tplApi.show(); const h=$('templatesView').querySelector('h1'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } }
   /* occasion banner (w2-packs, mega): a quiet card under the search while a pack is in season; dismissed per pack and season on this device */
   (function(){
     const hero=document.querySelector('#homeView .hero'); if(!hero||!(B.packList||[]).length) return;
@@ -3211,7 +3257,17 @@ async function home(){
   })();
   addEventListener('resize',()=>setTab(curView()));
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>setTab(curView()));
+  /* r6-nav: coming back to the hub (Back, or a reload): the view comes from the address; the rest from the memory kept in this history entry */
+  NAV.hold();
+  const snap0=(()=>{ let r=history.state&&history.state.hub;
+    if(!r){ try{ const nt=performance.getEntriesByType('navigation')[0]; if(nt&&(nt.type==='back_forward'||nt.type==='reload')) r=JSON.parse(sessionStorage.getItem(snapKey())||'null'); }catch(_){} }
+    return r&&typeof r==='object'&&r.v===hashView()?r:null; })();
+  if(snap0){ const layer=!!(history.state&&history.state.nav>=1);   // the entry of an open collection is the one we are on
+    if(snap0.hy) homeY=snap0.hy;
+    if(snap0.f&&layer&&snap0.v==='saved'){ filter=snap0.f; svAllY=snap0.fy||0; NAV.adopt('sv-col',svColBack); }
+    if(snap0.tp&&snap0.v==='templates') tplWant={cat:snap0.tp,y:snap0.ty||0,layer}; }
   if(hashView()!=='home') showView(hashView()); else requestAnimationFrame(()=>setTab('home'));
+  if(snap0) restoreScroll(snap0);
   $('savedRowList').innerHTML=skel(4);   // placeholders until the team's designs arrive
 
   /* install hint: Android/desktop Chrome get a real Install button; iPhone gets the Share → Add to Home Screen steps */
@@ -3338,8 +3394,9 @@ async function home(){
       if(a==='rules'){ const on=b.getAttribute('aria-checked')!=='true'; try{ if(on) localStorage.removeItem('studio:rulesOff'); else localStorage.setItem('studio:rulesOff','1'); }catch(_){} b.setAttribute('aria-checked',String(on)); return; }   /* rules (mega): per device */
       if(a==='remind'){ const on=b.getAttribute('aria-checked')!=='true'; b.setAttribute('aria-checked',String(on)); remindSet(on).then(()=>{ const sm=b.querySelector('small'); if(sm&&d.isConnected) sm.textContent=remindSub(); }); return; }   /* 2.11.0 */
       if(a==='previews'){ openPreviews(b); return; }
+      if(a==='new') d.addEventListener('close',()=>NAV.idle(()=>{ location.href=ROOT+'whats-new.html'; }),{once:true});   /* r6-nav: after the sheet's own history step, so Back lands on the hub */
       d.close();
-      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='new') location.href=ROOT+'whats-new.html'; else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen(); else if(a==='brandkit') bkOpen();   /* brandpage */
+      if(a==='account') $('acct').click(); else if(a==='welcome') openWelcome(); else if(a==='lab') openLab(); else if(a==='phrases') pbOpen(); else if(a==='teamassets') taOpen(); else if(a==='brandkit') bkOpen();   /* brandpage */
       else if(a==='install') searchActions().find(x=>x.id==='act:install').run(); });
   }
   /* Settings → Previews (mega): one switch per preview flag */
@@ -3380,7 +3437,7 @@ async function home(){
       const pc=store('studio:plan:cal:'+B.id), today=dayKey(new Date());
       ((pc&&pc.items)||[]).filter(x=>x&&x.id&&x.day).sort((a,b)=>Math.abs(new Date(a.day)-new Date(today))-Math.abs(new Date(b.day)-new Date(today))).slice(0,150).forEach(x=>{ const d=new Date(x.day+'T12:00:00');
         out.push({kind:'plan',id:'post:'+x.id,title:x.title||'Untitled post',sub:'Calendar · '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+(x.at?' · '+nxTime(x.at):'')+(x.status==='posted'?' · Posted':''),keys:['calendar planned post',x.format,x.caption,(x.hashtags||[]).join(' '),x.status].filter(Boolean).join(' '),icon:ICON.clock,run:()=>openCalDay(x.day)}); }); }catch(_){}
-    cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ filter='c:'+c.id; goSaved(); paintPage(); }}));
+    cols.forEach(c=>out.push({kind:'design',id:'col:'+c.id,title:c.name,sub:'Collection · '+c.count+' design'+(c.count===1?'':'s'),keys:'collection folder',icon:ICON.bookmark,badge:'Collection',run:()=>{ goSaved(); setFilter('c:'+c.id); }}));
     return out.concat(searchActions());
   }
   function searchActions(){ const a=[];
@@ -3503,7 +3560,7 @@ async function home(){
     if(!member) return;
     const all=savedOnly(), cols=savedCols();   // 2.32.0: templates stay in Templates (see savedOnly)
     const has=!!all.length;
-    if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
+    if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)){ filter='all'; svAllY=0; NAV.drop('sv-col'); }   /* r6-nav */
     $('sortLbl').textContent=sortBy==='name'?'A to Z':SORTS[sortBy]; $('sortBtn').setAttribute('aria-label','Sort: '+SORTS[sortBy]); $('sortBtn').hidden=!has||!!sel;
     $('colChips').hidden=!has||!cols.length;
     $('colChips').innerHTML=`<button type="button" class="chip" data-f="all" aria-pressed="${filter==='all'}">All <i>${all.length}</i></button>`+cols.map(c=>{ const on=filter==='c:'+c.id, chip=`<button type="button" class="chip col" dir="auto" data-f="c:${esc(c.id)}" aria-pressed="${on}">${ICON.folder}<span>${esc(c.name)}</span> <i>${c.count}</i></button>`;
@@ -3548,8 +3605,8 @@ async function home(){
       sortBy=o.dataset.sort; store('studio:savedSort',sortBy); haptic('tick'); d.close(); paintPage(); });
     d.querySelector('.sort-opts').addEventListener('keydown',e=>{ if(!/^Arrow(Up|Down)$/.test(e.key)) return; e.preventDefault(); const o=[...d.querySelectorAll('.sort-opt')], i=o.indexOf(document.activeElement); o[(i+(e.key==='ArrowDown'?1:o.length-1))%o.length].focus(); });
     d.addEventListener('close',()=>{ btn.setAttribute('aria-expanded','false'); }); });
-  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ filter=b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f; haptic('tick'); paintPage(); } });   // tap again: All
-  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ filter='all'; paintPage(); } else if(e.target.closest('[data-clearfind]')) setFind('',true); });
+  $('colChips').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(b){ setFilter(b.dataset.f==='all'||filter===b.dataset.f?'all':b.dataset.f); haptic('tick'); } });   // tap again: All
+  $('savedEmpty').addEventListener('click',e=>{ if(e.target.closest('[data-showall]')){ setFilter('all'); } else if(e.target.closest('[data-clearfind]')) setFind('',true); });
   /* Search on the Saved page (1.27.0): the magnifier opens a box under the title; every word typed must match the design's name,
      its tool or one of its collections (Arabic folded like the hub search), or a day word (1.32.0, below). It works inside the chosen collection and sort;
      Cancel, Escape or leaving the page clears it. */
@@ -3590,7 +3647,7 @@ async function home(){
     const d=dialog(`<div class="dlg-body"><h3>Delete “${esc(c.name)}”?</h3><p class="small">Only the collection goes. The designs in it stay in Saved.</p><div class="status" id="cdSt" role="status"></div><div class="dlg-actions"><button type="button" class="mini" id="cdX">Cancel</button><button type="button" class="btn danger" id="cdGo">Delete collection</button></div></div>`);
     /* 1.46.0: a failed delete (no signal) says so; the dialog used to stay open with no word */
     d.querySelector('#cdX').onclick=()=>d.close(); d.querySelector('#cdGo').onclick=async ev=>{ const b=ev.currentTarget; b.disabled=true; d.querySelector('#cdSt').textContent='';
-      try{ await C.deleteCollection(c.id); d.close(); filter='all'; loadSaved(true); }catch(err){ d.querySelector('#cdSt').textContent=err.message||String(err); b.disabled=false; } }; };
+      try{ await C.deleteCollection(c.id); d.close(); setFilter('all'); loadSaved(true); }catch(err){ d.querySelector('#cdSt').textContent=err.message||String(err); b.disabled=false; } }; };
   /* a small menu under a button: arrow keys move, Escape / a tap outside / scrolling closes it, focus goes back to the button */
   function popMenu(btn,items){
     const old=document.querySelector('.pop-menu'); if(old){ if(old._close) old._close(false); else old.remove(); }
