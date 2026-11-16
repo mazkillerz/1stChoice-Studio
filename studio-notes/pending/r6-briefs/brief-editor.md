@@ -1,0 +1,20 @@
+# Topic: editor — Part 2, One consistent editor
+Tree: `/home/user/studio-editor` (branch `claude/r6-editor`), port **8086**. Read `brief-common.md` in this folder first.
+Before you start: `git merge --no-edit claude/kind-rubin-o2srxm` in your tree (the lead's newest work).
+
+## Owner's words
+"In templates, assets, elements and the other panels open differently than in saved designs and tools. Make it one editor experience: the same panels, same behaviour and same layout everywhere."
+
+## Context
+- Studio has two editors: **tool pages** (`tool()` in `assets/studio.js` + `tools/<id>.js`; sheets = `.sheet` in `assets/studio.css`, `openSheet(n)` ~line 1224, bottom bar `--bar-h`, sheet max-height ~50dvh so the design stays visible above it, Layers → Asset / Sticker / Element / Text sheets that remember their parent) and **Create** (`tools/create.js` + `create.css`, Konva; its own `openSheet(name,title,html)` at line 53 and `.cr-sheet` at create.css:61 with max-height 88dvh, its own Add sheet with assets/elements/stickers/components/templates panels). Templates (brand and team templates) open in **Create**; most saved designs and all tools open in the tool pages. So the owner sees two different panel systems.
+- Repo notes to read: "Back stack", "Slim offers", "Create additions", "Team assets", "Engine gotchas", the 2.5.1 note (6) about heavy work after opening a sheet.
+
+## Goal
+The tool-page editor is the reference (it's what saved designs and tools use, and what the team knows). Make Create's panels open, look and behave the same:
+1. **Audit first** (write the list in your pending file): screenshot at 390×844 (touch, light) the same jobs in both editors — add an asset, add a sticker/element, add text, edit a text layer (inspector), layers list, photo, background, save sheet, the ⋯ menu — and list every difference: sheet height and position (does it hide the design?), header (title, Done/close placement, grey `.done` style), drag handle and swipe-down, Back behaviour, tile sizes and grid columns for assets/stickers/elements, group names and order (e.g. "Brand", "Team", "Stickers"), search field, empty/loading states, how a picked item is added (closes the sheet or stays), the bottom bar layout/icons/labels, desktop layout (side panel vs sheet).
+2. **Unify** to one experience: the same sheet geometry (design stays visible above the sheet; the sheet can grow when dragged up if the tool page's can), the same header/Done/handle/swipe/Back, the same tile grid and group order for assets/stickers/elements (reuse the same CSS classes or shared tokens rather than copying values), same naming of actions and the same icons in the bottom bar where the actions are the same, the same add behaviour. Where a tool page is the worse one for a job, improve the tool page instead so both match. Desktop: the same principle.
+3. Keep every Create capability (pages, frames, components, resize, motion/import flags, team assets, cut-out). Don't change saved data formats. Don't touch Create's templates' drawing (`goldens` must stay green).
+4. Keep the CSS change contained: Create rules in `tools/create.css`; shared tokens/classes in `assets/studio.css` inside your marked block.
+
+## Tests
+`tests/r6-editor.mjs`: for each panel pair (asset, sticker, element/component, text, layers, save), open it in a tool page (e.g. `tools/restock.html`) and in Create (`tools/create.html` with a template, e.g. `?tpl=<first template id from the brand kit>`), and assert matching geometry at 390×844 (sheet top within ±16px, header height equal, Done present and same style class, design area still visible: canvas bottom ≤ sheet top + small overlap), same tile size (±2px) and same group headings order; Back closes the panel (and returns to a parent panel when opened from one) in both. Then run: `create create-fixes create-stickers create-render create-fit create-search tplteam text-fill create-resize goldens teamassets stickers emoji-stickers full-phone-a full-phone-b nav saveflow simplify45 taste`.
