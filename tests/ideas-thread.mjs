@@ -46,7 +46,7 @@ async function main(dark){
   const ctx=await mk({...PH,colorScheme:dark?'dark':'light'},seeded()); const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(T+e.message)); pg.on('console',m=>{ if(m.type()==='error'&&!/fonts|ERR_FAILED|net::|favicon/i.test(m.text())) errs.push(T+'console '+m.text()); });
   await open(pg);
   /* capture lands in the Idea stage */
-  await pg.tap('.id-new'); await pg.waitForSelector('dialog.id-capdlg textarea'); await pg.fill('#idCT','Quick one: a slow pour'); await pg.tap('#idSave');
+  await pg.tap('#fab'); await pg.waitForSelector('dialog.id-capdlg textarea'); await pg.fill('#idCT','Quick one: a slow pour'); await pg.tap('#idSave');
   ok(T+'capture lands on the board in the Idea stage at once',await wait(pg,()=>/slow pour/.test(document.querySelector('.id-list[data-stage="idea"]')?.innerText||'')));
   await pg.waitForFunction(()=>(JSON.parse(localStorage.getItem('fakecloud')).ideas||[]).length===4,null,{timeout:5000}).catch(()=>{});
   ok(T+'stored with stage idea',(await stored(pg)).ideas.find(x=>/slow pour/.test(x.title)).stage==='idea');
