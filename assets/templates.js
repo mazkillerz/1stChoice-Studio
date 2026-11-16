@@ -32,7 +32,7 @@ function make(o){
   const ac=new AbortController(), on=(t,ev,fn,opt)=>t.addEventListener(ev,fn,Object.assign({signal:ac.signal},opt));
   let cats=(Array.isArray(o.cats)?o.cats:[]).filter(c=>c&&c.id).map(c=>({id:String(c.id),label:String(c.label==null?c.id:c.label)}));
   if(!cats.some(c=>c.id==='all')) cats.unshift({id:'all',label:'All'});
-  let data=null, loading=false, loadId=0, cat=rd()||'all', shown=[], noteAct=null, swapT=0, say=0;
+  let data=null, loading=false, loadId=0, cat=rd()||'all', shown=[], noteAct=null, swapT=0, say=0, allY=0;   /* allY: where All was scrolled to when a category was opened */
   const useFav=!!o.favKey, favs=()=>ids(o.store,o.favKey), recents=()=>ids(o.store,o.recentKey);
   const isFav=id=>useFav&&favs().includes(id);
   /* the entries behind a list of ids, in that order (ids that no longer exist are skipped) */
@@ -172,9 +172,14 @@ function make(o){
     say=setTimeout(()=>{ ui.sr.textContent=(c?c.label:'')+', '+plural(n); },300);
   }
   /* a quick cross-fade: the old cards fade out, the new ones fade in (no fade under reduced motion) */
+  /* a category opened from All is its own Back step (o.nav = Studio.nav): Back shows All again, at the same place */
+  const place=()=>{ const sc=scroller(); return sc?sc.scrollTop:(window.pageYOffset||0); };
+  const goPlace=y=>{ const sc=scroller(), f=()=>{ if(sc) sc.scrollTop=y; else window.scrollTo(0,y); }; f(); requestAnimationFrame(f); };
+  function backToAll(){ cat='all'; wr('all'); markCat(); announce(); drawBody(false); const y=allY; allY=0; goPlace(y); }
   function pick(id){
     if(!valid(id)) return;
     if(id===curCat()){ toTop(); return; }
+    if(o.nav){ if(curCat()==='all'&&!o.nav.has('tpl-cat')){ allY=place(); o.nav.push('tpl-cat',backToAll); } else if(id==='all'){ allY=0; o.nav.drop('tpl-cat'); } }
     cat=id; wr(id); markCat(); announce();
     const b=ui.body, swap=()=>{ drawBody(false); toTop(); };
     b.getAnimations&&b.getAnimations().forEach(a=>a.cancel());
@@ -222,6 +227,9 @@ function make(o){
       if(!data&&!loading) load(true); else if(data){ paint(true); announce(); }
     },
     refresh(){ load(false); },
+    get allY(){ return allY; },
+    /* the page was reloaded or came back with a category open: put it back (layer: its history entry is the one we are on) */
+    restore(c,y,layer){ if(typeof c==='string'&&c){ cat=c; wr(c); } allY=+y||0; if(o.nav&&layer&&cat!=='all') o.nav.adopt('tpl-cat',backToAll); },
     get cat(){ return curCat(); },
     destroy(){ ac.abort(); clearTimeout(say); loadId++; root.classList.remove('tp'); root.innerHTML=''; }
   };

@@ -8,7 +8,7 @@
 const VERSION='studio-v2-32-3';   // Studio 2.32.3
 const SHELL=[
   './','index.html','manifest.webmanifest','whats-new.html','assets/whatsnew.css','assets/whatsnew.js','studio-notes/changelog.md',
-  'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
+  'assets/studio.css','assets/studio.js','assets/search.css','assets/search.js','assets/back.js','assets/templates.css','assets/templates.js','assets/batch.js','assets/stickers.js','assets/welcome.css','assets/welcome.js','assets/cloud.js','assets/config.js','assets/vendor/supabase.js',
   'assets/icon.png','assets/icon-192.png','assets/icon-512.png','assets/icon-512-maskable.png','assets/studio-dragon.png',
   'brands/brands.js','assets/render.js','tools/highlight-emoji.js','tools/create-stickers.js',
   'tools/new-place.html','tools/new-place.js','tools/photo-story.html','tools/photo-story.js',

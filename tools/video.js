@@ -408,9 +408,9 @@ function leavePrompt(href){
     <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(nm)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.tabIndex=-1;
   d.querySelector('#lvKeep').onclick=()=>d.close();
-  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; location.href=href; };
+  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; L.leaveTo(href); };
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-    try{ await teamSave({keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+    try{ await teamSave({keepCols:true}); st.leaving=true; L.leaveTo(href); }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
   return d;
 }
 $('vdBack').addEventListener('click',e=>{ if(st.ready&&st.design&&cur()!==st.base){ e.preventDefault(); leavePrompt(e.currentTarget.href); } });

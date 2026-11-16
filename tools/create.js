@@ -592,18 +592,18 @@ function leaveDraftPrompt(href){ const d=L.dialog(`<div class="dlg-body"><h3>Lea
     <div class="dlg-actions col"><button type="button" class="btn" id="lvSave">Save it now</button><button type="button" class="btn ghost" id="lvLeave">Leave, keep the draft</button><button type="button" class="link danger" id="lvDrop">Discard it</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.querySelector('#lvKeep').onclick=()=>d.close();
   d.querySelector('#lvSave').onclick=()=>{ d.close(); setTimeout(openSave,260); };
-  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} location.href=href; };
-  d.querySelector('#lvDrop').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); location.href=href; };
+  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} L.leaveTo(href); };
+  d.querySelector('#lvDrop').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); L.leaveTo(href); };
   return d; }
 function syncSaved(){ guardSync(); $('crSaved').textContent=st.design?(designDirty()?'Not saved to the team':(st.design.kind==='template'?'Team template':'Saved to the team')):''; }
 function leavePrompt(href){ if(!st.design) return leaveDraftPrompt(href); const d=L.dialog(`<div class="dlg-body"><h3 dir="auto">Save your changes to “${esc(st.design.name)}”?</h3><p class="small">You changed this saved design. Update it for the team, or leave it as it was.</p>
     <div class="status" id="lvSt" role="status"></div>
     <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(st.design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvLeave">Leave, keep my changes here</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
   d.querySelector('#lvKeep').onclick=()=>d.close();
-  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} location.href=href; };   // r6-resume
-  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); location.href=href; };   // r6-resume: Discard drops the draft too
+  d.querySelector('#lvLeave').onclick=async()=>{ st.leaving=true; try{ if(S.id) await BD.saveNow(); }catch(_){} L.leaveTo(href); };   // r6-resume
+  d.querySelector('#lvDis').onclick=()=>{ st.leaving=true; const k=st.draftKey||(S.id?DKEY():null); S.id=null; if(k) L.removeDraft(k); L.leaveTo(href); };   // r6-resume: Discard drops the draft too
   d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-    try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };  return d; }
+    try{ await teamSave({name:st.design.name,kind:st.design.kind,keepCols:true}); st.leaving=true; L.leaveTo(href); }catch(err){ d.querySelector('#lvSt').textContent=err.message; d.querySelectorAll('button').forEach(b=>b.disabled=false); } };  return d; }
 document.querySelector('.cr-back').addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(e.currentTarget.href); } else if(S.id) BD.saveNow(); });
 addEventListener('beforeunload',e=>{ if(!st.leaving&&designDirty()){ e.preventDefault(); e.returnValue=''; } });
 addEventListener('pagehide',()=>{ if(S.id) BD.saveNow(); });

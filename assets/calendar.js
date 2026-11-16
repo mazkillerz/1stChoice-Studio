@@ -466,7 +466,7 @@ function make(o){
     b=t.closest('[data-add]'); if(b) return editSheet(null,b.dataset.add);
     b=t.closest('[data-copy]'); if(b) return copyCap(items.find(x=>x.id===b.dataset.copy));
     b=t.closest('[data-more]'); if(b) return menu(items.find(x=>x.id===b.dataset.more));
-    { const dz=t.closest('[data-design]'); if(dz&&dz.dataset.tool){ e.preventDefault(); hap('tick'); location.href=designHref(dz.dataset.design,dz.dataset.tool); return; } }
+    { const dz=t.closest('[data-design]'); if(dz&&dz.dataset.tool){ e.preventDefault(); hap('tick'); { const h=designHref(dz.dataset.design,dz.dataset.tool); if(window.Studio&&Studio.nav&&Studio.nav.go) Studio.nav.go(h,['sv-col','tpl-cat']); else location.href=h; } return;   /* r6-nav: close open sheets in step first */ } }
     b=t.closest('[data-open]'); if(b){ const it=items.find(x=>x.id===b.dataset.open); if(it&&!it.legacy) editSheet(it); } });
   /* swipe sideways on the list: previous / next week (or month) */
   if(!sh){ root.addEventListener('touchstart',e=>{ const el=e.target.closest('.cal-body'); tx=el&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}:null; },{passive:true});

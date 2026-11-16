@@ -22,7 +22,9 @@ const sh0=c=>execSync(c,{encoding:'utf8',stdio:['ignore','pipe','ignore']});
 /* file pattern → suites (mirrors the test map in .claude/skills/studio-improver/SKILL.md) */
 const MAP=[
   /* Home start-up; r6: the New Home preview (home2) is archived */
-  [/assets\/studio\.(js|css)|index\.html/,['faststart','r6-home']],
+  [/assets\/studio\.(js|css)|index\.html/,['faststart','r6-home','r6-nav']],
+  /* r6: Back returns where you came from */
+  [/assets\/back\.js|assets\/templates\.js|assets\/whatsnew\.js|tools\/[^/]+\.html|whats-new\.html|lab\/(index|board)\.html/,['r6-nav']],
   /* r6: linked drafts (Continue / resume) */
   [/assets\/studio\.js|tools\/create\.(js|html)/,['r6-resume']],
   /* 2.5.3 same-name guard */
