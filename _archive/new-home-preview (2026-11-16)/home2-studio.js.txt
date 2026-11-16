@@ -1,0 +1,37 @@
+  {id:'home2',label:'New Home',sub:'Slim header, search first, Today with Calendar, Ideas and Goals, a compact tools list'}   /* 2.21.0 home2 */
+
+  /* 2.21.0 home2 (preview flag "home2"): Today = Calendar | Ideas | Goals tabs on Home. Same data as the Plan row (calHome's one fetch and its
+     cache); every pane has the same fixed height (three rows and a link), so nothing moves when data arrives. Painted per pane with swapIn (data-h). */
+  const tdSec=$('todaySec'); let tdUi=null;
+  if(tdSec){ const bar=tdSec.querySelector('.st-bar');
+    tdUi=swipeTabs({bar,track:tdSec.querySelector('.st-track'),onChange:(i,how)=>{ if(how==='swipe') haptic('tick'); }});
+    bar.addEventListener('click',e=>{ const b=e.target.closest('.st-tab'); if(!b) return; haptic('tick'); tdUi.go(+b.dataset.i,!reduce()); });
+    tdUi.go(0,false);
+    tdSec.addEventListener('click',e=>{ const pb=e.target.closest('.cal-home-post'); if(pb){ haptic('tick'); postNowHome(pb.dataset.id,pb.dataset.day); return; }
+      const g=e.target.closest('[data-go]'); if(!g) return; haptic('tick'); const v=g.dataset.go; if(v==='cal') calOpen(true); else openView(v); }); }
+  const TD_FMT={story:'Story',post:'Post',reel:'Reel'}, TD_TYPE={reel:'Reel',post:'Post',story:'Story',giveaway:'Giveaway',other:'Other'};
+  const TD_GOALS=[['post','Posts'],['story','Stories'],['reel','Reels']];
+  const tdDir=t=>/^[^A-Za-z\u0590-\u08FF]*[\u0590-\u08FF]/.test(t||'')?'rtl':'ltr';   /* the title's own direction also sets which side its small second line sits on (dir=auto skips children that have a dir) */
+  const tdLink=(go,t)=>`<button type="button" class="link td-more" data-go="${go}">${t}</button>`;
+  const tdEmpty=(msg,go,t)=>`<div class="td-in td-empty">${msg?`<p>${msg}</p>`:''}${tdLink(go,t)}</div>`;
+  const tdDay=d=>{ try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }catch(_){ return d; } };
+  /* 2.29.0 polish: nothing today but posts coming up: say so in one quiet line and show the next two (day + time), so the card is never a big empty box */
+  const tdNextHtml=next=>`<div class="td-in"><p class="td-note">Nothing planned for today. Coming up:</p><div class="td-list">${next.map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t td-day"><bdi>${esc(tdDay(x.day))}</bdi></span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b><small>${[x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'',TD_FMT[x.f]||''].filter(Boolean).join(' · ')}</small></span></button></div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`;
+  const tdCalHtml=(list,next)=>{ if(!list.length) return next&&next.length?tdNextHtml(next):tdEmpty('Nothing planned for today','cal','Plan a post');
+    return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t">${x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'Any time'}</span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b>${TD_FMT[x.f]?`<small>${TD_FMT[x.f]}</small>`:''}</span></button>${x.id&&x.dz?`<button type="button" class="cal-home-post" data-id="${esc(x.id)}" data-day="${esc(x.day||'')}" aria-label="Post now: ${esc(x.title||'Untitled')}">${ICON.share}<span>Post</span></button>`:''}</div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`; };
+  const tdIdeasHtml=(list,me)=>{ if(!list.length) return tdEmpty('No ideas yet. Tap + to add one.','ideas','Open ideas');
+    return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>{ const fresh=x.seen===null&&(x.author||'').trim().toLowerCase()!==me;
+      return `<div class="td-row"><button type="button" class="td-open" data-go="ideas"><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b>${TD_TYPE[x.type]?`<small>${TD_TYPE[x.type]}</small>`:''}</span>${fresh?'<i class="td-new" aria-hidden="true"></i><span class="sr-only">New</span>':''}</button></div>`; }).join('')}</div>${tdLink('ideas','Open ideas')}</div>`; };
+  const tdGoalsHtml=g=>{ const ks=TD_GOALS.filter(([k])=>g&&g[k]&&+g[k][1]>0); if(!ks.length) return tdEmpty('','goals','Set this month’s goals');
+    return `<div class="td-in"><div class="td-list">${ks.map(([k,l])=>{ const [d,t]=g[k], pc=Math.max(0,Math.min(100,Math.round(d/t*100)));
+      return `<div class="td-row"><button type="button" class="td-open td-goal" data-go="goals"><span class="td-gl"><b>${l}</b><span><bdi>${d}</bdi> of <bdi>${t}</bdi></span></span><span class="td-bar"><i style="width:${pc}%"></i></span></button></div>`; }).join('')}</div>${tdLink('goals','Open goals')}</div>`; };
+  /* final: the answer is in (or can't come), so a pane with no data shows its empty state instead of the placeholder */
+  function paintToday(c,k,m,final){ if(!tdSec) return; const me=(whoRead().name||'').trim().toLowerCase();
+    [['cal',c.day===k?tdCalHtml(c.today||[],c.next):null],['ideas',c.ideas?tdIdeasHtml(c.ideas,me):null],['goals',c.month===m&&c.goals?tdGoalsHtml(c.goals):null]].forEach(([id,html])=>{
+      const pane=$('tdp-'+id); if(!pane) return; if(html===null) html=final&&pane.querySelector('.hs-skel')?(id==='cal'?tdCalHtml([]):id==='ideas'?tdIdeasHtml([],me):tdGoalsHtml(null)):null;
+      if(html!==null) swapIn(pane.querySelector('.td-in'),html,'afterbegin',pane); }); }
+
+
+    /* 2.21.0 home2: on the new Home the banner sits under Today (Today is the hero), not between the search and Today */
+    const place=()=>{ const e2=$('packBanner'); if(!e2) return; (document.documentElement.hasAttribute('data-home2')&&$('todaySec')?$('todaySec'):hero).after(e2); };
+    hero.after(el); place(); document.addEventListener('studio:flag',e=>{ if(e.detail&&e.detail.id==='home2') place(); });

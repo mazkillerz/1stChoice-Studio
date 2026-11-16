@@ -125,8 +125,7 @@ const FLAGS=[
   {id:'team',label:'Team workflow',sub:'Reviews, captions, campaigns and the phrasebook'},
   {id:'import',label:'Import a Claude Design board',sub:'In Create: Add → Import. A design made in Claude opens as pieces you can edit'},
   {id:'motion',label:'Moving stories',sub:'In Create: ⋯ → Moving story. Your story comes alive as a short video'},   /* w3-mp4 */
-  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'},
-  {id:'home2',label:'New Home',sub:'Slim header, search first, Today with Calendar, Ideas and Goals, a compact tools list'}   /* 2.21.0 home2 */
+  {id:'cutout',label:'Remove background',sub:'Cut out a can or a person from a photo, on this device'}
 ];   /* 2.5.2: 'look' (New look and motion) is the default now (owner) */   /* 2.5.0: 'stock' (Live stock in Restock) archived on the owner's word: _archive/live-stock (2026-11-12)/ */
 const CUT_ICON='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 17.5c.8-2.4 2.5-3.5 4.5-3.5s3.7 1.1 4.5 3.5"/></svg>';   /* cutout (mega) */
 const flags={
@@ -135,7 +134,7 @@ const flags={
   set(id,on){ try{ if(on) localStorage.setItem('studio:flag:'+id,'1'); else localStorage.removeItem('studio:flag:'+id); }catch(_){} document.dispatchEvent(new CustomEvent('studio:flag',{detail:{id,on:!!on}})); }
 };
 try{ new URLSearchParams(location.search).forEach((v,k)=>{ const m=k.match(/^flag-([\w-]+)$/); if(m&&FLAGS.some(f=>f.id===m[1])) flags.set(m[1],v!=='0'); }); }catch(_){}
-try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); localStorage.removeItem('studio:flag:look'); localStorage.removeItem('studio:flag:stock'); Object.keys(localStorage).filter(k=>k.startsWith('studio:stock:')).forEach(k=>localStorage.removeItem(k)); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
+try{ delete document.documentElement.dataset.next; localStorage.removeItem('studio:flag:next'); localStorage.removeItem('studio:flag:look'); localStorage.removeItem('studio:flag:stock'); localStorage.removeItem('studio:flag:home2'); Object.keys(localStorage).filter(k=>k.startsWith('studio:stock:')).forEach(k=>localStorage.removeItem(k)); }catch(_){}   /* 2.4.0: the New Studio look preview is archived (its best parts are in the main design) */
 
 /* a design's shape (2.4.0): the stored format wins (Create posts are 1080×1350), else what its tool makes. 'post'|'story'|'square'|'cover' */
 const fmtFromSize=(w,h)=>!w||!h?null:w===h?'square':h/w<1.5?'post':'story';
@@ -3081,9 +3080,11 @@ async function home(){
     else{ const h=`<button type="button" class="cal-home-post" data-id="${esc(t.id)}" data-day="${esc(t.day||'')}" aria-label="Post now: ${esc(t.title||'Untitled')}">${ICON.share}<span>Post</span></button>`;
       if(!pill||pill.dataset.h!==h){ const tp=document.createElement('div'); tp.innerHTML=h; const el=tp.firstElementChild; el.dataset.h=h; if(pill) pill.replaceWith(el); else if(rb) rb.after(el); } } }
   async function postNowHome(id,day){ try{ await calLib(); await window.StudioCalendar.postNow({id,day}); }catch(_){ hubToast('Could not open Post now. Check your connection and try again.'); } }
-  function paintMini(row,inbox,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
+  /* r6: "2 new" when teammates added ideas I have not opened, else "4 ideas" (not posted yet) */
+  const ideaLine=c=>c.ideaNew?'<bdi>'+c.ideaNew+'</bdi> new':c.ideaN?'<bdi>'+c.ideaN+'</bdi> idea'+(c.ideaN===1?'':'s'):'';
+  function paintMini(row,ideaTxt,goal){ if(!PLAN_ON) return; let mini=row.querySelector('.plan-mini'); if(!mini){ mini=document.createElement('div'); mini.className='plan-mini'; row.appendChild(mini); }
     /* 2.5.0 (owner: no sideways scroll): three equal tiles that always fit; the count sits on a small second line */
-    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${inbox?`<em><bdi>${inbox}</bdi> new</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button>`;
+    const html=`<button type="button" class="plan-chip" data-plan-go="ideas">${IDEA_SVG}<span class="pc-t"><b>Ideas</b>${ideaTxt?`<em>${ideaTxt}</em>`:''}</span></button><button type="button" class="plan-chip" data-plan-go="goals">${GOAL_SVG}<span class="pc-t"><b>Goals</b>${goal?`<em><bdi>${goal}</bdi></em>`:''}</span></button>`;
     if(mini.dataset.h===html) return; mini.dataset.h=html; mini.innerHTML=html; }
   /* 2.11.0 reminders (assets/remind.js, lazy): only while Settings → "Remind me about planned posts" is on (per device, off by default) */
   const remindOn=()=>{ try{ return localStorage.getItem('studio:remind')==='1'; }catch(_){ return false; } };
@@ -3094,58 +3095,25 @@ async function home(){
   async function remindSet(on){ try{ if(on) localStorage.setItem('studio:remind','1'); else localStorage.removeItem('studio:remind'); }catch(_){}
     if(on){ try{ if(!navigator.webdriver&&'Notification' in window&&Notification.permission==='default') await Notification.requestPermission(); }catch(_){} remindSync(); }
     else{ try{ if(window.StudioRemind) window.StudioRemind.off(); else if(navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{}); }catch(_){} } }
-  /* 2.21.0 home2 (preview flag "home2"): Today = Calendar | Ideas | Goals tabs on Home. Same data as the Plan row (calHome's one fetch and its
-     cache); every pane has the same fixed height (three rows and a link), so nothing moves when data arrives. Painted per pane with swapIn (data-h). */
-  const tdSec=$('todaySec'); let tdUi=null;
-  if(tdSec){ const bar=tdSec.querySelector('.st-bar');
-    tdUi=swipeTabs({bar,track:tdSec.querySelector('.st-track'),onChange:(i,how)=>{ if(how==='swipe') haptic('tick'); }});
-    bar.addEventListener('click',e=>{ const b=e.target.closest('.st-tab'); if(!b) return; haptic('tick'); tdUi.go(+b.dataset.i,!reduce()); });
-    tdUi.go(0,false);
-    tdSec.addEventListener('click',e=>{ const pb=e.target.closest('.cal-home-post'); if(pb){ haptic('tick'); postNowHome(pb.dataset.id,pb.dataset.day); return; }
-      const g=e.target.closest('[data-go]'); if(!g) return; haptic('tick'); const v=g.dataset.go; if(v==='cal') calOpen(true); else openView(v); }); }
-  const TD_FMT={story:'Story',post:'Post',reel:'Reel'}, TD_TYPE={reel:'Reel',post:'Post',story:'Story',giveaway:'Giveaway',other:'Other'};
-  const TD_GOALS=[['post','Posts'],['story','Stories'],['reel','Reels']];
-  const tdDir=t=>/^[^A-Za-z\u0590-\u08FF]*[\u0590-\u08FF]/.test(t||'')?'rtl':'ltr';   /* the title's own direction also sets which side its small second line sits on (dir=auto skips children that have a dir) */
-  const tdLink=(go,t)=>`<button type="button" class="link td-more" data-go="${go}">${t}</button>`;
-  const tdEmpty=(msg,go,t)=>`<div class="td-in td-empty">${msg?`<p>${msg}</p>`:''}${tdLink(go,t)}</div>`;
-  const tdDay=d=>{ try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }catch(_){ return d; } };
-  /* 2.29.0 polish: nothing today but posts coming up: say so in one quiet line and show the next two (day + time), so the card is never a big empty box */
-  const tdNextHtml=next=>`<div class="td-in"><p class="td-note">Nothing planned for today. Coming up:</p><div class="td-list">${next.map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t td-day"><bdi>${esc(tdDay(x.day))}</bdi></span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b><small>${[x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'',TD_FMT[x.f]||''].filter(Boolean).join(' · ')}</small></span></button></div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`;
-  const tdCalHtml=(list,next)=>{ if(!list.length) return next&&next.length?tdNextHtml(next):tdEmpty('Nothing planned for today','cal','Plan a post');
-    return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>`<div class="td-row"><button type="button" class="td-open" data-go="cal"><span class="td-t">${x.at?'<bdi>'+esc(nxTime(x.at))+'</bdi>':'Any time'}</span><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b>${TD_FMT[x.f]?`<small>${TD_FMT[x.f]}</small>`:''}</span></button>${x.id&&x.dz?`<button type="button" class="cal-home-post" data-id="${esc(x.id)}" data-day="${esc(x.day||'')}" aria-label="Post now: ${esc(x.title||'Untitled')}">${ICON.share}<span>Post</span></button>`:''}</div>`).join('')}</div>${tdLink('cal','Open calendar')}</div>`; };
-  const tdIdeasHtml=(list,me)=>{ if(!list.length) return tdEmpty('No ideas yet. Tap + to add one.','ideas','Open ideas');
-    return `<div class="td-in"><div class="td-list">${list.slice(0,3).map(x=>{ const fresh=x.seen===null&&(x.author||'').trim().toLowerCase()!==me;
-      return `<div class="td-row"><button type="button" class="td-open" data-go="ideas"><span class="td-m" dir="${tdDir(x.title)}"><b dir="auto">${esc(x.title||'Untitled')}</b>${TD_TYPE[x.type]?`<small>${TD_TYPE[x.type]}</small>`:''}</span>${fresh?'<i class="td-new" aria-hidden="true"></i><span class="sr-only">New</span>':''}</button></div>`; }).join('')}</div>${tdLink('ideas','Open ideas')}</div>`; };
-  const tdGoalsHtml=g=>{ const ks=TD_GOALS.filter(([k])=>g&&g[k]&&+g[k][1]>0); if(!ks.length) return tdEmpty('','goals','Set this month’s goals');
-    return `<div class="td-in"><div class="td-list">${ks.map(([k,l])=>{ const [d,t]=g[k], pc=Math.max(0,Math.min(100,Math.round(d/t*100)));
-      return `<div class="td-row"><button type="button" class="td-open td-goal" data-go="goals"><span class="td-gl"><b>${l}</b><span><bdi>${d}</bdi> of <bdi>${t}</bdi></span></span><span class="td-bar"><i style="width:${pc}%"></i></span></button></div>`; }).join('')}</div>${tdLink('goals','Open goals')}</div>`; };
-  /* final: the answer is in (or can't come), so a pane with no data shows its empty state instead of the placeholder */
-  function paintToday(c,k,m,final){ if(!tdSec) return; const me=(whoRead().name||'').trim().toLowerCase();
-    [['cal',c.day===k?tdCalHtml(c.today||[],c.next):null],['ideas',c.ideas?tdIdeasHtml(c.ideas,me):null],['goals',c.month===m&&c.goals?tdGoalsHtml(c.goals):null]].forEach(([id,html])=>{
-      const pane=$('tdp-'+id); if(!pane) return; if(html===null) html=final&&pane.querySelector('.hs-skel')?(id==='cal'?tdCalHtml([]):id==='ideas'?tdIdeasHtml([],me):tdGoalsHtml(null)):null;
-      if(html!==null) swapIn(pane.querySelector('.td-in'),html,'afterbegin',pane); }); }
   async function calHome(){
     if(!$('homeView')) return; const row=calRowEl(); if(!row) return;
     const now=new Date(), k=dayKey(now), m=k.slice(0,7);
     if(!row.dataset.painted){ row.dataset.painted='1'; const c=store(PLANK)||{};   // the last numbers, at once
-      paintCalRow(row,c.day===k?c.today:null); paintMini(row,c.inbox||0,c.month===m?c.goal||'':''); row.classList.remove('is-skel'); paintToday(c,k,m,false); }   /* 2.21.0 home2 */
-    if(!member){ paintToday(store(PLANK)||{},k,m,loaded); return; }   /* 2.21.0 home2: signed out: empty states once the sign-in answer is known */
+      paintCalRow(row,c.day===k?c.today:null); paintMini(row,ideaLine(c),c.month===m?c.goal||'':''); row.classList.remove('is-skel'); }
+    if(!member) return;
     if(planRun) return planRun;
     planRun=(async()=>{ try{
       const Cl=C||await getCloud(); if(!Cl||!Cl.calendar) return;
       const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), safe=p=>p?p.catch(()=>null):Promise.resolve(null);
       const [cal,ids,km]=await Promise.all([safe(Cl.calendar(B.id,{from:m+'-01',to:m+'-'+String(last).padStart(2,'0')})),PLAN_ON&&Cl.ideas?safe(Cl.ideas(B.id)):null,PLAN_ON&&Cl.kpiMonths?safe(Cl.kpiMonths(B.id,m,m)):null]);
       const c=store(PLANK)||{};
-      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at,f:x.format||null}));   /* 2.21.0 home2: f = format */ paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); remindSync(today);
-        /* 2.29.0: the next two planned posts after today, for Today's empty Calendar pane ("Coming up") */
-        c.next=cal.filter(x=>x.day>k&&x.status!=='posted').sort((p,q)=>(p.day+(p.at||'99')).localeCompare(q.day+(q.at||'99'))).slice(0,2).map(x=>({id:x.id,day:x.day,title:x.title,at:x.at,f:x.format||null})); }
-      if(ids){ c.inbox=ids.filter(x=>x.stage==='inbox').length;
-        c.ideas=ids.filter(x=>x.stage!=='posted').sort((p,q)=>String(q.created_at||'').localeCompare(String(p.created_at||''))).slice(0,3).map(x=>({id:x.id,title:x.title||'',type:x.type||'post',seen:'seen_at' in x?(x.seen_at||null):1,author:x.author||''})); }   /* 2.21.0 home2: the 3 newest for Today; seen is null only when seen_at is there and empty */
+      if(cal){ const today=cal.filter(x=>x.day===k&&x.status!=='posted').sort((p,q)=>(p.at||'99').localeCompare(q.at||'99')).map(x=>({id:x.id,day:x.day,dz:(x.design_ids||[]).length?1:0,title:x.title,at:x.at,f:x.format||null}));   /* 2.21.0 home2: f = format */ paintCalRow(row,today); c.day=k; c.today=today.slice(0,5); remindSync(today); }
+      if(ids){ const me=String(whoRead().name||'').trim().toLowerCase(), open=ids.filter(x=>x.stage!=='posted');   /* r6 (owner): the Ideas tile says something, like Goals does */
+        c.ideaN=open.length; c.ideaNew=open.filter(x=>'seen_at' in x&&x.seen_at==null&&String(x.author||'').trim().toLowerCase()!==me).length; delete c.inbox; delete c.ideas; }
       if(km&&cal){ const t=km[0]&&km[0].targets||{}, posted=cal.filter(x=>x.status==='posted'), keyK=['post','story','reel'].find(q=>+t[q]>0);
-        c.goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):''; c.month=m;
-        c.goals={}; ['post','story','reel'].forEach(q=>{ if(+t[q]>0) c.goals[q]=[posted.filter(x=>(x.format||'post')===q).length,+t[q]]; }); }   /* 2.21.0 home2: x of y for each kind with a target */
-      paintMini(row,c.inbox||0,c.month===m?c.goal||'':''); store(PLANK,c); paintToday(c,k,m,true);
-    }catch(_){ paintToday(store(PLANK)||{},k,m,true); } finally{ setTimeout(()=>{ planRun=null; },0); } })();
+        c.goal=keyK?posted.filter(x=>(x.format||'post')===keyK).length+'/'+t[keyK]+' '+(keyK==='story'?'stories':keyK+'s'):''; c.month=m; }
+      paintMini(row,ideaLine(c),c.month===m?c.goal||'':''); store(PLANK,c);
+    }catch(_){} finally{ setTimeout(()=>{ planRun=null; },0); } })();
     return planRun;
   }
 
@@ -3226,9 +3194,7 @@ async function home(){
     const key='studio:packBanner:'+B.id+':'+p.id+':'+packSeason(p), cat=(p.templateCat&&p.templateCat.id)||'all';
     const el=document.createElement('section'); el.className='pack-banner'; el.id='packBanner'; el.setAttribute('aria-label',p.banner.title);
     el.innerHTML=`<div class="pb-txt"><b>${esc(p.banner.title)}</b>${p.banner.sub?`<span>${esc(p.banner.sub)}</span>`:''}</div><button type="button" class="mini pb-go">Open templates</button><button type="button" class="pb-x" aria-label="Dismiss ${esc(p.banner.title)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
-    /* 2.21.0 home2: on the new Home the banner sits under Today (Today is the hero), not between the search and Today */
-    const place=()=>{ const e2=$('packBanner'); if(!e2) return; (document.documentElement.hasAttribute('data-home2')&&$('todaySec')?$('todaySec'):hero).after(e2); };
-    hero.after(el); place(); document.addEventListener('studio:flag',e=>{ if(e.detail&&e.detail.id==='home2') place(); });
+    hero.after(el);
     el.querySelector('.pb-go').onclick=()=>{ haptic('tick'); tplWant=cat; openView('templates'); if(tplApi){ tplWant=null; tplApi.show(cat); } };
     el.querySelector('.pb-x').onclick=()=>{ haptic('tick'); store(key,1); el.remove(); };
   })();
@@ -3477,7 +3443,7 @@ async function home(){
       if(navigator.onLine===false) throw Object.assign(new Error('No connection. Check your internet and try again.'),{offline:true});
       await getCloud();
       const member=await refreshAccount(); if(run!==loadRun) return; loadedFor=me?me.id:null;
-      if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); { const d0=new Date(), k0=dayKey(d0); paintToday(store(PLANK)||{},k0,k0.slice(0,7),true); } return; }   /* 2.21.0 home2: signed out, no placeholder left */
+      if(!member){ all=[]; cols=[]; loaded=true; cloudNote=''; if(window.StudioSearch) StudioSearch.refresh(); signedOut(); return; }
       if(!all.length&&!cloudNote){ $('savedRowList').innerHTML=skel(4); $('savedGrid').innerHTML=skel(6); $('savedEmpty').hidden=true; }
       calHome();   // 2.5.0: the Plan row loads next to the designs, not after them
       const got=await Promise.all([C.designs(B.id),C.collections(B.id)]); if(run!==loadRun) return;   // a newer load (Try again) took over

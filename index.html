@@ -16,7 +16,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script>/* 2.21.0 home2: the "New Home" preview flag as an attribute before the first paint (Studio keeps it in sync on the studio:flag event) */(function(){var d=document.documentElement,on=function(v){if(v)d.setAttribute('data-home2','');else d.removeAttribute('data-home2')};try{on(localStorage.getItem('studio:flag:home2')==='1');var m=/[?&]flag-home2=(\w+)/.exec(location.search);if(m)on(m[1]!=='0')}catch(e){}document.addEventListener('studio:flag',function(e){if(e.detail&&e.detail.id==='home2')on(e.detail.on)})})();</script>
 <!-- 2.26.0 faststart: templates.css and welcome.css load with their features; the scripts are deferred (they download beside the styles, never in front of the first paint) -->
 <link rel="stylesheet" href="assets/studio.css">
 <link rel="stylesheet" href="assets/search.css">
@@ -42,14 +41,6 @@
   </div>
 </header>
 
-<!-- 2.21.0 home2 (preview flag "home2"): Today, the hero of the new Home. Hidden unless :root[data-home2]; studio.js fills the three panes (placeholders keep their size, so nothing jumps) -->
-<section class="hub-sec today-sec" id="todaySec" aria-labelledby="todayH">
-  <div class="sec-head"><h2 id="todayH">Today</h2></div>
-  <div class="td-card">
-    <div class="st-bar td-tabs" role="tablist" aria-label="Today"><button type="button" class="st-tab td-tab" role="tab" id="tdt-cal" aria-controls="tdp-cal" aria-selected="true" tabindex="0" data-i="0"><span class="st-l">Calendar</span></button><button type="button" class="st-tab td-tab" role="tab" id="tdt-ideas" aria-controls="tdp-ideas" aria-selected="false" tabindex="-1" data-i="1"><span class="st-l">Ideas</span></button><button type="button" class="st-tab td-tab" role="tab" id="tdt-goals" aria-controls="tdp-goals" aria-selected="false" tabindex="-1" data-i="2"><span class="st-l">Goals</span></button><i class="st-ind" aria-hidden="true"></i></div>
-    <div class="st-track td-track"><div class="st-pane td-pane" role="tabpanel" id="tdp-cal" aria-labelledby="tdt-cal"><div class="td-in hs-skel" aria-hidden="true"><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span></div></div><div class="st-pane td-pane" role="tabpanel" id="tdp-ideas" aria-labelledby="tdt-ideas"><div class="td-in hs-skel" aria-hidden="true"><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span></div></div><div class="st-pane td-pane" role="tabpanel" id="tdp-goals" aria-labelledby="tdt-goals"><div class="td-in hs-skel" aria-hidden="true"><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span><span class="td-sk"><i class="hs-l"></i><i class="hs-l short"></i></span></div></div></div>
-  </div>
-</section>
 <div class="install shared-wait" id="sharedBar" role="region" aria-label="Your shared photo" hidden><span class="install-ic" aria-hidden="true"><img alt="" id="sharedPic"></span><span class="install-txt"><b id="sharedTxt">Your photo is in</b><span>Pick what to make</span></span><button type="button" class="mini solid" id="sharedGo">Pick</button><button type="button" class="mini icon" id="sharedX" aria-label="Forget this photo">✕</button></div>
 <div class="install" id="installBar" role="region" aria-label="Install Studio" hidden><span class="install-ic" aria-hidden="true"><img src="assets/icon-192.png" alt=""></span><span class="install-txt" id="installTxt"><b>Install Studio</b><span>Open it from your home screen like an app.</span></span><button type="button" class="mini solid" id="installGo">Install</button><button type="button" class="mini icon" id="installX" aria-label="Hide this">✕</button></div>
 
