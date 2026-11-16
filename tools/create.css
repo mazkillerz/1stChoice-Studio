@@ -58,17 +58,19 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 /* sheets */
 .cr-scrim{position:fixed;inset:0;background:var(--scrim);z-index:60;animation:crfade .18s ease}
 .cr-scrim[hidden],.cr-sheet[hidden]{display:none}
-.cr-sheet{position:fixed;z-index:61;background:var(--surface);color:var(--fg);display:flex;flex-direction:column;min-height:0;left:0;right:0;bottom:0;max-height:min(88dvh,900px);border-radius:24px 24px 0 0;border-top:1px solid var(--line);box-shadow:var(--shadow-up);padding:0 var(--safe-r) var(--safe-b) var(--safe-l);animation:crup .32s cubic-bezier(.2,.9,.25,1)}
-.cr-sheet.tool{z-index:30;bottom:calc(var(--crbar) + var(--ctx-h) + var(--safe-b));max-height:min(46dvh,420px);padding-bottom:0;box-shadow:0 -8px 24px rgba(0,0,0,.10)}
-.cr-sh-head{display:flex;align-items:center;gap:8px;padding:16px 16px 8px;flex:none;position:relative}
-.cr-sh-head .grab{position:absolute;top:6px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line)}
-.cr-sh-head h2{flex:1;margin:0;font:600 17px var(--sans)}
+.cr-sheet{position:fixed;z-index:61;background:var(--surface);color:var(--fg);display:flex;flex-direction:column;min-height:0;left:0;right:0;bottom:0;max-height:min(88dvh,900px);border-radius:var(--r-xl) var(--r-xl) 0 0;border-top:1px solid var(--line);box-shadow:var(--shadow-up);padding:0 var(--safe-r) var(--safe-b) var(--safe-l);animation:crup .32s cubic-bezier(.2,.9,.25,1)}
+.cr-sheet.tool{z-index:30;bottom:calc(var(--crbar) + var(--ctx-h) + var(--safe-b));max-height:min(46dvh,420px);padding-bottom:0;box-shadow:var(--shadow-up)}
+/* r6-editor: a panel that is not about the selected thing (Add, Layers) sits right on the bottom bar, as a tool page's sheet does */
+.cr-sheet.tool.dock{bottom:calc(var(--crbar) + var(--safe-b));max-height:min(50dvh,460px)}
+.cr-sh-head{display:flex;align-items:center;gap:10px;padding:6px 16px 0;min-height:52px;flex:none;position:relative;cursor:grab;touch-action:none}   /* r6-editor: the tool pages' sheet header, value for value */
+.cr-sh-head .grab{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:40px;height:5px;border-radius:3px;background:var(--line)}
+.cr-sh-head h2{flex:1;margin:0;padding-top:10px;font:600 var(--fs-l) var(--sans)}
 .cr-sh-head h2:focus{outline:none}
-.cr-sh-head .done{min-height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--chip);color:var(--fg);font:600 14px var(--sans);cursor:pointer}
-.cr-sh-body{overflow-y:auto;overscroll-behavior:contain;padding:4px 16px 20px;display:flex;flex-direction:column;gap:14px;font-size:14px}
+.cr-sh-head .done{min-height:48px;margin-top:6px;padding:0 16px;border-radius:999px;border:0;background:var(--chip);color:var(--fg);font:600 14px var(--sans);cursor:pointer}
+.cr-sh-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--sp-2) 16px 16px;display:flex;flex-direction:column;gap:var(--sp-3);font-size:14px}
 .cr-sh-body>*{flex-shrink:0}
-.cr-sh-body .lbl{font:600 11px var(--sans);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-.cr-sh-body .small{font-size:12.5px;color:var(--muted);line-height:1.45;margin:0}
+.cr-sh-body .lbl{font:600 var(--fs-s) var(--sans);color:var(--muted)}   /* r6-editor: as the tool pages' group names */
+.cr-sh-body .small{font-size:var(--fs-s);color:var(--muted);line-height:1.45;margin:0}
 @keyframes crfade{from{opacity:0}}
 @keyframes crup{from{transform:translateY(100%)}}
 
@@ -112,16 +114,19 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 /* add sheet */
 .cr-jump{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;position:sticky;top:-4px;background:var(--surface);padding:4px 0 8px;z-index:1}
 .cr-jump button{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 13px var(--sans);cursor:pointer}
-.cr-els{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.cr-el{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);color:var(--fg);font:500 11.5px var(--sans);cursor:pointer;min-height:92px;justify-content:space-between;text-align:center}
-.cr-el .im{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border-radius:9px;color:var(--b-ink,#111);background:repeating-conic-gradient(#0000000a 0 25%,transparent 0 50%) 0 0/12px 12px,#fff}   /* always a light 'page' so dark elements show in dark mode too */
-.cr-el .im img{max-width:92%;max-height:60px;display:block}
+.cr-els{margin:0}
+/* r6-editor: elements use the tool pages' .comp-grid / .comp-tile; the preview is a picture instead of a canvas */
+.cr-el .im{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:540/240;border-radius:10px;color:var(--b-ink,#111);background:repeating-conic-gradient(#0000000a 0 25%,transparent 0 50%) 0 0/12px 12px,#fff;overflow:hidden}   /* always a light 'page' so dark elements show in dark mode too */
+.cr-el .im img{max-width:92%;max-height:92%;display:block;object-fit:contain}
 .cr-el .im svg{width:34px;height:34px}
+.asset-tile svg{width:40px;height:40px;flex:none}
+.sticker-tile svg{width:56px;height:56px;overflow:visible}
+.sticker-tile.emoji-tile svg{width:44px;height:44px}
+.sticker-grid [aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cr-icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .cr-icons button{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:48px}
 .cr-icons svg{width:24px;height:24px}
 /* stickers and emoji (1.31.0): bigger previews; emoji keep their own colours */
-.cr-stk svg,.cr-emo svg{width:34px;height:34px;overflow:visible}
 .cr-icons button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cr-kbd button{font-size:24px;line-height:1}
 /* text styles in the Font sheet (1.31.0) */
@@ -184,7 +189,7 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
   body.cr{--ctx-h:60px}
   .cr-sheet,.cr-sheet.tool{left:auto;right:12px;top:calc(56px + var(--safe-t) + 12px);bottom:calc(var(--crbar) + var(--ctx-h) + var(--safe-b) + 12px);width:390px;max-height:none;border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);padding:0;animation:crin .2s var(--ease)}
   .cr-sh-head .grab{display:none}
-  .cr-sh-head{padding-top:14px}
+  .cr-sh-head{padding-top:10px;cursor:default}
   .cr-scrim{background:rgba(0,0,0,.18)}
   .cr-ctx,.cr-bar{justify-content:center}
   .cr-bar .tab{flex:0 1 120px}
