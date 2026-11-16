@@ -13,6 +13,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.32.3 · 16 Nov 2026
+Template covers are back.
+
+### Team template covers show again
+type: fix
+Templates your team saved (like the 49 November · Omani cat ones) showed grey boxes on the Templates page. Their cover pictures now load again.
+
 ## 2.32.2 · 16 Nov 2026
 14 more November templates with the Omani cat.
 

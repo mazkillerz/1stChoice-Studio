@@ -86,6 +86,9 @@ let batchHash={}, batchNames=[];
   /* 2. the save */
   await pg.goto(BASE+'index.html'); await pg.waitForTimeout(1200); await tap('[data-see-all]'); await pg.waitForTimeout(500); await tap('#selBtn');
   ok('2.32.0: the team template is not in Saved (it lives in Templates)',await pg.$('#savedGrid .sv-card[data-id="sTpl"]')===null);
+  { const tp=await newPage(ctx); await tp.goto(BASE+'index.html#templates'); await tp.waitForTimeout(2500);
+    const src=await tp.evaluate(()=>{ const a=document.querySelector('#templatesView a.tp-card[href*="design=sTpl"]'); const i=a&&a.querySelector('img.tp-img'); return a?(i&&i.getAttribute('src')||'no-img'):'no-card'; });
+    ok('2.32.3: the team template shows its cover in Templates ('+String(src).slice(0,24)+')',/^data:image|^blob:|^https?:/.test(src)); await tp.close(); }
   await pick(pg,tap,GOOD); await tap('#selSave');
   await pg.waitForSelector('dialog[open] .bs-dlg',{timeout:10000}).catch(()=>{});
   ok('a dialog opens with a hidden render frame',await pg.$('dialog[open] .bs-dlg')!==null);

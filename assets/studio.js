@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.32.2';
+const VERSION='2.32.3';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -3030,8 +3030,11 @@ async function home(){
       out.push({id:'t:'+d.id,cat:d.cat||(hl?'highlight':d.size==='post'?'post':'story'),title:d.label,sub:d.sub||(hl?'Cover':TPL_SIZE[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':'')+' · Create',thumb:tplThumb(d.id),shape:hl?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),badge:d.badge||''}); });
     const team=()=>all.filter(d=>d.kind==='template').map(d=>{ const tc=cols.find(c=>d.collections.includes(c.id)&&tplOnlyCol(c.id));   // 2.32.0: its own chip
       return {id:'team:'+d.id,cat:tc?'col:'+tc.id:'team',catLabel:tc?tc.name:'',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}; });
-    if(TOOLS.video&&reelIds().length) return loadReels().then(()=>out.concat(reelEntries(),team()));
-    return out.concat(team()); }
+    /* 2.32.3: team templates left Saved in 2.32.0, so nothing signed their covers any more; sign them here before the list is built */
+    const need=[...new Set(all.filter(d=>d.kind==='template'&&d.thumb_path&&!urls[d.thumb_path]).map(d=>d.thumb_path))];
+    const covers=need.length?getCloud().then(c=>c.fileUrls(need)).then(u=>{ Object.assign(urls,u||{}); Object.keys(u||{}).forEach(k=>{ urlAt[k]=Date.now(); }); }).catch(()=>{}):null;
+    if(TOOLS.video&&reelIds().length) return Promise.all([loadReels(),covers]).then(()=>out.concat(reelEntries(),team()));
+    return covers?covers.then(()=>out.concat(team())):out.concat(team()); }
   /* ---------- calendar (mega): content calendar behind the "team" preview (assets/calendar.js + calendar.css, lazy). Home gets one quiet
      row (the way in; "Posting today: <title>" when something is due today); the page is #calendar; search lists it. ---------- */
   let calApi=null, calToday=false, calReady=false, calPend=false;   // calReady: Home has finished setting up (a #calendar link opens after it)
