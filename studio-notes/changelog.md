@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.32.0 · 16 Nov 2026
+Team templates live in Templates only, and November gets its own chip there.
+
+### Templates stay in Templates
+type: improvement
+Saved now holds only designs. A team template shows in Templates, not in Saved; it reaches Saved only when you open it, change it and save it as your own design. Search still finds templates.
+
+### November · Omani cat chip
+type: feature
+A collection made only of templates becomes its own chip in Templates, next to Team. The 21 November designs sit under **November · Omani cat**.
+
 ## 2.31.1 · 16 Nov 2026
 Add asset shows only the cat for November, now with 18 poses.
 

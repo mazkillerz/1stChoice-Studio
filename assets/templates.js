@@ -1,7 +1,7 @@
 /* Studio Templates library (brand-agnostic). A calm, Photos-style browser for templates: a header, category chips that stick to the top,
    and a grid of preview cards. The page hands in the data and helpers:
    StudioTemplates.init({root,cats,entries,onOpen,onBack,teamNote,esc,haptic,store,icons,favKey?,recentKey?}) -> {show(cat?),refresh(),cat,favs,recent}.
-   Entry = {id,cat,title,sub,thumb,shape:'story'|'post'|'square'|'circle',href,badge?,keys?,video?,dur?} (video: a play glyph on the preview; dur: seconds, shown as "Video · 10 s"). Uses only the tokens from studio.css; classes are tp-*.
+   Entry = {id,cat,catLabel?,title,sub,thumb,shape:'story'|'post'|'square'|'circle',href,badge?,keys?,video?,dur?} (catLabel: a chip of its own when cat is not a known one) (video: a play glyph on the preview; dur: seconds, shown as "Video · 10 s"). Uses only the tokens from studio.css; classes are tp-*.
    Favourites + Recently used (since 1.16.0): with favKey/recentKey each card gets a star, All starts with a Favourites section and a
    Recently used row (only when they have something), and a category puts its favourites first. Both are lists of entry ids kept by `store`
    (per device); StudioTemplates.mark(store,key,id,max) is the shared "put this id first" helper (Create's picker writes the same keys). */
@@ -55,6 +55,8 @@ function make(o){
   /* ---- data ---- */
   const normal=l=>(Array.isArray(l)?l:[]).filter(e=>e&&typeof e==='object').map(e=>Object.assign({},e,{cat:String(e.cat==null?'':e.cat),shape:SHAPES.includes(e.shape)?e.shape:'story'}));
   const known=()=>new Set(cats.map(c=>c.id));
+  /* an entry may bring its own chip: {cat:'col:…',catLabel:'November'} (a team collection made of templates). It goes just before Team. */
+  function addCats(){ const kn=known(); (data||[]).forEach(e=>{ if(!e.catLabel||kn.has(e.cat)) return; kn.add(e.cat); const c={id:e.cat,label:String(e.catLabel)}, at=cats.findIndex(x=>x.id==='team'); if(at<0) cats.push(c); else cats.splice(at,0,c); }); }
   const countOf=id=>!data?0:id==='all'?data.length:data.filter(e=>e.cat===id).length;
   const chipsNow=()=>cats.filter(c=>c.id==='all'||c.id==='team'||countOf(c.id)>0);
   const valid=id=>chipsNow().some(c=>c.id===id);
@@ -142,7 +144,7 @@ function make(o){
   function load(anim){
     const id=++loadId; let r;
     try{ r=o.entries(); }catch(err){ console.error(err); r=[]; }
-    const done=l=>{ if(id!==loadId) return; data=normal(l); loading=false; paint(anim); };
+    const done=l=>{ if(id!==loadId) return; data=normal(l); addCats(); loading=false; paint(anim); };
     if(r&&typeof r.then==='function'){
       if(!data){ loading=true; paint(false); }   // first time: shimmer cards while they come; a refresh keeps what is on screen until the new list is there
       r.then(done,err=>{ console.error(err); if(id===loadId&&!data) done([]); });

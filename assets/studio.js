@@ -13,7 +13,7 @@ const PHOTO_MAX_PX=12e6; // a photo is kept at full quality up to 12 megapixels 
 const LS_OK=(()=>{ try{ return 'letterSpacing' in document.createElement('canvas').getContext('2d'); }catch(_){ return false; } })();
 const PIN=new Path2D("M128 16a88.1 88.1 0 0 0-88 88c0 75.3 80 132.17 83.41 134.55a8 8 0 0 0 9.18 0C136 236.17 216 179.3 216 104a88.1 88.1 0 0 0-88-88Zm0 56a32 32 0 1 1-32 32a32 32 0 0 1 32-32Z");
 /* Studio's version: semantic (fix = 0.1.1, feature = 0.2.0). The What's New page (whats-new.html) shows the notes from studio-notes/changelog.md. */
-const VERSION='2.31.1';
+const VERSION='2.32.0';
 const ROOT=(document.currentScript&&document.currentScript.src)?document.currentScript.src.replace(/assets\/studio\.js.*$/,''):'../';
 const BRANDS={};
 /* installable app: the service worker caches the app shell (never Supabase calls) */
@@ -3028,7 +3028,8 @@ async function home(){
     (B.presets||[]).forEach(p=>{ if(!TOOLS[p.tool]) return; out.push({id:'p:'+p.id,cat:p.cat||'story',title:p.label,sub:p.sub||TOOLS[p.tool].title,thumb:tplThumb(p.id),shape:p.shape||toolShape(p.tool),href:toolPage(p.tool)+'?preset='+encodeURIComponent(p.id),badge:p.badge||'',keys:TOOLS[p.tool].title}); });
     if(TOOLS.create) ((B.create&&B.create.templates)||[]).forEach(d=>{ const hl=d.layout==='highlight';
       out.push({id:'t:'+d.id,cat:d.cat||(hl?'highlight':d.size==='post'?'post':'story'),title:d.label,sub:d.sub||(hl?'Cover':TPL_SIZE[d.size]||'Story')+(d.pages>1?' · '+d.pages+' pages':'')+' · Create',thumb:tplThumb(d.id),shape:hl?'circle':d.size==='post'?'post':d.size==='square'?'square':'story',href:toolPage('create')+'?tpl='+encodeURIComponent(d.id),badge:d.badge||''}); });
-    const team=()=>all.filter(d=>d.kind==='template').map(d=>({id:'team:'+d.id,cat:'team',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}));
+    const team=()=>all.filter(d=>d.kind==='template').map(d=>{ const tc=cols.find(c=>d.collections.includes(c.id)&&tplOnlyCol(c.id));   // 2.32.0: its own chip
+      return {id:'team:'+d.id,cat:tc?'col:'+tc.id:'team',catLabel:tc?tc.name:'',title:d.name,sub:toolName(d.tool),thumb:urls[d.thumb_path]||null,shape:toolShape(d.tool),href:toolPage(d.tool)+'?design='+encodeURIComponent(d.id)}; });
     if(TOOLS.video&&reelIds().length) return loadReels().then(()=>out.concat(reelEntries(),team()));
     return out.concat(team()); }
   /* ---------- calendar (mega): content calendar behind the "team" preview (assets/calendar.js + calendar.css, lazy). Home gets one quiet
@@ -3497,6 +3498,12 @@ async function home(){
   function thumbImg(d){ const u=urls[d.thumb_path]; return `<img alt="" decoding="async" draggable="false" data-path="${esc(d.thumb_path||'')}"${u?` src="${u}"`:''}>`; }
   function fillThumbs(list){ const need=list.map(d=>d.thumb_path).filter(p=>p&&!urls[p]); const apply=()=>document.querySelectorAll('img[data-path]').forEach(i=>{ const u=urls[i.dataset.path]; if(u&&i.getAttribute('src')!==u) i.src=u; });
     if(!need.length) return apply(); C.fileUrls(need).then(u=>{ Object.assign(urls,u); Object.keys(u).forEach(k=>{ urlAt[k]=Date.now(); }); keepSaved(); apply(); }).catch(()=>{}); }   // no signal: the cards keep their grey frames
+  /* 2.32.0 (owner, 16 Nov 2026): team templates live in Templates only. Saved shows designs; a template reaches Saved only when
+     someone opens it, changes it and saves it as a design. A collection that holds only templates is a Templates chip (tplCols),
+     never a Saved chip; a collection with designs in it shows in Saved with its designs counted. Search still finds templates. */
+  const savedOnly=()=>all.filter(d=>d.kind!=='template');
+  const tplOnlyCol=id=>{ let t=0; for(const d of all){ if(!d.collections.includes(id)) continue; if(d.kind!=='template') return false; t++; } return t>0; };
+  const savedCols=()=>{ const sv=savedOnly(); return cols.filter(c=>!tplOnlyCol(c.id)).map(c=>Object.assign({},c,{count:sv.filter(d=>d.collections.includes(c.id)).length})); };
   const svCard=(d,i,page)=>svCardOld(d,i,page);   /* page: the Saved page's cards also name their first collection (2.4.0) */
   const svCardOld=(d,i,page)=>{ const tpl=d.kind==='template';
     return `<div class="sv-card${sel&&sel.has(d.id)?' picked':''}" data-id="${esc(d.id)}" style="--i:${Math.min(i,12)}"><a class="sv-open" href="${toolPage(d.tool)}?design=${encodeURIComponent(d.id)}" draggable="false" aria-label="${esc(d.name)}, ${esc(toolName(d.tool))}${tpl?', template':''}. Press and hold for more."><span class="sv-thumb">${thumbImg(d)}${tpl?'<em class="sv-badge">Template</em>':''}${rvChip(d)}<span class="sv-check" aria-hidden="true">${ICON.check}</span></span><span class="sv-txt" dir="auto"><b title="${esc(d.name)}">${esc(cardName(d))}</b><span><bdi>${esc(ago(lastUse(d)))}</bdi>${page&&d.collections.length&&colName(d.collections[0])?` · <bdi class="sv-col">${esc(colName(d.collections[0]))}</bdi>`:''}</span></span></a><button type="button" class="sv-more" data-dmore="${esc(d.id)}" aria-label="More for ${esc(d.name)}">${ICON.more}</button></div>`; };
@@ -3505,15 +3512,16 @@ async function home(){
   /* home: the latest designs in one row, and See all */
   function paintRow(){
     if(!loaded||!member) return;
-    const recent=[...all].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,10);
-    $('savedCount').textContent=all.length?String(all.length):'';
-    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(all.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${all.length}</a>`:''):emptyNote;
+    const pool=savedOnly(), recent=[...pool].sort((a,b)=>lastUse(b)-lastUse(a)).slice(0,10);
+    $('savedCount').textContent=pool.length?String(pool.length):'';
+    $('savedRowList').innerHTML=recent.length?recent.map(svCard).join('')+(pool.length>recent.length?`<a class="sv-all" href="#saved" data-see-all><span>${ICON.next}</span>See all ${pool.length}</a>`:''):emptyNote;
     fillThumbs(recent);
   }
   /* the Saved page: one row of collection chips (All first), the sort button, a grid of pictures */
   function paintPage(){
     if(!loaded){ if(!cloudNote&&(member||!me)) $('savedGrid').innerHTML=skel(6); return; }   // a note (offline, slow) stays
     if(!member) return;
+    const all=savedOnly(), cols=savedCols();   // 2.32.0: templates stay in Templates (see savedOnly)
     const has=!!all.length;
     if(filter!=='all'&&!cols.some(c=>'c:'+c.id===filter)) filter='all';
     $('sortLbl').textContent=sortBy==='name'?'A to Z':SORTS[sortBy]; $('sortBtn').setAttribute('aria-label','Sort: '+SORTS[sortBy]); $('sortBtn').hidden=!has||!!sel;
