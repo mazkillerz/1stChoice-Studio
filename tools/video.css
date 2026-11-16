@@ -302,3 +302,7 @@ span.vt-th{background:transparent}
 .vd-save-d .btn.is-need small{opacity:.7}
 .vd-save-d #vsTeam{align-self:center;min-height:44px}
 .vd-note.ok{color:var(--ok)}
+
+/* r6-saved: list names take two lines instead of being cut */
+.vd-item b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-overflow:clip}
+/* /r6-saved */

@@ -1,0 +1,32 @@
+Code removed from assets/studio.js (r6-saved):
+
+/* campaigns (mega w2, preview flag team): a design in a campaign opens with the campaign's shared words and look, except what it overrides;
+   saving notes what was changed by hand (assets/campaigns.js, lazy). Without the flag or a campaign these return the design as it is. */
+async function campaignRecipe(d){ const r=d&&d.recipe; if(!r||!d.campaign_id||!flags.on('team')) return r;
+  try{ if(!window.StudioCampaigns) await loadScript(ROOT+'assets/campaigns.js'); return await window.StudioCampaigns.openRecipe(d,{cloud,brand:d.brand}); }catch(_){ return r; } }
+const campaignStamp=(tool,r)=>{ try{ return window.StudioCampaigns?window.StudioCampaigns.stamp(tool,r):r; }catch(_){ return r; } };
+
+-----
+    if($('selCamp')) $('selCamp').disabled=!n;   // campaigns (mega w2)
+
+-----
+  /* campaigns (mega w2, preview flag team): assets/campaigns.js (lazy). Select mode gets "Campaign", Saved gets one Campaigns row, a design's menu "Add to campaign".
+     With the flag off none of this exists (no button, no row, no request). */
+  let campApi=null, campBusy=null;
+  const campLoad=()=>campBusy||(campBusy=(async()=>{ lazyCss('campaigns'); const K=await lazy('campaigns');
+    return campApi=K.init({brand:B.id,cloud:getCloud,designs:()=>all,urls:()=>urls,fillThumbs,esc,dialog,toast:hubToast,haptic,icons:ICON,toolPage,TOOLS,
+      who:()=>{ try{ return (window.StudioWho&&StudioWho.author&&StudioWho.author())||null; }catch(_){ return null; } },
+      refresh:()=>loadSaved(true),endSelect:()=>{ if(sel) endSelect(true); },picked:()=>picked(),anchor:()=>$('colChips'),lazy,plural}); })().catch(e=>{ campBusy=null; throw e; }));
+  const campPaint=()=>{ if(!flags.on('team')||!loaded||!member) return; if(campApi) campApi.paint(); else campLoad().then(a=>a.paint()).catch(()=>{}); };
+  if(flags.on('team')){ const b=document.createElement('button'); b.type='button'; b.className='sel-act'; b.id='selCamp'; b.disabled=true; b.innerHTML=ICON.layers+'<span>Campaign</span>';
+    $('selBar').insertBefore(b,$('selDel'));
+    b.addEventListener('click',async()=>{ const list=picked(); if(!list.length) return; haptic('tick'); try{ (await campLoad()).addTo(list); }catch(_){ hubToast('Could not open campaigns. Check your connection and try again.'); } });}
+
+-----
+    if(campApi&&flags.on('team')) campApi.designRow(d,dsg);   // campaigns (mega w2)
+
+
+Removed from assets/calendar.js:
+  let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
+  const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
+ try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
