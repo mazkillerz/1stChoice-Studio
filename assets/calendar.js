@@ -124,7 +124,6 @@ function make(o){
   const rd=k=>{ try{ return o.store?o.store(k):null; }catch(_){ return null; } }, wr=(k,v)=>{ try{ o.store&&o.store(k,v); }catch(_){} };
   const wide=()=>matchMedia('(min-width:821px)').matches;
   let C=null, mode=(['week','month','feed'/* 2.9.0 feed */].includes(rd('studio:calMode'))?rd('studio:calMode'):(wide()?'month':'week')), anchor=new Date();
-  let camps=[];   /* campaigns (mega w2): the name shows on an item that belongs to one */
   let stale=false, dataAt=0, ringDay=null, ringT=0;
   let pool=[], win=null, fetchedAt=0, lastSig='', items=[], designs=[], designsFail=false, urls={}, state='loading', note='', run=0, slowT=0, built=false, toToday=false;
   const range=()=>{ if(mode==='feed') return window.StudioFeed?StudioFeed.range():[addDays(new Date(),-60),addDays(new Date(),90)]; /* 2.9.0 feed */
@@ -176,7 +175,7 @@ function make(o){
       if(!(await o.member())){ wr(CKEY,null); pool=[]; items=[]; stale=false; state='out'; draw(); return; }
       const w=winFor(a,b);
       const [list,dl]=await Promise.all([C.calendar(o.brand,{from:w[0],to:w[1]}),C.designs?C.designs(o.brand).then(r=>{ designsFail=false; return r; },()=>{ designsFail=true; return designs; }):designs]); if(my!==run) return;
-      designs=dl||[]; try{ camps=C.campaigns?(await C.campaigns(o.brand))||[]:[]; }catch(_){ camps=[]; }   /* campaigns (mega w2) */
+      designs=dl||[];
       pool=shapeRows(list); win=w; fetchedAt=Date.now(); dataAt=fetchedAt; stale=false; saveCache(list,w);
       items=slice();
       /* 2.5.0 (owner: "it flickers like it refreshes"): redraw only when something changed since what is on screen */
@@ -217,14 +216,13 @@ function make(o){
   /* a linked design opens from its picture (2.1.2): anyone on the team can see the design itself */
   const designHref=(id,tool)=>'tools/'+encodeURIComponent(tool)+'.html?design='+encodeURIComponent(id);
   const thumbs=it=>{ const ds=it.design_ids.map(designOf).filter(Boolean); return ds.length?`<span class="ci-thumbs">${ds.map(d=>`<img alt="Open the design" title="Open the design" data-design="${esc(d.id)}" data-tool="${esc(d.tool||'')}" decoding="async" data-path="${esc(d.thumb_path||'')}"${urls[d.thumb_path]?` src="${urls[d.thumb_path]}"`:''}>`).join('')}</span>`:''; };
-  const campTag=it=>{ const c=it.campaign_id&&camps.find(x=>x.id===it.campaign_id); return c?`<span class="ci-camp" dir="auto">${esc(c.name)}</span>`:''; };   /* campaigns (mega w2) */
   const chip=s=>`<span class="cal-chip st-${s}">${esc(SLABEL[s]||s)}</span>`;
   const card=it=>{ const ro=!!it.legacy, cap=capOf(it), f=fmtOf(it), t0=firstLine(cap).slice(0,60);
     const showTitle=!cap||it.title!==t0;   // a title made from the caption's first line would only repeat it
     return `<article class="cal-item st-${it.status}${ro?' ro':''}" data-id="${esc(it.id)}"${ro?'':' draggable="true"'}>
       <button type="button" class="ci-main" data-open="${esc(it.id)}"${ro?' disabled':''}>
         <span class="ci-top"><span class="ci-fmt" role="img" aria-label="${FNAME[f]||'Post'}">${ICF[f]||ICF.post}</span>${it.at?`<bdi class="ci-time">${esc(fmtTime(it.at))}</bdi>`:''}${chip(it.status)}</span>
-        <span class="ci-body">${thumbs(it)}<span class="ci-txt">${showTitle?`<b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>`:''}${campTag(it)}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-note">From the old posted log</span>':''}</span></span>
+        <span class="ci-body">${thumbs(it)}<span class="ci-txt">${showTitle?`<b class="ci-title" dir="auto">${esc(it.title||'Untitled')}</b>`:''}${cap?`<span class="ci-cap" dir="auto">${esc(cap)}</span>`:''}${ro?'<span class="ci-note">From the old posted log</span>':''}</span></span>
       </button>${ro?'':`<button type="button" class="ci-more" data-more="${esc(it.id)}" aria-label="Options for ${esc(it.title||'this item')}">${ic('more')}</button>${cap?`<button type="button" class="ci-copy" data-copy="${esc(it.id)}">Copy caption</button>`:''}`}</article>`; };
   const pill=it=>`<button type="button" class="cal-pill st-${it.status}${it.legacy?' ro':''}" data-open="${esc(it.id)}" data-id="${esc(it.id)}"${it.legacy?' disabled':' draggable="true"'} dir="auto"><i aria-hidden="true"></i>${esc(it.title||'Untitled')}</button>`;
   const byDay=()=>{ const m={}; items.forEach(x=>{ (m[x.day]=m[x.day]||[]).push(x); }); Object.values(m).forEach(l=>l.sort((a,b)=>(a.at||'').localeCompare(b.at||''))); return m; };

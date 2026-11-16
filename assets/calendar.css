@@ -157,8 +157,6 @@
 .cal-pcard[aria-pressed="true"]{border-color:var(--accent)}
 .cp-none{padding:var(--sp-4) 0;color:var(--muted)}
 
-/* campaigns (mega w2): the campaign name on an item */
-.ci-camp{font:500 var(--fs-xs,12px) var(--sans);color:var(--accent);display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 2.1.2: Open design / Remove design under the design tile; a linked picture on a card opens the design */
 .cal-dlinks{display:flex;align-items:center;justify-content:center;gap:var(--sp-5,24px);flex-wrap:wrap}
