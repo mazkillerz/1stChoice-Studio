@@ -14,13 +14,13 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 ## Plan (ranked by impact)
 | Wave | Part | Branch / worktree | Who | Status |
 |---|---|---|---|---|
-| 1 | 1 Continue / resume everywhere (tools, Create, templates, saved designs) | r6-resume | sonnet builder | in progress |
-| 1 | 4 + 5 Voice player rebuild + Ideas tab restructure | r6-ideas | sonnet builder | in progress |
+| 1 | 1 Continue / resume everywhere (tools, Create, templates, saved designs) | r6-resume | sonnet builder | **merged** |
+| 1 | 4 + 5 Voice player rebuild + Ideas tab restructure | r6-ideas | sonnet builder | **merged**; lead also removed Calendar's separate New (the + plans a post) |
 | 1 | 7 What's New page (drop Jump to, one filter row, polish) | r6-whatsnew | sonnet builder | **merged** (lead: 2-line summaries) |
 | 1 | 8 Home: archive New Home preview (home2), Ideas pill info, polish | lead branch | lead | **done** (5a23de5); polish in Part 9 |
 | 2 | 3 Back always returns to where you came from (button + phone gesture, scroll, tab, collection) | r6-nav | sonnet builder | in progress (brief-nav.md in scratchpad) |
-| 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | todo |
-| 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | todo |
+| 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | in progress |
+| 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | in progress |
 | 3 | 9 Alignment / consistency pass, every screen | lead / builder | | todo |
 | 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | todo |
 
@@ -31,3 +31,4 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 ## Log
 - 21:15 UTC: state read (2.32.3), worktrees made, resume scheduled.
 - 21:50 UTC: Part 8 done, Part 7 merged, nav builder started. Briefs for saved/editor are in the scratchpad (brief-saved.md, brief-editor.md); copies in studio-notes/pending/r6-briefs/.
+- 22:40 UTC: resume + ideas merged; saved, nav, editor builders running. calendar suite's date-dependent desktop check fixed.
