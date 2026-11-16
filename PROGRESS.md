@@ -18,11 +18,11 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 | 1 | 4 + 5 Voice player rebuild + Ideas tab restructure | r6-ideas | sonnet builder | **merged**; lead also removed Calendar's separate New (the + plans a post) |
 | 1 | 7 What's New page (drop Jump to, one filter row, polish) | r6-whatsnew | sonnet builder | **merged** (lead: 2-line summaries) |
 | 1 | 8 Home: archive New Home preview (home2), Ideas pill info, polish | lead branch | lead | **done** (5a23de5); polish in Part 9 |
-| 2 | 3 Back always returns to where you came from (button + phone gesture, scroll, tab, collection) | r6-nav | sonnet builder | in progress (brief-nav.md in scratchpad) |
+| 2 | 3 Back always returns to where you came from (button + phone gesture, scroll, tab, collection) | r6-nav | sonnet builder | **merged** |
 | 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | **merged** (+ lead: names full width) |
-| 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | in progress |
+| 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | **merged** (inspector still differs: tabs vs edit bar — left for later) |
 | 3 | 9 Alignment / consistency pass, every screen | r6-align | sonnet builder | in progress (hub screens; editor screens after r6-editor) |
-| 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | todo |
+| 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | changelog 2.33–2.35 + VERSION + sw cache done; still: align card, --changed run, merge to main, skill, summary |
 
 ## Decisions made for the owner
 - Campaigns: archived. Supabase had 0 campaigns and 0 linked designs/calendar items (checked 16 Nov); table and data kept, UI and module moved to `_archive/campaigns (2026-11-16)/`.
@@ -33,3 +33,4 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 - 21:50 UTC: Part 8 done, Part 7 merged, nav builder started. Briefs for saved/editor are in the scratchpad (brief-saved.md, brief-editor.md); copies in studio-notes/pending/r6-briefs/.
 - 22:40 UTC: resume + ideas merged; saved, nav, editor builders running. calendar suite's date-dependent desktop check fixed.
 - 23:05 UTC: saved merged (Campaigns archived, sw.js shell updated, README). align builder started. nav + editor still running.
+- 23:55 UTC: nav + editor merged; changelog 2.33.0/2.34.0/2.35.0 written; waiting for align, then full --changed run and merge to main.
