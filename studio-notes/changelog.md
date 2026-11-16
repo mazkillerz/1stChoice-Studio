@@ -13,6 +13,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.31.0 · 16 Nov 2026
+New: 21 ready-made November designs with the Omani cat, as team templates.
+
+### November · Omani cat templates
+type: feature
+The National Day stories and posts and the new everyday look (the cat made inside paper scenes) are now team templates, in their own collection, **November · Omani cat**. Open one from Templates (Team) or Saved: every layer can be changed, the background, the cat, the shadow, the logo and every line of text. The pictures also sit in Add asset under November · Omani cat, so the scenes and the six cat poses can go on any design.
+
 ## 2.30.0 · 15 Nov 2026
 Simplify: one button for one job, and every screen checked again.
 
