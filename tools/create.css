@@ -61,7 +61,8 @@ body.cr input,body.cr textarea{user-select:text;-webkit-user-select:text}
 .cr-sheet{position:fixed;z-index:61;background:var(--surface);color:var(--fg);display:flex;flex-direction:column;min-height:0;left:0;right:0;bottom:0;max-height:min(88dvh,900px);border-radius:var(--r-xl) var(--r-xl) 0 0;border-top:1px solid var(--line);box-shadow:var(--shadow-up);padding:0 var(--safe-r) var(--safe-b) var(--safe-l);animation:crup .32s cubic-bezier(.2,.9,.25,1)}
 .cr-sheet.tool{z-index:30;bottom:calc(var(--crbar) + var(--ctx-h) + var(--safe-b));max-height:min(46dvh,420px);padding-bottom:0;box-shadow:var(--shadow-up)}
 /* r6-editor: a panel that is not about the selected thing (Add, Layers) sits right on the bottom bar, as a tool page's sheet does */
-.cr-sheet.tool.dock{bottom:calc(var(--crbar) + var(--safe-b));max-height:min(50dvh,460px)}
+.cr-sheet.tool.dock{bottom:calc(var(--crbar) + var(--safe-b));max-height:min(45dvh,440px)}
+.cr-sheet.tool.dock[data-name="layers"]{max-height:min(52dvh,500px)}
 .cr-sheet[data-name="save"]{max-height:min(76dvh,640px)}   /* r6-editor: the tool pages' Save sheet height */
 .cr-sh-head{display:flex;align-items:center;gap:10px;padding:6px 16px 0;min-height:52px;flex:none;position:relative;cursor:grab;touch-action:none}   /* r6-editor: the tool pages' sheet header, value for value */
 .cr-sh-head .grab{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:40px;height:5px;border-radius:3px;background:var(--line)}
