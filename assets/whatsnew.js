@@ -327,12 +327,6 @@
       var v=parse(t);if(!v.length)throw new Error('empty');render(v);
     }).catch(error);
   }
-  /* r6-whatsnew: Back returns to the page the person came from (a Studio page); otherwise the link goes to the hub */
-  var back=document.querySelector('.back');
-  if(back)back.addEventListener('click',function(e){
-    var ref=document.referrer,same=false;
-    try{var u=new URL(ref);same=u.origin===location.origin&&!/whats-new\.html$/.test(u.pathname);}catch(_){}
-    if(same&&history.length>1){e.preventDefault();history.back();}
-  });
+  /* r6-nav: the Back link (data-back, assets/back.js) returns to the page the person came from */
   load();
 })();

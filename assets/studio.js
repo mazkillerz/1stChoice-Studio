@@ -466,7 +466,8 @@ const NAV=(()=>{
   try{ history.replaceState=function(s,t,u){ if(u!=null){ try{ keepSearch=new URL(u,location.href).search; }catch(_){} } return rs(s,t,u); }; }catch(_){}
   /* a layer's history steps must never move the page: the browser's own scroll restore is off while a layer is open (it put Saved back at
      the top when a menu closed), and the place is put back by hand after a quiet step back */
-  const manual=on=>{ try{ history.scrollRestoration=on?'manual':'auto'; }catch(_){} };
+  let hold=false;   /* r6-nav: the hub restores its own scroll place, so the browser's restore stays off there */
+  const manual=on=>{ try{ history.scrollRestoration=on||hold?'manual':'auto'; }catch(_){} };
   const settle=()=>{ if(!stack.length&&!want&&!flight&&!pushQ) setTimeout(()=>{ if(!stack.length&&!want&&!flight&&!pushQ) manual(false); },80); };
   let keepXY=null;
   const doPush=()=>{ manual(true); try{ ps(Object.assign({},history.state,{nav:stack.length}),''); }catch(_){} manual(true); };
@@ -502,7 +503,11 @@ const NAV=(()=>{
     if(r===false){ stack.push(top); doPush(); } else fixUrl(); settle();
     if(stack.length===0&&history.state&&history.state.nav===undefined) runWaiters();
   });
-  return {push,drop,idle,back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
+  /* r6-nav: adopt = a layer whose history entry is already there (the page was reloaded or came back to it); exit = the page is about to
+     step back over its layers' entries on purpose, so none of them may react (returns how many there are) */
+  function adopt(key,onBack){ if(!stack.some(e=>e.key===key)) stack.push({key,onBack}); }
+  function exit(){ const n=stack.length+want; stack.length=0; want=0; leaving=true; return n; }
+  return {push,drop,idle,adopt,exit,has:k=>stack.some(e=>e.key===k),quiet,hold:()=>{ hold=true; manual(true); },back(){ if(stack.length) try{ history.back(); }catch(_){} },depth:()=>stack.length,top:()=>stack.length?stack[stack.length-1].key:null};
 })();
 function dialog(html,cls){ const d=document.createElement('dialog'); d.className='dlg '+(cls||''); d.innerHTML=html; document.body.appendChild(d); d.addEventListener('close',()=>{ lockScroll(d,false); NAV.drop(d); setTimeout(()=>d.remove(),50); }); d.showModal(); lockScroll(d,true);
   /* r3-nav: Back closes it like Cancel (a busy dialog, or one whose cancel is refused, stays) */
@@ -516,6 +521,12 @@ function dialog(html,cls){ const d=document.createElement('dialog'); d.className
     const ev=new Event('cancel',{cancelable:true}); d.dispatchEvent(ev); if(!ev.defaultPrevented) d.close(); });
   function outside(e){ const r=d.getBoundingClientRect(); return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom; }
   return d; }
+/* r6-nav: leaving a page by its Back link goes ONE step back in history (the screen, collection, tab and scroll it came from, which the hub
+   restores), not to a new copy of Home. Layers' own history entries are stepped over; no history (a deep link, a new tab) goes to the hub. */
+const absHref=h=>{ try{ return new URL(h,location.href).href; }catch(_){ return String(h); } };
+function goBack(fb){ NAV.idle(()=>{ const B=window.StudioBack; if(B&&B.canBack()) B.go(fb,NAV.exit()); else location.href=B?B.target(fb):fb; }); }
+/* where the leave prompts (Leave, Discard, Update) go: a Back link or the plain hub address is a step back, anything else a normal link */
+function leaveTo(href){ const u=absHref(href); if(u===absHref(ROOT+'index.html')||[...document.querySelectorAll('a[data-back]')].some(a=>a.href===u)) goBack(href); else location.href=href; }
 /* ---------- 2.4.0: Add to calendar from anywhere (the Save sheet, a design's menu, an idea). One fast sheet in assets/calendar.js:
    day (this week first), optional time, Post / Story / Reel, optional caption. Resolves with the saved calendar item, or null. ---------- */
 const PLAN_VIEWS=['calendar','ideas','goals'];
@@ -1908,9 +1919,9 @@ async function tool(cfg){
       <div class="status" id="lvSt" role="status"></div>
       <div class="dlg-actions col"><button type="button" class="btn" id="lvUpd">Update “${esc(design.name)}”</button><button type="button" class="btn ghost" id="lvDis">Discard changes</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
     d.querySelector('#lvKeep').onclick=()=>d.close();
-    d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; location.href=href; };
+    d.querySelector('#lvDis').onclick=()=>{ baseJson=curJson(); leaving=true; leaveTo(href); };
     d.querySelector('#lvUpd').onclick=async()=>{ d.querySelectorAll('button').forEach(b=>b.disabled=true); d.querySelector('#lvSt').textContent='Updating…';
-      try{ await teamSave({name:design.name,keepCols:true}); leaving=true; location.href=href; }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
+      try{ await teamSave({name:design.name,keepCols:true}); leaving=true; leaveTo(href); }catch(err){ d.querySelector('#lvSt').textContent=teamErr(err); d.querySelectorAll('button').forEach(b=>b.disabled=false); } };
     return d;
   }
   function leaveDraftPrompt(href){
@@ -1918,8 +1929,8 @@ async function tool(cfg){
       <div class="dlg-actions col"><button type="button" class="btn" id="lvSave">Save it now</button><button type="button" class="btn ghost" id="lvLeave">Leave, keep the draft</button><button type="button" class="link danger" id="lvDrop">Discard it</button><button type="button" class="link" id="lvKeep">Keep editing</button></div></div>`);
     d.querySelector('#lvKeep').onclick=()=>d.close();
     d.querySelector('#lvSave').onclick=()=>{ d.close(); setTimeout(()=>{ if(isPhone()){ resetSaveSheet(); openSheet('save'); focusSheet('save'); } else { const c=$('save'); if(c){ c.scrollIntoView({block:'center',behavior:'smooth'}); c.focus({preventScroll:true}); } } },260); };
-    d.querySelector('#lvLeave').onclick=()=>{ draftNow(); leaving=true; location.href=href; };
-    d.querySelector('#lvDrop').onclick=()=>{ draftDropped=true; clearDraft(); leaving=true; location.href=href; };
+    d.querySelector('#lvLeave').onclick=()=>{ draftNow(); leaving=true; leaveTo(href); };
+    d.querySelector('#lvDrop').onclick=()=>{ draftDropped=true; clearDraft(); leaving=true; leaveTo(href); };
     return d;
   }
   let leaving=false;
@@ -1929,7 +1940,7 @@ async function tool(cfg){
     if(a.getAttribute('href').startsWith('#')) return;
     e.preventDefault(); e.stopImmediatePropagation(); if(waitingLeave) return; waitingLeave=true;
     toast('Still saving to the team… one moment'); const href=a.href;
-    teamQ.then(()=>{ waitingLeave=false; if(designDirty()){ leavePrompt(href); return; } leaving=true; location.href=href; }); },true);
+    teamQ.then(()=>{ waitingLeave=false; if(designDirty()){ leavePrompt(href); return; } leaving=true; leaveTo(href); }); },true);
   document.querySelectorAll('nav.top a').forEach(a=>a.addEventListener('click',e=>{ if(needAsk()){ e.preventDefault(); leavePrompt(a.href); } }));
   addEventListener('beforeunload',e=>{ if(teamBusy||(!leaving&&designDirty())){ e.preventDefault(); e.returnValue=''; } });
   async function openDesign(id,ready){
@@ -3911,8 +3922,8 @@ async function home(){
 }
 
 /* helpers shared with the experimental area (lab/) so it reuses the same photo loading, fonts and dialogs */
-const lab={coverFlat,healCover,sameNameCheck,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
+const lab={goBack,leaveTo,coverFlat,healCover,sameNameCheck,ROOT,assetPrevUrl,recentColours,addRecentColour,loadFile,isPhotoFile,isHeic,dialog,store,idb,esc,canvasBlob,stepDown,MORE_FONTS,ensureFont,brandFonts,brandAssets,brandTextFills,listedAssets,assetUrl,SHAPES,
   cloud,ensureMember,shareFiles,draftBase,listDrafts,removeDraft,DRAFT_CAP,devWord,TOOLS,toolPage,ICON,brandPalette,haptic,celebrate,fresh,lockScroll,getPins,setPin,movePin,
   brand:()=>BRAND, logo:()=>LOGO, unlocked:()=>store('studio:lab')==='1', lock:()=>store('studio:lab',null)};
-window.Studio={shapeOf,fmtFromSize,planDesign,nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
+window.Studio={goBack,leaveTo,shapeOf,fmtFromSize,planDesign,nav:NAV,lazy,loadScript,campaignRecipe,campaignStamp,version:VERSION,phrasesApproved,tool,home,registerBrand,registerPack,packSeason,useBrand,tokens,flags,lab,normText,normMap,groundField,brandList:window.Studio&&window.Studio.brandList||[],W,H};
 })();

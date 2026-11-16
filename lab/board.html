@@ -19,7 +19,7 @@
 </head>
 <body class="board-app">
 <header class="bt" id="topbar">
-  <a class="bt-btn bt-back" href="index.html" aria-label="Back to the lab" title="Back to the lab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
+  <a class="bt-btn bt-back" href="index.html" data-back aria-label="Back" title="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
   <div class="bt-file">
     <input id="bName" class="bt-name" type="text" maxlength="60" aria-label="Board name" dir="auto" spellcheck="false">
     <button type="button" class="bt-btn bt-caret" id="fileMenu" aria-label="Board menu" title="Board menu" aria-haspopup="menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -80,6 +80,7 @@
 <div id="palette" class="palette" role="dialog" aria-label="Find a tool or action" hidden><input type="search" id="palQ" placeholder="Type a tool or action… (e.g. circle, export pdf, mask)" autocomplete="off" aria-label="Search tools and actions"><div id="palList" class="pal-list" role="listbox"></div></div>
 <div id="present" class="present" hidden><img id="presentImg" alt=""><div class="present-bar"><button type="button" id="pPrev" aria-label="Previous">‹</button><span id="pNum"></span><button type="button" id="pNext" aria-label="Next">›</button><button type="button" id="pClose" aria-label="Close">✕</button></div></div>
 <script src="../assets/vendor/konva.min.js"></script>
+<script src="../assets/back.js"></script>
 <script src="../assets/studio.js"></script>
 <script src="../assets/components.js"></script>
 <script src="../brands/brands.js"></script>
