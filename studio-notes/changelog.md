@@ -17,7 +17,7 @@ How the page shows it, with no extra work: the newest version is the hero card a
 Team templates live in Templates only, and November gets its own chip there.
 
 ### Templates stay in Templates
-type: improvement
+type: improve
 Saved now holds only designs. A team template shows in Templates, not in Saved; it reaches Saved only when you open it, change it and save it as your own design. Search still finds templates.
 
 ### November · Omani cat chip
