@@ -58,7 +58,7 @@ const PAGE=({ENTRIES,CATS,mode,delay,noTeamNote})=>{
   const effBg=el=>{ const ls=[]; for(let n=el;n;n=n.parentElement){ const c=parse(getComputedStyle(n).backgroundColor); if(c[3]>0) ls.push(c); if(c[3]>=1) break; } let base=[255,255,255,1]; for(let i=ls.length-1;i>=0;i--) base=over(ls[i],base); return base; };
   window.__contrast=sels=>{ const out=[]; sels.forEach(s=>document.querySelectorAll(s).forEach(el=>{ if(!el.getClientRects().length) return; const bg=effBg(el), fg=over(parse(getComputedStyle(el).color),bg); const l1=lum(fg), l2=lum(bg); out.push({s,r:(Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05),txt:(el.textContent||'').trim().slice(0,24)}); })); return out; };
   window.__ids=()=>[...document.querySelectorAll('.tp-card')].map(a=>window.__api&&a.getAttribute('href').split('t=')[1]);
-  window.__lefts=()=>{ const l=s=>{ const e=document.querySelector(s); return e?Math.round(e.getBoundingClientRect().left*10)/10:null; }; return {back:l('.tp-back'),h1:l('.tp-ttl'),chip:l('.tp-chip'),card:l('.tp-card')}; };
+  window.__lefts=()=>{ const l=s=>{ const e=document.querySelector(s); return e?Math.round(e.getBoundingClientRect().left*10)/10:null; }; return {back:l('.tp-back svg'),h1:l('.tp-ttl'),chip:l('.tp-chip'),card:l('.tp-card')}; };
 };
 const BOOT=async(ctx,tag,cfg)=>{
   const pg=await ctx.newPage(); pg.on('pageerror',e=>errs.push(tag+': '+e.message)); pg.on('console',m=>{ if(m.type()==='error'&&!/Failed to load resource|ERR_|net::/.test(m.text())) errs.push(tag+' console: '+m.text()); });
@@ -250,7 +250,7 @@ for(const scheme of ['light','dark']){
   await pg.tap('.tp-chip[data-id="all"]'); await pg.waitForTimeout(450);
   await pg.evaluate(()=>{ document.documentElement.dir='rtl'; }); await pg.waitForTimeout(200);
   const rt=await pg.evaluate(()=>{ const r=s=>{ const e=document.querySelector(s); return e?Math.round(e.getBoundingClientRect().right):null; }; const bd=document.querySelector('.tp-card[href$="t=r1"] .tp-badge'), fr=bd.closest('.tp-card').querySelector('.tp-frame').getBoundingClientRect();
-    return {back:r('.tp-back'),h1:r('.tp-ttl'),chip:r('.tp-chip'),card:r('.tp-card'),vw:document.documentElement.scrollWidth<=document.documentElement.clientWidth,arrow:getComputedStyle(document.querySelector('.tp-back svg')).transform,badgeBelow:Math.round(bd.getBoundingClientRect().top-fr.bottom)}; });
+    return {back:r('.tp-back svg'),h1:r('.tp-ttl'),chip:r('.tp-chip'),card:r('.tp-card'),vw:document.documentElement.scrollWidth<=document.documentElement.clientWidth,arrow:getComputedStyle(document.querySelector('.tp-back svg')).transform,badgeBelow:Math.round(bd.getBoundingClientRect().top-fr.bottom)}; });
   ok('right-to-left page: back button, title, chips and grid share the right edge, arrow turned round, badge under the preview, no sideways scroll',rt.back===344&&rt.h1===344&&rt.chip===344&&rt.card===344&&rt.vw&&/matrix\(-1/.test(rt.arrow)&&rt.badgeBelow>=0,rt);
   await pg.evaluate(()=>{ document.documentElement.dir='ltr'; });
   await pg.setViewportSize({width:700,height:800}); await pg.tap('.tp-chip[data-id="all"]').catch(()=>{}); await pg.waitForTimeout(500);
