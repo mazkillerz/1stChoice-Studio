@@ -55,7 +55,7 @@ const MAP=[
   [/assets\/studio\.(js|css)|index\.html/,['hub-offline','hub-fixes','home7-hub','home7-saved','pins','pinorder','fresh','peek','select','extra','cardnames','alltools-cam','simplify','quickpages','simplify15','brandkit','reels-hub','saved-find','simplify30','continue-clear','create-render','select-swipe','collections-save']],
   [/assets\/search\./,['search','polish71-search','create-search','tplteam','select-swipe']],
   [/^tests\/goldens\//,['goldens']],[/tools\/create|^templates\//,['goldens','nd-templates','text-fill','create','create-search','tplfav','create-stickers','tplteam','create-render','create-fit','create-fixes']],
-  [/changelog\.md|whatsnew/,['whatsnew']],
+  [/changelog\.md|whatsnew/,['whatsnew','r6-whatsnew']],
   [/sw\.js|manifest/,['share']],
   [/assets\/studio\.css/,['contrast','polish71-saved','polish71-bar','waiting-tag','simplify45','toolfix43']],[/\.css$/,['simplify45']],
   [/^lab\//,['lab','lab-pro','board-penpot','board-flex','board-stickers','board-touch','board-assets']],

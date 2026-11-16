@@ -11,7 +11,7 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 - Any other line that starts with `[try:` is ignored.
 - Anything above the first `##` (this intro) is not shown.
 
-How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). The **Jump to** bar and the **All versions** sheet go straight to any version. `whats-new.html#v-2.3.0` opens that version.
+How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
 ## 2.32.3 · 16 Nov 2026
 Template covers are back.
