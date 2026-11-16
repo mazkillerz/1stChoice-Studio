@@ -13,6 +13,67 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.35.0 · 17 Nov 2026
+Simplify: a calmer Ideas tab, readable Saved cards, one editor, and fewer buttons that do the same job.
+
+### A calmer Ideas tab
+type: improve
+One row under Calendar / Ideas / Goals: the four stages and a small search icon. The type (Reel, Post, Story, Giveaway) is a tag on each card instead of a row of filters, and search opens a clean field that also finds ideas by type (try "reel"). The separate New button is gone: the + button opens New idea on the Ideas tab and plans a post on the Calendar tab.
+
+### One editor, the same panels everywhere
+type: improve
+Templates open in Create, and Create's Add and Layers panels now open like the ones on every tool page: they sit on the bottom bar with the design still visible above them, with the same header, grey Done and swipe down. Elements, assets, shapes, stickers and emoji use the same tiles and group names as the tool pages. The Done button is 48px everywhere.
+
+### Saved cards are easier to read
+type: improve
+The ⋯ button sits under the picture next to the name instead of covering the design, and names show on two lines instead of being cut. The same goes for Team assets, Create's template names, the calendar picker, Continue editing and the Video lists.
+
+### Campaigns are archived
+type: improve
+Nobody used Campaigns (shared words for a group of designs), so the button, Select → Campaign and the design menu row are gone. Collections already group designs. No saved design or calendar item changed.
+
+### A calmer What's new page
+type: improve
+The Jump to row is gone. One row of filters (All, New, Improved, Fixed) stays at the top, version summaries show in full on two lines, and Back returns to the page you came from.
+
+### Home keeps its current look
+type: improve
+The New Home preview is archived and its switch is gone from Settings → Previews; the Home you use stays the main one. The Ideas tile now says something, like Goals does: "2 new" when teammates added ideas you have not opened, otherwise "4 ideas".
+
+## 2.34.0 · 17 Nov 2026
+Back always takes you back to where you were, and voice notes play properly.
+
+### Back goes back to where you were
+type: improve
+The top-left Back button and the phone's back gesture now return to the same screen, Templates category, Saved collection and scroll place. Before, a design opened from a collection (like November · Omani cat) brought you back to Home.
+
+### Collections have their own Back step
+type: improve
+Opening a category in Templates or a collection in Saved is one step: Back shows the full list where you left it, and Back again goes Home.
+
+### The Back button says "Back"
+type: improve
+On every tool, Create, Video, Board, the Lab and What's new. It goes to Home only when there is nowhere to go back to (a link opened fresh).
+
+### Voice notes play properly
+type: fix
+The waveform stays on screen while a note plays and fills as it goes, the time runs (0:07 / 0:32), tap or drag the wave to jump, and 5-second back and forward buttons sit next to Play. The same player is used for an idea's own note, every reply and the preview before you send.
+
+## 2.33.0 · 17 Nov 2026
+Nothing you edit is lost: saved designs and templates keep your changes too.
+
+### Nothing is lost when you leave a design
+type: fix
+Edits to an opened saved design or template are kept on this phone as you work, like new stories always were. Open it again, or tap it in Continue editing, and your changes are back, still updating the same design (no copy).
+
+### Your unsaved changes are back
+type: feature
+One small bar says your edits were put back, with "Saved version" to see the saved look instead. Your edits stay in Continue editing until you remove them.
+
+### Continue editing shows saved designs too
+type: improve
+A saved design with changes shows under its own name with "Unsaved changes · 5 min ago"; Create stories show the name you gave them. Create also brings you back to the page you were on.
+
 ## 2.32.3 · 16 Nov 2026
 Template covers are back.
 
