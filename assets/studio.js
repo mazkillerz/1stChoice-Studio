@@ -3026,7 +3026,7 @@ async function home(){
   /* a link tapped while a menu or sheet is open: close them first (in step), then go; so Back from the page lands on the hub itself */
   document.addEventListener('click',e=>{ if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey) return;
     const a=e.target.closest&&e.target.closest('a[href]'); if(!a||a.target||a.hasAttribute('download')||a.origin!==location.origin||(a.pathname===location.pathname&&a.hash)) return;
-    if(!NAV.depth()||HUBKEEP.includes(NAV.top())) return; e.preventDefault(); NAV.go(a.href,HUBKEEP); },true);
+    if(!NAV.depth()||HUBKEEP.includes(NAV.top())) return; e.preventDefault(); NAV.go(a.href,HUBKEEP); });   /* bubble phase: a handler that already took the click (press and hold, search) wins */
   let homeY=0;
   function showView(v){ const was=curView(); setTab(v); if(v!=='saved'&&sel) endSelect(true); if(v===was) return;
     if(was==='saved') closeFind(true);
