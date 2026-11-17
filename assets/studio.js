@@ -178,7 +178,10 @@ const fresh=()=>true;
 /* smooth page changes: pages fade into each other where the browser can (cross-page view transitions: each page's <head> opts in
    with @view-transition, it has to be in the HTML); elsewhere the new page fades in */
 (function(){ try{ localStorage.removeItem('studio:look'); }catch(_){}   // the old per-device preview switch
-  document.documentElement.classList.toggle('no-vt',!('onpagereveal' in window)); })();
+  document.documentElement.classList.toggle('no-vt',!('onpagereveal' in window));
+  /* r6: a page change cut short (Back while the fade still runs) rejects the transition's promises; that is fine, never an error */
+  const quiet=e=>{ const t=e.viewTransition; if(t){ t.ready&&t.ready.catch(()=>{}); t.finished&&t.finished.catch(()=>{}); t.updateCallbackDone&&t.updateCallbackDone.catch(()=>{}); } };
+  addEventListener('pagereveal',quiet); addEventListener('pageswap',quiet); })();
 /* haptics: a short buzz on Android; on iPhone (iOS 18+) the system switch tick, which is the only haptic Safari allows */
 let hapEl=null;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -529,7 +532,7 @@ function dialog(html,cls){ const d=document.createElement('dialog'); d.className
 /* r6-nav: leaving a page by its Back link goes ONE step back in history (the screen, collection, tab and scroll it came from, which the hub
    restores), not to a new copy of Home. Layers' own history entries are stepped over; no history (a deep link, a new tab) goes to the hub. */
 const absHref=h=>{ try{ return new URL(h,location.href).href; }catch(_){ return String(h); } };
-function goBack(fb){ NAV.idle(()=>{ const B=window.StudioBack; if(B&&B.canBack()) B.go(fb,NAV.exit()); else location.href=B?B.target(fb):fb; }); }
+function goBack(fb){ NAV.idle(()=>{ const B=window.StudioBack; if(B&&B.canBack()){ NAV.exit(); const st=history.state, n=st&&st.nav>0?st.nav|0:0; B.go(fb,n); } else location.href=B?B.target(fb):fb; }); }   /* r6: step over the layer entries that are really in history (state.nav), not the ones the stack still lists: one too many skipped a page */
 /* where the leave prompts (Leave, Discard, Update) go: a Back link or the plain hub address is a step back, anything else a normal link */
 function leaveTo(href){ const u=absHref(href); if(u===absHref(ROOT+'index.html')||[...document.querySelectorAll('a[data-back]')].some(a=>a.href===u)) goBack(href); else location.href=href; }
 /* ---------- 2.4.0: Add to calendar from anywhere (the Save sheet, a design's menu, an idea). One fast sheet in assets/calendar.js:

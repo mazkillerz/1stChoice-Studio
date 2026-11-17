@@ -134,7 +134,7 @@ const JOBS=+process.env.JOBS||Math.min(4,os.cpus().length);
 console.log(`Running ${names.length} suites, ${JOBS} at a time: ${names.join(' ')}`);
 const t0=Date.now(), out=[];
 const QUIET=!process.env.NOQUIET, quietArgs=QUIET?['--import',new URL('_quiet.mjs',import.meta.url).pathname]:[];
-const REAL_TIME=['welcome'];   // sleeps that wait for a slide's timed choreography (JS animation sequences, not timers or CSS animations): always the full time
+const REAL_TIME=['welcome','today-fresh'];   // sleeps that wait for a slide's timed choreography (JS animation sequences, not timers or CSS animations): always the full time   /* today-fresh: pg.clock.install + the quiet sleeps overflow the stack */
 const runOne=name=>new Promise(res=>{ const t=Date.now(); let log='';
   const p=spawn(process.execPath,[...(REAL_TIME.includes(name)?[]:quietArgs),`tests/${name}.mjs`],{env:process.env});
   p.stdout.on('data',d=>log+=d); p.stderr.on('data',d=>log+=d);

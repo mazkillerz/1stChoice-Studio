@@ -68,6 +68,7 @@ d=await byName('Leave early');
 ok('the story that left early is in its collection',d&&(d.cols||[]).includes('Collabs'),d&&d.cols);
 
 /* 5. Saved page: Collections sheet keeps a typed name without Add */
+pg.on('dialog',dl=>dl.type()==='beforeunload'?dl.accept():dl.dismiss());   /* r6: Back above returned to an earlier test page that may hold unsaved edits */
 await pg.goto(BASE+'index.html#saved'); await pg.waitForSelector('#savedGrid .sv-card[data-id]',{timeout:8000}); await pg.waitForTimeout(400);
 const card=pg.locator('#savedGrid .sv-card',{hasText:'Typed only'}).first();
 await card.click({button:'right'}); await pg.waitForTimeout(400);
