@@ -98,7 +98,7 @@ async function open(o){
   function msg(icon,title,text,btns){ return `<div class="ta-note"><div class="ta-note-ic">${ic(icon)}</div><b>${esc(title)}</b><p>${esc(text)}</p>${btns||''}</div>`; }
   function paint(){
     const body=$('#taBody'); const live=status==='ok';
-    $('[data-add]').hidden=!(live||status==='empty'); $('.ta-search').hidden=!live; $('.ta-filters').hidden=!live;
+    $('.ta-addbtn').hidden=!live;   /* r6: an empty library has one Add (in the note), not two */ $('.ta-search').hidden=!live; $('.ta-filters').hidden=!live;
     if(status==='loading'){ body.innerHTML='<div class="ta-grid ta-skel" aria-label="Loading">'+'<div class="ta-sk"></div>'.repeat(9)+'</div>'; return; }
     if(status==='signedout'){ body.innerHTML=msg('user','Sign in to see the team’s assets','Everything the team adds is shared here.','<button type="button" class="btn slim" data-signin>Sign in</button>'); return; }
     if(status==='off'){ body.innerHTML=msg('lab','Team assets are switched on by the owner once','Ask them to approve it. Nothing is lost, and the brand assets keep working.'); return; }

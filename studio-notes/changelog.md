@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.35.1 · 17 Nov 2026
+Two small fixes after the overnight round.
+
+### Back never skips a page
+type: fix
+In one case (leaving a design while a save was finishing) Back could jump one page too far. It now steps back exactly one page.
+
+### One Add button in an empty Team assets library
+type: fix
+An empty library showed two Add buttons; now there is one, in the middle of the page.
+
 ## 2.35.0 · 17 Nov 2026
 Simplify: a calmer Ideas tab, readable Saved cards, one editor, and fewer buttons that do the same job.
 

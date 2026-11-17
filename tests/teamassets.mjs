@@ -37,7 +37,7 @@ await pg.tap('#bar [data-open="layers"]'); await pg.waitForTimeout(300); await p
 ok('the Asset sheet paints brand assets at once and the Team group with "Add or browse"',await pg.evaluate(()=>document.querySelectorAll('#assetList .asset-grid .asset-tile').length>3&&!!document.querySelector('#assetTeam [data-team-browse]')));
 await pg.screenshot({path:SHOTS+'/01-tool-team-group-light.png'});
 await pg.tap('#assetTeam [data-team-browse]'); await pg.waitForSelector('.ta-dlg .ta-note [data-add]',{timeout:8000});
-ok('an empty library says so and offers Add',/No team assets yet/.test(await pg.textContent('.ta-dlg .ta-note'))&&await pg.isVisible('.ta-dlg [data-add]'));
+ok('an empty library says so and offers Add',/No team assets yet/.test(await pg.textContent('.ta-dlg .ta-note'))&&await pg.isVisible('.ta-dlg .ta-note [data-add]')&&!(await pg.isVisible('.ta-dlg .ta-addbtn')));   /* r6: one Add, not two */
 await pg.screenshot({path:SHOTS+'/02-library-empty-light.png'});
 await pg.setInputFiles('#taFile',[logo]); await pg.waitForSelector('#taNext:not([disabled])',{timeout:15000});
 ok('the background step starts on Logo for a flat ground, with strength and inside-areas controls',await pg.getAttribute('[data-mode="logo"]','aria-pressed')==='true'&&await pg.isVisible('#taTol')&&await pg.isChecked('#taHoles'));
