@@ -60,10 +60,10 @@ await pg.evaluate(()=>{ const C=window.StudioCloud, sd=C.saveDesign; C.saveDesig
 if(await pg.getAttribute('#teamCols .chip[data-col="Collabs"]','aria-pressed')!=='true') await pg.tap('#teamCols .chip[data-col="Collabs"]');
 await pg.tap('#save');
 await pg.waitForFunction(()=>/Saving to the team/.test(document.getElementById('teamStatus').textContent),null,{timeout:20000});
-await pg.evaluate(()=>document.querySelector('nav.top a[href]').click()); await pg.waitForTimeout(300);
+const leaveFrom=pg.url(); await pg.evaluate(()=>document.querySelector('nav.top a[href]').click()); await pg.waitForTimeout(300);
 ok('a link tapped mid-save does not leave yet',/tools\/restock/.test(pg.url())&&/Still saving/.test(await pg.textContent('#toast')),pg.url());
-await pg.waitForURL(u=>!/tools\/restock/.test(String(u)),{timeout:15000}).catch(()=>{});
-ok('...and goes once the save is done',!/tools\/restock/.test(pg.url()),pg.url());
+await pg.waitForURL(u=>String(u)!==leaveFrom,{timeout:15000}).catch(()=>{});
+ok('...and goes once the save is done (r6: Back goes to the page before, here an earlier test page)',pg.url()!==leaveFrom,pg.url());
 d=await byName('Leave early');
 ok('the story that left early is in its collection',d&&(d.cols||[]).includes('Collabs'),d&&d.cols);
 

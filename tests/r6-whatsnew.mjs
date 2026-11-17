@@ -14,13 +14,14 @@ async function mk(w,h,scheme){const ctx=await b.newContext({viewport:{width:w,he
 for(const scheme of ['light','dark']){
   const {ctx,pg}=await mk(390,844,scheme);
   await pg.goto(BASE+'whats-new.html'); await pg.waitForSelector('.wn-latest .wn-line');
-  ok(scheme+': no Jump to bar or All versions button',await pg.evaluate(()=>!document.querySelector('#wnJump,.wn-jump,.wn-jall')&&!/Jump to|All versions/.test(document.body.innerText)));
+  ok(scheme+': no Jump to bar or All versions button',await pg.evaluate(()=>!document.querySelector('#wnJump,.wn-jump,.wn-jall')&&![...document.querySelectorAll('button,a,[role=button]')].some(e=>/^(Jump to|All versions)/.test(e.textContent.trim()))));
   const chips=await pg.$$eval('.wn-f',l=>l.map(x=>x.querySelector('span').textContent));
   ok(scheme+': exactly one chip row with All / New / Improved / Fixed',await pg.locator('.wn-filters').count()===1&&chips.join()==='All,New,Improved,Fixed',chips.join());
   ok(scheme+': one chip selected',await pg.locator('.wn-f[aria-pressed="true"]').count()===1);
   await pg.click('.wn-f[data-filter="fix"]'); await pg.waitForTimeout(300);
   const types=await pg.$$eval('.wn-line',l=>l.filter(x=>!x.hidden&&!x.closest('[hidden]')).map(x=>x.dataset.type));
-  ok(scheme+': Fixed shows only fix changes',types.length>0&&types.every(t=>t==='fix'),types.length+' lines');
+  const rowsLeft=await pg.$$eval('.wn-ver',l=>l.filter(x=>!x.hidden&&!x.closest('[hidden]')).length).catch(()=>0);   /* r6: the newest version may have no fix: then only versions with fixes stay listed */
+  ok(scheme+': Fixed shows only fix changes',types.every(t=>t==='fix')&&(types.length>0||rowsLeft>0),types.length+' lines, '+rowsLeft+' version rows');
   ok(scheme+': Fixed hides versions with no fix',await pg.$$eval('.wn-ver',l=>l.every(v=>v.hidden||v.querySelector('.wn-cc[data-type="fix"]'))));
   /* contrast of selected and unselected chip text */
   const col=async sel=>pg.$eval(sel,e=>{const cs=getComputedStyle(e);let bg=cs.backgroundColor,n=e;while(/rgba\(.*, ?0\)|transparent/.test(bg)&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor;}return [cs.color,bg];});
