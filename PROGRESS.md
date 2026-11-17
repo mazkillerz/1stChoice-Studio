@@ -36,3 +36,39 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 - 23:55 UTC: nav + editor merged; changelog 2.33.0/2.34.0/2.35.0 written; waiting for align, then full --changed run and merge to main.
 - 00:20 UTC 17 Nov: align merged; skill + taste + lessons updated; full `--changed` run (146 suites) started; then merge to main.
 - 00:20 UTC 17 Nov: merged to main (47b907b, Studio 2.35.0). Next: Part 10 (extra time), owner's summary.
+- 00:40 UTC 17 Nov: 2.35.1 (Back skip fix, one Add in empty Team assets) on main (9245021). Builder worktrees removed (branches `claude/r6-*` kept). **Round complete.** A 4 a.m. resume run only needs to read this and confirm; the open items below are for a next round.
+
+## Final summary for the owner
+**Live now: Studio 2.35.1** (versions 2.33.0, 2.34.0, 2.35.0 Simplify, 2.35.1 fixes). Everything below passed its tests before going to main.
+
+Fixed / improved
+1. **Continue / resume (2.33.0):** saved designs and templates now autosave a linked draft as you edit (tools and Create). Open the design again, or tap it in Continue editing, and your edits are back, still updating the same design. A small bar offers "Saved version". Create also returns to the page you were on. Nothing is dropped unless you Update, Save as new, Discard or ✕.
+2. **One editor (2.35.0):** Create (where templates open) now opens Add and Layers like every tool page: on the bottom bar, design visible above, same header, grey Done, swipe down, same tiles and group names. Done is 48px everywhere.
+3. **Back (2.34.0, 2.35.1):** the top-left Back and the phone's back gesture return to the same screen, Templates category, Saved collection, tab and scroll place. Collections are their own Back step. Every page's button now says "Back".
+4. **Voice notes (2.34.0):** waveform stays and fills while playing, running time, tap/drag to seek, 5 s back/forward, the same player on every note and reply.
+5. **Ideas (2.35.0):** one row (stages + search icon); type is a tag on each card; search also finds types ("reel"); no separate New: the + opens New idea. Same rule applied to Calendar: its New button is gone, the + plans a post there.
+6. **Saved and every grid (2.35.0):** ⋯ moved under the picture, names on two lines at full width; same for Home's row, Team assets, Create picker, calendar picker, Continue editing, Video lists. Saved's sort button moved into the collection row (one row less).
+7. **What's New (2.35.0):** Jump to removed, one filter row (All / New / Improved / Fixed), summaries never cut.
+8. **Home (2.35.0):** current Home kept; Ideas tile now shows "2 new" or "4 ideas"; small polish (tiles match the Calendar row).
+9. **Alignment pass (2.35.0):** radii, text sizes, edges and icon sizes lined up on Home, Saved, Templates, Plan, Goals, What's New, search, welcome, menus.
+
+Archived (nothing deleted)
+- **Campaigns** → `_archive/campaigns (2026-11-16)/`.
+- **New Home preview** (home2) → `_archive/new-home-preview (2026-11-16)/`; its switch is gone from Settings → Previews.
+
+Verdict on Campaigns: a campaign was a group of designs sharing the same words (headline, sub line, button) and look, so changing the words once changed them on every design in it. Supabase showed 0 campaigns and 0 linked designs, and collections already group designs, so I archived it. The table and data are untouched, so it can come back.
+
+Behind preview toggles: nothing new. The existing previews stay as they were (Team workflow, Import, Moving stories, Remove background).
+
+Decisions I made for you
+- Archived Campaigns instead of folding it into collections (unused, and it would add a concept).
+- Create's panels now follow the tool pages' layout and went live, because it is a consistency fix. The "Your photos" tile in Create's Add was removed because the Photo button does the same.
+- A saved design's draft is kept after a picture-only save, because the edits are not in the team copy yet.
+- If a teammate updated a design after your unsaved edits, your edits still come back, and the bar says the saved version was updated since.
+- No Supabase changes were needed (no migrations).
+
+Still left (for a next round)
+- The **inspector** still differs: the tool pages use tabs in one sheet, while Create uses an edit bar with one sheet per job. Unifying it is a bigger redesign and should go behind a preview first.
+- Calendar keeps two control rows (Week/Month/Feed, then the date arrows). They do different jobs, so I kept them.
+- What's New has one before/after pair (Saved); the other alignment shots are in `assets/whatsnew/r6-align-*`.
+- Wording to approve: none (no new Arabic wording was added).
