@@ -22,7 +22,7 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 | 2 | 6 Saved: Campaigns verdict, "⋯" over previews, cut titles, every grid | r6-saved | sonnet builder | **merged** (+ lead: names full width) |
 | 2 | 2 One editor: same panels/sheets in Create (templates) and tool pages | r6-editor | sonnet builder | **merged** (inspector still differs: tabs vs edit bar — left for later) |
 | 3 | 9 Alignment / consistency pass, every screen | r6-align | sonnet builder | **merged** |
-| 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | changelog 2.33–2.35 + VERSION + sw cache done; still: align card, --changed run, merge to main, skill, summary |
+| 3 | Release: versions, What's New cards, skill upgrade, summary | lead | | **released to main as 2.35.0** (full --changed run: 144/147 green, the 3 reds were test assumptions + one real Back bug, all fixed and re-run green); skill + notes done |
 
 ## Decisions made for the owner
 - Campaigns: archived. Supabase had 0 campaigns and 0 linked designs/calendar items (checked 16 Nov); table and data kept, UI and module moved to `_archive/campaigns (2026-11-16)/`.
@@ -35,3 +35,4 @@ one at a time, run `node tests/run.mjs --changed`, then merge to `main` when gre
 - 23:05 UTC: saved merged (Campaigns archived, sw.js shell updated, README). align builder started. nav + editor still running.
 - 23:55 UTC: nav + editor merged; changelog 2.33.0/2.34.0/2.35.0 written; waiting for align, then full --changed run and merge to main.
 - 00:20 UTC 17 Nov: align merged; skill + taste + lessons updated; full `--changed` run (146 suites) started; then merge to main.
+- 00:20 UTC 17 Nov: merged to main (47b907b, Studio 2.35.0). Next: Part 10 (extra time), owner's summary.
