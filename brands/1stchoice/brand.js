@@ -14,12 +14,13 @@ Studio.registerBrand({
     body:'Cairo',              // small lines, buttons, place names
     latin:'Modak',             // the brand's Latin display face (numbers, kicker, handle)
     css:'fonts/fonts.css',     // self-hosted copies (woff2 + OFL licences in fonts/), loaded first
-    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak',   // fallback only
+    google:'family=Cairo:wght@600;800&family=Lalezar&family=Modak&family=Anton',   // fallback only
     /* fonts offered first in the Font menu; new text always starts in display/body above */
     choices:[
       {family:'Lalezar',label:'Lalezar (headlines)',wt:''},
       {family:'Cairo',label:'Cairo (body)',wt:'800'},
-      {family:'Modak',label:'Modak (English, logo style)',wt:''}
+      {family:'Modak',label:'Modak (English, logo style)',wt:''},
+      {family:'Anton',label:'Anton (English, GTA VI headlines)',wt:''}
     ]
   },
   colors:{
@@ -45,7 +46,7 @@ Studio.registerBrand({
     {id:'blob',name:'Blob',hex:'#E5D5C0'},{id:'gold',name:'Gold',hex:'#D6B078'},{id:'yellow',name:'Passion yellow',hex:'#F6C040'},
     {id:'berry',name:'Passion berry',hex:'#BE2C5C'}
   ],
-  packs:['nd26','gt','nov26'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
+  packs:['nd26','gt','nov26','gta6'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
   handle:'@1stchoice.om',      // Instagram handle (the "Instagram handle" component)
   /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
   flavours:[

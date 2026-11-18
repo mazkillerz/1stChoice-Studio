@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.36.0 · 18 Nov 2026
+GTA VI posts in Templates, with every word editable.
+
+### GTA VI templates
+type: feature
+A new GTA VI chip in Templates with four posts: the customer-mission collage (home, map, drive, shop, fridge, pay, then Mission passed), Most wanted, Item collected and Mission passed. Each opens in Create with the drawn scene as one layer and every word as its own text layer in Anton, outline and shadow included, so you can retype MISSION PASSED, RESPECT + or the notice box. The stars, the white logo and the drawn Classic and Passion cans are in Add asset under GTA VI.
+
+### Anton in the Font menu
+type: improve
+Anton, the tall bold headline face the GTA VI posts use, is now in the brand fonts, works offline and saves sharp.
+
 ## 2.35.1 · 17 Nov 2026
 Two small fixes after the overnight round.
 
