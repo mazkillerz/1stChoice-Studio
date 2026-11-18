@@ -44,7 +44,7 @@ const MAP=[
   [/assets\/feed\./,['feed','calendar','calspeed']],
   [/assets\/review\./,['review']],[/assets\/rules\./,['rules','captions']],[/assets\/phrasebook\./,['phrasebook']],
   [/assets\/components\.js|tools\/create-lib\.js/,['components','goldens']],
-  [/brands\/[\w-]+\/packs\/|tests\/kit\.mjs/,['packs','nd-templates','got-talent','goldens','templates']],
+  [/brands\/[\w-]+\/packs\/|tests\/kit\.mjs/,['packs','nd-templates','got-talent','gta6','goldens','templates']],
   [/tools\/create-import/,['create-import']],[/tools\/create-motion/,['create-motion']],[/tools\/create-resize/,['create-resize']],
   [/tools\/create\.js|tools\/create-core\.js/,['create-import','create-motion','create-resize','rules']],
   [/assets\/cloud\.js|tests\/fakecloud\.js/,['calendar','review','captions','phrasebook']],
