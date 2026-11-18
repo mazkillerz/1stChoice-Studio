@@ -13,6 +13,13 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.36.1 · 18 Nov 2026
+The GTA VI collage after the team's notes.
+
+### GTA VI collage: a mission, not a title
+type: improve
+The customer-mission collage now opens with a game-style mission notice top-left (NEW MISSION / GET THE COLD BREW, both editable), GTA VI bottom-left and the logo bottom-right, so nothing covers the middle. The cat at home wears a long dishdasha that covers his legs, and he drives a nicer red convertible.
+
 ## 2.36.0 · 18 Nov 2026
 GTA VI posts in Templates, with every word editable.
 
