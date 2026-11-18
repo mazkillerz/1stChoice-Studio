@@ -5,7 +5,7 @@ Studio.registerPack({
   name:'GTA VI',
   dates:{from:'01-01',to:'12-31'},
   templateCat:{id:'gta6',label:'GTA VI'},
-  palette:[{id:'gta6-yellow',name:'Mission yellow',hex:'#F6C040'},{id:'gta6-pink',name:'Vice pink',hex:'#FF6FA8'},{id:'gta6-purple',name:'Vice purple',hex:'#8A3DFF'}],
+  palette:[],
   textFills:[],
   assets:[
     {"id": "gta6-bg-most-wanted", "label": "Scene · Most wanted aisle", "file": "packs/gta6/assets/bg-most-wanted.jpg", "prev": "packs/gta6/prev/bg-most-wanted.webp", "group": "GTA VI", "noFlip": true},
