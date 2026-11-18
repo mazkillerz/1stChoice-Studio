@@ -18,7 +18,7 @@ The GTA VI collage after the team's notes.
 
 ### GTA VI collage: a mission, not a title
 type: improve
-The customer-mission collage now opens with a game-style mission notice top-left (NEW MISSION / GET THE COLD BREW, both editable), GTA VI bottom-left and the logo bottom-right, so nothing covers the middle. The cat at home wears a long dishdasha that covers his legs, and he drives a red family saloon with a yellow number plate.
+The customer-mission collage now opens with a game-style mission notice top-left (NEW MISSION / GET THE COLD BREW, both editable), GTA VI bottom-left and the logo bottom-right, so nothing covers the middle. The cat at home wears a long dishdasha that covers his legs, and he drives a red family saloon, seen from the side through the open window.
 
 ## 2.36.0 · 18 Nov 2026
 GTA VI posts in Templates, with every word editable.
