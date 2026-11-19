@@ -53,11 +53,11 @@ const dur=V.dur=()=>V.lay().reduce((a,b)=>b.end,0);
 const fps=V.fps=()=>(st.P&&st.P.fps)||(st.R&&st.R.fps)||30;
 V.clipAt=t=>{ const l=V.lay(); if(!l.length) return null; return l.find(x=>t>=x.start&&t<x.end)||(t>=l[l.length-1].end?l[l.length-1]:l[0]); };
 V.byId=(list,id)=>(list||[]).find(x=>x.id===id);
-V.uid=(prefix)=>{ const R=st.R, all=[...R.clips,...R.texts,...R.audio].map(x=>x.id); let n=all.length+1; while(all.includes(prefix+n)) n++; return prefix+n; };
+V.uid=(prefix)=>{ const R=st.R, all=[...R.clips,...R.texts,...(R.logos||[]),...R.audio].map(x=>x.id); let n=all.length+1; while(all.includes(prefix+n)) n++; return prefix+n; };
 V.empty=()=>!st.R||!st.R.clips.length;
 const cur=V.cur=()=>JSON.stringify(st.R);
 const nameNow=V.nameNow=()=>$('vdName').value.trim()||st.defName||'Video';
-V.hasOwnFiles=()=>!!(st.R&&(st.R.clips.some(c=>c.kind==='video'||c.kind==='photo')||st.R.audio.length));
+V.hasOwnFiles=()=>{ const own=id=>!((st.R.media[id]||{}).url); return !!(st.R&&(st.R.clips.some(c=>(c.kind==='video'||c.kind==='photo')&&own(c.media))||st.R.audio.some(a=>own(a.media)))); };   // files that come with the brand kit (media with a url) are not "yours"
 V.missing=()=>{ try{ return st.P?new Set(st.P.missing()||[]):new Set(); }catch(_){ return new Set(); } };
 
 /* ---------- reels of the brand kit: loaded on demand, kept by id ---------- */
@@ -69,7 +69,7 @@ V.ensureMix=async id=>{ const r=await V.ensureReel(id); if(r.mix||r.mixErr) retu
   if(!st.mixP[id]) st.mixP[id]=(window.StudioReelAudio?StudioReelAudio.load(r.M,r.base):Promise.reject(new Error('no audio engine')))
     .then(m=>{ r.mix=m; return r; },err=>{ console.warn('sound failed',err); r.mixErr=String(err&&err.message||err).slice(0,80); return r; });
   return st.mixP[id]; };
-V.reelInfo=async id=>{ try{ const j=await (await fetch(st.B.base+'reels/'+id+'/reel.json')).json(); return {id,title:j.title||id,sub:j.sub||'',dur:j.duration}; }catch(_){ return {id,title:id,sub:'',dur:0}; } };
+V.reelInfo=async id=>{ try{ const j=await (await fetch(st.B.base+'reels/'+id+'/reel.json')).json(); return {id,title:j.title||id,sub:j.sub||'',dur:j.duration,kind:j.kind||'reel',project:j.project}; }catch(_){ return {id,title:id,sub:'',dur:0,kind:'reel'}; } };
 
 /* ---------- logging for the debug panel ---------- */
 V.log=(k,v)=>{ st.log.push(k+': '+v); if(st.log.length>40) st.log.shift(); };
@@ -224,7 +224,7 @@ $('vdSafeBtn').addEventListener('click',()=>setSafe(!st.safe));
    The whole recipe as JSON after each finished edit. A drag, trim or slider is ONE step (committed on pointer-up / change); typing in a
    text box merges into one step per ~600 ms pause; anything else is committed 700 ms after the last change. 60 steps at most. */
 const H=V.hist={stack:[],i:-1,pending:false,mute:0,down:false,toastAt:null,fb:0,ty:0,dirty:false,unsaved:false,MAX:60};
-const NEEDSEL=new Set(['edit','vol','fades','len','zoom','words','mix']);
+const NEEDSEL=new Set(['edit','vol','fades','len','zoom','words','mix','lplace','lsize','lswap','lanim']);
 function syncHist(){ $('vdUndo').disabled=H.i<=0; $('vdRedo').disabled=H.i>=H.stack.length-1; }
 H.reset=()=>{ clearTimeout(H.fb); clearTimeout(H.ty); H.stack=[cur()]; H.i=0; H.pending=false; H.toastAt=null; syncHist(); };
 H.mark=()=>{
@@ -241,7 +241,7 @@ function applyRecipe(s){
   const o=JSON.parse(s), R=st.R;
   Object.keys(R).forEach(k=>{ if(!(k in o)) delete R[k]; });
   Object.keys(o).forEach(k=>{
-    if(k==='clips'||k==='texts'||k==='audio') R[k].splice(0,R[k].length,...o[k]);
+    if(k==='clips'||k==='texts'||k==='logos'||k==='audio') R[k].splice(0,R[k].length,...o[k]);
     else if(k==='media'){ Object.keys(R.media).forEach(x=>delete R.media[x]); Object.assign(R.media,o.media); }
     else R[k]=o[k]; });
   if(st.sel&&!V.selItem()) st.sel=null;
@@ -309,6 +309,7 @@ V.syncStatus=syncStatus;
 /* keep text and sound layers inside the video after the clips change */
 V.fitLayers=()=>{ const d=dur(); if(d<=0) return;
   st.R.texts.forEach(t=>{ if(t.start>d-0.2) t.start=Math.max(0,d-1); t.end=Math.min(Math.max(t.end,t.start+0.2),Math.max(d,t.start+0.2)); if(t.end>d) t.end=d; if(t.end-t.start<0.2) t.start=Math.max(0,t.end-0.2); });
+  (st.R.logos||[]).forEach(t=>{ if(t.start>d-0.2) t.start=Math.max(0,d-1); if(t.end>d) t.end=d; if(t.end-t.start<0.2) t.end=Math.min(d,t.start+0.2); if(t.end-t.start<0.2) t.start=Math.max(0,t.end-0.2); });
   st.R.audio.forEach(a=>{ if(a.start>d-0.2){ a.start=Math.max(0,d-Math.min(1,a.out-a.in)); } }); };
 V.touch=function(o){
   o=o||{}; const P=st.P; H.mark();
@@ -330,11 +331,11 @@ V.select=function(sel,o){
   if(!same&&!o.keepSheet&&st.sheet) V.closeSheet&&V.closeSheet(true);
   if(V.renderTl) V.renderTl(); if(V.renderBar) V.renderBar(); placeSel();
 };
-V.selItem=()=>{ const s=st.sel; if(!s) return null; const list=s.kind==='clip'?st.R.clips:s.kind==='text'?st.R.texts:st.R.audio; return V.byId(list,s.id)||null; };
+V.selItem=()=>{ const s=st.sel; if(!s) return null; const list=s.kind==='clip'?st.R.clips:s.kind==='text'?st.R.texts:s.kind==='logo'?st.R.logos:st.R.audio; return V.byId(list,s.id)||null; };
 function placeSel(){
-  const bx=$('vdSelBox'), s=st.sel, tx=s&&s.kind==='text'?V.byId(st.R.texts,s.id):null;
+  const bx=$('vdSelBox'), s=st.sel, lg=s&&s.kind==='logo', tx=s&&(s.kind==='text'||lg)?V.byId(lg?st.R.logos:st.R.texts,s.id):null;
   if(!tx||st.t<tx.start||st.t>tx.end||V.empty()){ bx.hidden=true; return; }
-  let b=null; try{ b=st.P.textBox(tx.id); }catch(_){}
+  let b=null; try{ b=lg?st.P.logoBox(tx.id):st.P.textBox(tx.id); }catch(_){}
   if(!b||!(b.w>0)){ bx.hidden=true; return; }
   const W=st.P.W||1080, H=st.P.H||1920;
   bx.hidden=false; bx.style.left=(b.x/W*100)+'%'; bx.style.top=(b.y/H*100)+'%'; bx.style.width=(b.w/W*100)+'%'; bx.style.height=(b.h/H*100)+'%';
@@ -347,17 +348,17 @@ V.placeSel=placeSel;
   const pos=e=>{ const r=$('vdPv').getBoundingClientRect(), W=st.P?st.P.W||1080:1080, H=st.P?st.P.H||1920:1920; return {x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H,k:W/r.width}; };
   ov.addEventListener('pointerdown',e=>{
     if(!st.ready||V.empty()||(e.button&&e.button>0)) return;
-    const p=pos(e); let id=null; try{ id=st.P.textAt(p.x,p.y,st.t); }catch(_){}
+    const p=pos(e); let id=null, kind='text'; try{ id=st.P.textAt(p.x,p.y,st.t); if(!id){ id=st.P.logoAt(p.x,p.y,st.t); kind='logo'; } }catch(_){}   // text sits on top of logos
     if(!id){ g={none:true,x0:e.clientX,y0:e.clientY,id:e.pointerId}; return; }
-    const tx=V.byId(st.R.texts,id); if(!tx) return;
+    const tx=V.byId(kind==='logo'?st.R.logos:st.R.texts,id); if(!tx) return;
     ov.setPointerCapture(e.pointerId); e.preventDefault();
     if(st.playing) pause();
-    if(!(st.sel&&st.sel.kind==='text'&&st.sel.id===id)) V.select({kind:'text',id},{keepSheet:true});
-    g={id:e.pointerId,tid:id,x0:p.x,y0:p.y,ox:tx.x,oy:tx.y,k:p.k,moved:false};
+    if(!(st.sel&&st.sel.kind===kind&&st.sel.id===id)) V.select({kind,id},{keepSheet:true});
+    g={id:e.pointerId,tid:id,kind,x0:p.x,y0:p.y,ox:tx.x,oy:tx.y,k:p.k,moved:false};
   });
   ov.addEventListener('pointermove',e=>{
     if(!g||g.none||g.id!==e.pointerId) return;
-    const p=pos(e), tx=V.byId(st.R.texts,g.tid); if(!tx) return;
+    const p=pos(e), tx=V.byId(g.kind==='logo'?st.R.logos:st.R.texts,g.tid); if(!tx) return;
     if(!g.moved&&Math.hypot(p.x-g.x0,p.y-g.y0)/g.k<5) return;
     g.moved=true; let nx=g.ox+(p.x-g.x0), ny=g.oy+(p.y-g.y0), gx=false, gy=false;
     const W=st.P.W||1080, H=st.P.H||1920, near=8*g.k;
@@ -368,9 +369,9 @@ V.placeSel=placeSel;
   });
   const up=e=>{
     if(!g||g.id!==e.pointerId) return; const was=g; g=null; $('vdGx').hidden=true; $('vdGy').hidden=true;
-    if(was.none){ if(Math.hypot(e.clientX-was.x0,e.clientY-was.y0)<8&&st.sel&&st.sel.kind==='text') V.select(null); return; }
+    if(was.none){ if(Math.hypot(e.clientX-was.x0,e.clientY-was.y0)<8&&st.sel&&(st.sel.kind==='text'||st.sel.kind==='logo')) V.select(null); return; }
     if(was.moved){ V.touch({tl:false}); return; }
-    const now=Date.now(); if(lastTap.id===was.tid&&now-lastTap.t<400){ lastTap={t:0,id:null}; V.openSheet&&V.openSheet('edit'); } else lastTap={t:now,id:was.tid};
+    const now=Date.now(); if(was.kind==='text'&&lastTap.id===was.tid&&now-lastTap.t<400){ lastTap={t:0,id:null}; V.openSheet&&V.openSheet('edit'); } else lastTap={t:now,id:was.tid};
   };
   ov.addEventListener('pointerup',up); ov.addEventListener('pointercancel',up);
 })();
@@ -613,11 +614,11 @@ function setLoad(p){ $('vdLoadTxt').textContent='Loading the reel… '+p+'%'; }
 async function openProject(recipe,design,draft){
   const r0=StudioProject.fromRecipe(recipe), pr={a:0}, upd=()=>setLoad(Math.round(pr.a*100));
   const P=await StudioProject.create(r0,{brandBase:st.B.base,onProgress:p=>{ pr.a=prog01(p); upd(); }});
-  st.P=P; st.R=P.recipe; st.R.clips=st.R.clips||[]; st.R.texts=st.R.texts||[]; st.R.audio=st.R.audio||[]; st.R.media=st.R.media||{};
+  st.P=P; st.R=P.recipe; st.R.clips=st.R.clips||[]; st.R.texts=st.R.texts||[]; st.R.logos=st.R.logos||[]; st.R.audio=st.R.audio||[]; st.R.media=st.R.media||{};
   await Promise.all([...new Set(st.R.clips.filter(c=>c.kind==='reel').map(c=>c.reel))].map(id=>V.ensureReel(id)));
   st.R.clips.forEach(c=>{ if(c.kind==='reel'&&c.out==null) c.out=st.reels[c.reel].M.duration; });
   try{ const u=P.update(); if(u&&u.then) await u; }catch(err){ V.fail(err,'update'); }
-  const first=st.R.clips.find(c=>c.kind==='reel'); st.defName=first&&st.reels[first.reel]?st.reels[first.reel].M.title:'Video';
+  const first=st.R.clips.find(c=>c.kind==='reel'); st.defName=first&&st.reels[first.reel]?st.reels[first.reel].M.title:(st.defTitle||'Video');
   if(design){ st.design={id:design.id,name:design.name,collections:(design.collectionNames||design.collections||[]).filter(Boolean)}; $('vdName').value=design.name; }
   if(draft&&draft.name) $('vdName').value=draft.name;
   $('vdName').placeholder=st.defName;
@@ -647,11 +648,13 @@ async function start(){
     } else if(rec){
       recipe=rec.video; if(rec.design) design={id:rec.design,name:rec.name||'Video'};
     } else if(q.get('new')==='1'){
-      recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}};
+      recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],logos:[],audio:[],media:{}};
     } else {
       const id=q.get('reel')||((st.B.reels||[])[0]||{}).id;
-      if(!id){ recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}}; }
-      else recipe={v:1,kind:'reel',brand:st.B.id,reel:id,texts:{},mix:{},duck:true};
+      if(!id){ recipe={v:2,kind:'video',brand:st.B.id,size:[1080,1920],fps:30,clips:[],texts:[],logos:[],audio:[],media:{}}; }
+      else { const info=await V.reelInfo(id);   // a brand-kit "project" template starts from its own recipe; a coded reel from a one-clip recipe
+        if(info.kind==='project'){ const pr=await fetch(st.B.base+'reels/'+id+'/'+(info.project||'project.json')); if(!pr.ok) throw new Error('The template file is missing (HTTP '+pr.status+').'); recipe=await pr.json(); recipe.brand=recipe.brand||st.B.id; st.defTitle=info.title; }
+        else recipe={v:1,kind:'reel',brand:st.B.id,reel:id,texts:{},mix:{},duck:true}; }
     }
     await openProject(recipe,design,rec);
     if(!did&&!dr&&!q.get('new')&&!q.get('reel')&&!RENDER) offerResume();

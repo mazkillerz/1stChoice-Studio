@@ -10,6 +10,12 @@ const brandInk=()=>{ const c=(L.brand()||{}).colors||{}; return c.ink||'#111111'
 const brandPaper=()=>{ const c=(L.brand()||{}).colors||{}; return c.paper||'#FFFFFF'; };
 
 /* ---------- the bar ---------- */
+const ic22=d=>`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LI={place:ic22('<polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/>'),
+  size:ic22('<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>'),
+  logo:ic22('<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>'),
+  shadow:ic22('<rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 20h12a0 0 0 0 0 0 0V8"/>'),
+  anim:ic22('<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>')};
 const bb=(attrs,icon,label,extra)=>`<button type="button" class="vd-bb" ${attrs}${extra||''}>${icon}<span>${label}</span></button>`;
 V.renderBar=function(){
   if(!st.ready&&!st.R) return;
@@ -32,6 +38,9 @@ V.renderBar=function(){
     if(it.kind==='video') h+=bb('data-open="vol"',I.vol,'Volume',on('vol'));
     if(it.kind==='photo') h+=bb('data-open="len"',I.clock,'Length',on('len'))+bb('data-open="zoom"',I.zoom,'Zoom',on('zoom'));
     h+=bb('data-do="split"',I.scissors,'Split',dis(canSplit))+bb('data-do="earlier" aria-label="Move earlier"',I.left,'Earlier',dis(i>0))+bb('data-do="later" aria-label="Move later"',I.right,'Later',dis(i<n-1))+bb('data-do="del"',I.trash,'Delete');
+  } else if(s.kind==='logo'){
+    h+=bb('data-open="lplace"',LI.place,'Place',on('lplace'))+bb('data-open="lsize"',LI.size,'Size',on('lsize'))+bb('data-open="lswap"',LI.logo,'Logo',on('lswap'))
+      +bb('data-do="shadow" aria-label="Shadow"',LI.shadow,'Shadow',` aria-pressed="${it.shadow!==false}"`)+bb('data-open="lanim"',LI.anim,'Animation',on('lanim'))+bb('data-do="del"',I.trash,'Delete');
   } else if(s.kind==='text'){
     h+=bb('data-open="edit"',I.pencil,'Edit',on('edit'))+bb('data-do="dup"',I.copy,'Duplicate')+bb('data-do="del"',I.trash,'Delete');
   } else {
@@ -66,6 +75,9 @@ function act(a){
     else if(a==='earlier'&&i>0){ R.clips.splice(i-1,0,R.clips.splice(i,1)[0]); V.touch({bar:true}); V.setT(V.lay()[i-1].start); }
     else if(a==='later'&&i<R.clips.length-1){ R.clips.splice(i+1,0,R.clips.splice(i,1)[0]); V.touch({bar:true}); V.setT(V.lay()[i+1].start); }
     else if(a==='del'){ R.clips.splice(i,1); st.sel=null; V.closeSheet(true); V.touch({fit:true,bar:true}); V.renderBar(); V.hist.commit(); V.toast('Clip deleted',()=>V.undo()); }
+  } else if(s.kind==='logo'){
+    if(a==='shadow'){ it.shadow=it.shadow===false; V.touch({tl:false,bar:true,restart:false}); }
+    else if(a==='del'){ R.logos.splice(R.logos.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.hist.commit(); V.toast('Logo deleted',()=>V.undo()); }
   } else if(s.kind==='text'){
     if(a==='dup'){ const t2=JSON.parse(JSON.stringify(it)); t2.id=V.uid('t'); t2.y=Math.min(1800,it.y+140); t2.start=Math.min(it.start+0.3,Math.max(0,V.dur()-0.5)); t2.end=Math.min(V.dur(),t2.start+(it.end-it.start)); R.texts.push(t2); V.select({kind:'text',id:t2.id}); V.touch({bar:true}); }
     else if(a==='del'){ R.texts.splice(R.texts.indexOf(it),1); st.sel=null; V.closeSheet(true); V.touch({bar:true}); V.renderBar(); V.hist.commit(); V.toast('Text deleted',()=>V.undo()); }
@@ -185,13 +197,14 @@ SHEETS.add=()=>({title:'Add',
     <label class="vd-item" tabindex="0"><span class="ic">${I.video}</span><span class="tx"><b>Clips and photos</b><small>From this ${L.devWord()}</small></span><input type="file" accept="video/*,image/*" multiple data-f="media"></label>
     <button type="button" class="vd-item" data-reels><span class="ic">${I.reel}</span><span class="tx"><b>Reel template</b><small>Ready-made reels with sound</small></span></button>
     <label class="vd-item" tabindex="0"><span class="ic">${I.music}</span><span class="tx"><b>Music or sound</b><small>Placed at the playhead</small></span><input type="file" accept="audio/*" data-f="audio"></label>
+    ${logoAssets().length?`<button type="button" class="vd-item" data-logos><span class="ic">${I.image.replace('width="14" height="14"','width="20" height="20"')}</span><span class="tx"><b>Logo</b><small>A brand logo you can move and resize</small></span></button>`:''}
   </div><div class="vd-note" id="vdAddSt" role="status"></div>`,
   change(e){ const f=e.target.closest('[data-f]'); if(f&&f.files.length){ const say=m=>{ const s=$('vdAddSt'); if(s) s.textContent=m; }; addFiles(f.files,say).finally(()=>{ f.value=''; }); } },
-  click(e){ if(e.target.closest('[data-reels]')) V.openSheet('reels'); },
+  click(e){ if(e.target.closest('[data-reels]')) V.openSheet('reels'); else if(e.target.closest('[data-logos]')) V.openSheet('logos'); },
   keydown(e){ const l=e.target.closest('label.vd-item'); if(l&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); l.querySelector('input').click(); } }});
 SHEETS.reels=()=>({title:'Reel template',
   html:`<div class="vd-list" id="vdReelList"><p class="small">Loading…</p></div><div class="vd-note" id="vdAddSt" role="status"></div>`,
-  bind(){ Promise.all(V.reelList().map(r=>V.reelInfo(r.id))).then(list=>{ const el=$('vdReelList'); if(!el||!st.sheet||st.sheet.name!=='reels') return;
+  bind(){ Promise.all(V.reelList().map(r=>V.reelInfo(r.id))).then(list=>{ list=list.filter(r=>r.kind!=='project'); const el=$('vdReelList'); if(!el||!st.sheet||st.sheet.name!=='reels') return;
     el.innerHTML=list.map(r=>`<button type="button" class="vd-item" data-reel="${esc(r.id)}"><span class="ic">${I.reel}</span><span class="tx"><b dir="auto">${esc(r.title)}</b><small dir="auto">${esc(r.sub||'')}${r.dur?' · ':''}${r.dur?`<bdi>${Math.round(r.dur)} s</bdi>`:''}</small></span></button>`).join(''); }); },
   click(e){ const b=e.target.closest('[data-reel]'); if(b) addReel(b.dataset.reel,m=>{ const s=$('vdAddSt'); if(s) s.textContent=m; }); }});
 
@@ -307,6 +320,44 @@ SHEETS.edit=()=>{
 };
 V.openSheetKeep=()=>{ const y=shB.scrollTop; V.openSheet('edit'); shB.scrollTop=y; };
 function replay(t){ /* show the animation: jump a little before the text starts and play */ if(V.dur()<=0) return; V.setT(Math.max(0,t.start)); V.play(); }
+
+/* ---- Logos: brand-kit pictures on top of the video (Add -> Logo; the bar for a selected logo) ---- */
+const logoAssets=()=>(L.listedAssets?L.listedAssets():[]).filter(a=>/logo/i.test(a.id)&&!a.hidden);
+const SAFE_X=48, SAFE_TOP=250, SAFE_BOTTOM=1520;   // keep clear of Instagram's own buttons and caption
+function logoPos(lg,name,h){
+  const W=st.P.W||1080, w=+lg.w||280; h=h||(st.P.logoBox(lg.id)||{}).h||w;
+  const x={l:SAFE_X+w/2,r:W-SAFE_X-w/2,c:W/2}, y={t:SAFE_TOP+h/2,b:SAFE_BOTTOM-h/2,c:(st.P.H||1920)/2};
+  const m={bl:[x.l,y.b],br:[x.r,y.b],tl:[x.l,y.t],tr:[x.r,y.t],c:[x.c,y.c]}[name]; if(m){ lg.x=Math.round(m[0]); lg.y=Math.round(m[1]); }
+}
+V.logoPos=logoPos;
+async function addLogo(assetId){
+  const d=V.dur(), start=d>0?clamp(st.t,0,Math.max(0,d-0.5)):0, end=d>0?d:3, id=V.uid('l');
+  let img=null; try{ img=await StudioProject.logoImage(assetId); }catch(_){}
+  const lg={id,asset:assetId,x:0,y:0,w:280,start:+start.toFixed(3),end:+end.toFixed(3),in:'fade',out:'none',shadow:true};
+  logoPos(lg,'bl',img?280*img.h/img.w:280);
+  st.R.logos.push(lg); V.closeSheet(true); V.select({kind:'logo',id}); await V.touch({bar:true});
+  if(d>0) V.setT(Math.min(lg.end,lg.start+0.5));   // past the fade-in, so it shows
+}
+function logoTiles(sel){
+  const list=logoAssets();
+  return `<div class="vd-logos">${list.map(a=>`<button type="button" class="vd-logo" data-asset="${esc(a.id)}" aria-pressed="${sel===a.id}"><span class="tile"><img src="${esc(L.assetPrevUrl(a))}" alt="" draggable="false"></span><b dir="auto">${esc(a.label||a.id)}</b></button>`).join('')}</div>`;
+}
+SHEETS.logos=()=>({title:'Logo',html:`<p class="small vd-hint">Pick a logo. It starts at the playhead, bottom left; drag it anywhere.</p>${logoTiles(null)}`,
+  click(e){ const b=e.target.closest('[data-asset]'); if(b) addLogo(b.dataset.asset); }});
+const logoSel=()=>st.sel&&st.sel.kind==='logo'?V.byId(st.R.logos,st.sel.id):null;
+SHEETS.lswap=()=>{ const g=logoSel(); if(!g) return {title:'Logo',html:''};
+  return {title:'Logo',html:logoTiles(g.asset),click(e){ const b=e.target.closest('[data-asset]'); if(!b||b.dataset.asset===g.asset) return;
+    g.asset=b.dataset.asset; shB.querySelectorAll('[data-asset]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); V.touch({tl:true,restart:false}); }}; };
+const PLACES=[['bl','Bottom left'],['br','Bottom right'],['tl','Top left'],['tr','Top right'],['c','Centre']];
+SHEETS.lplace=()=>{ const g=logoSel(); if(!g) return {title:'Place',html:''};
+  return {title:'Place',html:`<div class="vd-list">${PLACES.map(([k,n])=>`<button type="button" class="vd-item sm" data-place="${k}"><span class="tx"><b>${n}</b></span></button>`).join('')}</div><p class="small vd-hint">Kept clear of Instagram's buttons and caption. Or drag the logo on the picture.</p>`,
+    click(e){ const b=e.target.closest('[data-place]'); if(!b) return; logoPos(g,b.dataset.place); V.touch({tl:false,restart:false}); }}; };
+SHEETS.lsize=()=>{ const g=logoSel(); if(!g) return {title:'Size',html:''}; const tx=v=>Math.round(v)+' px';
+  return {title:'Size',html:range('Width','lw',120,720,10,Math.round(g.w),tx(g.w),'Logo width'),
+    input(e){ const r=e.target.closest('[data-r="lw"]'); if(!r) return; g.w=+r.value; setRange(shB,'lw',tx(g.w)); V.touch({tl:false,restart:false}); }}; };
+SHEETS.lanim=()=>{ const g=logoSel(); if(!g) return {title:'Animation',html:''}; const IN=[['none','None'],['fade','Fade'],['pop','Pop'],['slide','Slide']];
+  return {title:'Animation',html:`<section class="vd-sec"><h3>Animation in</h3>${chips('in',IN,g.in||'none','Animation in')}</section><section class="vd-sec"><h3>Animation out</h3>${chips('out',IN,g.out||'none','Animation out')}</section>`,
+    click(e){ const c=e.target.closest('[data-chip]'); if(!c) return; const k=c.dataset.chip; g[k]=c.dataset.v; shB.querySelectorAll(`[data-chip="${k}"]`).forEach(x=>x.setAttribute('aria-pressed',String(x===c))); V.touch({tl:false,restart:false}); replay(g); }}; };
 
 /* ---- Volume (video clip, sound track) and Fades ---- */
 function volSheet(it,title){

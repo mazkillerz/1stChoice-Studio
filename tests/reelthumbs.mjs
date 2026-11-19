@@ -17,6 +17,7 @@ await p.goto(BASE+'tests/fixtures/reels/scene.html');
 fs.mkdirSync(OUT,{recursive:true});
 for(const id of reels){
   const m=JSON.parse(fs.readFileSync(path.join(ROOT,'brands',BRAND_ID,'reels',id,'reel.json'),'utf8'));
+  if(m.kind==='project'){ console.log('skip '+id+' (project template: its thumbnail is made from its clip)'); continue; }   // not a coded reel
   const url=await p.evaluate(async([id,t])=>{ const c=await T.frame(id,t,undefined,320); return c.toDataURL('image/jpeg',0.8); },[id,m.poster||0]);
   const buf=Buffer.from(url.split(',')[1],'base64'), f=path.join(OUT,'reel-'+id+'.jpg');
   if(buf.length>45000){ console.error('too big: '+id+' '+buf.length); bad=1; continue; }

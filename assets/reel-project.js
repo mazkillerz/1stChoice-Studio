@@ -1,6 +1,6 @@
 /* Video projects (brand-agnostic): your own clips, photos, text and sound plus coded reels, as one video. See docs/reels.md.
      StudioMedia   files that stay on this device (IndexedDB 'studio:vmedia:<id>'): put, get, thumbs, wave, decoded, remove
-     StudioProject fromRecipe(recipe) -> v2 recipe;  create(recipe,{brandBase,onProgress}) -> project
+     StudioProject fromRecipe(recipe) -> v2 recipe (clips, texts, logos, audio, media);  create(recipe,{brandBase,onProgress}) -> project
    A project draws any frame from the time t (draw), seeks its video clips for export (prepare), keeps them in step for
    the preview (syncPreview) and mixes the whole sound (audio, play). Every text animation is a pure function of t. */
 (function(){
@@ -13,7 +13,7 @@ const withTimeout=(p,ms,v)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(v),m
 const once=(el,ev,ms)=>new Promise(res=>{ let to; const f=()=>{ clearTimeout(to); el.removeEventListener(ev,f); res(true); }; el.addEventListener(ev,f); to=setTimeout(()=>{ el.removeEventListener(ev,f); res(false); },ms); });
 
 /* ======================= StudioMedia ======================= */
-const cache=new Map(), thumbCache=new Map(), waveCache=new Map(), decCache=new Map();
+const cache=new Map(), urlMedia=new Map(), thumbCache=new Map(), waveCache=new Map(), decCache=new Map();
 const typeOf=f=>{ const t=(f.type||'').split('/')[0]; if(t==='video'||t==='image'||t==='audio') return t;
   const e=(f.name||'').toLowerCase().split('.').pop(); return /^(mp4|mov|m4v|webm|3gp)$/.test(e)?'video':/^(jpe?g|png|webp|gif|heic|heif|avif)$/.test(e)?'image':/^(mp3|m4a|aac|wav|ogg|opus|flac|caf)$/.test(e)?'audio':'video'; };
 function videoEl(url){ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.preload='auto'; v.setAttribute('playsinline',''); v.src=url; return v; }
@@ -40,8 +40,12 @@ const Media={
     const ok=await idb().put(KEY+id,file); if(ok==null){ URL.revokeObjectURL(r.url); throw new Error('This device has no room to keep the file.'); }
     cache.set(id,Promise.resolve({id,blob:file,url:r.url,el:r.el,meta:r.meta})); return r.meta;
   },
+  useUrl(id,url){ if(urlMedia.get(id)!==url){ urlMedia.set(id,url); cache.delete(id); decCache.delete(id); } },   // media that comes from a file of the brand kit (not kept in IndexedDB)
   get(id){
     if(!cache.has(id)) cache.set(id,(async()=>{
+      const url=urlMedia.get(id);
+      if(url){ try{ const r=await fetch(url); if(!r.ok) throw new Error('HTTP '+r.status); const b=await r.blob(), nm=decodeURIComponent(url.split('?')[0].split('/').pop()||id), f=new File([b],nm,{type:b.type||''});
+          const m=await readMeta(f,typeOf(f),id); return {id,blob:f,url:m.url,el:m.el,meta:m.meta}; }catch(e){ cache.delete(id); return null; } }
       const blob=await idb().get(KEY+id); if(!blob) { cache.delete(id); return null; }
       try{ const r=await readMeta(blob,typeOf(blob),id); return {id,blob,url:r.url,el:r.el,meta:r.meta}; }catch(e){ cache.delete(id); return null; }
     })());
@@ -82,17 +86,30 @@ let uid=0; const newId=p=>p+Date.now().toString(36)+(uid++).toString(36);
 function fromRecipe(r){
   r=clone(r||{});
   if(r.v!==2){   // a phase-1 reel recipe becomes one reel clip that plays to the end
-    const o={v:2,kind:'video',brand:r.brand,size:[1080,1920],fps:30,clips:[],texts:[],audio:[],media:{}};
+    const o={v:2,kind:'video',brand:r.brand,size:[1080,1920],fps:30,clips:[],texts:[],logos:[],audio:[],media:{}};
     if(r.reel) o.clips.push({id:'c1',kind:'reel',reel:r.reel,in:0,out:null,texts:r.texts||{},mix:r.mix||{},duck:r.duck!==false});
     return o;
   }
   r.kind='video'; r.size=Array.isArray(r.size)?r.size:[1080,1920]; r.fps=r.fps||30;
-  for(const k of ['clips','texts','audio']) if(!Array.isArray(r[k])) r[k]=[];
+  for(const k of ['clips','texts','logos','audio']) if(!Array.isArray(r[k])) r[k]=[];
   if(!r.media||typeof r.media!=='object') r.media={};
   for(const c of r.clips){ if(!c.id) c.id=newId('c'); if(c.kind==='reel'){ c.texts=c.texts||{}; c.mix=c.mix||{}; if(c.duck==null) c.duck=true; if(c.in==null) c.in=0; if(c.out===undefined) c.out=null; } }
   for(const t of r.texts) if(!t.id) t.id=newId('t');
   for(const a of r.audio) if(!a.id) a.id=newId('a');
+  for(const g of r.logos){ if(!g.id) g.id=newId('l'); g.x=num(g.x,540); g.y=num(g.y,960); g.w=num(g.w,280); g.start=num(g.start,0); g.end=num(g.end,g.start+3); g.in=g.in||'none'; g.out=g.out||'none'; if(g.shadow==null) g.shadow=true; }
   return r;
+}
+
+/* ======================= logos (brand-kit pictures) ======================= */
+const logoImgs=new Map();   // brand-kit asset id -> Promise of {img,w,h} or null
+function logoImg(id){
+  if(!logoImgs.has(id)) logoImgs.set(id,(async()=>{
+    const a=((Studio.lab.brandAssets&&Studio.lab.brandAssets())||[]).find(x=>x.id===id); if(!a||!a.file) return null;
+    const img=new Image(); img.src=Studio.lab.assetUrl(a);
+    try{ await img.decode(); }catch(e){ return null; }
+    return {img,w:img.naturalWidth||1,h:img.naturalHeight||1};
+  })().then(v=>{ if(!v) logoImgs.delete(id); return v; }));
+  return logoImgs.get(id);
 }
 
 /* ======================= text ======================= */
@@ -148,7 +165,7 @@ const audioCtx=()=>{ if(!actx){ const C=window.AudioContext||window.webkitAudioC
 
 async function create(recipe0,opt){
   opt=opt||{}; const recipe=fromRecipe(recipe0), brandBase=opt.brandBase||'../brands/'+(recipe.brand||'')+'/';
-  const reels=new Map(), mixes=new Map(), media=new Map(), pend=new Set();   // id -> reel / mix promise / entry|null
+  const reels=new Map(), mixes=new Map(), media=new Map(), logoE=new Map(), pend=new Set();   // id -> reel / mix promise / entry|null
   let done=0, total=0; const report=()=>{ if(opt.onProgress) opt.onProgress(total?done/total:1); };
   const job=p=>{ total++; return p.then(v=>{ done++; report(); return v; },e=>{ done++; report(); throw e; }); };
   const P={recipe,W:1080,H:1920,fps:30,duration:0,cuts:[]}; let starts=[], lens=[], ver=0;
@@ -169,7 +186,8 @@ async function create(recipe0,opt){
   }
   const wanted=()=>{ const r=new Set(), m=new Set();
     for(const c of recipe.clips){ if(c.kind==='reel') r.add(c.reel); else if(c.media) m.add(c.media); }
-    for(const a of recipe.audio) if(a.media) m.add(a.media); return {r,m}; };
+    for(const a of recipe.audio) if(a.media) m.add(a.media);
+    const g=new Set(); for(const l of recipe.logos) if(l.asset) g.add(l.asset); return {r,m,g}; };
   function ensure(){   // start loading what is new; a Promise when something must load
     const w=wanted(), jobs=[];
     for(const id of w.r) if(!reels.has(id)){
@@ -177,7 +195,9 @@ async function create(recipe0,opt){
       jobs.push(job(StudioReel.load(base).then(async rl=>{ reels.set(id,rl);
         mixes.set(id,StudioReelAudio.load(rl.M,base).catch(()=>null)); await mixes.get(id); },()=>{ reels.delete(id); })));
     }
-    for(const id of w.m) if(!media.has(id)){ media.set(id,null); jobs.push(job(Media.get(id).then(e=>{ media.set(id,e||false); },()=>{ media.set(id,false); }))); }
+    for(const id of w.g) if(!logoE.has(id)){ logoE.set(id,null); jobs.push(job(logoImg(id).then(e=>{ logoE.set(id,e||false); },()=>{ logoE.set(id,false); }))); }
+    for(const id of w.m) if(!media.has(id)){ media.set(id,null);
+      const mu=recipe.media[id]&&recipe.media[id].url; if(mu) StudioMedia.useUrl(id,/^(https?:|blob:|data:|\/)/.test(mu)?mu:brandBase+mu); jobs.push(job(Media.get(id).then(e=>{ media.set(id,e||false); },()=>{ media.set(id,false); }))); }
     if(!jobs.length) return;
     return Promise.all(jobs).then(()=>{ layout(); });
   }
@@ -194,6 +214,13 @@ async function create(recipe0,opt){
   function cover(ctx,src,sw,sh,zoom){ const s=Math.max(P.W/sw,P.H/sh)*(zoom||1), w=sw*s, h=sh*s; ctx.drawImage(src,(P.W-w)/2,(P.H-h)/2,w,h); }
   function dark(ctx,msg){ ctx.fillStyle='#14110f'; ctx.fillRect(0,0,P.W,P.H);
     if(msg){ ctx.fillStyle='#bdb6ad'; ctx.font='600 56px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.direction='ltr'; ctx.fillText(msg,P.W/2,P.H/2); } }
+  const logoRect=lg=>{ const e=logoE.get(lg.asset); if(!e) return null; const w=num(lg.w,280), h=w*e.h/e.w; return {x:lg.x-w/2,y:lg.y-h/2,w,h}; };
+  function drawLogo(ctx,lg,t,k){
+    if(t<lg.start||t>=lg.end) return; const r=logoRect(lg); if(!r) return; const A=anim(lg,t); if(A.a<=0.003||A.s<=0) return;
+    ctx.save(); ctx.globalAlpha*=A.a; ctx.translate(lg.x,lg.y+A.dy); ctx.scale(A.s,A.s);
+    if(lg.shadow!==false){ ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=14*k; ctx.shadowOffsetY=4*k; }   // shadow sizes are in canvas pixels, so they follow the canvas factor, not the layer scale
+    ctx.drawImage(logoE.get(lg.asset).img,-r.w/2,-r.h/2,r.w,r.h); ctx.restore();
+  }
   P.draw=(ctx,t,o)=>{
     o=o||{}; const k=ctx.canvas.width/P.W, a=P.clipAt(t);
     ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
@@ -208,6 +235,7 @@ async function create(recipe0,opt){
           else dark(ctx); }
       }
       ctx.setTransform(k,0,0,k,0,0);
+      for(const lg of recipe.logos) if(lg.id!==o.hideLogo) drawLogo(ctx,lg,t,k);
       for(const tx of recipe.texts) if(tx.id!==o.hideText) drawText(ctx,tx,t);
     } finally{ ctx.restore(); }
   };
@@ -239,6 +267,10 @@ async function create(recipe0,opt){
     const w=tx.box?L.bw:L.w, h=tx.box?L.bh:L.h; return {x:tx.x-w/2,y:tx.y-h/2,w,h}; };
   P.textAt=(x,y,t)=>{ for(let i=recipe.texts.length-1;i>=0;i--){ const tx=recipe.texts[i]; if(t<tx.start||t>=tx.end) continue;
     const b=P.textBox(tx.id); if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return tx.id; } return null; };
+
+  P.logoBox=id=>{ const lg=recipe.logos.find(x=>x.id===id); return lg?logoRect(lg):null; };
+  P.logoAt=(x,y,t)=>{ for(let i=recipe.logos.length-1;i>=0;i--){ const lg=recipe.logos[i]; if(t<lg.start||t>=lg.end) continue;
+    const b=logoRect(lg); if(b&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return lg.id; } return null; };
 
   /* ---- sound ---- */
   const audioCache=new Map();
@@ -284,5 +316,5 @@ async function create(recipe0,opt){
 }
 
 window.StudioMedia=Media;
-window.StudioProject={fromRecipe,create};
+window.StudioProject={fromRecipe,create,logoImage:logoImg};
 })();

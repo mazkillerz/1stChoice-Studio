@@ -164,7 +164,8 @@ Studio.registerBrand({
   ]},
   reels:[
     {id:'winter-cat'},
-    {id:'label-reveal'}
+    {id:'label-reveal'},
+    {id:'nd-getting-ready'}   /* a project template (reel.json kind "project"): the owner's own clip with the National Day logo on top */
   ],
   /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
      cat: restock | story | post | highlight. Previews: assets/thumbs/<brand>/tpl/<id>.jpg (node tests/tplthumbs.mjs makes them).
