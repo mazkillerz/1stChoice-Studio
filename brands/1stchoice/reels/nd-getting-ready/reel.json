@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "kind": "project",
+  "id": "nd-getting-ready",
+  "title": "National Day · getting ready",
+  "sub": "Your clip with the logo on top",
+  "size": [1080, 1920],
+  "fps": 30,
+  "duration": 29.75,
+  "poster": 20.0,
+  "project": "project.json"
+}

@@ -1,0 +1,18 @@
+{
+  "v": 2,
+  "kind": "video",
+  "brand": "1stchoice",
+  "size": [1080, 1920],
+  "fps": 30,
+  "clips": [
+    { "id": "c1", "kind": "video", "media": "m1", "in": 0, "out": 29.73, "db": 0, "mute": false }
+  ],
+  "texts": [],
+  "audio": [],
+  "logos": [
+    { "id": "l1", "asset": "nd26-logo-white", "x": 188, "y": 1494, "w": 280, "start": 0.8, "end": 27.73, "in": "fade", "out": "none", "shadow": true }
+  ],
+  "media": {
+    "m1": { "name": "National Day - getting ready.mp4", "type": "video", "dur": 29.73, "w": 1080, "h": 1920, "url": "reels/nd-getting-ready/clip.mp4" }
+  }
+}
