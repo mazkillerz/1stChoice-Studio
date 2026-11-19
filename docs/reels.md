@@ -171,10 +171,14 @@ Recipe (`tool: 'video'`, settings only; Supabase never gets video, photo or soun
   "texts": [
     { "id": "t1", "value": "…", "start": 1.0, "end": 3.5, "x": 540, "y": 960, "size": 96, "font": "display",
       "color": "#161210", "box": null, "in": "pop", "out": "fade" } ],
+  "logos": [
+    { "id": "l1", "asset": "nd26-logo-white", "x": 188, "y": 1494, "w": 280, "start": 0.8, "end": 27.7,
+      "in": "fade", "out": "none", "shadow": true } ],
   "audio": [
     { "id": "a1", "media": "m3", "start": 0, "in": 0, "out": 12.5, "db": -6, "mute": false, "fadeIn": 0.5, "fadeOut": 1.5 } ],
   "media": { "m1": { "name": "IMG_0042.MOV", "type": "video", "dur": 8.3, "w": 1080, "h": 1920 } } }
 ```
+(`logos` is new in 2.37.0; a recipe without it opens with none.)
 
 - **Clips** play in order; the video's length is the sum of the clips (`out - in`, or `dur` for a photo). A clip boundary is a
   hard cut. `in`/`out` are times inside the source (a reel clip's own seconds, a video file's seconds). Video and photo clips
@@ -183,6 +187,12 @@ Recipe (`tool: 'video'`, settings only; Supabase never gets video, photo or soun
   `size` = font size in reel pixels, `font` = `display` | `body` (the brand kit's fonts), `box` = a colour behind the words
   or `null`. Animations, 0.35 s each: in = `none` | `fade` | `pop` | `slide` | `type`, out = `none` | `fade` | `pop` | `slide`.
   One line or several (`\n`); Arabic or English, direction from the first strong letter.
+- **Logo layers** (`logos`, 2.37.0) are brand-kit pictures drawn on top of the clips and under the text layers, from `start` to `end`.
+  `asset` = the id of a brand-kit asset (`assets` in `brand.js`; the editor offers those whose id contains "logo"), `x`,`y` = the
+  centre in reel pixels, `w` = the width in reel pixels (the height follows the picture), `in`/`out` = the same animations as text
+  (`none` | `fade` | `pop` | `slide`), `shadow` = a soft dark drop shadow so the logo reads on bright footage (default `true`).
+  A new logo goes bottom left (left edge 48 px, bottom edge at y 1520, above where Instagram shows the caption); **Place** uses
+  48 px side margins, top edge at y 250 and bottom edge at y 1520. They are drawn by `StudioProject.draw`, so they are in the saved MP4.
 - **Audio tracks** start at `start` (project seconds) and play the file from `in` to `out`; `db` volume, `mute`, linear
   `fadeIn`/`fadeOut` in seconds. A video clip's own sound plays with it (`db`, `mute`).
 - **Mix**: reel clips keep their own mix (template rules: levels, ducking) for the part of the reel that is used; everything
@@ -190,4 +200,11 @@ Recipe (`tool: 'video'`, settings only; Supabase never gets video, photo or soun
   -14 LUFS, -1.5 dBFS).
 - **Media** files stay on the device that added them (IndexedDB key `studio:vmedia:<id>`). A project opened on another
   device shows a clear "missing on this device: add it again" placeholder for each missing file; nothing is lost.
+  A media entry with a **`url`** (a path relative to the brand kit folder, e.g. `reels/nd-getting-ready/clip.mp4`, or a full
+  address) is a file that comes with the brand kit: it is fetched on demand (never kept in IndexedDB, never precached by the service
+  worker), gives thumbnails, waveform and sound like any clip, and is never "missing" unless the fetch fails.
+- **Project templates:** a `reel.json` with `"kind": "project"` and `"project": "project.json"` is not a coded reel: it appears in
+  Templates like the others, but `tools/video.html?reel=<id>` starts from its `project.json` (a v2 recipe, usually a clip with a
+  `url` plus logo layers) instead of loading a scene. Its other fields (`title`, `sub`, `duration`, `poster`) are for the Templates
+  card; list it in `reels` in `brand.js` like any reel. The Video editor's own **Reel template** sheet shows coded reels only.
 - A `v: 1` recipe (phase 1) opens as a project with one reel clip.

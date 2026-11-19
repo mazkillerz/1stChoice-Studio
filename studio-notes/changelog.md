@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.37.0 · 20 Nov 2026
+Put your logo on a video and move it anywhere, and the National Day reel is ready to edit.
+
+### Logos on your videos
+type: feature
+In the Video editor, tap Add, then Logo, and pick one of the brand logos. It lands bottom left, above where Instagram shows the caption, and stays to the end of the video. Drag it anywhere on the picture, or tap Place for the usual corners and the centre. Make it bigger or smaller with Size, swap it for another logo, turn its soft shadow on or off (it helps on bright shots), and choose how it appears and goes. Its bar on the timeline works like the text one, so you can trim it. The logo is in the MP4 you save.
+
+### National Day reel template
+type: feature
+The National Day reel (getting ready) now opens in the Video editor ready to edit, with the logo bottom left. Move the logo anywhere, change its size, add your own words or sound, and save the MP4. Find it in Templates under Reels.
+
 ## 2.36.1 · 18 Nov 2026
 The GTA VI posts after the team's notes, now with the National Day logo.
 

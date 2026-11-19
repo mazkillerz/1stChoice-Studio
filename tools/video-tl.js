@@ -98,7 +98,9 @@ function renderTl(){
     return `<div class="vt-blk vt-clip k-${c.kind}${s?' sel':''}${m?' missing':''}" data-k="clip" data-id="${esc(c.id)}" role="button" tabindex="-1" aria-label="${esc(c.kind==='reel'?'Reel':c.kind==='photo'?'Photo':'Video')} clip, ${(x.end-x.start).toFixed(1)} seconds${m?', missing':''}" style="left:${pad+x.start*pps+1}px;width:${Math.max(6,w-2)}px"><span class="vt-th"></span>${m?`<span class="vt-miss">Missing on this ${L.devWord()}</span>`:''}${w>=46?`<span class="vt-lab">${ic}${w>=70?lenLab(x.end-x.start):''}</span>`:''}${s?handles:''}</div>`; }).join('');
   h+=`<button type="button" class="vt-add" id="vtAdd" aria-label="Add a clip" style="left:${pad+d*pps+10}px">${I.plus}</button>`;
   $('vtClips').innerHTML=h;
-  $('vtTexts').innerHTML=R.texts.map(t=>{ const s=isSel('text',t.id), w=(t.end-t.start)*pps;
+  const logoBlk=g=>{ const s=isSel('logo',g.id), w=(g.end-g.start)*pps, a=((L.brandAssets()||[]).find(x=>x.id===g.asset)||{}).label||'Logo';
+    return `<div class="vt-blk vt-logo${s?' sel':''}" data-k="logo" data-id="${esc(g.id)}" role="button" tabindex="-1" aria-label="Logo: ${esc(a)}" style="left:${pad+g.start*pps}px;width:${Math.max(6,w)}px"><span class="vt-t" dir="auto">${I.image}<span>${esc(a)}</span></span>${s?handles:''}</div>`; };
+  $('vtTexts').innerHTML=(R.logos||[]).map(logoBlk).join('')+R.texts.map(t=>{ const s=isSel('text',t.id), w=(t.end-t.start)*pps;
     return `<div class="vt-blk vt-text${s?' sel':''}" data-k="text" data-id="${esc(t.id)}" role="button" tabindex="-1" aria-label="Text: ${esc(String(t.value).slice(0,30))}" style="left:${pad+t.start*pps}px;width:${Math.max(6,w)}px"><span class="vt-t" dir="auto">${esc(String(t.value).replace(/\n/g,' '))}</span>${s?handles:''}</div>`; }).join('');
   $('vtAudios').innerHTML=R.audio.map(a=>{ const s=isSel('audio',a.id), w=(a.out-a.in)*pps, m=miss.has(a.media), nm=(R.media[a.media]||{}).name||'Sound';
     return `<div class="vt-blk vt-audio${s?' sel':''}${m?' missing':''}${a.mute?' off':''}" data-k="audio" data-id="${esc(a.id)}" role="button" tabindex="-1" aria-label="Sound: ${esc(nm)}" style="left:${pad+a.start*pps}px;width:${Math.max(6,w)}px"><span class="vt-th"></span><span class="vt-t" dir="auto">${m?'Missing on this '+L.devWord():esc(nm)}</span>${s?handles:''}</div>`; }).join('');
@@ -106,7 +108,7 @@ function renderTl(){
   lay.forEach(x=>{ const c=x.c, w=Math.max(8,(x.end-x.start)*pps-2), e=strips.get(c.id), slot=inn.querySelector(`.vt-clip[data-id="${CSS.escape(c.id)}"] .vt-th`);
     if(e&&slot){ const cv=e.cv; cv.className='vt-th'; slot.replaceWith(cv); } if(!miss.has(c.media)&&inView(pad+x.start*pps,w)) wantStrip(c,x.start,w); });
   R.audio.forEach(a=>{ const e=waves.get(a.id), slot=inn.querySelector(`.vt-audio[data-id="${CSS.escape(a.id)}"] .vt-th`); if(e&&slot){ e.cv.className='vt-th'; slot.replaceWith(e.cv); } if(!miss.has(a.media)&&inView(pad+a.start*pps,(a.out-a.in)*pps)) wantWave(a); });
-  $('vtTexts').classList.toggle('blank',!R.texts.length); $('vtAudios').classList.toggle('blank',!R.audio.length);
+  $('vtTexts').classList.toggle('blank',!R.texts.length&&!(R.logos||[]).length); $('vtAudios').classList.toggle('blank',!R.audio.length);
 }
 V.renderTl=renderTl;
 /* scrolling brings new blocks into view: make their pictures then (at most once per frame) */
@@ -146,12 +148,12 @@ inn.addEventListener('pointerdown',e=>{
   const h=e.target.closest('.vt-h'), b=e.target.closest('.vt-blk'); if(!b) return;
   const k=b.dataset.k, id=b.dataset.id, side=h&&h.dataset.h;
   if(h){ e.preventDefault(); return trim(e,b,k,id,side); }
-  if((k==='text'||k==='audio')&&b.classList.contains('sel')){ e.preventDefault(); return moveBar(e,b,k,id); }
+  if((k==='text'||k==='audio'||k==='logo')&&b.classList.contains('sel')){ e.preventDefault(); return moveBar(e,b,k,id); }
   if(k==='clip') return holdReorder(e,b,id);
 });
 
 function trim(e,b,k,id,side){
-  const item=V.byId(k==='clip'?st.R.clips:k==='text'?st.R.texts:st.R.audio,id); if(!item) return;
+  const item=V.byId(k==='clip'?st.R.clips:k==='text'?st.R.texts:k==='logo'?st.R.logos:st.R.audio,id); if(!item) return;
   const d=V.dur(), pad=st.pad, pps=st.pps, o=JSON.parse(JSON.stringify(item)); let apply=null;
   const lay=V.lay().find(x=>x.c.id===id), snap=snapper(k==='clip'?id:null);
   if(k==='clip'){
@@ -165,7 +167,7 @@ function trim(e,b,k,id,side){
         b.style.left=(pad+(s+dd)*pps+1)+'px'; b.style.width=Math.max(6,(len-dd)*pps-2)+'px';
         return ()=>{ if(c.kind==='photo') c.dur=+(len-dd).toFixed(3); else c.in=+((c.in||0)+dd).toFixed(3); }; };
     }
-  } else if(k==='text'){
+  } else if(k==='text'||k==='logo'){
     const t=item;
     if(side==='r') apply=dt=>{ const ne=clamp(snap(t.end+dt),t.start+MIN_LEN,Math.max(d,t.start+MIN_LEN)); b.style.width=Math.max(6,(ne-t.start)*pps)+'px'; return ()=>{ t.end=+ne.toFixed(3); }; };
     else apply=dt=>{ const ns=clamp(snap(t.start+dt),0,t.end-MIN_LEN); b.style.left=(pad+ns*pps)+'px'; b.style.width=Math.max(6,(t.end-ns)*pps)+'px'; return ()=>{ t.start=+ns.toFixed(3); }; };
@@ -181,12 +183,12 @@ function trim(e,b,k,id,side){
 }
 
 function moveBar(e,b,k,id){
-  const item=V.byId(k==='text'?st.R.texts:st.R.audio,id); if(!item) return;
+  const item=V.byId(k==='text'?st.R.texts:k==='logo'?st.R.logos:st.R.audio,id); if(!item) return;
   const d=V.dur(), pad=st.pad, pps=st.pps, snap=snapper(null);
-  const start=item.start, len=k==='text'?item.end-item.start:item.out-item.in, maxS=Math.max(0,d-len); let ns=start;
+  const start=item.start, len=k!=='audio'?item.end-item.start:item.out-item.in, maxS=Math.max(0,d-len); let ns=start;
   if(st.playing) V.pause();
   startDrag(e,b,dt=>{ ns=clamp(start+dt,0,maxS); const s1=snap(ns), s2=snap(ns+len)-len; ns=clamp(Math.abs(s1-ns)<=Math.abs(s2-ns)&&s1!==ns?s1:(s2!==ns?s2:ns),0,maxS); b.style.left=(pad+ns*pps)+'px'; },
-    (moved,cancel)=>{ if(moved&&!cancel){ item.start=+ns.toFixed(3); if(k==='text') item.end=+(ns+len).toFixed(3); V.touch({bar:true}); } else renderTl(); });
+    (moved,cancel)=>{ if(moved&&!cancel){ item.start=+ns.toFixed(3); if(k!=='audio') item.end=+(ns+len).toFixed(3); V.touch({bar:true}); } else renderTl(); });
 }
 
 /* press and hold a clip (400 ms), then drag: a line shows where it will land. Move earlier / Move later do the same without dragging. */
