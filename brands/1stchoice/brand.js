@@ -165,7 +165,8 @@ Studio.registerBrand({
   reels:[
     {id:'winter-cat'},
     {id:'label-reveal'},
-    {id:'nd-getting-ready'}   /* a project template (reel.json kind "project"): the owner's own clip with the National Day logo on top */
+    {id:'nd-getting-ready'},  /* a project template (reel.json kind "project"): the owner's own clip with the National Day logo on top */
+    {id:'good-morning'}       /* project template: the Good morning cat motion reel (22 Nov 2026), Omani logo layer + music and sounds tracks */
   ],
   /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
      cat: restock | story | post | highlight. Previews: assets/thumbs/<brand>/tpl/<id>.jpg (node tests/tplthumbs.mjs makes them).

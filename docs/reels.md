@@ -207,4 +207,7 @@ Recipe (`tool: 'video'`, settings only; Supabase never gets video, photo or soun
   Templates like the others, but `tools/video.html?reel=<id>` starts from its `project.json` (a v2 recipe, usually a clip with a
   `url` plus logo layers) instead of loading a scene. Its other fields (`title`, `sub`, `duration`, `poster`) are for the Templates
   card; list it in `reels` in `brand.js` like any reel. The Video editor's own **Reel template** sheet shows coded reels only.
+- **Loudness** (`master`, 2.38.0, optional): `{ "lufs": -25.1, "ceiling": -10.5 }` in a recipe sets the integrated loudness and the
+  peak ceiling (dBFS) the whole mix is levelled to, instead of the default -14 LUFS / -1.5 dBFS. Templates use it to keep their
+  brand's loudness rule (1st Choice: quiet, peaks under -9 dB). It stays in the recipe when the project is saved.
 - A `v: 1` recipe (phase 1) opens as a project with one reel clip.
