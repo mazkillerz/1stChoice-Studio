@@ -1,0 +1,24 @@
+{
+  "v": 2,
+  "kind": "video",
+  "brand": "1stchoice",
+  "size": [1080, 1920],
+  "fps": 30,
+  "master": { "lufs": -26.6, "ceiling": -10.5 },
+  "clips": [
+    { "id": "c1", "kind": "video", "media": "m1", "in": 0, "out": 12.466, "db": 0, "mute": true }
+  ],
+  "texts": [],
+  "audio": [
+    { "id": "a1", "media": "m2", "start": 0, "in": 0, "out": 12.466, "db": 0, "mute": false, "fadeIn": 0, "fadeOut": 0 },
+    { "id": "a2", "media": "m3", "start": 0, "in": 0, "out": 12.466, "db": 0, "mute": false, "fadeIn": 0, "fadeOut": 0 }
+  ],
+  "logos": [
+    { "id": "l1", "asset": "nd26-logo", "x": 540, "y": 515, "w": 440, "start": 10.674, "end": 12.466, "in": "pop", "out": "none", "shadow": true }
+  ],
+  "media": {
+    "m1": { "name": "Good morning - reel.mp4", "type": "video", "dur": 12.466, "w": 1080, "h": 1920, "url": "reels/good-morning/clip.mp4" },
+    "m2": { "name": "Good morning - sounds.flac", "type": "audio", "dur": 12.474, "url": "reels/good-morning/sfx.flac" },
+    "m3": { "name": "Good morning - music.flac", "type": "audio", "dur": 12.474, "url": "reels/good-morning/music.flac" }
+  }
+}

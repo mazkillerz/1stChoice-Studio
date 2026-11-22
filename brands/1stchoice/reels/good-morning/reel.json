@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "kind": "project",
+  "id": "good-morning",
+  "title": "Good morning · cat reel",
+  "sub": "صباح الخير, with the Omani logo, music and sounds",
+  "size": [1080, 1920],
+  "fps": 30,
+  "duration": 12.47,
+  "poster": 8.0,
+  "project": "project.json"
+}

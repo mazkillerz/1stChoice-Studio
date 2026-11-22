@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.38.0 · 22 Nov 2026
+The Good morning cat reel is in Studio, ready to edit, with the Omani logo.
+
+### Good morning cat reel template
+type: feature
+The Good morning (صباح الخير) cat reel now opens in the Video editor as a ready project: the reel, the Omani 1st Choice logo on the end card, and its music and sounds on two separate tracks. Move or resize the logo, swap it, turn the music down or mute it and keep the sounds, add your own words or sound, and save the MP4. Find it in Templates under Reels.
+
+### Templates keep their loudness
+type: improve
+A ready-made template can now carry its own loudness, so a video you save from it sounds as loud as the original reel instead of being pushed louder.
+
 ## 2.37.0 · 20 Nov 2026
 Put your logo on a video and move it anywhere, and the National Day reel is ready to edit.
 

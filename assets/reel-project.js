@@ -275,7 +275,7 @@ async function create(recipe0,opt){
   /* ---- sound ---- */
   const audioCache=new Map();
   function audioKey(){ return JSON.stringify([P.duration,starts,lens,recipe.clips.map(c=>({k:c.kind,r:c.reel,m:c.media,i:c.in,o:c.out,db:c.db,mu:c.mute,mx:c.mix,d:c.duck})),recipe.audio,
-    [...wanted().m].map(id=>[id,!!media.get(id)])]); }
+    [...wanted().m].map(id=>[id,!!media.get(id)]),recipe.master||null]); }
   const add=(dst,src,at,gain,from,to,fade)=>{   // sum src[from..to] into dst at sample 'at' with a gain and optional linear fades (seconds)
     const n=Math.min(to-from,dst[0].length-at); if(n<=0) return; const fi=Math.round((fade&&fade.in||0)*SR), fo=Math.round((fade&&fade.out||0)*SR), tot=to-from;
     for(let i=0;i<n;i++){ let g=gain; if(fi&&i<fi) g*=i/fi; if(fo&&tot-i<fo) g*=Math.max(0,(tot-i)/fo); dst[0][at+i]+=src.L[from+i]*g; dst[1][at+i]+=src.R[from+i]*g; } };
@@ -285,6 +285,7 @@ async function create(recipe0,opt){
       if(c.kind==='reel'){ const m=await mixes.get(c.reel); if(!m||!m.renderRaw) continue; const raw=m.renderRaw({mix:c.mix||{},duck:c.duck!==false}), from=Math.round((c.in||0)*SR);
         add(sum,raw,at,1,from,Math.min(raw.L.length,from+len)); const M=reels.get(c.reel).M.master; if(M&&!hasReel){ lufsT=M.lufs; ceil=M.ceiling==null?-1.5:M.ceiling; hasReel=true; } }
       else if(c.kind==='video'&&!c.mute){ const d=await Media.decoded(c.media); if(!d) continue; const from=Math.round((c.in||0)*SR); add(sum,d,at,db(c.db||0),from,Math.min(d.L.length,from+len)); } }
+    const MS=recipe.master; if(MS&&typeof MS==='object'){ lufsT=num(MS.lufs,lufsT); ceil=num(MS.ceiling,ceil); }   // 2.38.0: a template can carry its brand's loudness
     for(const a of recipe.audio){ if(a.mute) continue; const d=await Media.decoded(a.media); if(!d) continue;
       const from=Math.round((a.in||0)*SR), to=Math.min(d.L.length,a.out!=null?Math.round(a.out*SR):d.L.length); if(to<=from) continue;
       add(sum,d,Math.round((a.start||0)*SR),db(a.db||0),from,to,{in:a.fadeIn,out:a.fadeOut}); }
