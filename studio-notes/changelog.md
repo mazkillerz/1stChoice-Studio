@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.39.0 · 26 Nov 2026
+24 new ready designs: the end of November with the Omani cat, and December with the hoodie cat back.
+
+### December hoodie cat and crayon elements
+type: feature
+Add asset has a new "December · hoodie cat" group: 14 poses of the hoodie cat drawn from the can label (hood up and hood down), plus crayon beans, a bean, ice, passion fruit, seeds, leaves, sparkles and six soft blobs.
+
+### 24 ready designs, 8 posts and 16 stories
+type: feature
+In Saved: "November · Omani cat" has 6 new designs (tired at work in the office, which one are you, rate it, happy weekend, not tried it yet) and the new "December · hoodie cat" collection has 18 (good morning, weekend, getting warm, 8 am lecture, Passion fruit, Classic, this or that, ask us, rate it, nearest sale point). Every word, cat and can is its own layer.
+
 ## 2.38.0 · 22 Nov 2026
 The Good morning cat reel is in Studio, ready to edit, with the Omani logo.
 

@@ -1,0 +1,42 @@
+/* December 2026 pack: the hoodie cat is back after the Omani-cat November (owner, 12 Nov 2026).
+   Hoodie cat poses drawn from the can label print file (Labels_20.pdf, owner 23 Nov 2026), and the crayon elements of the new label kit.
+   No dates and no banner, so the assets always load. Ready-made designs are team templates in the "December · hoodie cat" collection (Supabase). */
+Studio.registerPack({
+  id:'dec26',
+  name:'December · hoodie cat',
+  dates:[],
+  palette:[],
+  textFills:[],
+  assets:[
+    {"id": "dec26-cat-thumb", "label": "Hoodie cat, thumbs up, hood down", "file": "packs/dec26/assets/cat-thumb.webp", "prev": "packs/dec26/prev/cat-thumb.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-wave-up", "label": "Hoodie cat, waving, hood up", "file": "packs/dec26/assets/cat-wave-up.webp", "prev": "packs/dec26/prev/cat-wave-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-walk", "label": "Hoodie cat, walking, hood down", "file": "packs/dec26/assets/cat-walk.webp", "prev": "packs/dec26/prev/cat-walk.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-point-up", "label": "Hoodie cat, pointing, hood up", "file": "packs/dec26/assets/cat-point-up.webp", "prev": "packs/dec26/prev/cat-point-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-bean", "label": "Hoodie cat, hugging a bean, hood down", "file": "packs/dec26/assets/cat-bean.webp", "prev": "packs/dec26/prev/cat-bean.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-passion-up", "label": "Hoodie cat, passion fruit up, hood up", "file": "packs/dec26/assets/cat-passion-up.webp", "prev": "packs/dec26/prev/cat-passion-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-jump", "label": "Hoodie cat, jumping, hood down", "file": "packs/dec26/assets/cat-jump.webp", "prev": "packs/dec26/prev/cat-jump.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-sit-up", "label": "Hoodie cat, sitting, hood up", "file": "packs/dec26/assets/cat-sit-up.webp", "prev": "packs/dec26/prev/cat-sit-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-peace", "label": "Hoodie cat, peace sign, hood down", "file": "packs/dec26/assets/cat-peace.webp", "prev": "packs/dec26/prev/cat-peace.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-walk-up", "label": "Hoodie cat, walking, hood up", "file": "packs/dec26/assets/cat-walk-up.webp", "prev": "packs/dec26/prev/cat-walk-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-dance-up", "label": "Hoodie cat, dancing, hood up", "file": "packs/dec26/assets/cat-dance-up.webp", "prev": "packs/dec26/prev/cat-dance-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-sitbean", "label": "Hoodie cat, sitting on a bean, hood down", "file": "packs/dec26/assets/cat-sitbean.webp", "prev": "packs/dec26/prev/cat-sitbean.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-cool-up", "label": "Hoodie cat, arms crossed, hood up", "file": "packs/dec26/assets/cat-cool-up.webp", "prev": "packs/dec26/prev/cat-cool-up.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-cat-wave", "label": "Hoodie cat, waving, hood down", "file": "packs/dec26/assets/cat-wave.webp", "prev": "packs/dec26/prev/cat-wave.webp", "group": "December · hoodie cat", "noFlip": true},
+    {"id": "dec26-bean-hero", "label": "Crayon coffee bean", "file": "packs/dec26/assets/bean-hero.webp", "prev": "packs/dec26/prev/bean-hero.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-beans", "label": "Crayon beans, scattered", "file": "packs/dec26/assets/beans.webp", "prev": "packs/dec26/prev/beans.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-ice", "label": "Crayon ice cubes", "file": "packs/dec26/assets/ice.webp", "prev": "packs/dec26/prev/ice.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-passion-half", "label": "Crayon passion fruit half", "file": "packs/dec26/assets/passion-half.webp", "prev": "packs/dec26/prev/passion-half.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-seeds", "label": "Crayon passion seeds", "file": "packs/dec26/assets/seeds.webp", "prev": "packs/dec26/prev/seeds.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-leaves", "label": "Crayon tropical leaves", "file": "packs/dec26/assets/leaves.webp", "prev": "packs/dec26/prev/leaves.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-sparkle", "label": "Crayon sparkles", "file": "packs/dec26/assets/sparkle.webp", "prev": "packs/dec26/prev/sparkle.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-beige", "label": "Crayon blob, beige", "file": "packs/dec26/assets/blob-beige.webp", "prev": "packs/dec26/prev/blob-beige.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-ice", "label": "Crayon blob, ice", "file": "packs/dec26/assets/blob-ice.webp", "prev": "packs/dec26/prev/blob-ice.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-latte", "label": "Crayon blob, latte", "file": "packs/dec26/assets/blob-latte.webp", "prev": "packs/dec26/prev/blob-latte.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-lilac", "label": "Crayon blob, lilac", "file": "packs/dec26/assets/blob-lilac.webp", "prev": "packs/dec26/prev/blob-lilac.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-mint", "label": "Crayon blob, mint", "file": "packs/dec26/assets/blob-mint.webp", "prev": "packs/dec26/prev/blob-mint.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-blob-yellow", "label": "Crayon blob, yellow", "file": "packs/dec26/assets/blob-yellow.webp", "prev": "packs/dec26/prev/blob-yellow.webp", "group": "December · crayon", "noFlip": true}
+  ],
+  templates:[],
+  reels:[],
+  aliases:{}
+});
