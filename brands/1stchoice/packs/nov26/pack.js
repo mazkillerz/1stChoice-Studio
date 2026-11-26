@@ -26,6 +26,7 @@ Studio.registerPack({
     {"id": "nov26-ev-ice", "label": "Ice scene with cat (story)", "file": "packs/nov26/assets/ev-ice.jpg", "prev": "packs/nov26/prev/ev-ice.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
     {"id": "nov26-ev-ice-p", "label": "Ice scene with cat (post)", "file": "packs/nov26/assets/ev-ice-p.jpg", "prev": "packs/nov26/prev/ev-ice-p.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
     {"id": "nov26-ev-desk", "label": "Desk scene with cat (story)", "file": "packs/nov26/assets/ev-desk.jpg", "prev": "packs/nov26/prev/ev-desk.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
+    {"id": "nov26-ev-office-p", "label": "Office scene with cat (post)", "file": "packs/nov26/assets/ev-office-p.jpg", "prev": "packs/nov26/prev/ev-office-p.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
     {"id": "nov26-ev-desk-p", "label": "Desk scene with cat (post)", "file": "packs/nov26/assets/ev-desk-p.jpg", "prev": "packs/nov26/prev/ev-desk-p.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
     {"id": "nov26-ev-sun", "label": "Sunrise scene with cat (story)", "file": "packs/nov26/assets/ev-sun.jpg", "prev": "packs/nov26/prev/ev-sun.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},
     {"id": "nov26-ev-sun-p", "label": "Sunrise scene with cat (post)", "file": "packs/nov26/assets/ev-sun-p.jpg", "prev": "packs/nov26/prev/ev-sun-p.webp", "group": "November · Omani cat", "noFlip": true, "hidden": true},

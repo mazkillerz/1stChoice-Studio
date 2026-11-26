@@ -27,7 +27,7 @@ await blk('kit',async()=>{
   const oldA=old.assets.filter(isNd).map(noTag), newA=now.assets.filter(isNd).map(noTag);
   ok('32 former nd26 assets, ids and fields identical',oldA.length===32&&JSON.stringify(oldA)===JSON.stringify(newA),[oldA.length,newA.length]);
   ok('every asset of the old kit is still there, same order',JSON.stringify(old.assets.map(a=>a.id))===JSON.stringify(now.assets.map(a=>a.id).filter(id=>old.assets.some(a=>a.id===id))));
-  ok('no asset appeared or went missing overall',old.assets.length===now.assets.filter(a=>!/^(gt|nov26|gta6)-/.test(a.id)).length);   // 2.31.0: the nov26 picture pack is extra, like gt (2.36.0: and gta6)
+  ok('no asset appeared or went missing overall',old.assets.length===now.assets.filter(a=>!/^(gt|nov26|gta6|dec26)-/.test(a.id)).length);   // 2.31.0: the nov26 picture pack is extra, like gt (2.36.0: and gta6, 2.39.0: and dec26)
   ok('text fills identical',JSON.stringify(old.textFills)===JSON.stringify(now.textFills)&&now.textFills.length===2);
   const oldT=old.create.templates.filter(d=>d.layout==='doc'), newT=now.create.templates.filter(d=>d.layout==='doc'&&d.cat!=='gottalent'&&d.cat!=='gta6');
   ok('29 National Day / label-reveal templates identical',oldT.length===29&&JSON.stringify(oldT)===JSON.stringify(newT));
@@ -36,7 +36,7 @@ await blk('kit',async()=>{
   ok('National Day chip identical',JSON.stringify(old.templateCats)===JSON.stringify(now.templateCats.filter(c=>c.id!=='gottalent'&&c.id!=='gta6')));
   ok('palette unchanged',JSON.stringify(old.palette)===JSON.stringify(now.palette));
   const src=fs.readFileSync(ROOT+'brands/1stchoice/brand.js','utf8');
-  ok('brand.js lists the pack and carries no nd26 block',/packs:\['nd26'(,'gt')?(,'nov26')?(,'gta6')?\]/.test(src)&&!/nd26|nationalday|National Day/.test(src.replace(/packs:\['nd26'(,'gt')?(,'nov26')?(,'gta6')?\][^\n]*/,'')));
+  ok('brand.js lists the pack and carries no nd26 block',/packs:\['nd26'(,'gt')?(,'nov26')?(,'gta6')?(,'dec26')?\]/.test(src)&&!/nd26|nationalday|National Day/.test(src.replace(/packs:\['nd26'(,'gt')?(,'nov26')?(,'gta6')?(,'dec26')?\][^\n]*/,'')));
   ok('the old block is kept in _archive',fs.existsSync(ROOT+'_archive/brand-nd26-block (8 Nov 2026)/brand-nd26-block.txt'));
   const pk=now.packList.find(p=>p.id==='nd26');
   ok('pack has id, name, dates, banner, chip, 29 templates',pk&&pk.name&&pk.dates&&pk.dates.from==='11-01'&&pk.dates.to==='11-30'&&pk.banner.title&&pk.templateCat.id==='nationalday'&&pk.templates.length===29);

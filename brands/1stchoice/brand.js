@@ -46,7 +46,7 @@ Studio.registerBrand({
     {id:'blob',name:'Blob',hex:'#E5D5C0'},{id:'gold',name:'Gold',hex:'#D6B078'},{id:'yellow',name:'Passion yellow',hex:'#F6C040'},
     {id:'berry',name:'Passion berry',hex:'#BE2C5C'}
   ],
-  packs:['nd26','gt','nov26','gta6'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
+  packs:['nd26','gt','nov26','gta6','dec26'],               // occasion packs (brands/PACKS.md): assets, templates, text fills and chips come from packs/<id>/pack.js
   handle:'@1stchoice.om',      // Instagram handle (the "Instagram handle" component)
   /* The two flavours (names as on the approved line "كلاسيك / باشن فروت"). Pill colours for each. */
   flavours:[
@@ -165,7 +165,7 @@ Studio.registerBrand({
   reels:[
     {id:'winter-cat'},
     {id:'label-reveal'},
-    {id:'nd-getting-ready'},  /* a project template (reel.json kind "project"): the owner's own clip with the National Day logo on top */
+    {id:'nd-getting-ready'},  /* a project template (reel.json kind "project"): the owner's own clip with the occasion logo on top */
     {id:'good-morning'}       /* project template: the Good morning cat motion reel (22 Nov 2026), Omani logo layer + music and sounds tracks */
   ],
   /* Templates library (Home → Templates): ready-made starts made of a tool, one of its styles and approved words.
