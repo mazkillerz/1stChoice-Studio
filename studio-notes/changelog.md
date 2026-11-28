@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.42.0 · 28 Nov 2026
+Explainer drawings fixed, and three more hand-drawn designs.
+
+### Better explainer drawings
+type: fix
+The fridge is redrawn with a closed freezer, an open fridge with shelves and a real door with door shelves, and the clock is gone from the door: an hourglass now stands beside the fridge. Step 1 now shows a coffee bag and a water pitcher pouring into the jar, and step 4 shows a carafe filling the can. The carousel and the step-by-step story use the new drawings. The arrows on "how your can reaches you" are bigger.
+
+### More hand-drawn designs
+type: feature
+In Saved → December · hoodie cat: when do you drink it (morning, 8 am lecture, work, weekend), Classic or Passion fruit, and a spot-the-5-differences carousel with its answer slide, each with a story. Add asset → Cold brew explainer has the new drawings (sunrise, books, laptop, beach, hourglass, the kitchen scenes).
+
 ## 2.41.0 · 28 Nov 2026
 The cold brew explainer, redrawn, plus three new hand-drawn explainers.
 
