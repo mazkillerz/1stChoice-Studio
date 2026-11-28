@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.40.0 · 28 Nov 2026
+Hand-drawn cold brew explainer, Got Talent reminders and a true-or-false quiz.
+
+### Hand-drawn cold brew drawings
+type: feature
+Add asset → December · hoodie cat has a new "Cold brew explainer" group: crayon drawings of the jar of coffee and cold water, the fridge with a clock, the felt filter, a can filled to the top, a cold brew jar and a hot coffee with ice, plus two crayon arrows.
+
+### New ready designs
+type: feature
+In Saved: "December · hoodie cat" adds the 6-slide "What is cold brew?" carousel, a cold brew or iced coffee post and 3 stories. "November · Omani cat" adds the true-or-false quiz (carousel and story) and 5 Got Talent reminders (who will be first, your photo could be next, how it works, results soon).
+
 ## 2.39.0 · 26 Nov 2026
 24 new ready designs: the end of November with the Omani cat, and December with the hoodie cat back.
 
