@@ -34,7 +34,15 @@ Studio.registerPack({
     {"id": "dec26-blob-latte", "label": "Crayon blob, latte", "file": "packs/dec26/assets/blob-latte.webp", "prev": "packs/dec26/prev/blob-latte.webp", "group": "December · crayon", "noFlip": true},
     {"id": "dec26-blob-lilac", "label": "Crayon blob, lilac", "file": "packs/dec26/assets/blob-lilac.webp", "prev": "packs/dec26/prev/blob-lilac.webp", "group": "December · crayon", "noFlip": true},
     {"id": "dec26-blob-mint", "label": "Crayon blob, mint", "file": "packs/dec26/assets/blob-mint.webp", "prev": "packs/dec26/prev/blob-mint.webp", "group": "December · crayon", "noFlip": true},
-    {"id": "dec26-blob-yellow", "label": "Crayon blob, yellow", "file": "packs/dec26/assets/blob-yellow.webp", "prev": "packs/dec26/prev/blob-yellow.webp", "group": "December · crayon", "noFlip": true}
+    {"id": "dec26-blob-yellow", "label": "Crayon blob, yellow", "file": "packs/dec26/assets/blob-yellow.webp", "prev": "packs/dec26/prev/blob-yellow.webp", "group": "December · crayon", "noFlip": true},
+    {"id": "dec26-draw-jar", "label": "Drawing · coffee + cold water jar", "file": "packs/dec26/assets/draw-jar.webp", "prev": "packs/dec26/prev/draw-jar.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-draw-fridge", "label": "Drawing · fridge + clock", "file": "packs/dec26/assets/draw-fridge.webp", "prev": "packs/dec26/prev/draw-fridge.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-draw-filter", "label": "Drawing · felt filter", "file": "packs/dec26/assets/draw-filter.webp", "prev": "packs/dec26/prev/draw-filter.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-draw-can", "label": "Drawing · can filled to the top", "file": "packs/dec26/assets/draw-can.webp", "prev": "packs/dec26/prev/draw-can.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-draw-cold", "label": "Drawing · cold brew jar", "file": "packs/dec26/assets/draw-cold.webp", "prev": "packs/dec26/prev/draw-cold.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-draw-hot", "label": "Drawing · hot coffee + ice", "file": "packs/dec26/assets/draw-hot.webp", "prev": "packs/dec26/prev/draw-hot.webp", "group": "Cold brew explainer", "noFlip": true},
+    {"id": "dec26-arrow-curve", "label": "Crayon arrow (curve)", "file": "packs/dec26/assets/arrow-curve.webp", "prev": "packs/dec26/prev/arrow-curve.webp", "group": "Cold brew explainer", "noFlip": false},
+    {"id": "dec26-arrow-swoop", "label": "Crayon arrow (swoop)", "file": "packs/dec26/assets/arrow-swoop.webp", "prev": "packs/dec26/prev/arrow-swoop.webp", "group": "Cold brew explainer", "noFlip": false}
   ],
   templates:[],
   reels:[],
