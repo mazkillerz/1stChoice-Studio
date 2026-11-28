@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.43.0 · 28 Nov 2026
+Explainer drawings polished, and 8 November stories with the National Day logo.
+
+### Explainer drawings polished
+type: fix
+Step 1: the coffee bag is tipped toward the jar and the grounds pour only from its open mouth; the water jug keeps its water level when tilted and has ice cubes inside. Step 3: the felt filters have a soft felt look (no lines) and drip into a coffee server. Step 4: that server pours a smooth stream into an open can, with no stray drops. Cans in every drawing now look like our can (lid, coffee showing above and below the label), the fridge lost its black blob, the 8 am lecture card has an alarm clock instead of the pencil, and the spot-the-difference kitchen is roomier.
+
+### 8 November stories
+type: feature
+In Saved → November · Omani cat: relax tonight, good morning, craving it (poll), it takes its time, hot today (poll), your pick (poll), really good, and where to find us. The Omani cat with the drawn cans, the hand-drawn doodles and the National Day logo. Add asset → Hand-drawn doodles has the moon, sun, thermometer, map pin, five stars and heart.
+
 ## 2.42.0 · 28 Nov 2026
 Explainer drawings fixed, and three more hand-drawn designs.
 
