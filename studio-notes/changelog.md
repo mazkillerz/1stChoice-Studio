@@ -13,6 +13,17 @@ The What's New page in Studio (`whats-new.html`) reads this file. Keep the forma
 
 How the page shows it, with no extra work: the newest version is the hero card at the top (version, date, its lead line as the summary, its changes grouped New / Improved / Fixed with an icon heading; if there is no lead line, the card titles are joined instead). So give every version a short plain lead line right under its `##` heading. Older versions are one row each (version, date, one-line summary, chips such as "3 new · 2 fixed"); one tap opens it and shows every change with its note and screenshots at once (no nested sections). One filter row (All, New, Improved, Fixed) filters every version. `whats-new.html#v-2.3.0` opens that version.
 
+## 2.41.0 · 28 Nov 2026
+The cold brew explainer, redrawn, plus three new hand-drawn explainers.
+
+### Hand-drawn explainer drawings, version 2
+type: feature
+Add asset → Cold brew explainer has new crayon drawings: coffee and cold water going into the jar, the fridge with the jar, cans and a clock, two felt filters, a can filled to the top, a shop, chat bubbles, a calendar page, a delivery van, a big snowflake, plus a crayon highlight, underline, circle and four more arrows. The carousel has one hand-drawn path that runs across all six slides, so swiping feels like one long drawing.
+
+### New ready designs
+type: feature
+In Saved → December · hoodie cat: the "What is cold brew?" carousel, the comparison post and its stories are redone with the new drawings, and there are 6 new designs: what "cold brew" means (COLD = بارد, BREW = تخمير), what's in your can (callouts around the can) and how your can reaches you (sale points, or a direct order in 4 days, pickup or delivery). Older explainer drawings are hidden from Add asset but still work in old designs.
+
 ## 2.40.0 · 28 Nov 2026
 Hand-drawn cold brew explainer, Got Talent reminders and a true-or-false quiz.
 
